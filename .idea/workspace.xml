@@ -2,8 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="00f1821b-c8c2-42c7-b926-0821b9a4d6d4" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/custom_stc.rb" afterPath="$PROJECT_DIR$/custom_stc.rb" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/lexers.rb" afterPath="$PROJECT_DIR$/lexers.rb" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ide_main_frame.rb" afterPath="$PROJECT_DIR$/ide_main_frame.rb" />
     </list>
     <ignored path="NoiseIde.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -36,19 +35,19 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="lexers.rb" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="lexers.rb" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/lexers.rb">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="59" column="51" selection-start="2150" selection-end="2150" vertical-scroll-proportion="0.37104824">
+            <state line="42" column="37" selection-start="1234" selection-end="1234" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="ide_main_frame.rb" pinned="false" current="false" current-in-tab="false">
+      <file leaf-file-name="ide_main_frame.rb" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/ide_main_frame.rb">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="9" column="114" selection-start="152" selection-end="152" vertical-scroll-proportion="0.0">
+            <state line="11" column="31" selection-start="212" selection-end="212" vertical-scroll-proportion="0.086065575">
               <folding />
             </state>
           </provider>
@@ -90,9 +89,9 @@
   <component name="IdeDocumentHistory">
     <option name="changedFiles">
       <list>
-        <option value="$PROJECT_DIR$/ide_main_frame.rb" />
         <option value="$PROJECT_DIR$/custom_stc.rb" />
         <option value="$PROJECT_DIR$/lexers.rb" />
+        <option value="$PROJECT_DIR$/ide_main_frame.rb" />
       </list>
     </option>
   </component>
@@ -234,16 +233,16 @@
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="-8" y="-8" width="1936" height="1066" extended-state="6" />
+    <frame x="1912" y="-8" width="1456" height="916" extended-state="6" />
     <editor active="true" />
     <layout>
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="true" content_ui="tabs" />
       <window_info id="Dependency Viewer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.1459431" sideWeight="0.67022413" order="0" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.19534555" sideWeight="0.67090213" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.32977587" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.32909784" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
@@ -287,13 +286,6 @@
     <breakpoint-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/ide_main_frame.rb">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="9" column="114" selection-start="152" selection-end="152" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/highlighters.rb">
       <provider selected="true" editor-type-id="text-editor">
         <state line="48" column="23" selection-start="1425" selection-end="1425" vertical-scroll-proportion="0.0">
@@ -322,7 +314,14 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/lexers.rb">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="59" column="51" selection-start="2150" selection-end="2150" vertical-scroll-proportion="0.37104824">
+        <state line="42" column="37" selection-start="1234" selection-end="1234" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/ide_main_frame.rb">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="11" column="31" selection-start="212" selection-end="212" vertical-scroll-proportion="0.086065575">
           <folding />
         </state>
       </provider>
