@@ -1,5 +1,8 @@
 require "wx"
+require_relative "lexers.rb"
 include Wx
+
+
 
 class String
   def to_color
@@ -25,9 +28,8 @@ module EditorFoldMixin
     line = line_from_position(get_current_pos())
     if (get_fold_level(line) & STC_FOLDLEVELHEADERFLAG and
          not get_fold_expanded(line))
-        set_fold_expanded(line, True)
         toggle_fold(line)
-      event.Skip()
+      event.skip()
     end
   end
 end
@@ -110,9 +112,9 @@ class CustomSTC < StyledTextCtrl
 
     set_margins(5, 5)
     set_property("fold", "1")
-    set_property("fold.compact", "0")
-    set_property("fold.comment", "1")
-    set_property("fold.preprocessor", "1")
+    #set_property("fold.compact", "0")
+    #set_property("fold.comment", "1")
+    #set_property("fold.preprocessor", "1")
 
     #Line number margin
     set_margin_type(1, STC_MARGIN_NUMBER)
@@ -135,6 +137,7 @@ class CustomSTC < StyledTextCtrl
     marker_define(STC_MARKNUM_FOLDERMIDTAIL, STC_MARK_TCORNER, fore_color, back_color)
     set_fold_margin_colour(true, back_color)
     set_fold_margin_hi_colour(true, back_color)
+    set_fold_flags(16)
 
     self.font = Font.new(ColorSchema.code_editor["font_size"], FONTFAMILY_DEFAULT,
                          FONTSTYLE_NORMAL, FONTWEIGHT_NORMAL, false,
@@ -177,8 +180,12 @@ class CustomSTC < StyledTextCtrl
     load_file(@file_path)
   end
 
+  def file_name
+    File.basename(@file_path)
+  end
+
   def get_default_font
-    self.font
+    font
   end
 
   def on_style_needed(event)
@@ -200,5 +207,15 @@ class CustomSTC < StyledTextCtrl
        brace_bad_light(pos)
      end
     end
+  end
+end
+
+class ErlangSTC < CustomSTC
+  @@tokenizer = ErlangTokenizer.new
+  @@highlighter = ErlangHighlighter.new(    @@tokenizer)
+
+  def initialize frame, file_path
+    lexer = ErlangLexer.new(@@highlighter)
+    super frame, lexer, file_path
   end
 end
