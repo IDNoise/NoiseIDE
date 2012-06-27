@@ -2,9 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="00f1821b-c8c2-42c7-b926-0821b9a4d6d4" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/NoiseIDE.iml" afterPath="$PROJECT_DIR$/.idea/NoiseIDE.iml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/custom_stc.rb" afterPath="$PROJECT_DIR$/custom_stc.rb" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/ide_main_frame.rb" afterPath="$PROJECT_DIR$/ide_main_frame.rb" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/lexers.rb" afterPath="$PROJECT_DIR$/lexers.rb" />
     </list>
     <ignored path="NoiseIde.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -37,6 +36,15 @@
           </provider>
         </entry>
       </file>
+      <file leaf-file-name="lexers.rb" pinned="false" current="true" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/lexers.rb">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="59" column="51" selection-start="2150" selection-end="2150" vertical-scroll-proportion="0.37104824">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
       <file leaf-file-name="ide_main_frame.rb" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/ide_main_frame.rb">
           <provider selected="true" editor-type-id="text-editor">
@@ -64,10 +72,10 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="custom_stc.rb" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="custom_stc.rb" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/custom_stc.rb">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="142" column="25" selection-start="3931" selection-end="3931" vertical-scroll-proportion="0.7903494">
+            <state line="134" column="74" selection-start="3504" selection-end="3504" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -84,6 +92,7 @@
       <list>
         <option value="$PROJECT_DIR$/ide_main_frame.rb" />
         <option value="$PROJECT_DIR$/custom_stc.rb" />
+        <option value="$PROJECT_DIR$/lexers.rb" />
       </list>
     </option>
   </component>
@@ -278,14 +287,9 @@
     <breakpoint-manager />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/main.rb">
+    <entry file="file://$PROJECT_DIR$/ide_main_frame.rb">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/tokenizers.rb">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="17" column="35" selection-start="363" selection-end="363" vertical-scroll-proportion="0.0">
+        <state line="9" column="114" selection-start="152" selection-end="152" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
@@ -297,16 +301,28 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/ide_main_frame.rb">
+    <entry file="file://$PROJECT_DIR$/tokenizers.rb">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="9" column="114" selection-start="152" selection-end="152" vertical-scroll-proportion="0.0">
+        <state line="17" column="35" selection-start="363" selection-end="363" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/main.rb">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0" />
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/custom_stc.rb">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="142" column="25" selection-start="3931" selection-end="3931" vertical-scroll-proportion="0.7903494">
+        <state line="134" column="74" selection-start="3504" selection-end="3504" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/lexers.rb">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="59" column="51" selection-start="2150" selection-end="2150" vertical-scroll-proportion="0.37104824">
           <folding />
         </state>
       </provider>

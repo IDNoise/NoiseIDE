@@ -26,13 +26,16 @@ class ErlangLexer < BaseLexer
     line_start = control.position_from_line(line)
     end_line = control.line_from_position(end_pos)
     end_line_end_pos = control.get_line_end_position(end_line)
-    prev_fold_level = control.get_fold_level(line - 1)
-    if prev_fold_level == 1 | STC_FOLDLEVELHEADERFLAG
-      prev_fold_level = 2
-    elsif prev_fold_level == 3
-      prev_fold_level = 0
+    prev_fold_level = 0
+    if line > 0
+      prev_fold_level = control.get_fold_level(line - 1)
     end
     next_line_fold_level = prev_fold_level
+    if prev_fold_level ^ STC_FOLDLEVELHEADERFLAG == STC_FOLDLEVELBASE
+      next_line_fold_level = STC_FOLDLEVELBASE + 1
+    elsif prev_fold_level == STC_FOLDLEVELBASE + 2
+      next_line_fold_level = 0
+    end
     # Get Styling Range
     control.start_styling(line_start, 0x1f)
     last_end = line_start
@@ -42,16 +45,21 @@ class ErlangLexer < BaseLexer
       current_line_fold_level = next_line_fold_level
       line_end = control.get_line_end_position(line)
       text = control.get_text_range(line_start, line_end)
-
       @highlighter.get_highlighting_tokens(text).each {|rule|
         if [ErlangHighlightType::FUNDEC,
             ErlangHighlightType::RECORDDEF,
             ErlangHighlightType::SPEC].member? rule.type
-          current_line_fold_level = 1
-          next_line_fold_level = 2
+          current_line_fold_level = STC_FOLDLEVELBASE
+          next_line_fold_level = STC_FOLDLEVELBASE  + 1
         elsif rule.type == ErlangHighlightType::FULLSTOP
-          #puts "Fullstop " + text
-          current_line_fold_level = 3
+          if current_line_fold_level ==  STC_FOLDLEVELBASE  + 1
+            current_line_fold_level = STC_FOLDLEVELBASE  + 2
+          elsif current_line_fold_level == STC_FOLDLEVELBASE
+            current_line_fold_level = 0
+            if prev_fold_level == STC_FOLDLEVELHEADERFLAG | STC_FOLDLEVELBASE
+              control.set_fold_level(line - 1, 0)
+            end
+          end
           next_line_fold_level = 0
         end
         start = line_start + rule.start_pos
@@ -59,7 +67,12 @@ class ErlangLexer < BaseLexer
         control.set_styling(rule.value.length, rule.type)
         last_end  = line_start + rule.end_pos
       }
-      current_line_fold_level |= STC_FOLDLEVELHEADERFLAG if current_line_fold_level == 1
+      current_line_fold_level |= STC_FOLDLEVELHEADERFLAG if current_line_fold_level == STC_FOLDLEVELBASE
+      if current_line_fold_level == STC_FOLDLEVELHEADERFLAG | STC_FOLDLEVELBASE and
+        current_line_fold_level == prev_fold_level
+        control.set_fold_level(line - 1, 0)
+      end
+      prev_fold_level = current_line_fold_level
       control.set_fold_level(line, current_line_fold_level)
       line += 1
       line_start = control.position_from_line(line)

@@ -130,14 +130,14 @@ class CustomSTC < StyledTextCtrl
     back_color = ColorSchema.code_editor["fold_area_background"].to_color
     marker_define(STC_MARKNUM_FOLDEROPEN, STC_MARK_BOXMINUS, fore_color, back_color)
     marker_define(STC_MARKNUM_FOLDER, STC_MARK_BOXPLUS, fore_color, back_color)
-    marker_define(STC_MARKNUM_FOLDERSUB, STC_MARK_VLINE, fore_color, back_color)
-    marker_define(STC_MARKNUM_FOLDERTAIL, STC_MARK_LCORNER, fore_color, back_color)
-    marker_define(STC_MARKNUM_FOLDEREND, STC_MARK_BOXPLUSCONNECTED, fore_color, back_color)
-    marker_define(STC_MARKNUM_FOLDEROPENMID, STC_MARK_BOXMINUSCONNECTED, fore_color, back_color)
-    marker_define(STC_MARKNUM_FOLDERMIDTAIL, STC_MARK_TCORNER, fore_color, back_color)
+    marker_define(STC_MARKNUM_FOLDERSUB, STC_MARK_VLINE, back_color, fore_color)
+    marker_define(STC_MARKNUM_FOLDERTAIL, STC_MARK_LCORNER, fore_color, fore_color)
+    marker_define(STC_MARKNUM_FOLDEREND, STC_MARK_VLINE, fore_color, fore_color)
+    marker_define(STC_MARKNUM_FOLDEROPENMID, STC_MARK_VLINE, fore_color, fore_color)
+    marker_define(STC_MARKNUM_FOLDERMIDTAIL, STC_MARK_VLINE, fore_color, fore_color)
     set_fold_margin_colour(true, back_color)
     set_fold_margin_hi_colour(true, back_color)
-    set_fold_flags(16)
+    #set_fold_flags(16)
 
     self.font = Font.new(ColorSchema.code_editor["font_size"], FONTFAMILY_DEFAULT,
                          FONTSTYLE_NORMAL, FONTWEIGHT_NORMAL, false,
