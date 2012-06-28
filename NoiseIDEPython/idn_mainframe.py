@@ -22,9 +22,12 @@ class NoiseIDE(wx.Frame):
         self.winmgr.AddPane1(self.tabmgr, aui.AuiPaneInfo().Center().Caption("Code Editor")
             .MaximizeButton().MinimizeButton().CloseButton(False))
 
+        self.menubar = wx.MenuBar()
+        self.fileMenu = wx.Menu()
+        fitem = self.fileMenu.Append(wx.ID_EXIT, 'Quit', 'Quit application')
+        self.menubar.Append(self.fileMenu, '&File')
+        self.SetMenuBar(self.menubar)
 
-
-        #self.TextArea =
         self.AddTestTabs(10)
         self.winmgr.Update()
 

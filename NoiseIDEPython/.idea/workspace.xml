@@ -2,11 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d654c747-d601-49bc-80fe-ab63471b2f11" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/vcs.xml" afterPath="$PROJECT_DIR$/.idea/vcs.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/eide_cache.erl" afterPath="$PROJECT_DIR$/eide_cache.erl" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_colorschema.py" afterPath="$PROJECT_DIR$/idn_colorschema.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_customstc.py" afterPath="$PROJECT_DIR$/idn_customstc.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_lexer.py" afterPath="$PROJECT_DIR$/idn_lexer.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_mainframe.py" afterPath="$PROJECT_DIR$/idn_mainframe.py" />
     </list>
     <ignored path="NoiseIDE.iws" />
@@ -32,7 +27,7 @@
       <file leaf-file-name="idn_mainframe.py" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/idn_mainframe.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="40" column="28" selection-start="1304" selection-end="1304" vertical-scroll-proportion="0.64102566">
+            <state line="1" column="38" selection-start="65" selection-end="65" vertical-scroll-proportion="-0.35897437">
               <folding>
                 <element signature="e#0#26#0" expanded="true" />
               </folding>
@@ -385,7 +380,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/idn_mainframe.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="40" column="28" selection-start="1304" selection-end="1304" vertical-scroll-proportion="0.64102566">
+        <state line="1" column="38" selection-start="65" selection-end="65" vertical-scroll-proportion="-0.35897437">
           <folding>
             <element signature="e#0#26#0" expanded="true" />
           </folding>
