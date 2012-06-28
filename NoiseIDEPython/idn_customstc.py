@@ -60,7 +60,8 @@ class EditorLineMarginMixin:
 
 class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
     def __init__(self, parent, filePath):
-        StyledTextCtrl.__init__(self, parent)
+        #style = wx.MAXIMIZE_BOX|wx.RESIZE_BORDER|wx.SYSTEM_MENU|wx.CAPTION|wx.CLOSE_BOX
+        StyledTextCtrl.__init__(self, parent)#, style = style)
         EditorFoldMixin.__init__(self)
         EditorLineMarginMixin.__init__(self)
 
