@@ -29,8 +29,8 @@ class EditorFoldMixin:
 
 class EditorLineMarginMixin:
     def __init__(self):
-        self.Bind(stc.EVT_STC_CHANGE, self.OnChange)
-        self.Bind(stc.EVT_STC_ZOOM, self.OnZoom)
+        self.Bind(stc.EVT_STC_CHANGE, self.OnUpdateLineAreaWidth)
+        self.Bind(stc.EVT_STC_ZOOM, self.OnUpdateLineAreaWidth)
 
     def CalcFontWidth(self):
         dc = wx.WindowDC(self)
@@ -42,15 +42,11 @@ class EditorLineMarginMixin:
         font.SetPointSize(defaultFontSize)
         return defaultFontWidth
 
-    def OnZoom(self, event):
+    def OnUpdateLineAreaWidth(self, event):
         if self.lineNumbersEnabled:
             self.EnableLineNumbers()
         event.Skip()
 
-    def OnChange(self, event):
-        if self.lineNumbersEnabled:
-            self.EnableLineNumbers()
-        event.Skip()
 
     def EnableLineNumbers(self, enable=True):
         self.lineNumbersEnabled = enable
@@ -76,6 +72,11 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.SetCaretLineBackground(ColorSchema.codeEditor["current_line_background"])
         self.SetCaretLineVisible(True)
 
+        #self.SetUseHorizontalScrollBar(True)
+        self.SetEndAtLastLine(False)
+        #self.SetScrollWidthTracking(True)
+        self.SetScrollWidth(500)
+
         self.SetTabWidth(4)
         self.SetUseTabs(False)
         self.SetTabIndents(True)
@@ -90,7 +91,6 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
 
         self.SetMarginType(1, stc.STC_MARGIN_NUMBER)
         self.SetMarginMask(1, 0)
-
 
         self.SetMarginType(2, stc.STC_MARGIN_SYMBOL)
         self.SetMarginMask(2, stc.STC_MASK_FOLDERS)
@@ -150,8 +150,12 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.EnableLineNumbers()
 
         self.LoadFile(self.filePath)
+        self.SetSelection(0, 0)
 
-    def FileName(selfself):
+        #print(self.GetScrollWidth())
+        #print(self.Size)
+
+    def FileName(self):
         return os.path.basename(self.filePath)
 
     def GetDefaultFont(self):

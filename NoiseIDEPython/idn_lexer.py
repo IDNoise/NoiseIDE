@@ -46,7 +46,6 @@ class ErlangLexer(BaseLexer):
             text = control.GetTextRange(lineStart, lineEnd)
             tokens = self.highlighter.GetHighlightingTokens(text)
             for token in tokens:
-                print(token)
                 if (token.type in {ErlangHighlightType.FUNDEC,
                                    ErlangHighlightType.RECORDDEF,
                                    ErlangHighlightType.SPEC}):

@@ -9,6 +9,5 @@ class ColorSchema:
         path = os.path.join(os.getcwd(), "{}.color.yaml".format(theme))
         stream = file(path, 'r')
         cls.schemaFile = yaml.load(stream)
-        print(cls.schemaFile)
         cls.codeEditor = cls.schemaFile["code_editor"]
         cls.codeFormats = cls.codeEditor["formats"]

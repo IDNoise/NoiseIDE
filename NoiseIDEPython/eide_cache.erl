@@ -54,13 +54,7 @@
 
 -include_lib("edoc/src/edoc_types.hrl").
 %erlang_cache:create_cache_for_erlang_libs("D:/temp/erlang_cache", erlang_cache:ignores()).
-%erlang_cache:create_cache("d:/temp/erlang_cache", "d:/projects/joe/server/apps", undefined, erlang_cache:ignores()).
-%erlang_cache:create_cache("d:/temp/erlang_cache", "d:/projects/gijoe/server/apps", undefined, erlang_cache:ignores()).
-%erlang_cache:generate_file("D:/temp/erlang_cache", "crypto", "c:/Programming/erl5.9/lib/crypto-2.1/src/crypto.erl", "c:/Programming/erl5.9/lib/crypto-2.1/doc/html/crypto.html", [], self()).
-
-%appmon, aptransform, asn, commontest, compiler, cosEvent, cosEventDomain, cosFileTransfer, cosNotification, cosProperty, cosTime, cosTransactions, couchbeam, crypto, debugger, dialyzer, diameter, edoc, ejson, erldocgen, erlinterface, erts, et, eunit, genleader, gproc, gs, hipe, ibrowse, ic, inets, inviso, jinterface, kernel, megaco, mnesia, mochiweb, oauth, observer, odbc, orber, osmon, otpmibs, parsetools, percept, pman, proper, publickey, reltool, runtimetools, sasl, sha, snmp, ssh, ssl, stdlib, syntaxtools, testserver, toolbar, tools, tv, typer, webtool, wx
-
-gen_file_cache(File) ->
+le_cache(File) ->
     case eide_connect:prop(project_dir) of
         undefined -> create_cache(eide_connect:prop(cache_dir) ++ "/other", File);
         Dir ->  
@@ -77,7 +71,8 @@ gen_erlang_cache() ->
 
 gen_project_cache() ->
     io:format("Checking cache for project..."),
-    create_cache(eide_connect:prop(cache_dir) ++ "/" ++ eide_connect:prop(project_name), eide_connect:prop(project_dir), undefined, ignores()),
+    create_cache(eide_connect:prop(cache_dir) ++ "/" ++ 
+        eide_connect:prop(project_name), eide_connect:prop(project_dir), undefined, ignores()),
     io:format("...Done").
 
 ignores() ->
@@ -530,7 +525,8 @@ parse_spec(Node) ->
     try
         [parse_spec_internal(Node, 1)]
     catch 
-        %Error:Reason -> io:format("Error:~p~n. Reason:~p~n parsing spec for:~p~n", [Error, Reason, erlang:get_stacktrace()]),
+        %Error:Reason -> io:format("Error:~p~n. Reason:~p~n parsing spec for:~p~n", 
+            %[Error, Reason, erlang:get_stacktrace()]),
         _Error:_Reason -> 
             ok,
             []
@@ -735,11 +731,12 @@ get_functions_data_from_html(File) ->
     {ok, Data} = file:read_file(File),
     Result = re:run(Data, <<"(<p><a name=.*?</div>\\s*(?=<p><a name=|<div class=\"footer\">))">>,
                     [multiline, dotall, global, {capture, [1], list}]),
+    ReA = <<"<a name=\"([A-Za-z_:]*?)-([0-9]?)\">(?:</a>)?<span.*?>(.*?)\\((.*?)\\)\\s*-&gt;\\s*(.*?)</span>">> 
     case Result of
         {match, Captured} ->
             FunsData = 
                 [begin
-                     FunsResult = re:run(Text, <<"<a name=\"([A-Za-z_:]*?)-([0-9]?)\">(?:</a>)?<span.*?>(.*?)\\((.*?)\\)\\s*-&gt;\\s*(.*?)</span>">>,
+                     FunsResult = re:run(Text, ReA,
                                          [multiline, dotall, global, {capture, [1, 2, 3, 4, 5], list}]),
                      case FunsResult of
                          {match, Funs} ->
@@ -761,10 +758,12 @@ add_data_from_html_fun({[FunName, Arity, SpecName, Params, _Result], Text}, Cont
                     true -> Fun#function{params = [Params], result = ?TERM, doc = Text};
                     _ -> Fun#function{doc = Text}
                 end,
-            Content#content{functions = lists:keyreplace({FunName, Arity1}, #function.name, Content#content.functions, NewFun)};
+            Content#content{functions = lists:keyreplace({FunName, Arity1}, #function.name, 
+                Content#content.functions, NewFun)};
         _ -> 
             IsBif = case SpecName of "erlang:" ++ _ -> false; _ -> true end,
-            NewFun = #function{name = {FunName, Arity1}, params = [Params], result = ?TERM, doc = Text, bif = IsBif, exported = true},
+            NewFun = #function{name = {FunName, Arity1}, params = [Params], result = ?TERM, doc = Text, 
+                bif = IsBif, exported = true},
             Content#content{functions = [NewFun|Content#content.functions]}
     end.
 
