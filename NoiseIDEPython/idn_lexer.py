@@ -8,12 +8,15 @@ class BaseLexer:
     def StyleText(self, control, startPos, endPos):
         raise NotImplementedError
 
+    def DoFold(self, control, startPos, endPos):
+        raise NotImplementedError
 
     def StyleEvent(self, event):
         control = event.GetEventObject()
         startPos = control.GetEndStyled()
         endPos = event.GetPosition()
         self.StyleText(control, startPos, endPos)
+        self.DoFold(control, startPos, endPos)
 
 
 class ErlangLexer(BaseLexer):
@@ -25,8 +28,28 @@ class ErlangLexer(BaseLexer):
         startLineBeginPos = control.PositionFromLine(startLine)
         endLine = control.LineFromPosition(endPos)
         endLineEndPos = control.GetLineEndPosition(endLine)
-        prevFoldLevel = 0
+        control.StartStyling(startLineBeginPos, 0x1f)
+        lastEnd = startLineBeginPos
+        defaultStyle = ErlangHighlightType.DEFAULT
+        while startLine <= endLine:
+            lineStart = control.PositionFromLine(startLine)
+            text = control.GetLine(startLine)
+            tokens = self.highlighter.GetHighlightingTokens(text)
+            for token in tokens:
+                start = lineStart + token.start
+                if start > lastEnd:
+                    control.SetStyling(start - lastEnd, defaultStyle)
+                control.SetStyling(len(token.value), token.type)
+                lastEnd  = lineStart + token.end
+            startLine += 1
 
+        if lastEnd < endLineEndPos:
+            control.SetStyling(endLineEndPos - lastEnd, defaultStyle)
+
+    def DoFold(self, control, startPos, endPos):
+        startLine = control.LineFromPosition(startPos)
+        endLine = control.LineFromPosition(endPos)
+        prevFoldLevel = 0
         if startLine > 0:
             prevFoldLevel = control.GetFoldLevel(startLine - 1)
         nextLineFoldLevel = prevFoldLevel
@@ -34,16 +57,9 @@ class ErlangLexer(BaseLexer):
             nextLineFoldLevel = STC_FOLDLEVELBASE + 1
         elif prevFoldLevel == STC_FOLDLEVELBASE + 2:
             nextLineFoldLevel = 0
-        # Get Styling Range
-        control.StartStyling(startLineBeginPos, 0x1f)
-        lastEnd = startLineBeginPos
-        defaultStyle = ErlangHighlightType.DEFAULT
-
-        lineStart = startLineBeginPos
         while startLine <= endLine:
             currentLineFoldLevel = nextLineFoldLevel
-            lineEnd = control.GetLineEndPosition(startLine)
-            text = control.GetTextRange(lineStart, lineEnd)
+            text = control.GetLine(startLine)
             tokens = self.highlighter.GetHighlightingTokens(text)
             for token in tokens:
                 if (token.type in {ErlangHighlightType.FUNDEC,
@@ -59,11 +75,6 @@ class ErlangLexer(BaseLexer):
                         if prevFoldLevel == STC_FOLDLEVELHEADERFLAG | STC_FOLDLEVELBASE:
                             control.SetFoldLevel(startLine - 1, 0)
                     nextLineFoldLevel = 0
-                start = lineStart + token.start
-                if start > lastEnd:
-                    control.SetStyling(start - lastEnd, defaultStyle)
-                control.SetStyling(len(token.value), token.type)
-                lastEnd  = lineStart + token.end
             if currentLineFoldLevel == STC_FOLDLEVELBASE:
                 currentLineFoldLevel |= STC_FOLDLEVELHEADERFLAG
             if (currentLineFoldLevel == STC_FOLDLEVELHEADERFLAG | STC_FOLDLEVELBASE and
@@ -72,6 +83,3 @@ class ErlangLexer(BaseLexer):
             prevFoldLevel = currentLineFoldLevel
             control.SetFoldLevel(startLine, currentLineFoldLevel)
             startLine += 1
-            lineStart = control.PositionFromLine(startLine)
-        if lastEnd < endLineEndPos:
-            control.SetStyling(endLineEndPos - lastEnd, defaultStyle)
