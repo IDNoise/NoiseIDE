@@ -27,8 +27,8 @@
     types = [],  
     result,
     exported,
-    doc,
-    bif = false     
+    doc,  
+    bif = false        
 }).
 
 -record(content, {
