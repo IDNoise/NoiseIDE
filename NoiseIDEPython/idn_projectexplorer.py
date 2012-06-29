@@ -7,7 +7,7 @@ from threading import Thread, Event
 import fnmatch
 import wx
 import wx.lib.agw.customtreectrl as CT
-from watchdog.utils.dirsnapshot import DirectorySnapshot, DirectorySnapshotDiff
+#from watchdog.utils.dirsnapshot import DirectorySnapshot, DirectorySnapshotDiff
 
 bn = os.path.basename
 def extension(path):
@@ -34,13 +34,13 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         self.AddIconFromArt(self.DIRECTORY_OPEN, wx.ART_FILE_OPEN)
         self.AddIconFromArt(self.DIRECTORY_CLOSED, wx.ART_FOLDER)
         self.SetImageList(self.imageList)
-        self.timer = Timer(1.5, self.CheckDirectoryChanges)
-        self.timer.Start()
+        #self.timer = Timer(1.5, self.CheckDirectoryChanges)
+        #self.timer.Start()
 
 
     def SetRoot(self, path):
         self.root = path
-        self.dirSnapshot = DirectorySnapshot(path)
+        #self.dirSnapshot = DirectorySnapshot(path)
         rootNode = self.AddRoot(path)
         self.SetItemHasChildren(rootNode, True)
         self.SetItemImage(rootNode, self.iconIndex[self.DIRECTORY_CLOSED], wx.TreeItemIcon_Normal)
@@ -118,7 +118,8 @@ class ProjectExplorer(CT.CustomTreeCtrl):
                 return self.iconIndex[self.FILE]
 
     def StopTrackingProject(self):
-        self.timer.Cancel()
+        #self.timer.Cancel()
+        pass
 
     def CheckDirectoryChanges(self):
         #self.timer.start()
