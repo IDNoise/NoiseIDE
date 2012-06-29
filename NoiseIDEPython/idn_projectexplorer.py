@@ -7,12 +7,8 @@ from threading import Thread, Event
 import fnmatch
 import wx
 import wx.lib.agw.customtreectrl as CT
+from idn_utils import Extension
 #from watchdog.utils.dirsnapshot import DirectorySnapshot, DirectorySnapshotDiff
-
-bn = os.path.basename
-def extension(path):
-    name, ext = os.path.splitext(path)
-    return ext
 
 class ProjectExplorer(CT.CustomTreeCtrl):
     FILE, DIRECTORY_OPEN, DIRECTORY_CLOSED = range(3)
@@ -86,14 +82,14 @@ class ProjectExplorer(CT.CustomTreeCtrl):
                 self.SetItemImage(child, self.iconIndex[self.DIRECTORY_OPEN], wx.TreeItemIcon_Expanded)
                 self.Load(child, fpath)
             else:
-                if self.mask and extension(f) not in self.mask: continue
+                if self.mask and Extension(f) not in self.mask: continue
                 child = self.AppendItem(node, f)
                 icon = self.GetIconIndex(f)
                 self.SetItemImage(child, icon, wx.TreeItemIcon_Normal)
                 self.SetPyData(child, fpath)
 
     def GetIconIndex(self, fileName):
-        ext = extension(fileName)
+        ext = Extension(fileName)
         if ext in self.iconIndex:
             return self.iconIndex[ext]
         else:
