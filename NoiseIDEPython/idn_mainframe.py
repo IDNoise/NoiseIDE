@@ -41,6 +41,8 @@ class NoiseIDE(wx.Frame):
 
         self.explorer = ProjectExplorer(self)
         self.explorer.SetRoot(os.getcwd()) #test
+        self.explorer.SetMask([".py"]) #test
+        self.explorer.AddMask([".png"]) #test
 
         self.winmgr.AddPane1(self.explorer, aui.AuiPaneInfo().Left().Caption("Explorer")
             .MinimizeButton().CloseButton(False).BestSize2(300, 600))
@@ -60,6 +62,8 @@ class NoiseIDE(wx.Frame):
 
         self.winmgr.Update()
 
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
+
         self.AddTestTabs(10)
 
     def SetupMenu(self):
@@ -69,6 +73,10 @@ class NoiseIDE(wx.Frame):
         self.Bind(wx.EVT_MENU, self.OnQuit, fitem)
         self.menubar.Append(self.fileMenu, '&File')
         self.SetMenuBar(self.menubar)
+
+    def OnClose(self, event):
+        self.explorer.StopTrackingProject()
+        event.Skip()
 
     def OnQuit(self, event):
         self.Close()

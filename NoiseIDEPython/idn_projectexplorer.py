@@ -1,13 +1,22 @@
+import time
+
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 import os
+from threading import Thread, Event
+import fnmatch
 import wx
 import wx.lib.agw.customtreectrl as CT
+from watchdog.utils.dirsnapshot import DirectorySnapshot, DirectorySnapshotDiff
 
 bn = os.path.basename
+def extension(path):
+    name, ext = os.path.splitext(path)
+    return ext
 
 class ProjectExplorer(CT.CustomTreeCtrl):
     FILE, DIRECTORY_OPEN, DIRECTORY_CLOSED = range(3)
+
     def __init__(self, parent):
         style = wx.TR_MULTIPLE | \
                 wx.DIRCTRL_3D_INTERNAL | \
@@ -17,6 +26,7 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         CT.CustomTreeCtrl.__init__(self, parent, agwStyle = style)
 
         self.root = None
+        self.mask = []
 
         self.imageList = wx.ImageList(16, 16)
         self.iconIndex = {}
@@ -24,11 +34,13 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         self.AddIconFromArt(self.DIRECTORY_OPEN, wx.ART_FILE_OPEN)
         self.AddIconFromArt(self.DIRECTORY_CLOSED, wx.ART_FOLDER)
         self.SetImageList(self.imageList)
+        self.timer = Timer(1.5, self.CheckDirectoryChanges)
+        self.timer.Start()
 
 
     def SetRoot(self, path):
         self.root = path
-
+        self.dirSnapshot = DirectorySnapshot(path)
         rootNode = self.AddRoot(path)
         self.SetItemHasChildren(rootNode, True)
         self.SetItemImage(rootNode, self.iconIndex[self.DIRECTORY_CLOSED], wx.TreeItemIcon_Normal)
@@ -45,6 +57,14 @@ class ProjectExplorer(CT.CustomTreeCtrl):
                 self.iconIndex[id] = key
         except Exception, e:
             print e
+
+    def SetMask(self, mask):
+        self.mask = mask
+        self.DeleteAllItems()
+        self.SetRoot(self.root)
+
+    def AddMask(self, mask):
+        self.SetMask(self.mask + mask)
 
     def AddIconFromArt(self, id, image):
         icon = wx.ArtProvider_GetBitmap(image, wx.ART_OTHER, (16, 16))
@@ -66,13 +86,14 @@ class ProjectExplorer(CT.CustomTreeCtrl):
                 self.SetItemImage(child, self.iconIndex[self.DIRECTORY_OPEN], wx.TreeItemIcon_Expanded)
                 self.Load(child, fpath)
             else:
+                if self.mask and extension(f) not in self.mask: continue
                 child = self.AppendItem(node, f)
                 icon = self.GetIconIndex(f)
                 self.SetItemImage(child, icon, wx.TreeItemIcon_Normal)
                 self.SetPyData(child, fpath)
 
     def GetIconIndex(self, fileName):
-        name, ext = os.path.splitext(fileName)
+        ext = extension(fileName)
         if ext in self.iconIndex:
             return self.iconIndex[ext]
         else:
@@ -96,3 +117,35 @@ class ProjectExplorer(CT.CustomTreeCtrl):
             finally:
                 return self.iconIndex[self.FILE]
 
+    def StopTrackingProject(self):
+        self.timer.Cancel()
+
+    def CheckDirectoryChanges(self):
+        #self.timer.start()
+        #print "CheckDirectoryChanges" + self.root
+        if not self.root:
+            return
+        dirSnapshot = DirectorySnapshot(self.root)
+        diff = DirectorySnapshotDiff(self.dirSnapshot, dirSnapshot)
+        #print diff.files_modified
+        self.dirSnapshot = dirSnapshot
+
+
+class Timer(Thread):
+    def __init__(self, interval, function):
+        Thread.__init__(self)
+        self.interval = interval
+        self.function = function
+        self.finished = Event()
+
+    def Start(self):
+        self.start()
+
+    def Cancel(self):
+        self.finished.set()
+
+    def run(self):
+        while not self.finished.is_set():
+            self.finished.wait(self.interval)
+            if not self.finished.is_set():
+                self.function()
