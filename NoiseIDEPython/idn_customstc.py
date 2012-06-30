@@ -65,8 +65,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         EditorFoldMixin.__init__(self)
         EditorLineMarginMixin.__init__(self)
 
-        self.lexer = ErlangLexer()
-        self.SetLexer(stc.STC_LEX_CONTAINER)
+        self.SetupLexer()
         self.filePath = filePath
 
         self.SetCaretWidth(3)
@@ -119,27 +118,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.StyleSetFont(stc.STC_STYLE_DEFAULT, self.font)
         self.StyleClearAll()
         self.StyleSetBackground(stc.STC_STYLE_LINENUMBER, ColorSchema.codeEditor["line_number_area_background"])
-        self.StyleSetSpec(ErlangHighlightType.DEFAULT, ColorSchema.codeFormats["default"])
-        self.StyleSetSpec(ErlangHighlightType.STRING, ColorSchema.codeFormats["string"])
-        self.StyleSetSpec(ErlangHighlightType.COMMENT, ColorSchema.codeFormats["comment"])
-        self.StyleSetSpec(ErlangHighlightType.ARROW, ColorSchema.codeFormats["arrow"])
-        self.StyleSetSpec(ErlangHighlightType.VAR, ColorSchema.codeFormats["variable"])
-        self.StyleSetSpec(ErlangHighlightType.MACROS, ColorSchema.codeFormats["macros"])
-        self.StyleSetSpec(ErlangHighlightType.ATOM, ColorSchema.codeFormats["atom"])
-        self.StyleSetSpec(ErlangHighlightType.MODULE, ColorSchema.codeFormats["module"])
-        self.StyleSetSpec(ErlangHighlightType.SPEC, ColorSchema.codeFormats["preproc"])
-        self.StyleSetSpec(ErlangHighlightType.FUNCTION, ColorSchema.codeFormats["function"])
-        self.StyleSetSpec(ErlangHighlightType.KEYWORD, ColorSchema.codeFormats["keyword"])
-        self.StyleSetSpec(ErlangHighlightType.MODULEATTR, ColorSchema.codeFormats["moduleattr"])
-        self.StyleSetSpec(ErlangHighlightType.PREPROC, ColorSchema.codeFormats["preproc"])
-        self.StyleSetSpec(ErlangHighlightType.RECORD, ColorSchema.codeFormats["record"])
-        self.StyleSetSpec(ErlangHighlightType.RECORDDEF, ColorSchema.codeFormats["record"])
-        self.StyleSetSpec(ErlangHighlightType.NUMBER, ColorSchema.codeFormats["number"])
-        self.StyleSetSpec(ErlangHighlightType.FUNDEC, ColorSchema.codeFormats["fundec"])
-        self.StyleSetSpec(ErlangHighlightType.BRACKET, ColorSchema.codeFormats["bracket"])
-        self.StyleSetSpec(ErlangHighlightType.BIF, ColorSchema.codeFormats["bif"])
-        self.StyleSetSpec(ErlangHighlightType.FULLSTOP, ColorSchema.codeFormats["fullstop"])
-
+        self.SetupLanguageStyles()
         self.StyleSetBackground(stc.STC_STYLE_BRACELIGHT, ColorSchema.codeEditor["brace_background"])
         self.StyleSetForeground(stc.STC_STYLE_BRACELIGHT, ColorSchema.codeEditor["brace_foreground"])
         self.StyleSetBackground(stc.STC_STYLE_BRACEBAD, ColorSchema.codeEditor["brace_bad_background"])
@@ -155,6 +134,14 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
 
         #print(self.GetScrollWidth())
         #print(self.Size)
+
+    def SetupLexer(self):
+        self.lexer = None
+
+    def SetupLanguageStyles(self):
+        pass
+
+
 
     def FileName(self):
         return os.path.basename(self.filePath)
@@ -179,3 +166,30 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
             self.BraceHighlight(pos, otherPos)
         else:
             self.BraceBadLight(pos)
+
+class ErlangSTC(CustomSTC):
+    def SetupLexer(self):
+        self.lexer = ErlangLexer()
+        self.SetLexer(stc.STC_LEX_CONTAINER)
+
+    def SetupLanguageStyles(self):
+        self.StyleSetSpec(ErlangHighlightType.DEFAULT, ColorSchema.codeFormats["default"])
+        self.StyleSetSpec(ErlangHighlightType.STRING, ColorSchema.codeFormats["string"])
+        self.StyleSetSpec(ErlangHighlightType.COMMENT, ColorSchema.codeFormats["comment"])
+        self.StyleSetSpec(ErlangHighlightType.ARROW, ColorSchema.codeFormats["arrow"])
+        self.StyleSetSpec(ErlangHighlightType.VAR, ColorSchema.codeFormats["variable"])
+        self.StyleSetSpec(ErlangHighlightType.MACROS, ColorSchema.codeFormats["macros"])
+        self.StyleSetSpec(ErlangHighlightType.ATOM, ColorSchema.codeFormats["atom"])
+        self.StyleSetSpec(ErlangHighlightType.MODULE, ColorSchema.codeFormats["module"])
+        self.StyleSetSpec(ErlangHighlightType.SPEC, ColorSchema.codeFormats["preproc"])
+        self.StyleSetSpec(ErlangHighlightType.FUNCTION, ColorSchema.codeFormats["function"])
+        self.StyleSetSpec(ErlangHighlightType.KEYWORD, ColorSchema.codeFormats["keyword"])
+        self.StyleSetSpec(ErlangHighlightType.MODULEATTR, ColorSchema.codeFormats["moduleattr"])
+        self.StyleSetSpec(ErlangHighlightType.PREPROC, ColorSchema.codeFormats["preproc"])
+        self.StyleSetSpec(ErlangHighlightType.RECORD, ColorSchema.codeFormats["record"])
+        self.StyleSetSpec(ErlangHighlightType.RECORDDEF, ColorSchema.codeFormats["record"])
+        self.StyleSetSpec(ErlangHighlightType.NUMBER, ColorSchema.codeFormats["number"])
+        self.StyleSetSpec(ErlangHighlightType.FUNDEC, ColorSchema.codeFormats["fundec"])
+        self.StyleSetSpec(ErlangHighlightType.BRACKET, ColorSchema.codeFormats["bracket"])
+        self.StyleSetSpec(ErlangHighlightType.BIF, ColorSchema.codeFormats["bif"])
+        self.StyleSetSpec(ErlangHighlightType.FULLSTOP, ColorSchema.codeFormats["fullstop"])

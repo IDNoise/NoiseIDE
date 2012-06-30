@@ -3,6 +3,7 @@ from threading import Thread, Event
 __author__ = 'Yaroslav'
 
 import os
+import wx
 
 def extension(path):
     name, ext = os.path.splitext(path)
@@ -18,11 +19,18 @@ class Timer(Thread):
     def Start(self):
         self.start()
 
-    def Cancel(self):
-        self.finished.set()
+    def Stop(self):
+        if self.isAlive():
+            self.finished.set()
+            self.join()
 
     def run(self):
         while not self.finished.is_set():
             self.finished.wait(self.interval)
             if not self.finished.is_set():
                 self.function()
+
+class Menu(wx.Menu):
+    def AppendMenuItem(self, text, handlerObject, handler):
+        item = self.Append(wx.NewId(), text, text)
+        handlerObject.Bind(wx.EVT_MENU, handler, item)

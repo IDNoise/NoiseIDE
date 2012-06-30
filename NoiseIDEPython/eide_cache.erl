@@ -18,7 +18,7 @@
     gen_file_cache/1,
     gen_erlang_cache/0,
     gen_project_cache/0
-]).
+]). 
 
 -record(function, {  
     name,
@@ -30,7 +30,7 @@
     doc,  
     bif = false        
 }).
-
+ 
 -record(content, {
     module_name :: atom(),  
     file,

@@ -5,7 +5,7 @@ __author__ = 'Yaroslav Nikityshev aka IDNoise'
 import unittest
 import os
 import shutil
-from idn_projectexplorer import DirectoryInfo, DirectoryInfoDiff
+from idn_directoryinfo import DirectoryInfo, DirectoryInfoDiff
 
 class TestDirectoryInfoDiff(unittest.TestCase):
     def setUp(self):
@@ -43,6 +43,12 @@ class TestDirectoryInfoDiff(unittest.TestCase):
         self.assertEqual(len(diff.createdDirs), 1)
         self.assertEqual(len(diff.modifiedDirs), 1)
         self.assertEqual(len(diff.deletedDirs), 1)
+
+        import timeit
+        t = timeit.Timer("""
+from idn_directoryinfo import DirectoryInfo
+DirectoryInfo('D:\\Projects\\GIJoe\\server', True)""")
+        #print t.timeit(100)
 
     def createFile(self, name):
         f = file(os.path.join(self.root, name), 'w')

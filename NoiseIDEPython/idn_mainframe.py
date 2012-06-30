@@ -1,3 +1,5 @@
+from idn_project import loadProject
+
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 import os
@@ -5,36 +7,10 @@ import wx
 from wx.lib.agw import aui
 from idn_colorschema import ColorSchema
 from idn_customstc import CustomSTC
-from idn_projectexplorer import ProjectExplorer
+from idn_projectexplorer import ProjectExplorer, PythonProjectExplorer
 from idn_winmanager import Manager
-
-class Notebook(aui.AuiNotebook):
-    def __getitem__(self, index):
-        ''' More pythonic way to get a specific page, also useful for iterating
-            over all pages, e.g: for page in notebook: ... '''
-        if index < self.GetPageCount():
-            return self.GetPage(index)
-        else:
-            raise IndexError
-
-    def Pages(self):
-        return [self.GetPage(index) for index in range(self.GetPageCount())]
-
-#    def FloatPage(self, pageIndex):
-#        pageTitle = self.GetPageText(pageIndex)
-#        aui.AuiNotebook.FloatPage(self, pageIndex)
-#        rootManager = framemanager.GetManager(self)
-#        if rootManager and rootManager != self._mgr:
-#            pane = rootManager.GetPaneByName("__floating__{}".format(pageTitle))
-#            pane.MaximizeButton(True).MinimizeButton(True).DefaultPane()
-#            print(pane.frame)
-#            pane.Hide().Show()
-#            rootManager.Update()
-#    def OnEvent(self, event):
-#        event.Skip()
-#        print(event)
-
-
+from idn_notebook import  Notebook
+from idn_project import loadProject
 
 
 class NoiseIDE(wx.Frame):
@@ -48,27 +24,28 @@ class NoiseIDE(wx.Frame):
 
         agwFlags = aui.AUI_MGR_DEFAULT | aui.AUI_MGR_AUTONB_NO_CAPTION
         self.winmgr = Manager(self, agwFlags = agwFlags )
+        self.explorer = None
+        projectPath = "D:\\Projects\\GIJoe\\server\\gijoe.noiseide.project"
+        project = loadProject(projectPath)
+        self.SetExplorerForProject(project)
+        #print project
+        #self.explorer = PythonProjectExplorer(self)
+        #self.explorer.SetRoot(os.getcwd()) #test
 
-        self.explorer = ProjectExplorer(self)
-        self.explorer.SetRoot(os.getcwd()) #test
-        self.explorer.SetMask([".py"]) #test
-        self.explorer.AddMask([".png"]) #test
-
-        self.winmgr.AddPane1(self.explorer, aui.AuiPaneInfo().Left().Caption("Explorer")
-            .MinimizeButton().CloseButton(False).BestSize2(300, 600))
+        #self.winmgr.AddPane1(self.explorer, aui.AuiPaneInfo().Left().Caption("Explorer")
+        #    .MinimizeButton().CloseButton(False).BestSize2(300, 600))
 
         agwStyle = aui.AUI_NB_DEFAULT_STYLE | \
                    aui.AUI_NB_CLOSE_ON_ALL_TABS | \
                    aui.AUI_NB_SMART_TABS | \
                    aui.AUI_NB_TAB_FLOAT | \
                    aui.AUI_NB_WINDOWLIST_BUTTON
-        self.tabmgr = Notebook(self, agwStyle = agwStyle)
+        self.TabMgr = Notebook(self, agwStyle = agwStyle)
 
-        self.winmgr.AddPane1(self.tabmgr, aui.AuiPaneInfo().Center().Caption("Code Editor")
+        self.winmgr.AddPane1(self.TabMgr, aui.AuiPaneInfo().Center().Caption("Code Editor")
             .MaximizeButton().MinimizeButton().CloseButton(False).Floatable(False))
 
         self.SetupMenu()
-
 
         self.winmgr.Update()
 
@@ -76,10 +53,15 @@ class NoiseIDE(wx.Frame):
 
         #self.AddTestTabs(10)
 
+    def SetExplorerForProject(self, project):
+        self.explorer = project.CreateExplorer(self)
+        self.winmgr.AddPane1(self.explorer, aui.AuiPaneInfo().Left().Caption("Explorer")
+            .MinimizeButton().CloseButton(False).BestSize2(300, 600))
+
     def SetupMenu(self):
         self.menubar = wx.MenuBar()
         self.fileMenu = wx.Menu()
-        mOpen = self.fileMenu.Append(wx.NewId(), 'Open', 'Open')
+        mOpen = self.fileMenu.Append(wx.NewId(), 'Open File', 'Open File')
         self.fileMenu.AppendSeparator()
         mOpenProject = self.fileMenu.Append(wx.NewId(), 'Open Project', 'Open Project')
         self.fileMenu.AppendSeparator()
@@ -94,18 +76,14 @@ class NoiseIDE(wx.Frame):
         dialog = wx.FileDialog(
             self,
             message = "Select file",
-            wildcard = "*.erl",
+            #wildcard = "*.erl",
             style = wx.FD_MULTIPLE | wx.FD_OPEN | wx.FD_FILE_MUST_EXIST
         )
         if dialog.ShowModal() == wx.ID_OK:
             files = dialog.GetFilenames()
             dirname = dialog.GetDirectory()
-            openedFiles = [p.filePath for p in self.tabmgr.Pages()]
-            for f in files:
-                f = os.path.join(dirname, f)
-                if f in openedFiles: continue
-                editor = CustomSTC(self, os.path.join(os.getcwd(), f))
-                self.tabmgr.AddPage(editor, editor.FileName())
+            for file in files:
+                self.TabMgr.LoadFile(os.path.join(dirname, file))
         dialog.Destroy()
 
     def OnOpenProject(self, event):
@@ -125,7 +103,8 @@ class NoiseIDE(wx.Frame):
         pass
 
     def OnClose(self, event):
-        self.explorer.StopTrackingProject()
+        if self.explorer:
+            self.explorer.StopTrackingProject()
         event.Skip()
 
     def OnQuit(self, event):
@@ -137,8 +116,7 @@ class NoiseIDE(wx.Frame):
 
     def AddTestTabs(self, amount):
         for i in range(amount):
-            editor = CustomSTC(self, os.path.join(os.getcwd(), "eide_cache.erl"))
-            self.tabmgr.AddPage(editor, editor.FileName() + str(i))
+            self.TabMgr.LoadFile(os.path.join(os.getcwd(), "eide_cache.erl"))
 
 class App(wx.App):
     def __init__(self):
