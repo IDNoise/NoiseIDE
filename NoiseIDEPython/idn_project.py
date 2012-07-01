@@ -1,4 +1,5 @@
 import time
+from idn_console import ErlangIDEConsole
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
@@ -6,11 +7,11 @@ __author__ = 'Yaroslav Nikityshev aka IDNoise'
 import os
 import yaml
 import idn_projectexplorer
-import idn_connect as connect
 
 class Project:
     EXPLORER_TYPE = idn_projectexplorer.ProjectExplorer
-    def __init__(self, filePath, projectData):
+    def __init__(self, window, filePath, projectData):
+        self.window = window
         self.projectFilePath = filePath
         self.projectDir = os.path.dirname(filePath)
         self.projectData = projectData
@@ -20,8 +21,8 @@ class Project:
     def OnLoadProject(self):
         raise NotImplementedError
 
-    def CreateExplorer(self, parent):
-        explorer = self.EXPLORER_TYPE(parent)
+    def CreateExplorer(self):
+        explorer = self.EXPLORER_TYPE(self.window)
         explorer.SetRoot(self.projectDir)
         return explorer
 
@@ -33,19 +34,21 @@ class ErlangProject(Project):
 
     def OnLoadProject(self):
         #connect.ErlangProcess()
-        self.shell = connect.ErlangSubprocess(os.getcwd(), [])
-        self.shell.Start()
-        #self.erlangShell.ExecCommand(u'[io:format("~p~n", [V]) || V <- lists:seq(1, 1000)].')
-        #self.erlangShell.ExecCommand(u'[io:format("~p~n", [V]) || V <- lists:seq(1000, 3000)].')
-        #print "loading erlang project"
+        self.AddConsoles()
+
+
+
+    def AddConsoles(self):
+        self.shellConsole = ErlangIDEConsole(self.window.ToolMgr)
+        self.window.ToolMgr.AddPage(self.shellConsole, "IDE Console")
 
     def Close(self):
-        self.shell.Stop()
+        self.shellConsole.Stop()
 
-def loadProject(filePath):
+def loadProject(window, filePath):
     TYPE_PROJECT_DICT = {
         "erlang": ErlangProject
     }
     projectData = yaml.load(file(filePath, 'r'))
     type = projectData["project_type"]
-    return TYPE_PROJECT_DICT[type](filePath, projectData)
+    return TYPE_PROJECT_DICT[type](window, filePath, projectData)

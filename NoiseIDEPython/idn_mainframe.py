@@ -26,15 +26,6 @@ class NoiseIDE(wx.Frame):
         agwFlags = aui.AUI_MGR_DEFAULT | aui.AUI_MGR_AUTONB_NO_CAPTION
         self.winmgr = Manager(self, agwFlags = agwFlags )
         self.explorer = None
-        projectPath = "D:\\Projects\\GIJoe\\server\\gijoe.noiseide.project"
-        self.project = loadProject(projectPath)
-        self.SetExplorerForProject(self.project)
-        #print project
-        #self.explorer = PythonProjectExplorer(self)
-        #self.explorer.SetRoot(os.getcwd()) #test
-
-        #self.winmgr.AddPane1(self.explorer, aui.AuiPaneInfo().Left().Caption("Explorer")
-        #    .MinimizeButton().CloseButton(False).BestSize2(300, 600))
 
         agwStyle = aui.AUI_NB_DEFAULT_STYLE | \
                    aui.AUI_NB_CLOSE_ON_ALL_TABS | \
@@ -43,8 +34,13 @@ class NoiseIDE(wx.Frame):
                    aui.AUI_NB_WINDOWLIST_BUTTON
         self.TabMgr = Notebook(self, agwStyle = agwStyle)
 
-        self.winmgr.AddPane1(self.TabMgr, aui.AuiPaneInfo().Center().Caption("Code Editor")
+        self.winmgr.AddPane1(self.TabMgr, aui.AuiPaneInfo().Center()#.Caption("Code Editor")
             .MaximizeButton().MinimizeButton().CloseButton(False).Floatable(False))
+
+        agwStyle = aui.AUI_NB_DEFAULT_STYLE ^ aui.AUI_NB_CLOSE_ON_ACTIVE_TAB
+        self.ToolMgr = aui.AuiNotebook(self, agwStyle = agwStyle)
+        self.winmgr.AddPane1(self.ToolMgr, aui.AuiPaneInfo().Bottom()#.Caption("Tools")
+            .MaximizeButton().MinimizeButton().CloseButton(False).Floatable(False).BestSize(400, 300))
 
         self.SetupMenu()
 
@@ -52,10 +48,15 @@ class NoiseIDE(wx.Frame):
 
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
+        projectPath = "D:\\Projects\\GIJoe\\server\\gijoe.noiseide.project"
+        self.project = loadProject(self, projectPath)
+        self.SetExplorerForProject(self.project)
+        self.winmgr.Update()
+
         #self.AddTestTabs(10)
 
     def SetExplorerForProject(self, project):
-        self.explorer = project.CreateExplorer(self)
+        self.explorer = project.CreateExplorer()
         self.winmgr.AddPane1(self.explorer, aui.AuiPaneInfo().Left().Caption("Explorer")
             .MinimizeButton().CloseButton(False).BestSize2(300, 600))
 

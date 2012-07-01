@@ -59,7 +59,7 @@ class EditorLineMarginMixin:
         raise NotImplementedError
 
 class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
-    def __init__(self, parent, filePath):
+    def __init__(self, parent, filePath = None):
         #style = wx.MAXIMIZE_BOX|wx.RESIZE_BORDER|wx.SYSTEM_MENU|wx.CAPTION|wx.CLOSE_BOX
         StyledTextCtrl.__init__(self, parent)#, style = style)
         EditorFoldMixin.__init__(self)
@@ -131,8 +131,9 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
 
         self.EnableLineNumbers()
 
-        self.LoadFile(self.filePath)
-        self.SetSelection(0, 0)
+        if self.filePath:
+            self.LoadFile(self.filePath)
+            self.SetSelection(0, 0)
 
         #print(self.GetScrollWidth())
         #print(self.Size)
@@ -216,3 +217,18 @@ class ErlangSTC(CustomSTC):
         self.StyleSetSpec(ErlangHighlightType.BRACKET, formats["bracket"])
         self.StyleSetSpec(ErlangHighlightType.BIF, formats["bif"])
         self.StyleSetSpec(ErlangHighlightType.FULLSTOP, formats["fullstop"])
+
+class ConsoleSTC(CustomSTC):
+    def __init__(self, parent):
+        CustomSTC.__init__(self, parent)
+        self.EnableLineNumbers(False)
+        self.SetCaretWidth(1)
+        self.SetCaretLineBackground(ColorSchema.codeEditor["current_line_background"])
+        self.SetCaretLineVisible(True)
+
+        self.SetScrollWidth(500)
+        self.SetReadOnly(True)
+
+        self.SetMarginWidth(2, 0)
+
+        self.SetEdgeMode(stc.STC_EDGE_NONE)

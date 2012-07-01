@@ -11,7 +11,6 @@ class Config:
         stream = file(path, 'r')
         cls.data = yaml.load(stream)
         cls.languagePaths = cls.data["languages"]
-        __builtin__.ideConfig = cls
 
     @classmethod
     def LanguageExec(cls, language):
