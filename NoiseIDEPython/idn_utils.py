@@ -12,6 +12,7 @@ def extension(path):
 class Timer(Thread):
     def __init__(self, interval, function):
         Thread.__init__(self)
+        self.setDaemon(True)
         self.interval = interval
         self.function = function
         self.finished = Event()
@@ -22,7 +23,6 @@ class Timer(Thread):
     def Stop(self):
         if self.isAlive():
             self.finished.set()
-            self.join()
 
     def run(self):
         while not self.finished.is_set():

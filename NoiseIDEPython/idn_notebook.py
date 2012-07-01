@@ -2,10 +2,12 @@ __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 from wx.lib.agw import aui
 from idn_utils import extension
-from idn_customstc import CustomSTC, ErlangSTC
+from idn_customstc import CustomSTC, ErlangSTC, YAMLSTC, PythonSTC
 
 EXT_STC_TYPE = {
-    ".erl": ErlangSTC
+    ".erl": ErlangSTC,
+    ".yaml": YAMLSTC,
+    ".py": PythonSTC
 }
 
 class Notebook(aui.AuiNotebook):

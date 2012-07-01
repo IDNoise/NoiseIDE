@@ -124,8 +124,10 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.StyleSetBackground(stc.STC_STYLE_BRACEBAD, ColorSchema.codeEditor["brace_bad_background"])
         self.StyleSetForeground(stc.STC_STYLE_BRACEBAD, ColorSchema.codeEditor["brace_bad_foreground"])
 
-        self.Bind(stc.EVT_STC_STYLENEEDED, self.OnStyleNeeded)
+        if hasattr(self, "lexer"):
+            self.Bind(stc.EVT_STC_STYLENEEDED, self.OnStyleNeeded)
         self.Bind(stc.EVT_STC_UPDATEUI, self.HighlightBrackets)
+        self.Bind(stc.EVT_STC_CHARADDED, self.OnCharAdded)
 
         self.EnableLineNumbers()
 
@@ -141,7 +143,18 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
     def SetupLanguageStyles(self):
         pass
 
+    def OnCharAdded(self, event):
+        keyCode = event.GetKey()
+        #print keyCode
+        if keyCode in [wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER]:
+            self.DoIndent()
+            print "return pressed"
+        event.Skip()
 
+    def DoIndent(self):
+        prevIndent = self.GetLineIndentation(self.CurrentLine - 1)
+        self.InsertText(self.CurrentPos, " " * prevIndent)
+        self.GotoPos(self.GetLineEndPosition(self.CurrentLine))
 
     def FileName(self):
         return os.path.basename(self.filePath)
@@ -152,7 +165,8 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
     def OnStyleNeeded(self, event):
         if self.lexer:
             self.lexer.StyleEvent(event)
-        event.Skip()
+        else:
+            event.Skip()
 
     def HighlightBrackets(self, event):
         event.Skip()
@@ -167,29 +181,38 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         else:
             self.BraceBadLight(pos)
 
+class PythonSTC(CustomSTC):
+    def SetupLexer(self):
+        self.SetLexer(stc.STC_LEX_PYTHON)
+
+class YAMLSTC(CustomSTC):
+    def SetupLexer(self):
+        self.SetLexer(stc.STC_LEX_YAML)
+
 class ErlangSTC(CustomSTC):
     def SetupLexer(self):
         self.lexer = ErlangLexer()
         self.SetLexer(stc.STC_LEX_CONTAINER)
 
     def SetupLanguageStyles(self):
-        self.StyleSetSpec(ErlangHighlightType.DEFAULT, ColorSchema.codeFormats["default"])
-        self.StyleSetSpec(ErlangHighlightType.STRING, ColorSchema.codeFormats["string"])
-        self.StyleSetSpec(ErlangHighlightType.COMMENT, ColorSchema.codeFormats["comment"])
-        self.StyleSetSpec(ErlangHighlightType.ARROW, ColorSchema.codeFormats["arrow"])
-        self.StyleSetSpec(ErlangHighlightType.VAR, ColorSchema.codeFormats["variable"])
-        self.StyleSetSpec(ErlangHighlightType.MACROS, ColorSchema.codeFormats["macros"])
-        self.StyleSetSpec(ErlangHighlightType.ATOM, ColorSchema.codeFormats["atom"])
-        self.StyleSetSpec(ErlangHighlightType.MODULE, ColorSchema.codeFormats["module"])
-        self.StyleSetSpec(ErlangHighlightType.SPEC, ColorSchema.codeFormats["preproc"])
-        self.StyleSetSpec(ErlangHighlightType.FUNCTION, ColorSchema.codeFormats["function"])
-        self.StyleSetSpec(ErlangHighlightType.KEYWORD, ColorSchema.codeFormats["keyword"])
-        self.StyleSetSpec(ErlangHighlightType.MODULEATTR, ColorSchema.codeFormats["moduleattr"])
-        self.StyleSetSpec(ErlangHighlightType.PREPROC, ColorSchema.codeFormats["preproc"])
-        self.StyleSetSpec(ErlangHighlightType.RECORD, ColorSchema.codeFormats["record"])
-        self.StyleSetSpec(ErlangHighlightType.RECORDDEF, ColorSchema.codeFormats["record"])
-        self.StyleSetSpec(ErlangHighlightType.NUMBER, ColorSchema.codeFormats["number"])
-        self.StyleSetSpec(ErlangHighlightType.FUNDEC, ColorSchema.codeFormats["fundec"])
-        self.StyleSetSpec(ErlangHighlightType.BRACKET, ColorSchema.codeFormats["bracket"])
-        self.StyleSetSpec(ErlangHighlightType.BIF, ColorSchema.codeFormats["bif"])
-        self.StyleSetSpec(ErlangHighlightType.FULLSTOP, ColorSchema.codeFormats["fullstop"])
+        formats = ColorSchema.LanguageFormats("erlang")
+        self.StyleSetSpec(ErlangHighlightType.DEFAULT, formats["default"])
+        self.StyleSetSpec(ErlangHighlightType.STRING, formats["string"])
+        self.StyleSetSpec(ErlangHighlightType.COMMENT, formats["comment"])
+        self.StyleSetSpec(ErlangHighlightType.ARROW, formats["arrow"])
+        self.StyleSetSpec(ErlangHighlightType.VAR, formats["variable"])
+        self.StyleSetSpec(ErlangHighlightType.MACROS, formats["macros"])
+        self.StyleSetSpec(ErlangHighlightType.ATOM, formats["atom"])
+        self.StyleSetSpec(ErlangHighlightType.MODULE, formats["module"])
+        self.StyleSetSpec(ErlangHighlightType.SPEC, formats["preproc"])
+        self.StyleSetSpec(ErlangHighlightType.FUNCTION, formats["function"])
+        self.StyleSetSpec(ErlangHighlightType.KEYWORD, formats["keyword"])
+        self.StyleSetSpec(ErlangHighlightType.MODULEATTR, formats["moduleattr"])
+        self.StyleSetSpec(ErlangHighlightType.PREPROC, formats["preproc"])
+        self.StyleSetSpec(ErlangHighlightType.RECORD, formats["record"])
+        self.StyleSetSpec(ErlangHighlightType.RECORDDEF, formats["record"])
+        self.StyleSetSpec(ErlangHighlightType.NUMBER, formats["number"])
+        self.StyleSetSpec(ErlangHighlightType.FUNDEC, formats["fundec"])
+        self.StyleSetSpec(ErlangHighlightType.BRACKET, formats["bracket"])
+        self.StyleSetSpec(ErlangHighlightType.BIF, formats["bif"])
+        self.StyleSetSpec(ErlangHighlightType.FULLSTOP, formats["fullstop"])

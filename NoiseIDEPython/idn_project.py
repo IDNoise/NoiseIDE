@@ -1,10 +1,12 @@
+import time
+
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 #from idn_utils import extension
 import os
 import yaml
 import idn_projectexplorer
-
+import idn_connect as connect
 
 class Project:
     EXPLORER_TYPE = idn_projectexplorer.ProjectExplorer
@@ -23,12 +25,22 @@ class Project:
         explorer.SetRoot(self.projectDir)
         return explorer
 
+    def Close(self):
+        pass
+
 class ErlangProject(Project):
     EXPLORER_TYPE = idn_projectexplorer.ErlangProjectExplorer
 
     def OnLoadProject(self):
-        print "loading erlang project"
+        #connect.ErlangProcess()
+        self.shell = connect.ErlangSubprocess(os.getcwd(), [])
+        self.shell.Start()
+        #self.erlangShell.ExecCommand(u'[io:format("~p~n", [V]) || V <- lists:seq(1, 1000)].')
+        #self.erlangShell.ExecCommand(u'[io:format("~p~n", [V]) || V <- lists:seq(1000, 3000)].')
+        #print "loading erlang project"
 
+    def Close(self):
+        self.shell.Stop()
 
 def loadProject(filePath):
     TYPE_PROJECT_DICT = {

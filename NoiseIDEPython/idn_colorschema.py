@@ -10,4 +10,8 @@ class ColorSchema:
         stream = file(path, 'r')
         cls.schemaFile = yaml.load(stream)
         cls.codeEditor = cls.schemaFile["code_editor"]
-        cls.codeFormats = cls.codeEditor["formats"]
+        cls.codeLanguages = cls.codeEditor["languages"]
+
+    @classmethod
+    def LanguageFormats(cls, language):
+        return cls.codeLanguages[language]

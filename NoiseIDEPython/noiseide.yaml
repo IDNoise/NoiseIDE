@@ -1,0 +1,5 @@
+user_name: "Yaroslav 'IDNoise' Nikityshev"
+flymake: true
+color_schema: dark
+languages:
+  erlang: 'C:\\Programming\\erl5.9\\bin\\erl'

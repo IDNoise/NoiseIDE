@@ -11,13 +11,14 @@ from idn_projectexplorer import ProjectExplorer, PythonProjectExplorer
 from idn_winmanager import Manager
 from idn_notebook import  Notebook
 from idn_project import loadProject
-
+from idn_config import Config
 
 class NoiseIDE(wx.Frame):
     def __init__(self, *args, **kwargs):
         wx.Frame.__init__(self, None, wx.ID_ANY, 'Noise IDE', size = (1680, 1050))
 
-        ColorSchema.load("dark")
+        Config.load()
+        ColorSchema.load(Config.GetProp("color_schema"))
 
         icon = wx.Icon('data/images/icon.png', wx.BITMAP_TYPE_PNG, 16, 16)
         self.SetIcon(icon)
@@ -26,8 +27,8 @@ class NoiseIDE(wx.Frame):
         self.winmgr = Manager(self, agwFlags = agwFlags )
         self.explorer = None
         projectPath = "D:\\Projects\\GIJoe\\server\\gijoe.noiseide.project"
-        project = loadProject(projectPath)
-        self.SetExplorerForProject(project)
+        self.project = loadProject(projectPath)
+        self.SetExplorerForProject(self.project)
         #print project
         #self.explorer = PythonProjectExplorer(self)
         #self.explorer.SetRoot(os.getcwd()) #test
@@ -100,11 +101,12 @@ class NoiseIDE(wx.Frame):
 
     def OpenProject(self, projectFile):
         print "loading project ", projectFile
-        pass
 
     def OnClose(self, event):
         if self.explorer:
             self.explorer.StopTrackingProject()
+        if self.project:
+            self.project.Close()
         event.Skip()
 
     def OnQuit(self, event):
