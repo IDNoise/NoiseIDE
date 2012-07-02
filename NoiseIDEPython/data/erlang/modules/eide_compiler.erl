@@ -63,7 +63,6 @@ compile_internal(FileName, Options, ToBinary, RealPath) ->
                        [debug_info | Options1] -- [strong_validation];
                    _ -> Options1
                end,
-                       
     Result = compile:file(FileName, Options2),
     {E, W} = case Result of 
                  {ok, _Module, Warnings} ->

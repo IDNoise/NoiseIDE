@@ -1,3 +1,4 @@
+import asyncore
 import wx
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
@@ -208,10 +209,26 @@ class SocketReaderThread(Thread):
         self.active.clear()
         self.join()
 
-class ErlangSocketConnection():
+class AsyncoreThread(Thread):
     def __init__(self):
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.settimeout(1)
+        Thread.__init__(self)
+        self.active = Event()
+
+    def Start(self):
+        self.active.set()
+        self.start()
+
+    def Stop(self):
+        self.active.clear()
+
+    def run(self):
+        while self.active.is_set():
+            asyncore.poll(0.1)
+
+class ErlangSocketConnection(asyncore.dispatcher):
+    def __init__(self):
+        asyncore.dispatcher.__init__(self)
+        self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socketQueue = Queue()
         self.socketHandler = None
 
@@ -222,14 +239,25 @@ class ErlangSocketConnection():
         return 55555
 
     def Start(self):
-        try:
-            self.socket.connect((self.Host(), self.Port()))
-        finally:
-            return
+        self.connect((self.Host(), self.Port()))
+        self.asyncoreThread = AsyncoreThread()
+        self.asyncoreThread.Start()
         self.OnConnect()
 
     def Stop(self):
-        self.socket.close()
+        self.asyncoreThread.Stop()
+        self.close()
+
+    def handle_connect(self):
+        print "connect"
+        #self.OnConnect()
+
+    def writable(self):
+        return not self.socketQueue.empty()
+
+    def handle_close(self):
+        print "close"
+        self.close()
 
     def handle_write(self):
         print 'handle_write'
@@ -237,6 +265,7 @@ class ErlangSocketConnection():
         if cmd:
             msgLen = struct.pack('>H', len(cmd))
             msg = msgLen + cmd
+            print msg
             self.send(msg)
 
     def handle_read(self):
@@ -285,7 +314,11 @@ class ErlangProcess(Process):
         self.Bind(wx.EVT_TIMER, self.OnTimer)
 
     def SendCommandToProcess(self, cmd):
-        self.processQueue.put(cmd)
+        cmd += '\n'
+        if self.handler:
+            self.handler(cmd)
+        self.outputStream.write(cmd)
+        self.outputStream.flush()
 
     def Start(self):
         cwd = os.getcwd()
@@ -296,18 +329,11 @@ class ErlangProcess(Process):
         self.inputStream = self.GetInputStream()
         self.outputStream = self.GetOutputStream()
 
-    def OnTimer(self, event):
+    def OnTimer(self, event = None):
         if  self.inputStream.CanRead():
             text =  self.inputStream.read()
             if self.handler:
                 self.handler(text)
-        if not self.processQueue.empty():
-            cmd = self.processQueue.get()
-            cmd += '\n'
-            if self.handler:
-                self.handler(cmd)
-            self.outputStream.write(cmd)
-            self.outputStream.flush()
 
     def SetOutputHandler(self, handler):
         self.handler = handler
@@ -341,89 +367,9 @@ class ErlangProcessWithConnection(ErlangProcess, ErlangSocketConnection):
         cacheDir = os.path.join(os.getcwd(), "cache", "erlang")
         if not os.path.isdir(cacheDir):
             os.makedirs(cacheDir)
-        self.SetProp("cache_dir", cacheDir)
+        self.SetProp("cache_dir", erlstr(cacheDir))
         self.CompileFile("eide_cache.erl")
+        #self.CompileFile("d:/Projects/NoiseIDE/NoiseIDEPython/data/erlang/modules/eide_cache.erl")
 
-
-#class ErlangSocketConnection(asyncore.dispatcher):
-#    def __init__(self):
-#        asyncore.dispatcher.__init__(self)
-#        self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
-#        self.socketQueue = Queue()
-#        self.socketHandler = None
-#
-#    def Host(self):
-#        return "127.0.0.1"
-#
-#    def Port(self):
-#        return 55555
-#
-#    def Start(self):
-#        #time.sleep(1)
-#        #self.settimeout(1)
-#        #self.connect((self.Host(), self.Port()))
-#        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#        #s.settimeout(10)
-#        #s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-#        s.connect((self.Host(), self.Port()))
-#        # self.asyncoreThread = AsyncoreThread()
-#        #self.asyncoreThread.start()
-#
-#
-#    def Stop(self):
-#        self.close()
-#
-#    def handle_connect(self):
-#        print 'handle_connect'
-#        self.OnConnect()
-#
-#    def handle_close(self):
-#        print "handle_close"
-#        self.close()
-#
-#    def writable(self):
-#        print 'writable'
-#        return not self.socketQueue.empty()
-#
-#    def handle_write(self):
-#        print 'handle_write'
-#        cmd = self.socketQueue.get()
-#        if cmd:
-#            msgLen = struct.pack('>H', len(cmd))
-#            msg = msgLen + cmd
-#            self.send(msg)
-#
-#    def handle_connect(self):
-#        print 'handle_connect'
-#
-#    def handle_read(self):
-#        print 'handle_read'
-#        recv = self.socket.recv(2)
-#        if recv:
-#            msgLen = struct.unpack('>H', recv)[0]
-#            data = self.socket.recv(msgLen)
-#            if self.socketHandler:
-#                self.socketHandler(data)
-#
-#    def SetSocketHandler(self, handler):
-#        self.socketHandler = handler
-#
-#    def _ExecRequest(self, action, data):
-#        request = '{' + '"action": "{}", "data": {}'.format(action, data) + '}'
-#        self.socketQueue.put_nowait(request)
-#
-#    def CompileFile(self, file):
-#        self._ExecRequest("compile_file", '"{}"'.format(file))
-#
-#    def Rpc(self, module, fun):
-#        self._ExecRequest("rpc", '["{0}", "{1}"]'.format(module, fun))
-#
-#    def SetProp(self, prop, value):
-#        self._ExecRequest("set_prop", '["{0}", "{1}"]'.format(prop, value))
-#
-#    def RemoveProp(self, prop):
-#        self._ExecRequest("remove_prop", '"{}"'.format(prop))
-
-#class AsyncoreThread(Thread):
-#    def run(self):
-#        asyncore.loop()
+def erlstr(str):
+    return str.replace("\\", "/")
