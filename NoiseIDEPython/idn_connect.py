@@ -89,8 +89,12 @@ class ErlangSocketConnection(asyncore.dispatcher):
 
     def _ExecRequest(self, action, data):
         request = '{' + '"action": "{}", "data": {}'.format(action, data) + '}'
-        self.socketQueue.put_nowait(request)
+        self.socketQueue.put(request)
 
+    def OnConnect(self):
+        pass
+
+class ErlangIDEConnectAPI(ErlangSocketConnection):
     def CompileFile(self, file):
         self._ExecRequest("compile_file", '"{}"'.format(file))
 
@@ -103,8 +107,24 @@ class ErlangSocketConnection(asyncore.dispatcher):
     def RemoveProp(self, prop):
         self._ExecRequest("remove_prop", '"{}"'.format(prop))
 
-    def OnConnect(self):
-        pass
+    def CompileProjectFile(self, file, app):
+        self._ExecRequest("compile_project_file", '["{0}", "{1}"]'.format(erlstr(file), app))
+
+    def GenerateFileCache(self, file):
+        self._ExecRequest("gen_file_cache", '"{}"'.format(erlstr(file)))
+
+    def GenerateErlangCache(self):
+        self._ExecRequest("gen_erlang_cache", '[]')
+
+    def GenerateProjectCache(self):
+        self._ExecRequest("gen_project_cache", '[]')
+
+    def AddPath(self, path):
+        self._ExecRequest("add_path", '"{}"'.format(erlstr(path)))
+
+    def RemovePath(self, path):
+        self._ExecRequest("add_path", '"{}"'.format(erlstr(path)))
+
 
 class ErlangProcess(Process):
     def __init__(self, cwd = os.getcwd(), params = []):
@@ -157,7 +177,7 @@ class ErlangProcess(Process):
         if self.timer:
             self.timer.Stop()
 
-class ErlangProcessWithConnection(ErlangProcess, ErlangSocketConnection):
+class ErlangProcessWithConnection(ErlangProcess, ErlangIDEConnectAPI):
     def __init__(self, cwd):
         ErlangProcess.__init__(self, cwd)
         ErlangSocketConnection.__init__(self)

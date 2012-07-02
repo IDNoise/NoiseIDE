@@ -13,13 +13,12 @@
 
 start(Port) ->
     {ok, LS} = gen_tcp:listen(Port, [binary, {active, false}, {reuseaddr, true}, {packet, 2}]),
-    %accept(LS). 
+    ets:new(props, [named_table, public]),
     spawn(fun() -> accept(LS) end). 
 
 accept(LS) ->
     gen_tcp:controlling_process(LS, self()),
     {ok, Socket} = gen_tcp:accept(LS),
-    ets:new(props, [named_table, public]),
     %io:format("accepted"),
     AcceptResponce = mochijson2:encode({struct, [{response, connect}]}), 
     gen_tcp:send(Socket, AcceptResponce),
@@ -120,8 +119,8 @@ execute_action(compile_file, PathBinary) ->
     Path = binary_to_list(PathBinary),
     eide_compiler:compile_simple(Path);
 execute_action(compile_project_file, PathBinary) ->
-    [FileName, App, AppsPath] = PathBinary,
-    eide_compiler:compile(binary_to_list(FileName), binary_to_list(App), binary_to_list(AppsPath));
+    [FileName, App] = PathBinary,
+    eide_compiler:compile(binary_to_list(FileName), binary_to_list(App));
 execute_action(Action, Data) ->
     io:format("Unknown action ~p with data ~p~n", [Action, Data]),
     undefined.

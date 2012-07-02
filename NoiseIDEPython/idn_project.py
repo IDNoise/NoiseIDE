@@ -1,3 +1,5 @@
+import time
+
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 #from idn_utils import extension
@@ -41,26 +43,42 @@ class ErlangProject(Project):
     EXPLORER_TYPE = exp.ErlangProjectExplorer
 
     def OnLoadProject(self):
-        #connect.ErlangProcess()
+        self.SetupDirs()
         self.AddConsoles()
-        self.CompileAll()
+        self.CompileProject()
         self.explorer.Bind(exp.EVT_PROJECT_FILE_MODIFIED, self.OnProjectFileModified)
 
+    def SetupDirs(self):
+        self.cacheDir = os.path.join(os.getcwd(), "cache", "erlang")
+        erlangLibsCacheDir =  os.path.join(self.cacheDir, "erlang")
+        otherCacheDir =  os.path.join(self.cacheDir, "other")
+        projectCacheDir =  os.path.join(self.cacheDir, self.ProjectName())
+        for dir in [self.cacheDir, erlangLibsCacheDir, otherCacheDir, projectCacheDir]:
+            if not os.path.isdir(dir):
+                os.makedirs(dir)
 
     def AddConsoles(self):
         self.shellConsole = ErlangIDEConsole(self.window.ToolMgr, self.IDE_MODULES_DIR)
+        self.shellConsole.shell.SetProp("cache_dir", self.cacheDir)
         self.shellConsole.shell.SetProp("project_dir", self.AppsPath())
         self.shellConsole.shell.SetProp("project_name", self.ProjectName())
-        cacheDir = os.path.join(os.getcwd(), "cache", "erlang")
-        if not os.path.isdir(cacheDir):
-            os.makedirs(cacheDir)
-        self.shellConsole.shell.SetProp("cache_dir", cacheDir)
-
+        #time.sleep(0.1)
+        print "setting props"
         self.window.ToolMgr.AddPage(self.shellConsole, "IDE Console")
 
         self.consoles = {}
         consoles = self.projectData["consoles"]
-        print consoles
+        #print consoles
+
+        dirs = ""
+        for app in self.projectData["apps"]:
+            appPath = os.path.join(self.AppsPath(), app)
+            if os.path.isdir(appPath):
+                ebinDir = os.path.join(appPath, "ebin")
+                self.shellConsole.shell.AddPath(ebinDir)
+                dirs += ' "{}"'.format(ebinDir)
+        dirs += ' "{}"'.format(self.IDE_MODULES_DIR)
+
         for title in consoles:
             print title
             data = consoles[title]
@@ -68,13 +86,6 @@ class ErlangProject(Project):
             params.append("-sname " + data["sname"])
             params.append("-cookie " + data["cookie"])
             params.append("-config " + data["config"])
-
-            dirs = ""
-            for app in self.projectData["apps"]:
-                appPath = os.path.join(self.AppsPath(), app)
-                if os.path.isdir(appPath):
-                    dirs += ' "{}"'.format(os.path.join(appPath, "ebin"))
-            dirs += ' "{}"'.format(self.IDE_MODULES_DIR)
 
             params.append("-pa " + dirs)
             #print params
@@ -89,10 +100,27 @@ class ErlangProject(Project):
         self.shellConsole.shell.CompileFile(event.File)
         print event.File
 
-    def CompileAll(self):
+    def CompileProject(self):
+        print "compile project"
+        filesToCompile = set()
+        filesToCache = set()
         for app in self.projectData["apps"]:
             srcPath = os.path.join(os.path.join(self.AppsPath(), app), "src")
             includePath = os.path.join(os.path.join(self.AppsPath(), app), "include")
+            for path in [srcPath, includePath]:
+                for root, _, files in os.walk(path):
+                    for file in files:
+                        file = os.path.join(root, file)
+                        if file.endswith(".erl"):
+                            filesToCompile.add((app, file))
+                        elif file.endswith(".hrl"):
+                            filesToCache.add(file)
+        filesToCompile = sorted(list(filesToCompile))
+        filesToCache = sorted(list(filesToCache))
+        for (app, file) in filesToCompile:
+            self.shellConsole.shell.CompileProjectFile(file, app)
+        for file in filesToCache:
+            self.shellConsole.shell.GenerateFileCache(file)
 
 
 def loadProject(window, filePath):

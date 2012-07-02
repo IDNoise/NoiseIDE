@@ -1,24 +1,26 @@
 -module(eide_compiler).
 
 -export([
-    compile/3, 
+    compile/2, 
     compile_simple/1,
     compile_file_fly/2,
     generate_includes/1
 ]). 
 
+
+generate_includes(undefined) -> [];
 generate_includes(AppsPath) ->
     {ok, Apps} = file:list_dir(AppsPath),
     [{i, "../include"}| [{i,Ai} || A <- Apps, End <- ["src", "include"],
                          begin
-                             Ai = AppsPath ++ "/"++A++"/" ++ End,
+                             Ai = AppsPath ++ "/"++ A ++"/" ++ End,
                              filelib:is_dir(Ai)
                          end]]. 
 
-compile(FileName, App, AppsPath) -> 
-    OutDir = AppsPath ++ "/" ++ App ++ "/ebin",
+compile(FileName, App) -> 
+    OutDir = eide_connect:prop(project_dir) ++ "/" ++ App ++ "/ebin",
     %OutputFileName = OutDir ++ "/" ++ filename:rootname(filename:basename(FileName)) ++ ".beam",
-    Includes = generate_includes(AppsPath),
+    Includes = generate_includes(eide_connect:prop(project_dir)),
     catch file:make_dir(OutDir),
     create_response(FileName, compile_internal(FileName, [{outdir, OutDir} | Includes])).
 
@@ -46,11 +48,7 @@ create_response(FilePath, Errors, Args) ->
                                 {args, Args}]}).
 
 compile_file_fly(RealPath, NewPath) -> 
-    Includes = 
-        case eide_connect:prop(project_dir) of
-            undefined -> [];
-            Dir -> generate_includes(Dir)
-        end,
+    Includes = generate_includes(eide_connect:prop(project_dir)),
     create_response(RealPath, 
                     compile_internal(NewPath, Includes, false, RealPath)).
 
