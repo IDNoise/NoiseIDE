@@ -151,15 +151,15 @@ class ErlangProcess(Process):
             self.timer.Stop()
         result = Process.Kill(self.pid, wx.SIGTERM)
         if result not in [wx.KILL_OK, wx.KILL_NO_PROCESS]:
-            Process.Kill(self.pid, wx.SIGKILL)
+            Process.Kill(self.pid, wx.SIGABRT)
 
     def OnTerminate(self, *args, **kwargs):
         if self.timer:
             self.timer.Stop()
 
 class ErlangProcessWithConnection(ErlangProcess, ErlangSocketConnection):
-    def __init__(self):
-        ErlangProcess.__init__(self, os.path.join(os.getcwd(), 'data', 'erlang', 'modules'))
+    def __init__(self, cwd):
+        ErlangProcess.__init__(self, cwd)
         ErlangSocketConnection.__init__(self)
 
     def Start(self):

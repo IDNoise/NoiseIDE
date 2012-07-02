@@ -2,24 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d654c747-d601-49bc-80fe-ab63471b2f11" name="Default" comment="">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/data/images/clear_console.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/data/images/exec_command.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/data/images/start_console.png" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/data/images/stop_console.png" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/data/erlang/modules/eide_cache.beam" afterPath="$PROJECT_DIR$/data/erlang/modules/eide_cache.beam" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/data/erlang/modules/eide_compiler.beam" afterPath="$PROJECT_DIR$/data/erlang/modules/eide_compiler.beam" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/data/erlang/modules/eide_connect.beam" afterPath="$PROJECT_DIR$/data/erlang/modules/eide_connect.beam" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/data/erlang/modules/eide_connect.erl" afterPath="$PROJECT_DIR$/data/erlang/modules/eide_connect.erl" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/eide_cache.erl" afterPath="$PROJECT_DIR$/eide_cache.erl" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_connect.py" afterPath="$PROJECT_DIR$/idn_connect.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_console.py" afterPath="$PROJECT_DIR$/idn_console.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_customstc.py" afterPath="$PROJECT_DIR$/idn_customstc.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_lexer.py" afterPath="$PROJECT_DIR$/idn_lexer.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_mainframe.py" afterPath="$PROJECT_DIR$/idn_mainframe.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_notebook.py" afterPath="$PROJECT_DIR$/idn_notebook.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_project.py" afterPath="$PROJECT_DIR$/idn_project.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_utils.py" afterPath="$PROJECT_DIR$/idn_utils.py" />
     </list>
     <ignored path="NoiseIDE.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -59,13 +45,22 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="idn_project.py" pinned="false" current="false" current-in-tab="false">
+      <file leaf-file-name="idn_project.py" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/idn_project.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="23" column="23" selection-start="658" selection-end="658" vertical-scroll-proportion="0.0">
+            <state line="94" column="85" selection-start="3449" selection-end="3449" vertical-scroll-proportion="0.9125214">
               <folding>
                 <element signature="e#81#90#0" expanded="true" />
               </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="idn_config.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/idn_config.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="24" column="30" selection-start="575" selection-end="575" vertical-scroll-proportion="0.0">
+              <folding />
             </state>
           </provider>
         </entry>
@@ -79,10 +74,10 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="idn_connect.py" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="idn_connect.py" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/idn_connect.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="107" column="0" selection-start="2713" selection-end="2713" vertical-scroll-proportion="0.41852486">
+            <state line="153" column="46" selection-start="4220" selection-end="4220" vertical-scroll-proportion="0.0">
               <folding>
                 <element signature="e#0#15#0" expanded="true" />
                 <element signature="e#2395#2457#0" expanded="false" />
@@ -94,7 +89,7 @@
       <file leaf-file-name="idn_console.py" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/idn_console.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="126" column="8" selection-start="4824" selection-end="4824" vertical-scroll-proportion="0.0">
+            <state line="59" column="20" selection-start="2512" selection-end="2512" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -137,17 +132,17 @@
         <option value="$PROJECT_DIR$/dark.color.yaml" />
         <option value="$PROJECT_DIR$/idn_colorschema.py" />
         <option value="$PROJECT_DIR$/noiseide.yaml" />
-        <option value="$PROJECT_DIR$/idn_config.py" />
         <option value="$PROJECT_DIR$/idn_lexer.py" />
         <option value="$PROJECT_DIR$/idn_notebook.py" />
         <option value="$USER_HOME$/.PyCharm20/system/python_stubs/90031232/__builtin__.py" />
         <option value="C:/Programming/Python27/Lib/site-packages/wx-2.9.3-msw/wx/_misc.py" />
         <option value="$PROJECT_DIR$/idn_customstc.py" />
-        <option value="$PROJECT_DIR$/idn_console.py" />
         <option value="$PROJECT_DIR$/idn_utils.py" />
         <option value="$PROJECT_DIR$/idn_mainframe.py" />
-        <option value="$PROJECT_DIR$/idn_project.py" />
+        <option value="$PROJECT_DIR$/idn_config.py" />
         <option value="$PROJECT_DIR$/idn_connect.py" />
+        <option value="$PROJECT_DIR$/idn_console.py" />
+        <option value="$PROJECT_DIR$/idn_project.py" />
       </list>
     </option>
   </component>
@@ -495,13 +490,6 @@
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://C:/Programming/Python27/Lib/random.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="885" column="0" selection-start="31690" selection-end="31690" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/idn_lexer.py">
       <provider selected="true" editor-type-id="text-editor">
         <state line="45" column="35" selection-start="1714" selection-end="1714" vertical-scroll-proportion="0.0">
@@ -586,28 +574,35 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/idn_config.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="24" column="30" selection-start="575" selection-end="575" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/idn_connect.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="153" column="46" selection-start="4220" selection-end="4220" vertical-scroll-proportion="0.0">
+          <folding>
+            <element signature="e#0#15#0" expanded="true" />
+            <element signature="e#2395#2457#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/idn_console.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="126" column="8" selection-start="4824" selection-end="4824" vertical-scroll-proportion="0.0">
+        <state line="59" column="20" selection-start="2512" selection-end="2512" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/idn_project.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="23" column="23" selection-start="658" selection-end="658" vertical-scroll-proportion="0.0">
+        <state line="94" column="85" selection-start="3449" selection-end="3449" vertical-scroll-proportion="0.9125214">
           <folding>
             <element signature="e#81#90#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/idn_connect.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="107" column="0" selection-start="2713" selection-end="2713" vertical-scroll-proportion="0.41852486">
-          <folding>
-            <element signature="e#0#15#0" expanded="true" />
-            <element signature="e#2395#2457#0" expanded="false" />
           </folding>
         </state>
       </provider>

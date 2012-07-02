@@ -37,17 +37,18 @@ class Project:
         pass
 
 class ErlangProject(Project):
+    IDE_MODULES_DIR = os.path.join(os.getcwd(), 'data', 'erlang', 'modules')
     EXPLORER_TYPE = exp.ErlangProjectExplorer
 
     def OnLoadProject(self):
         #connect.ErlangProcess()
         self.AddConsoles()
-
+        self.CompileAll()
         self.explorer.Bind(exp.EVT_PROJECT_FILE_MODIFIED, self.OnProjectFileModified)
 
 
     def AddConsoles(self):
-        self.shellConsole = ErlangIDEConsole(self.window.ToolMgr)
+        self.shellConsole = ErlangIDEConsole(self.window.ToolMgr, self.IDE_MODULES_DIR)
         self.shellConsole.shell.SetProp("project_dir", self.AppsPath())
         self.shellConsole.shell.SetProp("project_name", self.ProjectName())
         cacheDir = os.path.join(os.getcwd(), "cache", "erlang")
@@ -69,11 +70,11 @@ class ErlangProject(Project):
             params.append("-config " + data["config"])
 
             dirs = ""
-            for dir in os.listdir(self.AppsPath()):
-                appPath = os.path.join(self.AppsPath(), dir)
+            for app in self.projectData["apps"]:
+                appPath = os.path.join(self.AppsPath(), app)
                 if os.path.isdir(appPath):
                     dirs += ' "{}"'.format(os.path.join(appPath, "ebin"))
-            dirs += ' "{}"'.format(os.path.join(os.getcwd(), 'data', 'erlang', 'modules'))
+            dirs += ' "{}"'.format(self.IDE_MODULES_DIR)
 
             params.append("-pa " + dirs)
             #print params
@@ -87,6 +88,12 @@ class ErlangProject(Project):
     def OnProjectFileModified(self, event):
         self.shellConsole.shell.CompileFile(event.File)
         print event.File
+
+    def CompileAll(self):
+        for app in self.projectData["apps"]:
+            srcPath = os.path.join(os.path.join(self.AppsPath(), app), "src")
+            includePath = os.path.join(os.path.join(self.AppsPath(), app), "include")
+
 
 def loadProject(window, filePath):
     TYPE_PROJECT_DICT = {

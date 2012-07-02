@@ -14,6 +14,7 @@ class ErlangConsole(wx.Panel):
         self.startButton = wx.BitmapButton(self, wx.NewId(), bitmap = wx.Bitmap('data/images/start_console.png'))
         self.stopButton = wx.BitmapButton(self, wx.NewId(), bitmap = wx.Bitmap('data/images/stop_console.png'))
         self.clearButton = wx.BitmapButton(self, wx.NewId(), bitmap = wx.Bitmap('data/images/clear_console.png'))
+        self.stopButton.Enabled = False
         self.startButton.SetToolTip( wx.ToolTip("Start console") )
         self.stopButton.SetToolTip( wx.ToolTip("Stop console") )
         self.clearButton.SetToolTip( wx.ToolTip("Clear console output") )
@@ -54,12 +55,22 @@ class ErlangConsole(wx.Panel):
 
         self.CreateShell(cwd, params)
         self.promtRegexp = re.compile(r"^\s*(\([\S]*\))?\d*>\s*")
+
     def Start(self):
+        self.Clear()
         self.shell.Start()
+        self.startButton.Enabled = False
+        self.stopButton.Enabled = True
 
     def Stop(self):
-        self.shell.Stop()
-        self.WriteToConsoleOut("\n\nSTOPPED\n\n")
+        try:
+            self.shell.Stop()
+        except Exception, e:
+            print e
+        finally:
+            self.WriteToConsoleOut("\n\nSTOPPED\n\n")
+            self.startButton.Enabled = True
+            self.stopButton.Enabled = False
 
     def Clear(self):
         self.consoleOut.SetReadOnly(False)
@@ -124,15 +135,15 @@ class ErlangProjectConsole(ErlangConsole):
             self.WriteToConsoleOut(self.startCommand + '\n')
 
 class ErlangIDEConsole(ErlangConsole):
-    def __init__(self, parent):
-        ErlangConsole.__init__(self, parent)
+    def __init__(self, parent, cwd):
+        ErlangConsole.__init__(self, parent, cwd)
         self.buttonSizer.Hide(self.startButton)
         self.buttonSizer.Hide(self.stopButton)
 
         self.Start()
 
     def CreateShell(self, cwd, params):
-        self.shell = connect.ErlangProcessWithConnection()
+        self.shell = connect.ErlangProcessWithConnection(cwd)
         self.shell.SetOutputHandler(self.WriteToConsoleOut)
 
 
