@@ -35,3 +35,10 @@ class Notebook(aui.AuiNotebook):
             return EXT_STC_TYPE[ext]
         else:
             return CustomSTC
+
+    def FindPageIndexByPath(self, path):
+        for index in range(self.GetPageCount()):
+            if self.GetPage(index).filePath == path:
+                return index
+        return None
+

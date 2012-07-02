@@ -74,8 +74,8 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
 
         #self.SetUseHorizontalScrollBar(True)
         self.SetEndAtLastLine(False)
-        #self.SetScrollWidthTracking(True)
-        self.SetScrollWidth(500)
+        self.SetScrollWidthTracking(True)
+        self.SetScrollWidth(140)
 
         self.SetTabWidth(4)
         self.SetUseTabs(False)
@@ -128,6 +128,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
             self.Bind(stc.EVT_STC_STYLENEEDED, self.OnStyleNeeded)
         self.Bind(stc.EVT_STC_UPDATEUI, self.HighlightBrackets)
         self.Bind(stc.EVT_STC_CHARADDED, self.OnCharAdded)
+        self.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
 
         self.EnableLineNumbers()
 
@@ -146,11 +147,52 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
 
     def OnCharAdded(self, event):
         keyCode = event.GetKey()
+        self.Changed()
         #print keyCode
         if keyCode in [wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER]:
             self.DoIndent()
-            print "return pressed"
+            #print "return pressed"
         event.Skip()
+
+    def OnKeyDown(self, event):
+        keyCode = event.GetKeyCode()
+
+        if keyCode in [wx.WXK_DOWN, wx.WXK_UP] and event.ControlDown() and event.ShiftDown():
+            offset = -1 if keyCode == wx.WXK_UP else 1
+            startLine = self.LineFromPosition(self.GetSelectionStart())
+            endLine = self.LineFromPosition(self.GetSelectionEnd())
+            self.SetSelectionStart(self.PositionFromLine(startLine))
+            self.SetSelectionEnd(self.GetLineEndPosition(endLine))
+            text = self.GetSelectedText()  + '\n'
+            self.GotoLine(startLine)
+            for i in range(endLine - startLine + 1):
+                self.LineDelete()
+            targetLine = startLine + offset
+            self.GotoPos(self.PositionFromLine(targetLine))
+            self.InsertText(-1, text)
+            self.SetSelectionStart(self.PositionFromLine(startLine + offset))
+            self.SetSelectionEnd(self.GetLineEndPosition(endLine + offset))
+        elif keyCode == ord('S') and event.ControlDown():
+            self.hash = hash(self.GetText())
+            self.SaveFile(self.filePath)
+            self.Changed(False)
+        else:
+            event.Skip()
+
+    def Changed(self, changed = True):
+        self.changed = changed
+        if self.changed:
+            self.changed = self.hash != hash(self.GetText())
+        prefix = "* " if self.changed else ""
+        index = self.Parent.FindPageIndexByPath(self.filePath)
+        if index is not None:
+            self.Parent.SetPageText(index, prefix + self.FileName())
+
+    def LoadFile(self, path):
+        self.filePath = path
+        StyledTextCtrl.LoadFile(self, path)
+        self.hash = hash(self.GetText())
+        self.Changed(False)
 
     def DoIndent(self):
         prevIndent = self.GetLineIndentation(self.CurrentLine - 1)
@@ -232,3 +274,7 @@ class ConsoleSTC(CustomSTC):
         self.SetMarginWidth(2, 0)
 
         self.SetEdgeMode(stc.STC_EDGE_NONE)
+
+        self.SetEndAtLastLine(True)
+
+        self.SetYCaretPolicy(stc.STC_CARET_SLOP, 10)

@@ -1,27 +1,33 @@
+import re
+
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 import wx
+import os
 from idn_customstc import ConsoleSTC
 import idn_connect as connect
 
 class ErlangConsole(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent, cwd = os.getcwd(), params = []):
         wx.Panel.__init__(self, parent)
 
-        self.runButton = wx.Button(self, wx.NewId(), label = "Start")
-        self.stopButton = wx.Button(self, wx.NewId(), label = "Stop")
-        self.clearButton = wx.Button(self, wx.NewId(), label = "Clear")
+        self.startButton = wx.BitmapButton(self, wx.NewId(), bitmap = wx.Bitmap('data/images/start_console.png'))
+        self.stopButton = wx.BitmapButton(self, wx.NewId(), bitmap = wx.Bitmap('data/images/stop_console.png'))
+        self.clearButton = wx.BitmapButton(self, wx.NewId(), bitmap = wx.Bitmap('data/images/clear_console.png'))
+        self.startButton.SetToolTip( wx.ToolTip("Start console") )
+        self.stopButton.SetToolTip( wx.ToolTip("Stop console") )
+        self.clearButton.SetToolTip( wx.ToolTip("Clear console output") )
 
         self.buttonSizer = wx.BoxSizer(wx.VERTICAL)
-        self.buttonSizer.Add(self.runButton)
+        self.buttonSizer.Add(self.startButton)
         self.buttonSizer.Add(self.stopButton)
         self.buttonSizer.Add(self.clearButton)
         self.buttonSizer.AddStretchSpacer()
 
-        self.consoleOut = ConsoleSTC(self)#, size = (800, 300))
-        #self.consoleOut.SetSize((700, 500))
+        self.consoleOut = ConsoleSTC(self)
         self.commandText = wx.TextCtrl(self, wx.NewId())
-        self.commandButton = wx.Button(self, wx.NewId(), label = "Exec")
+        self.commandButton = wx.BitmapButton(self, wx.NewId(), bitmap = wx.Bitmap('data/images/exec_command.png'))
+        self.commandButton.SetToolTip( wx.ToolTip("Exec command") )
 
         commandSizer = wx.BoxSizer(wx.HORIZONTAL)
         commandSizer.Add(self.commandText, 1, wx.EXPAND)
@@ -32,6 +38,7 @@ class ErlangConsole(wx.Panel):
         consoleSizer.Add(self.consoleOut, 1, wx.EXPAND | wx.BOTTOM)
         consoleSizer.AddSpacer(5)
         consoleSizer.Add(commandSizer, 0, wx.EXPAND | wx.RIGHT)
+        consoleSizer.AddSpacer(5)
 
         mainSizer = wx.BoxSizer(wx.HORIZONTAL)
         mainSizer.Add(self.buttonSizer)
@@ -39,46 +46,93 @@ class ErlangConsole(wx.Panel):
         self.SetSizer(mainSizer)
         self.Layout()
 
-        self.commandButton.Bind(wx.EVT_BUTTON, self.OnExec)
+        self.commandButton.Bind(wx.EVT_BUTTON, lambda e: self.Exec())
+        self.startButton.Bind(wx.EVT_BUTTON, lambda e: self.Start())
+        self.stopButton.Bind(wx.EVT_BUTTON, lambda e: self.Stop())
+        self.clearButton.Bind(wx.EVT_BUTTON, lambda e: self.Clear())
+        self.commandText.Bind(wx.EVT_KEY_UP, self.OnCommandTextKeyUp)
 
-        self.shell = None
-
+        self.CreateShell(cwd, params)
+        self.promtRegexp = re.compile(r"^\s*(\([\S]*\))?\d*>\s*")
     def Start(self):
-        if self.shell:
-            self.shell.Start()
+        self.shell.Start()
 
     def Stop(self):
-        if self.shell:
-            self.shell.Stop()
+        self.shell.Stop()
+        self.WriteToConsoleOut("\n\nSTOPPED\n\n")
 
     def Clear(self):
+        self.consoleOut.SetReadOnly(False)
         self.consoleOut.ClearAll()
+        self.consoleOut.SetReadOnly(True)
 
-    def OnExec(self, event):
+    def Exec(self):
         cmd = self.commandText.GetValue()
         if cmd:
-            self.shell.ExecCommand(cmd)
+            self.shell.SendCommandToProcess(cmd)
         self.commandText.SetValue("")
+        self.WriteToConsoleOut(cmd + '\n')
+
+    def OnCommandTextKeyUp(self, event):
+        keyCode = event.GetKeyCode()
+        if keyCode == wx.WXK_RETURN:
+            self.Exec()
+        elif keyCode == wx.WXK_ESCAPE:
+            self.commandText.SetValue("")
+        else:
+            event.Skip()
+
+    def CreateShell(self, cwd, params):
+        self.shell = connect.ErlangProcess(cwd, params)
+        self.shell.SetOutputHandler(self.WriteToConsoleOut)
+
+    def WriteToConsoleOut(self, text):
+        text = "\n".join([re.sub(self.promtRegexp, "", line) for line in text.split("\n")])
+        maxLine = self.consoleOut.GetLineCount()
+        self.consoleOut.SetReadOnly(False)
+        self.consoleOut.AppendText(text)
+        self.consoleOut.SetReadOnly(True)
+        if self.GetLastVisibleLine() >= maxLine:
+            self.consoleOut.ScrollToLine(self.consoleOut.GetLineCount())
+
+    def GetLastVisibleLine(self):
+        """
+        return the last visible line on the screen,
+        taking into consideration the folded lines
+        """
+        return self.consoleOut.LineFromPosition(
+            self.consoleOut.PositionFromPoint(
+                wx.Point(self.consoleOut.GetPosition()[0],
+                    self.consoleOut.GetPosition()[1] + self.consoleOut.GetSize()[1]))
+        )
+
+class ErlangProjectConsole(ErlangConsole):
+    def __init__(self, parent, cwd, params):
+        ErlangConsole.__init__(self, parent, cwd, params)
+
+    def CreateShell(self, cwd, params):
+        self.shell = connect.ErlangProcess(cwd, params)
+        self.shell.SetOutputHandler(self.WriteToConsoleOut)
+
+    def SetStartCommand(self, command):
+        self.startCommand = command
+
+    def Start(self):
+        ErlangConsole.Start(self)
+        if self.startCommand:
+            self.shell.SendCommandToProcess(self.startCommand)
+            self.WriteToConsoleOut(self.startCommand + '\n')
 
 class ErlangIDEConsole(ErlangConsole):
     def __init__(self, parent):
         ErlangConsole.__init__(self, parent)
-        self.buttonSizer.Hide(self.runButton)
+        self.buttonSizer.Hide(self.startButton)
         self.buttonSizer.Hide(self.stopButton)
 
-        #self.shell = connect.ErlangSubprocessWithSocketConnection()
-        #self.shell.SetOutputHandler(self.WriteToConsoleOut)
-        #self.shell.SetInputHandler(self.WriteToConsoleOut)
-        #print self.shell.outputHandler
+        self.Start()
+
+    def CreateShell(self, cwd, params):
         self.shell = connect.ErlangProcessWithConnection()
         self.shell.SetOutputHandler(self.WriteToConsoleOut)
-        self.shell.SetSocketHandler(self.WriteToConsoleOut)
-        self.Start()
-        #self.shell.Start()
-        #self.shell.ExecCommand(u'[io:format("~p~n", [V]) || V <- lists:seq(1, 4)].')
 
-    def WriteToConsoleOut(self, text):
-        #print "WriteToConsoleOut ", text, "end"
-        self.consoleOut.SetReadOnly(False)
-        self.consoleOut.AddText(text)
-        self.consoleOut.SetReadOnly(True)
+

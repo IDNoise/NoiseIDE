@@ -15,8 +15,8 @@ from idn_config import Config
 
 class NoiseIDE(wx.Frame):
     def __init__(self, *args, **kwargs):
-        wx.Frame.__init__(self, None, wx.ID_ANY, 'Noise IDE', size = (1680, 1050))
-
+        wx.Frame.__init__(self, None, wx.ID_ANY, 'Noise IDE', size = (1680, 900), pos = (10, 10))
+        self.Maximize()
         Config.load()
         ColorSchema.load(Config.GetProp("color_schema"))
 
@@ -24,7 +24,7 @@ class NoiseIDE(wx.Frame):
         self.SetIcon(icon)
 
         agwFlags = aui.AUI_MGR_DEFAULT | aui.AUI_MGR_AUTONB_NO_CAPTION
-        self.winmgr = Manager(self, agwFlags = agwFlags )
+        self.WinMgr = Manager(self, agwFlags = agwFlags )
         self.explorer = None
 
         agwStyle = aui.AUI_NB_DEFAULT_STYLE | \
@@ -34,31 +34,28 @@ class NoiseIDE(wx.Frame):
                    aui.AUI_NB_WINDOWLIST_BUTTON
         self.TabMgr = Notebook(self, agwStyle = agwStyle)
 
-        self.winmgr.AddPane1(self.TabMgr, aui.AuiPaneInfo().Center()#.Caption("Code Editor")
-            .MaximizeButton().MinimizeButton().CloseButton(False).Floatable(False))
+        self.WinMgr.AddPane1(self.TabMgr, aui.AuiPaneInfo().Center()#.Caption("Code Editor")
+            .MaximizeButton().MinimizeButton().CaptionVisible(False)
+            .CloseButton(False).Floatable(False))
 
         agwStyle = aui.AUI_NB_DEFAULT_STYLE ^ aui.AUI_NB_CLOSE_ON_ACTIVE_TAB
         self.ToolMgr = aui.AuiNotebook(self, agwStyle = agwStyle)
-        self.winmgr.AddPane1(self.ToolMgr, aui.AuiPaneInfo().Bottom()#.Caption("Tools")
+        self.WinMgr.AddPane1(self.ToolMgr, aui.AuiPaneInfo().Bottom()#.Caption("Tools")
             .MaximizeButton().MinimizeButton().CloseButton(False).Floatable(False).BestSize(400, 300))
 
         self.SetupMenu()
 
-        self.winmgr.Update()
+        self.WinMgr.Update()
 
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
-        projectPath = "D:\\Projects\\GIJoe\\server\\gijoe.noiseide.project"
+        #projectPath = "D:\\Projects\\GIJoe\\server\\gijoe.noiseide.project"
+        projectPath = "D:\\Projects\\Joe\\server\\gijoe.noiseide.project"
         self.project = loadProject(self, projectPath)
-        self.SetExplorerForProject(self.project)
-        self.winmgr.Update()
+        #self.SetExplorerForProject(self.project)
+        self.WinMgr.Update()
 
-        #self.AddTestTabs(10)
-
-    def SetExplorerForProject(self, project):
-        self.explorer = project.CreateExplorer()
-        self.winmgr.AddPane1(self.explorer, aui.AuiPaneInfo().Left().Caption("Explorer")
-            .MinimizeButton().CloseButton(False).BestSize2(300, 600))
+        self.AddTestTabs(10)
 
     def SetupMenu(self):
         self.menubar = wx.MenuBar()

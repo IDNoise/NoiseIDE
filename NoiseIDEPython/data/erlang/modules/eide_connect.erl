@@ -13,7 +13,6 @@
 
 start(Port) ->
     {ok, LS} = gen_tcp:listen(Port, [binary, {active, false}, {reuseaddr, true}, {packet, 2}]),
-    io:format("start listen"),
     %accept(LS). 
     spawn(fun() -> accept(LS) end). 
 
@@ -21,7 +20,9 @@ accept(LS) ->
     gen_tcp:controlling_process(LS, self()),
     {ok, Socket} = gen_tcp:accept(LS),
     ets:new(props, [named_table, public]),
-    io:format("accepted"),
+    %io:format("accepted"),
+    AcceptResponce = mochijson2:encode({struct, [{response, connect}]}), 
+    gen_tcp:send(Socket, AcceptResponce),
     Workers = [spawn(fun worker/0) || _ <- lists:seq(1, 30)],
     loop(Socket, Workers, spawn(fun worker/0)).
     

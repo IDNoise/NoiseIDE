@@ -26,9 +26,10 @@ class Timer(Thread):
 
     def run(self):
         while not self.finished.is_set():
+            self.function()
             self.finished.wait(self.interval)
-            if not self.finished.is_set():
-                self.function()
+            #if not self.finished.is_set():
+
 
 class Menu(wx.Menu):
     def AppendMenuItem(self, text, handlerObject, handler):

@@ -47,7 +47,7 @@ class ErlangLexer(BaseLexer):
             control.SetStyling(endLineEndPos - lastEnd, defaultStyle)
 
     def DoFold(self, control, startPos, endPos):
-        startLine = control.LineFromPosition(startPos)
+        startLine = control.LineFromPosition(startPos) - 1
         endLine = control.LineFromPosition(endPos)
         prevFoldLevel = 0
         if startLine > 0:
