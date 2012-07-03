@@ -32,8 +32,10 @@ class Project:
     def CreateExplorer(self):
         self.explorer = self.EXPLORER_TYPE(self.window)
         self.explorer.SetRoot(self.projectDir)
-        self.window.WinMgr.AddPane1(self.explorer, aui.AuiPaneInfo().Left().Caption("Explorer")
-        .MinimizeButton().CloseButton(False).BestSize2(300, 600))
+        self.window.WinMgr.AddPane1(self.explorer, aui.AuiPaneInfo().Left().Caption("Project Explorer")
+            .MinimizeButton().CloseButton(False).BestSize2(300, 600))
+        self.window.WinMgr.Update()
+
 
     def Close(self):
         pass
@@ -63,7 +65,7 @@ class ErlangProject(Project):
         self.shellConsole.shell.SetProp("project_dir", self.AppsPath())
         self.shellConsole.shell.SetProp("project_name", self.ProjectName())
         #time.sleep(0.1)
-        print "setting props"
+        #print "setting props"
         self.window.ToolMgr.AddPage(self.shellConsole, "IDE Console")
 
         self.consoles = {}
@@ -80,7 +82,7 @@ class ErlangProject(Project):
         dirs += ' "{}"'.format(self.IDE_MODULES_DIR)
 
         for title in consoles:
-            print title
+            #print title
             data = consoles[title]
             params = []
             params.append("-sname " + data["sname"])
@@ -101,7 +103,7 @@ class ErlangProject(Project):
         print event.File
 
     def CompileProject(self):
-        print "compile project"
+        #print "compile project"
         filesToCompile = set()
         filesToCache = set()
         for app in self.projectData["apps"]:
@@ -112,15 +114,31 @@ class ErlangProject(Project):
                     for file in files:
                         file = os.path.join(root, file)
                         if file.endswith(".erl"):
-                            filesToCompile.add((app, file))
+                            filesToCompile.add((file, app))
                         elif file.endswith(".hrl"):
                             filesToCache.add(file)
         filesToCompile = sorted(list(filesToCompile))
         filesToCache = sorted(list(filesToCache))
-        for (app, file) in filesToCompile:
-            self.shellConsole.shell.CompileProjectFile(file, app)
-        for file in filesToCache:
-            self.shellConsole.shell.GenerateFileCache(file)
+        self.shellConsole.shell.CompileProjectFiles(filesToCompile)
+        self.shellConsole.shell.GenerateFileCaches(filesToCache)
+        self.RemoveUnusedBeams()
+
+    def RemoveUnusedBeams(self):
+        srcFiles = set()
+        for app in self.projectData["apps"]:
+            path = os.path.join(self.AppsPath(), app, "src")
+            for root, _, files in os.walk(path):
+                for fileName in files:
+                    (file, ext) = os.path.splitext(fileName)
+                    if ext == ".erl":
+                        srcFiles.add(file)
+            path = os.path.join(self.AppsPath(), app, "ebin")
+            for root, _, files in os.walk(path):
+                for fileName in files:
+                    (file, ext) = os.path.splitext(fileName)
+                    if ext == ".beam":
+                        if file not in srcFiles:
+                            os.remove(os.path.join(root, fileName))
 
 
 def loadProject(window, filePath):

@@ -28,7 +28,6 @@ class Timer(Thread):
         while not self.finished.is_set():
             self.function()
             self.finished.wait(self.interval)
-            #if not self.finished.is_set():
 
 
 class Menu(wx.Menu):

@@ -23,9 +23,12 @@ class NoiseIDE(wx.Frame):
         icon = wx.Icon('data/images/icon.png', wx.BITMAP_TYPE_PNG, 16, 16)
         self.SetIcon(icon)
 
+        self.explorer = None
+        self.project = None
+
         agwFlags = aui.AUI_MGR_DEFAULT | aui.AUI_MGR_AUTONB_NO_CAPTION
         self.WinMgr = Manager(self, agwFlags = agwFlags )
-        self.explorer = None
+
 
         agwStyle = aui.AUI_NB_DEFAULT_STYLE | \
                    aui.AUI_NB_CLOSE_ON_ALL_TABS | \
@@ -49,13 +52,8 @@ class NoiseIDE(wx.Frame):
 
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
-        #projectPath = "D:\\Projects\\GIJoe\\server\\gijoe.noiseide.project"
-        projectPath = "D:\\Projects\\Joe\\server\\gijoe.noiseide.project"
-        self.project = loadProject(self, projectPath)
-        #self.SetExplorerForProject(self.project)
         self.WinMgr.Update()
 
-        self.AddTestTabs(10)
 
     def SetupMenu(self):
         self.menubar = wx.MenuBar()
@@ -98,7 +96,9 @@ class NoiseIDE(wx.Frame):
         dialog.Destroy()
 
     def OpenProject(self, projectFile):
-        print "loading project ", projectFile
+       # projectPath = "D:\\Projects\\Joe\\server\\gijoe.noiseide.project"
+        self.project = loadProject(self, projectFile)
+        #print "loading project ", projectFile
 
     def OnClose(self, event):
         if self.explorer:

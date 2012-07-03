@@ -1,4 +1,5 @@
 import asyncore
+import json
 import random
 import wx
 
@@ -14,6 +15,7 @@ from Queue import Queue
 from idn_config import Config
 from threading import Thread, Event
 from wx import Process, Execute
+import wx.lib.agw.pyprogress as PP
 
 class AsyncoreThread(Thread):
     def __init__(self):
@@ -80,7 +82,7 @@ class ErlangSocketConnection(asyncore.dispatcher):
         if recv:
             msgLen = struct.unpack('>H', recv)[0]
             data = self.socket.recv(msgLen)
-            print data
+            #print data
             if self.socketHandler:
                 self.socketHandler(data)
 
@@ -94,7 +96,22 @@ class ErlangSocketConnection(asyncore.dispatcher):
     def OnConnect(self):
         pass
 
+class CompileErrorInfo:
+    WARNING, ERROR = range(2)
+    def __init__(self, type, line, msg):
+        self.type = self.WARNING if type == "warning" else self.ERROR
+        self.msg = msg
+        self.line = line
+        #print type, line, msg
+
 class ErlangIDEConnectAPI(ErlangSocketConnection):
+    TASK_COMPILE, TASK_GEN_FILE_CACHE = range(2)
+
+    def __init__(self):
+        ErlangSocketConnection.__init__(self)
+        self.tasks = set()
+        self.SetSocketHandler(self._HandleSocketResponse)
+
     def CompileFile(self, file):
         self._ExecRequest("compile_file", '"{}"'.format(file))
 
@@ -110,8 +127,19 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
     def CompileProjectFile(self, file, app):
         self._ExecRequest("compile_project_file", '["{0}", "{1}"]'.format(erlstr(file), app))
 
+    def CompileProjectFiles(self, files):
+        self._CreateProgressDialog("Compiling project")
+        for (file, app) in files:
+            self.tasks.add((self.TASK_COMPILE, file))
+            self.CompileProjectFile(file, app)
+
     def GenerateFileCache(self, file):
+        self.tasks.add((self.TASK_GEN_FILE_CACHE, file))
         self._ExecRequest("gen_file_cache", '"{}"'.format(erlstr(file)))
+
+    def GenerateFileCaches(self, files):
+        for file in files:
+            self.GenerateFileCache(file)
 
     def GenerateErlangCache(self):
         self._ExecRequest("gen_erlang_cache", '[]')
@@ -125,6 +153,43 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
     def RemovePath(self, path):
         self._ExecRequest("add_path", '"{}"'.format(erlstr(path)))
 
+
+    def _CreateProgressDialog(self, text = "IDE Activities"):
+        self.progressDialog = PP.PyProgress(message = text, agwStyle= wx.PD_APP_MODAL | wx.PD_ELAPSED_TIME)
+        self.progressDialog.SetGaugeProportion(0.2)
+        self.progressDialog.SetGaugeSteps(50)
+        self.progressDialog.SetGaugeBackground(wx.BLACK)
+        self.progressDialog.SetFirstGradientColour(wx.GREEN)
+        self.progressDialog.SetSecondGradientColour(wx.BLUE)
+        self.progressDialog.SetSize((500, 150))
+        self.progressDialog.ShowDialog()
+
+    def _HandleSocketResponse(self, text):
+        js = json.loads(text)
+        if not "response" in js: return
+        res = js["response"]
+        try:
+            lastTaskDone = ""
+            if res == "compile":
+                errorsData = js["errors"]
+                errors = []
+                for error in errorsData:
+                    errors.append(CompileErrorInfo(error["type"], error["line"], error["msg"]))
+                path = pystr(js["path"])
+                self.tasks.remove((self.TASK_COMPILE, path))
+                lastTaskDone = "Compiled {}".format(path)
+            elif res == "gen_file_cache":
+                path = pystr(js["path"])
+                self.tasks.remove((self.TASK_GEN_FILE_CACHE, path))
+                lastTaskDone = "Generated cache for {}".format(path)
+
+            if self.progressDialog.IsShownOnScreen():
+                self.progressDialog.UpdatePulse(lastTaskDone)
+        except Exception, e:
+            print e
+
+        if len(self.tasks) == 0:
+            self.progressDialog.Destroy()
 
 class ErlangProcess(Process):
     def __init__(self, cwd = os.getcwd(), params = []):
@@ -142,8 +207,6 @@ class ErlangProcess(Process):
 
     def SendCommandToProcess(self, cmd):
         cmd += '\n'
-        #if self.handler:
-        #    self.handler(cmd)
         self.outputStream.write(cmd)
         self.outputStream.flush()
 
@@ -155,7 +218,6 @@ class ErlangProcess(Process):
         self.timer.Start(20)
         self.inputStream = self.GetInputStream()
         self.outputStream = self.GetOutputStream()
-        #self.SendCommandToProcess("reloader:start().")
 
     def OnTimer(self, event = None):
         if  self.inputStream.CanRead():
@@ -180,7 +242,7 @@ class ErlangProcess(Process):
 class ErlangProcessWithConnection(ErlangProcess, ErlangIDEConnectAPI):
     def __init__(self, cwd):
         ErlangProcess.__init__(self, cwd)
-        ErlangSocketConnection.__init__(self)
+        ErlangIDEConnectAPI.__init__(self)
 
     def Start(self):
         ErlangProcess.Start(self)
@@ -193,4 +255,7 @@ class ErlangProcessWithConnection(ErlangProcess, ErlangIDEConnectAPI):
 
 
 def erlstr(str):
-    return str.replace("\\", "/")
+    return str.replace(os.sep, "/")
+
+def pystr(str):
+    return str.replace("/", os.sep)

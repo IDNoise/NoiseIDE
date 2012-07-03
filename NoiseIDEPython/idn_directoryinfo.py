@@ -16,14 +16,17 @@ class DirectoryInfo:
     def GetDirInfo(self, root):
         files = os.listdir(root)
         for file in files:
-            file = os.path.join(root, file)
-            mtime = os.stat(file)[ST_MTIME]
-            if os.path.isdir(file):
-                self.dirs[file] = mtime
-                if self.recursive:
-                    self.GetDirInfo(file)
-            else:
-                self.files[file] = mtime
+            try:
+                file = os.path.join(root, file)
+                mtime = os.stat(file)[ST_MTIME]
+                if os.path.isdir(file):
+                    self.dirs[file] = mtime
+                    if self.recursive:
+                        self.GetDirInfo(file)
+                else:
+                    self.files[file] = mtime
+            except Exception, e:
+                print e
 
 class DirectoryInfoDiff:
     def __init__(self, newState, oldState):
