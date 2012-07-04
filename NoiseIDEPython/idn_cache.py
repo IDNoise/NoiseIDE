@@ -26,6 +26,12 @@ def readFile(file):
         return f.read()
 
 class ErlangCache:
+
+    modules = set()
+    moduleData = {}
+   # recordData = {}
+
+
     @classmethod
     def LoadCacheFromDir(cls, dir):
         dir = os.path.join(ErlangProject.CACHE_DIR, dir)
@@ -40,31 +46,77 @@ class ErlangCache:
         if not fileName.endswith(".cache"): return
         data = data = json.loads(readFile(file))
         name = os.path.basename(file)[:-6]
-        #if name.endswith(".hrl.cache"):
+        if 'nt' == os.name:
+            import win32api
+            data[FILE] = os.path.normcase(win32api.GetLongPathName(data[FILE]))
+        file = data[FILE]
+        if (name in cls.modules and name in cls.moduleData and
+            cls.moduleData[name][FILE].lower().startswith(EditorConfig.erlang.lower()) and
+            file != cls.moduleData[name][FILE]):
+            print("Ignoring replace of cache for standart erlang " +
+                "module: {}\n\tPath:{}".format(name, file))
+            return
 
+        if name[-4:] != ".hrl":
+            cls.modules.add(name)
+
+        cls.moduleData[name] = ModuleData(name, data)
+        print("Loading cache for: " + name)
 
 
 class Function:
-    pass
+    def __init__(cls, module, name, arity, params, types, result, docref, exported, bif):
+        self.module = module
+        self.name = name
+        self.arity = arity
+        self.params = params
+        self.types = types
+        self.result = result
+        self.docref = docref
+        self.exported = exported
+        self.bif = bif
+
+class Record:
+    def __init__(cls, module, name, fields, line):
+        self.module = module
+        self.name = name
+        self.fields = fields
+        self.line = line
+
+class Macros:
+    def __init__(cls, module, name, value, line):
+        self.module = module
+        self.name = name
+        self.value = value
+        self.line = line
 
 class ModuleData:
-    @classmethod
-    def fromDict(cls, module, data):
-        moduleData = ModuleData()
-        moduleData.file = data[FILE]
-        moduleData.module = module
-        moduleData.functions = []
+    def __init__(cls, module, data):
+        self.file = data[FILE]
+        self.module = module
+        self.functions = []
+
         for funData in data[FUNS]:
-            fun = Function()
-            fun.name = funData[NAME]
-            fun.arity = funData[ARITY]
-            fun.params = funData[PARAMS]
-            fun.types = funData[TYPES]
-            fun.result = funData[RESULT]
-            fun.docref = funData[DOCREF]
-            fun.exported = funData[EXPORTED]
-            fun.module = module
-            moduleData.functions.append(fun)
+            fun = Function(module, funData[NAME], funData[ARITY],
+                funData[PARAMS],  funData[TYPES], funData[RESULT],
+                funData[DOCREF], funData[EXPORTED], funData[BIF])
+
+            self.functions.append(fun)
+
+        self.records = []
+        for rec in data[RECORDS_DATA]:
+            recordData = data[RECORDS_DATA][rec]
+            self.records.append(Record(module, record, recordData[FIELDS], recordData[LINE]))
+
+        self.macroses = []
+        for mac in data[MACROS]:
+            macData = data[MACROS][mac]
+            self.macroses.append(Macros(module, mac, macData[VALUE], macData[LINE]))
+
+        self.includes = data[INCLUDES]
+
+
+
 
 class Cache():
     modules = set()

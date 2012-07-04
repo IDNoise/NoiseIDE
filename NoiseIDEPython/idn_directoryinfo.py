@@ -1,4 +1,4 @@
-from idn_utils import Timer
+from idn_utils import Timer, extension
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
@@ -6,27 +6,40 @@ import os
 from stat import ST_MTIME
 
 class DirectoryInfo:
-    def __init__(self, root, recursive = True):
+    def __init__(self, root, recursive = True, fileMask = [], excludeDirs = [], excludePaths = []):
         self.recursive = recursive
         self.root = root
         self.files = {}
         self.dirs = {}
-        self.GetDirInfo(root)
+        self.fileMask = fileMask
+        self.excludeDirs = excludeDirs
+        self.excludePaths = excludePaths
+        self.GatherDirInfo(root)
+        #print fileMask, " ", excludeDirs, " ", excludePaths
+        #print self.files
+        #print self.dirs
 
-    def GetDirInfo(self, root):
+    def GatherDirInfo(self, root):
         files = os.listdir(root)
         for file in files:
             try:
                 file = os.path.join(root, file)
+                if self.excludePaths and file in self.excludePaths:
+                    continue
                 mtime = os.stat(file)[ST_MTIME]
                 if os.path.isdir(file):
+                    if self.excludeDirs and os.path.basename(file) in self.excludeDirs:
+                        continue
                     self.dirs[file] = mtime
                     if self.recursive:
-                        self.GetDirInfo(file)
+                        self.GatherDirInfo(file)
                 else:
+                    if self.fileMask and extension(file) not in self.fileMask:
+                        continue
                     self.files[file] = mtime
             except Exception, e:
                 print e
+
 
 class DirectoryInfoDiff:
     def __init__(self, newState, oldState):
@@ -41,8 +54,6 @@ class DirectoryInfoDiff:
         self.GetNewModDel(newState.dirs, oldState.dirs)
         (self.createdFiles, self.modifiedFiles, self.deletedFiles) =\
         self.GetNewModDel(newState.files, oldState.files)
-
-
 
     def GetNewModDel(self, newDict, oldDict):
         new = []
@@ -68,14 +79,19 @@ class DirectoryChecker:
     HANDLER_DIR_DELETED = range(6)
     HANDLER_TYPES = range(6)
 
-    def __init__(self, interval, root, recursive = True):
+    def __init__(self, interval, root, recursive = True, fileMask = [], excludeDirs = [], excludePaths = []):
         self.root = root
         self.recursive = recursive
+        self.fileMask = fileMask
+        self.excludeDirs = excludeDirs
+        self.excludePaths = excludePaths
         self.handlers = {t : [] for t in self.HANDLER_TYPES}
         self.timer = Timer(interval, self.CheckDirectoryChanges)
         if root:
-            self.dirSnapshot = DirectoryInfo(self.root, self.recursive)
+            self.dirSnapshot = self.GetDirectoryInfo()
 
+    def GetDirectoryInfo(self):
+        return DirectoryInfo(self.root, self.recursive, self.fileMask, self.excludeDirs, self.excludePaths)
 
     def AddHandler(self, type, fun):
         if type not in self.HANDLER_TYPES: raise Exception("Wrong handler type")
@@ -95,17 +111,32 @@ class DirectoryChecker:
     def SetRoot(self, root):
         self.Stop()
         self.root = root
-        self.dirSnapshot = DirectoryInfo(self.root, self.recursive)
+        self.Start()
+
+    def SetFileMask(self, fileMask):
+        self.Stop()
+        self.fileMask = fileMask
+        self.Start()
+
+    def SetExcludePaths(self, excludePaths):
+        self.Stop()
+        self.excludePaths = excludePaths
+        self.Start()
+
+    def SetExcludePaths(self, excludeDirs):
+        self.Stop()
+        self.excludeDirs = excludeDirs
         self.Start()
 
     def Start(self):
+        self.dirSnapshot = self.GetDirectoryInfo()
         self.timer.Start()
 
     def Stop(self):
         self.timer.Stop()
 
     def CheckDirectoryChanges(self):
-        dirSnapshot = DirectoryInfo(self.root, self.recursive)
+        dirSnapshot = self.GetDirectoryInfo()
         diff = DirectoryInfoDiff(dirSnapshot, self.dirSnapshot)
         self.SendEvents(self.HANDLER_DIR_CREATED, diff.createdDirs)
         self.SendEvents(self.HANDLER_DIR_DELETED, diff.deletedDirs)

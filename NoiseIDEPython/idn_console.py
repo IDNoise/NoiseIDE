@@ -54,7 +54,7 @@ class ErlangConsole(wx.Panel):
         self.commandText.Bind(wx.EVT_KEY_UP, self.OnCommandTextKeyUp)
 
         self.CreateShell(cwd, params)
-        self.promtRegexp = re.compile(r"^\s*(\([\S]*\))?\d*>\s*")
+        self.promptRegexp = re.compile(r"^\s*(\([\S]*\))?\d*>\s*")
 
     def Start(self):
         self.Clear()
@@ -98,7 +98,7 @@ class ErlangConsole(wx.Panel):
         self.shell.SetOutputHandler(self.WriteToConsoleOut)
 
     def WriteToConsoleOut(self, text):
-        text = "\n".join([re.sub(self.promtRegexp, "", line) for line in text.split("\n")])
+        text = "\n".join([re.sub(self.promptRegexp, "", line) for line in text.split("\n")])
         maxLine = self.consoleOut.GetLineCount()
         self.consoleOut.SetReadOnly(False)
         self.consoleOut.AppendText(text)

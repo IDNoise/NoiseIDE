@@ -45,6 +45,8 @@ class ProjectExplorer(CT.CustomTreeCtrl):
 
         self.root = None
         self.mask = self.DefaultMask()
+        self.excludeDirs = self.DefaultExcludeDirs()
+        self.excludePaths = self.DefaultExcludePaths()
         self.dirChecker = None
 
         self.SetupIcons()
@@ -61,12 +63,15 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         self.SetImageList(self.imageList)
 
     def AppendDir(self, parentNode, path):
+        if self.excludeDirs and os.path.basename(path) in self.excludeDirs:
+            return False
         dir = self.AppendItem(parentNode, os.path.basename(path))
         self.SetItemHasChildren(dir, True)
         self.SetPyData(dir, path)
         self.SetItemImage(dir, self.iconIndex[self.DIRECTORY_CLOSED], wx.TreeItemIcon_Normal)
         self.SetItemImage(dir, self.iconIndex[self.DIRECTORY_OPEN], wx.TreeItemIcon_Expanded)
-        return dir
+        self.Load(dir, path)
+        return True
 
     def AppendFile(self, parentNode, path):
         file = os.path.basename(path)
@@ -80,7 +85,7 @@ class ProjectExplorer(CT.CustomTreeCtrl):
     def SetupChecker(self):
         if self.dirChecker:
             self.dirChecker.Stop()
-        self.dirChecker = DirectoryChecker(self.INTERVAL, self.root, True)
+        self.dirChecker = DirectoryChecker(self.INTERVAL, self.root, True, self.mask, self.excludeDirs, self.excludePaths)
         self.dirChecker.AddHandler(DirectoryChecker.HANDLER_FILE_CREATED, self.FileCreated)
         self.dirChecker.AddHandler(DirectoryChecker.HANDLER_FILE_MODIFIED, self.FileModified)
         self.dirChecker.AddHandler(DirectoryChecker.HANDLER_FILE_DELETED, self.FileDeleted)
@@ -129,9 +134,10 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         files = os.listdir(dir)
         for f in files:
             path = os.path.join(dir, f)
+            if self.excludePaths and path in self.excludePaths:
+                continue
             if os.path.isdir(path):
-                child = self.AppendDir(node, path)
-                self.Load(child, path)
+                self.AppendDir(node, path)
             else:
                 self.AppendFile(node, path)
 
@@ -232,6 +238,12 @@ class ProjectExplorer(CT.CustomTreeCtrl):
     def DefaultMask(self):
         return []
 
+    def DefaultExcludeDirs(self):
+        return [".git", ".svn"]
+
+    def DefaultExcludePaths(self):
+        return []
+
     def OnMenuNewDir(self, event):
         #print "on menu new dir", self.GetPyData(self.popupItemId)
         dialog = wx.TextEntryDialog(None, "Enter dir name",
@@ -268,9 +280,6 @@ class PythonProjectExplorer(ProjectExplorer):
     def OnMenuNewFile(self, event):
         print "on menu new file", self.GetPyData(self.popupItemId)
 
-
-
-
 class ErlangProjectExplorer(ProjectExplorer):
     def FillNewSubMenu(self, newMenu):
         newMenu.AppendMenuItem("New Module", self, self.OnMenuNewModule)
@@ -284,3 +293,6 @@ class ErlangProjectExplorer(ProjectExplorer):
 
     def OnMenuNewHeader(self, event):
         print "on menu new header"
+
+    def DefaultExcludeDirs(self):
+        return ProjectExplorer.DefaultExcludeDirs(self) + ["ebin", ".settings"]

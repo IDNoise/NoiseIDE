@@ -130,4 +130,10 @@ if __name__ == '__main__':
         app = App()
         app.MainLoop()
 
+    #import cProfile
+    #cProfile.run('main()', 'ideprof')
+    #import pstats
+    #p = pstats.Stats('ideprof')
+    #p.strip_dirs().sort_stats(-1).print_stats()
+
     main()

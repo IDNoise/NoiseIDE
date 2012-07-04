@@ -112,6 +112,10 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
         self.tasks = set()
         self.SetSocketHandler(self._HandleSocketResponse)
         self.progressDialog = None
+        self.lastTaskDone = ""
+        self.progressTimer = wx.Timer(self, wx.NewId())
+        self.progressTimer.Start(250)
+        self.Bind(wx.EVT_TIMER, self.OnProgressTimer, self.progressTimer)
 
     def CompileFile(self, file):
         self._ExecRequest("compile_file", '"{}"'.format(file))
@@ -157,7 +161,7 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
 
 
     def _CreateProgressDialog(self, text = "IDE Activities"):
-        if self.progressDialog and self.progressDialog.IsShownOnScreen():
+        if self.progressDialog:
             pass
         else:
             self.progressDialog = PP.PyProgress(message = text, agwStyle= wx.PD_APP_MODAL | wx.PD_ELAPSED_TIME)
@@ -174,7 +178,7 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
         if not "response" in js: return
         res = js["response"]
         try:
-            lastTaskDone = ""
+            self.lastTaskDone = ""
             if res == "compile":
                 errorsData = js["errors"]
                 errors = []
@@ -182,20 +186,23 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
                     errors.append(CompileErrorInfo(error["type"], error["line"], error["msg"]))
                 path = pystr(js["path"])
                 self.tasks.remove((self.TASK_COMPILE, path))
-                lastTaskDone = "Compiled {}".format(path)
+                self.lastTaskDone = "Compiled {}".format(path)
             elif res == "gen_file_cache":
                 path = pystr(js["path"])
                 self.tasks.remove((self.TASK_GEN_FILE_CACHE, path))
-                lastTaskDone = "Generated cache for {}".format(path)
+                self.lastTaskDone = "Generated cache for {}".format(path)
             elif res == "gen_erlang_cache":
                 self.tasks.remove(self.TASK_GEN_ERLANG_CACHE)
-            if self.progressDialog.IsShownOnScreen():
-                self.progressDialog.UpdatePulse(lastTaskDone)
         except Exception, e:
             print e
 
         if len(self.tasks) == 0:
             self.progressDialog.Destroy()
+            self.progressDialog = None
+
+    def OnProgressTimer(self, event):
+        if self.progressDialog:
+            self.progressDialog.UpdatePulse(self.lastTaskDone)
 
 class ErlangProcess(Process):
     def __init__(self, cwd = os.getcwd(), params = []):
@@ -208,8 +215,8 @@ class ErlangProcess(Process):
         self.handler = None
         self.processQueue = Queue()
 
-        self.timer = wx.Timer(self)
-        self.Bind(wx.EVT_TIMER, self.OnTimer)
+        self.timer = wx.Timer(self, wx.NewId())
+        self.Bind(wx.EVT_TIMER, self.OnTimer, self.timer)
 
     def SendCommandToProcess(self, cmd):
         cmd += '\n'
@@ -221,7 +228,7 @@ class ErlangProcess(Process):
         os.chdir(self.cwd)
         self.pid = wx.Execute(self.cmd, wx.EXEC_ASYNC | wx.EXEC_HIDE_CONSOLE, self)
         os.chdir(cwd)
-        self.timer.Start(20)
+        self.timer.Start(100)
         self.inputStream = self.GetInputStream()
         self.outputStream = self.GetOutputStream()
 
