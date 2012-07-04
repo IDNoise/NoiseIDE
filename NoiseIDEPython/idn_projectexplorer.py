@@ -47,6 +47,8 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         self.mask = self.DefaultMask()
         self.excludeDirs = self.DefaultExcludeDirs()
         self.excludePaths = self.DefaultExcludePaths()
+        self.hiddenPaths = set()
+        self.showHidden = False
         self.dirChecker = None
 
         self.SetupIcons()
@@ -63,22 +65,31 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         self.SetImageList(self.imageList)
 
     def AppendDir(self, parentNode, path):
-        if self.excludeDirs and os.path.basename(path) in self.excludeDirs:
+        if (path in self.excludePaths or
+            (not self.showHidden and path in self.hiddenPaths) or
+            os.path.basename(path) in self.excludeDirs):
             return False
         dir = self.AppendItem(parentNode, os.path.basename(path))
         self.SetItemHasChildren(dir, True)
         self.SetPyData(dir, path)
         self.SetItemImage(dir, self.iconIndex[self.DIRECTORY_CLOSED], wx.TreeItemIcon_Normal)
         self.SetItemImage(dir, self.iconIndex[self.DIRECTORY_OPEN], wx.TreeItemIcon_Expanded)
+        if path in self.hiddenPaths:
+            self.SetAttrsForHiddenItem(dir)
         self.Load(dir, path)
         return True
 
     def AppendFile(self, parentNode, path):
         file = os.path.basename(path)
-        if self.mask and extension(file) not in self.mask: return False
-        file = self.AppendItem(parentNode, file)
+        if (path in self.excludePaths or
+            (not self.showHidden and path in self.hiddenPaths) or
+            self.mask and extension(file) not in self.mask):
+            return False
         icon = self.GetIconIndex(path)
+        file = self.AppendItem(parentNode, file)
         self.SetItemImage(file, icon, wx.TreeItemIcon_Normal)
+        if path in self.hiddenPaths:
+            self.SetAttrsForHiddenItem(file)
         self.SetPyData(file, path)
         return True
 
@@ -134,8 +145,6 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         files = os.listdir(dir)
         for f in files:
             path = os.path.join(dir, f)
-            if self.excludePaths and path in self.excludePaths:
-                continue
             if os.path.isdir(path):
                 self.AppendDir(node, path)
             else:
@@ -177,8 +186,7 @@ class ProjectExplorer(CT.CustomTreeCtrl):
 
     def FileDeleted(self, file):
         if self.mask and extension(file) not in self.mask: return
-        parentId = self.FindItemByPath(file)
-        id = self.FindItem(parentId, os.path.basename(file))
+        id = self.GetIdByPath(file)
         e = ProjectExplorerFileEvent(wxEVT_PROJECT_FILE_DELETED , self.GetId(), file)
         self.GetEventHandler().ProcessEvent(e)
         self.Delete(id)
@@ -219,16 +227,32 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         return reversed(items)
 
     def ShowMenu(self, event):
+        self.popupItemIds = self.GetSelections()#event.GetItem()
         self.popupItemId = event.GetItem()
         menu = Menu()
-        if self.ItemHasChildren(self.popupItemId):
-            newMenu = Menu()
-            newMenu.AppendMenuItem("New Dir", self, self.OnMenuNewDir)
-            newMenu.AppendSeparator()
-            self.FillNewSubMenu(newMenu)
-            menu.AppendMenu(wx.NewId(), "New", newMenu)
-        if self.popupItemId != self.GetRootItem():
+        if len(self.popupItemIds) > 1 and self.GetRootItem() not in self.popupItemIds:
             menu.AppendMenuItem("Delete", self, self.OnMenuDelete)
+            if self.GetPyData(self.popupItemIds[0]) in self.hiddenPaths:
+                menu.AppendMenuItem("Show", self, self.OnMenuShow)
+            else:
+                menu.AppendMenuItem("Hide", self, self.OnMenuHide)
+        else:
+            if self.ItemHasChildren(self.popupItemId):
+                newMenu = Menu()
+                newMenu.AppendMenuItem("New Dir", self, self.OnMenuNewDir)
+                newMenu.AppendSeparator()
+                self.FillNewSubMenu(newMenu)
+                menu.AppendMenu(wx.NewId(), "New", newMenu)
+            if self.popupItemId != self.GetRootItem():
+                menu.AppendMenuItem("Delete", self, self.OnMenuDelete)
+                menu.AppendSeparator()
+                if self.GetPyData(self.popupItemId) in self.hiddenPaths:
+                    menu.AppendMenuItem("Show", self, self.OnMenuShow)
+                else:
+                    menu.AppendMenuItem("Hide", self, self.OnMenuHide)
+            if self.popupItemId == self.GetRootItem():
+                prefix = "Disable" if self.showHidden else "Enable"
+                menu.AppendMenuItem(prefix + " show hidden", self, self.OnMenuShowHide)
 
         self.PopupMenu(menu)
 
@@ -255,12 +279,70 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         dialog.Destroy()
 
     def OnMenuDelete(self, event):
-        #print "on menu delete", self.GetPyData(self.popupItemId)
-        path = self.GetPyData(self.popupItemId)
+        for id in self.popupItemIds:
+            path = self.GetPyData(id)
+            if os.path.isdir(path):
+                shutil.rmtree(path, True)
+            else:
+                os.remove(path)
+
+    def GetIdByPath(self, path):
         if os.path.isdir(path):
-            os.removedirs(path)
+            return self.FindItemByPath(path)
         else:
-            os.remove(path)
+            parentId = self.FindItemByPath(path)
+            return self.FindItem(parentId, os.path.basename(path))
+
+    def OnMenuHide(self, event):
+        for id in self.popupItemIds:
+            path = self.GetPyData(id)
+            self.hiddenPaths.add(path)
+            self.SetAttrsForHiddenItem(id)
+            #print self.GetItemFont(id).
+            if self.showHidden: return
+            self.Delete(id)
+
+    def SetAttrsForHiddenItem(self, id):
+        self.SetItemTextColour(id, wx.Colour(60, 60, 200))
+        self.SetItemItalic(id, True)
+
+    def ClearHiddenAttrs(self, id):
+        rootId = self.GetRootItem()
+        self.SetItemTextColour(id, self.GetItemTextColour(rootId))
+        self.SetItemItalic(id, False)
+
+    def OnMenuShow(self, event):
+        for id in self.popupItemIds:
+            path = self.GetPyData(id)
+            self.hiddenPaths.remove(path)
+            self.ClearHiddenAttrs(id)
+
+    def OnMenuShowHide(self, event):
+        if self.showHidden == True:
+            self.showHidden = False
+            for path in self.hiddenPaths:
+                self.DeleteItemByPath(path)
+        else:
+            self.showHidden = True
+            for path in sorted(self.hiddenPaths):
+                if os.path.dirname(path) in self.hiddenPaths: continue
+                if os.path.isdir(path):
+                    id = self.FindItemByPath(os.path.dirname(path))
+                    self.AppendDir(id, path)
+                else:
+                    id = self.FindItemByPath(path)
+                    self.AppendFile(id, path)
+                if id:
+                    self.SortChildren(id)
+
+    def DeleteItemByPath(self, path):
+        if os.path.isfile(path):
+            parentId = self.FindItemByPath(path)
+            id = self.FindItem(parentId, os.path.basename(path))
+        else:
+            id = self.FindItemByPath(path)
+        if self.GetPyData(id) == path:
+            self.Delete(id)
 
     def OnActivateItem(self, event):
         path = self.GetPyData(event.GetItem())
