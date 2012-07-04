@@ -43,25 +43,29 @@ class Project:
 class ErlangProject(Project):
     IDE_MODULES_DIR = os.path.join(os.getcwd(), 'data', 'erlang', 'modules')
     EXPLORER_TYPE = exp.ErlangProjectExplorer
+    CACHE_DIR = os.path.join(os.getcwd(), "cache", "erlang")
 
     def OnLoadProject(self):
         self.SetupDirs()
         self.AddConsoles()
+        self.GenerateErlangCache()
         self.CompileProject()
         self.explorer.Bind(exp.EVT_PROJECT_FILE_MODIFIED, self.OnProjectFileModified)
 
     def SetupDirs(self):
-        self.cacheDir = os.path.join(os.getcwd(), "cache", "erlang")
-        erlangLibsCacheDir =  os.path.join(self.cacheDir, "erlang")
-        otherCacheDir =  os.path.join(self.cacheDir, "other")
-        projectCacheDir =  os.path.join(self.cacheDir, self.ProjectName())
-        for dir in [self.cacheDir, erlangLibsCacheDir, otherCacheDir, projectCacheDir]:
+        erlangLibsCacheDir =  os.path.join(self.CACHE_DIR, "erlang")
+        otherCacheDir =  os.path.join(self.CACHE_DIR, "other")
+        projectCacheDir =  os.path.join(self.CACHE_DIR, self.ProjectName())
+        for dir in [self.CACHE_DIR, erlangLibsCacheDir, otherCacheDir, projectCacheDir]:
             if not os.path.isdir(dir):
                 os.makedirs(dir)
 
+    def GenerateErlangCache(self):
+        self.shellConsole.shell.GenerateErlangCache()
+
     def AddConsoles(self):
         self.shellConsole = ErlangIDEConsole(self.window.ToolMgr, self.IDE_MODULES_DIR)
-        self.shellConsole.shell.SetProp("cache_dir", self.cacheDir)
+        self.shellConsole.shell.SetProp("cache_dir", self.CACHE_DIR)
         self.shellConsole.shell.SetProp("project_dir", self.AppsPath())
         self.shellConsole.shell.SetProp("project_name", self.ProjectName())
         #time.sleep(0.1)
@@ -99,8 +103,12 @@ class ErlangProject(Project):
         self.shellConsole.Stop()
 
     def OnProjectFileModified(self, event):
-        self.shellConsole.shell.CompileFile(event.File)
-        print event.File
+        file = event.File
+        if file.endswith(".erl"):
+            self.shellConsole.shell.CompileFile(file)
+        elif file.endswith(".hrl"):
+            self.shellConsole.shell.GenerateFileCache(file)
+        #print event.File
 
     def CompileProject(self):
         #print "compile project"

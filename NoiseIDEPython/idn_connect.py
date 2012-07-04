@@ -105,12 +105,13 @@ class CompileErrorInfo:
         #print type, line, msg
 
 class ErlangIDEConnectAPI(ErlangSocketConnection):
-    TASK_COMPILE, TASK_GEN_FILE_CACHE = range(2)
+    TASK_COMPILE, TASK_GEN_FILE_CACHE, TASK_GEN_ERLANG_CACHE = range(3)
 
     def __init__(self):
         ErlangSocketConnection.__init__(self)
         self.tasks = set()
         self.SetSocketHandler(self._HandleSocketResponse)
+        self.progressDialog = None
 
     def CompileFile(self, file):
         self._ExecRequest("compile_file", '"{}"'.format(file))
@@ -142,6 +143,7 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
             self.GenerateFileCache(file)
 
     def GenerateErlangCache(self):
+        self._CreateProgressDialog("Generating/Checking erlang cache")
         self._ExecRequest("gen_erlang_cache", '[]')
 
     def GenerateProjectCache(self):
@@ -155,14 +157,17 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
 
 
     def _CreateProgressDialog(self, text = "IDE Activities"):
-        self.progressDialog = PP.PyProgress(message = text, agwStyle= wx.PD_APP_MODAL | wx.PD_ELAPSED_TIME)
-        self.progressDialog.SetGaugeProportion(0.2)
-        self.progressDialog.SetGaugeSteps(50)
-        self.progressDialog.SetGaugeBackground(wx.BLACK)
-        self.progressDialog.SetFirstGradientColour(wx.GREEN)
-        self.progressDialog.SetSecondGradientColour(wx.BLUE)
-        self.progressDialog.SetSize((500, 150))
-        self.progressDialog.ShowDialog()
+        if self.progressDialog and self.progressDialog.IsShownOnScreen():
+            pass
+        else:
+            self.progressDialog = PP.PyProgress(message = text, agwStyle= wx.PD_APP_MODAL | wx.PD_ELAPSED_TIME)
+            self.progressDialog.SetGaugeProportion(0.2)
+            self.progressDialog.SetGaugeSteps(50)
+            self.progressDialog.SetGaugeBackground(wx.BLACK)
+            self.progressDialog.SetFirstGradientColour(wx.GREEN)
+            self.progressDialog.SetSecondGradientColour(wx.BLUE)
+            self.progressDialog.SetSize((500, 150))
+            self.progressDialog.ShowDialog()
 
     def _HandleSocketResponse(self, text):
         js = json.loads(text)
@@ -182,7 +187,8 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
                 path = pystr(js["path"])
                 self.tasks.remove((self.TASK_GEN_FILE_CACHE, path))
                 lastTaskDone = "Generated cache for {}".format(path)
-
+            elif res == "gen_erlang_cache":
+                self.tasks.remove(self.TASK_GEN_ERLANG_CACHE)
             if self.progressDialog.IsShownOnScreen():
                 self.progressDialog.UpdatePulse(lastTaskDone)
         except Exception, e:
@@ -219,7 +225,7 @@ class ErlangProcess(Process):
         self.inputStream = self.GetInputStream()
         self.outputStream = self.GetOutputStream()
 
-    def OnTimer(self, event = None):
+    def OnTimer(self, event):
         if  self.inputStream.CanRead():
             text =  self.inputStream.read()
             if self.handler:
