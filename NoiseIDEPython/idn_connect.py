@@ -244,6 +244,7 @@ class ErlangProcess(Process):
     def Stop(self):
         if self.timer:
             self.timer.Stop()
+        if not self.pid: return
         result = Process.Kill(self.pid, wx.SIGTERM)
         if result not in [wx.KILL_OK, wx.KILL_NO_PROCESS]:
             Process.Kill(self.pid, wx.SIGABRT)

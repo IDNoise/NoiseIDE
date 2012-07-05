@@ -125,6 +125,11 @@ class ProjectExplorer(CT.CustomTreeCtrl):
     def AddMask(self, mask):
         self.SetMask(self.mask + mask)
 
+    def SetHiddenList(self, list):
+        self.hiddenPaths = list
+        self.DeleteAllItems()
+        self.SetRoot(self.root)
+
     def AddIcon(self, id, path):
         try:
             if os.path.exists(path):

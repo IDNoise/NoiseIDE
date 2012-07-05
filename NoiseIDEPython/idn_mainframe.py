@@ -101,8 +101,6 @@ class NoiseIDE(wx.Frame):
         #print "loading project ", projectFile
 
     def OnClose(self, event):
-        if self.explorer:
-            self.explorer.StopTrackingProject()
         if self.project:
             self.project.Close()
         event.Skip()

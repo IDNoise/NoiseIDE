@@ -1,27 +1,57 @@
-import time
-
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 #from idn_utils import extension
 import os
 import yaml
+import time
 import idn_projectexplorer as exp
 from wx.lib.agw import aui
 from idn_console import ErlangIDEConsole, ErlangProjectConsole
 
 class Project:
     EXPLORER_TYPE = exp.ProjectExplorer
+    USER_DATA_FOLDER = os.path.join(os.getcwd(), 'userdata')
+
+    CONFIG_LAST_OPENED_FILES = "last_opened_files"
+    CONFIG_HIDDEN_PATHS = "hidden_paths"
+
     def __init__(self, window, filePath, projectData):
         self.window = window
         self.projectFilePath = filePath
         self.projectDir = os.path.dirname(filePath)
         self.projectData = projectData
 
+        if not os.path.isdir(self.USER_DATA_FOLDER):
+            os.makedirs(self.USER_DATA_FOLDER)
+
+        self.userDataFile = os.path.join(self.USER_DATA_FOLDER, "{}.project.user".format(self.ProjectName()))
+        if os.path.isfile(self.userDataFile):
+            self.userData = yaml.load(open(self.userDataFile))
+        else:
+            self.userData = {}
+
         self.CreateExplorer()
         self.OnLoadProject()
+        self.OpenLastFiles()
 
     def ProjectName(self):
         return self.projectData["project_name"]
+
+    def LastOpenedFiles(self):
+        if self.CONFIG_LAST_OPENED_FILES in self.userData:
+            return self.userData[self.CONFIG_LAST_OPENED_FILES]
+        else:
+            return []
+
+    def HiddenPathsList(self):
+        if self.CONFIG_HIDDEN_PATHS in self.userData:
+            return set(self.userData[self.CONFIG_HIDDEN_PATHS])
+        else:
+            return set()
+
+    def OpenLastFiles(self):
+        for file in self.LastOpenedFiles():
+            self.window.TabMgr.LoadFile(file)
 
     def AppsPath(self):
         return os.path.join(self.projectDir, self.projectData["apps_dir"])
@@ -32,13 +62,28 @@ class Project:
     def CreateExplorer(self):
         self.explorer = self.EXPLORER_TYPE(self.window)
         self.explorer.SetRoot(self.projectDir)
+        self.explorer.SetHiddenList(self.HiddenPathsList())
         self.window.WinMgr.AddPane1(self.explorer, aui.AuiPaneInfo().Left().Caption("Project Explorer")
             .MinimizeButton().CloseButton(False).BestSize2(300, 600))
         self.window.WinMgr.Update()
 
 
     def Close(self):
-        pass
+        self.explorer.StopTrackingProject()
+        self.SaveUserData()
+
+    def SaveUserData(self):
+        #print "save user data"
+        openedFiles = []
+        for path in self.window.TabMgr.OpenedFiles():
+            if path.startswith(self.projectDir):
+                openedFiles.append(path)
+        self.userData[self.CONFIG_LAST_OPENED_FILES] = openedFiles
+        self.userData[self.CONFIG_HIDDEN_PATHS] = self.explorer.hiddenPaths
+        #print(self.userData[self.CONFIG_LAST_OPENED_FILES])
+        #print(self.userData[self.CONFIG_HIDDEN_PATHS])
+        yaml.dump(self.userData, open(self.userDataFile, 'w'))
+
 
 class ErlangProject(Project):
     IDE_MODULES_DIR = os.path.join(os.getcwd(), 'data', 'erlang', 'modules')
@@ -100,7 +145,10 @@ class ErlangProject(Project):
             self.window.ToolMgr.AddPage(self.consoles[title], '<{}> Console'.format(title))
 
     def Close(self):
+        Project.Close(self)
         self.shellConsole.Stop()
+        for title, console in self.consoles.items():
+            console.Stop()
 
     def OnProjectFileModified(self, event):
         file = event.File
