@@ -1,3 +1,6 @@
+from idn_cache import ErlangCache
+from idn_directoryinfo import DirectoryChecker
+
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 #from idn_utils import extension
@@ -67,7 +70,6 @@ class Project:
             .MinimizeButton().CloseButton(False).BestSize2(300, 600))
         self.window.WinMgr.Update()
 
-
     def Close(self):
         self.explorer.StopTrackingProject()
         self.SaveUserData()
@@ -88,38 +90,38 @@ class Project:
 class ErlangProject(Project):
     IDE_MODULES_DIR = os.path.join(os.getcwd(), 'data', 'erlang', 'modules')
     EXPLORER_TYPE = exp.ErlangProjectExplorer
-    CACHE_DIR = os.path.join(os.getcwd(), "cache", "erlang")
+
 
     def OnLoadProject(self):
+        ErlangCache.Init()
         self.SetupDirs()
         self.AddConsoles()
         self.GenerateErlangCache()
+
         self.CompileProject()
+
         self.explorer.Bind(exp.EVT_PROJECT_FILE_MODIFIED, self.OnProjectFileModified)
+        ErlangCache.LoadCacheFromDir("erlang")
+        ErlangCache.LoadCacheFromDir(self.ProjectName())
+        ErlangCache.StartCheckingFolder(self.ProjectName())
 
     def SetupDirs(self):
-        erlangLibsCacheDir =  os.path.join(self.CACHE_DIR, "erlang")
-        otherCacheDir =  os.path.join(self.CACHE_DIR, "other")
-        projectCacheDir =  os.path.join(self.CACHE_DIR, self.ProjectName())
-        for dir in [self.CACHE_DIR, erlangLibsCacheDir, otherCacheDir, projectCacheDir]:
-            if not os.path.isdir(dir):
-                os.makedirs(dir)
+        projectCacheDir =  os.path.join(ErlangCache.CACHE_DIR, self.ProjectName())
+        if not os.path.isdir(projectCacheDir):
+            os.makedirs(projectCacheDir)
 
     def GenerateErlangCache(self):
         self.shellConsole.shell.GenerateErlangCache()
 
     def AddConsoles(self):
         self.shellConsole = ErlangIDEConsole(self.window.ToolMgr, self.IDE_MODULES_DIR)
-        self.shellConsole.shell.SetProp("cache_dir", self.CACHE_DIR)
+        self.shellConsole.shell.SetProp("cache_dir", ErlangCache.CACHE_DIR)
         self.shellConsole.shell.SetProp("project_dir", self.AppsPath())
         self.shellConsole.shell.SetProp("project_name", self.ProjectName())
-        #time.sleep(0.1)
-        #print "setting props"
         self.window.ToolMgr.AddPage(self.shellConsole, "IDE Console")
 
         self.consoles = {}
         consoles = self.projectData["consoles"]
-        #print consoles
 
         dirs = ""
         for app in self.projectData["apps"]:
@@ -131,7 +133,6 @@ class ErlangProject(Project):
         dirs += ' "{}"'.format(self.IDE_MODULES_DIR)
 
         for title in consoles:
-            #print title
             data = consoles[title]
             params = []
             params.append("-sname " + data["sname"])
@@ -139,12 +140,12 @@ class ErlangProject(Project):
             params.append("-config " + data["config"])
 
             params.append("-pa " + dirs)
-            #print params
             self.consoles[title] = ErlangProjectConsole(self.window.ToolMgr, self.AppsPath(), params)
             self.consoles[title].SetStartCommand(data["command"])
             self.window.ToolMgr.AddPage(self.consoles[title], '<{}> Console'.format(title))
 
     def Close(self):
+        ErlangCache.StopCheckingFolder(self.ProjectName())
         Project.Close(self)
         self.shellConsole.Stop()
         for title, console in self.consoles.items():

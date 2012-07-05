@@ -1,7 +1,7 @@
 import os
 import json
-from idn_project import ErlangProject
-
+from idn_config import Config
+from idn_directoryinfo import DirectoryChecker
 
 FILE = "file"
 NAME = "name"
@@ -25,47 +25,9 @@ def readFile(file):
     with open(file) as f:
         return f.read()
 
-class ErlangCache:
-
-    modules = set()
-    moduleData = {}
-   # recordData = {}
-
-
-    @classmethod
-    def LoadCacheFromDir(cls, dir):
-        dir = os.path.join(ErlangProject.CACHE_DIR, dir)
-        for file in os.listdir(dir):
-            file = os.path.join(dir, file)
-
-            cls.LoadFile(file)
-
-    @classmethod
-    def LoadFile(cls, file):
-        if not os.path.isfile(file): return
-        if not fileName.endswith(".cache"): return
-        data = data = json.loads(readFile(file))
-        name = os.path.basename(file)[:-6]
-        if 'nt' == os.name:
-            import win32api
-            data[FILE] = os.path.normcase(win32api.GetLongPathName(data[FILE]))
-        file = data[FILE]
-        if (name in cls.modules and name in cls.moduleData and
-            cls.moduleData[name][FILE].lower().startswith(EditorConfig.erlang.lower()) and
-            file != cls.moduleData[name][FILE]):
-            print("Ignoring replace of cache for standart erlang " +
-                "module: {}\n\tPath:{}".format(name, file))
-            return
-
-        if name[-4:] != ".hrl":
-            cls.modules.add(name)
-
-        cls.moduleData[name] = ModuleData(name, data)
-        print("Loading cache for: " + name)
-
 
 class Function:
-    def __init__(cls, module, name, arity, params, types, result, docref, exported, bif):
+    def __init__(self, module, name, arity, params, types, result, docref, exported, bif):
         self.module = module
         self.name = name
         self.arity = arity
@@ -77,44 +39,136 @@ class Function:
         self.bif = bif
 
 class Record:
-    def __init__(cls, module, name, fields, line):
+    def __init__(self, module, name, fields, line):
         self.module = module
         self.name = name
         self.fields = fields
         self.line = line
 
 class Macros:
-    def __init__(cls, module, name, value, line):
+    def __init__(self, module, name, value, line):
         self.module = module
         self.name = name
         self.value = value
         self.line = line
 
 class ModuleData:
-    def __init__(cls, module, data):
+    def __init__(self, module, data):
         self.file = data[FILE]
         self.module = module
         self.functions = []
 
         for funData in data[FUNS]:
+            isBif = funData[BIF] if BIF in funData else False
             fun = Function(module, funData[NAME], funData[ARITY],
                 funData[PARAMS],  funData[TYPES], funData[RESULT],
-                funData[DOCREF], funData[EXPORTED], funData[BIF])
+                funData[DOCREF], funData[EXPORTED], isBif)
 
             self.functions.append(fun)
 
         self.records = []
-        for rec in data[RECORDS_DATA]:
-            recordData = data[RECORDS_DATA][rec]
+        for record in data[RECORDS_DATA]:
+            recordData = data[RECORDS_DATA][record]
             self.records.append(Record(module, record, recordData[FIELDS], recordData[LINE]))
 
         self.macroses = []
-        for mac in data[MACROS]:
-            macData = data[MACROS][mac]
-            self.macroses.append(Macros(module, mac, macData[VALUE], macData[LINE]))
+        for macros in data[MACROS]:
+            macData = data[MACROS][macros]
+            self.macroses.append(Macros(module, macros, macData[VALUE], macData[LINE]))
 
-        self.includes = data[INCLUDES]
+        self.includes = set(data[INCLUDES])
 
+class ErlangCache:
+    checkers = {}
+    modules = set()
+    moduleData = {}
+
+    @classmethod
+    def Init(cls):
+        cls.CACHE_DIR = os.path.join(os.getcwd(), "cache", "erlang")
+
+        erlangLibsCacheDir =  os.path.join(cls.CACHE_DIR, "erlang")
+        otherCacheDir =  os.path.join(cls.CACHE_DIR, "other")
+        for dir in [cls.CACHE_DIR, erlangLibsCacheDir, otherCacheDir]:
+            if not os.path.isdir(dir):
+                os.makedirs(dir)
+
+        cls.erlangDir = os.path.dirname(os.path.dirname(Config.LanguageExec("erlang")))
+
+    @classmethod
+    def LoadCacheFromDir(cls, dir):
+        dir = os.path.join(cls.CACHE_DIR, dir)
+        for file in os.listdir(dir):
+            file = os.path.join(dir, file)
+            cls.LoadFile(file)
+
+    @classmethod
+    def LoadFile(cls, file):
+        if not os.path.isfile(file): return
+        if not file.endswith(".cache"): return
+        data = json.loads(readFile(file))
+        name = os.path.basename(file)[:-6]
+        if 'nt' == os.name:
+            import win32api
+            data[FILE] = os.path.normcase(win32api.GetLongPathName(data[FILE]))
+        file = data[FILE]
+        if (name in cls.modules and name in cls.moduleData and
+            cls.moduleData[name].file.lower().startswith(cls.erlangDir) and
+            file != cls.moduleData[name].file):
+            print("Ignoring replace of cache for standard erlang " +
+                "module: {}\n\tPath:{}".format(name, file))
+            return
+
+        if name[-4:] != ".hrl":
+            cls.modules.add(name)
+
+        cls.moduleData[name] = ModuleData(name, data)
+        print("Loading cache for: " + name)
+
+    @classmethod
+    def UnloadFile(cls, file):
+        if not os.path.isfile(file): return
+        if not fileName.endswith(".cache"): return
+        name = os.path.basename(file)[:-6]
+        del cls.moduleData[name]
+        cls.modules.remove(name)
+
+    @classmethod
+    def StartCheckingFolder(cls, folder):
+        if folder in cls.checkers:
+            cls.checkers[folder].Stop()
+        checker = DirectoryChecker(1, os.path.join(cls.CACHE_DIR, folder), False, [".cache"])
+        checker.AddHandler(DirectoryChecker.HANDLER_FILE_CREATED, cls.LoadCacheForFile)
+        checker.AddHandler(DirectoryChecker.HANDLER_FILE_MODIFIED, cls.LoadCacheForFile)
+        checker.AddHandler(DirectoryChecker.HANDLER_FILE_DELETED, cls.UnloadCacheForFile)
+        checker.Start()
+        cls.checkers[folder] = checker
+
+    @classmethod
+    def StopCheckingFolder(cls, folder):
+        if folder in cls.checkers:
+            cls.checkers[folder].Stop()
+            del cls.checkers[folder]
+
+    @classmethod
+    def LoadCacheForFile(cls, event):
+        cls.LoadFile(event.File)
+
+    @classmethod
+    def UnloadCacheForFile(cls, event):
+        cls.UnloadFile(event.File)
+
+    @classmethod
+    def allModules(cls):
+        return cls.modules
+
+    @classmethod
+    def getDependentModules(cls, include):
+        result = []
+        for module in cls.moduleData:
+            data = cls.moduleData[module]
+            if include in data.includes and data.file.endswith(".erl"):
+                result.append(module)
 
 
 
