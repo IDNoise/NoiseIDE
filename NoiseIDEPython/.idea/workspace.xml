@@ -29,9 +29,11 @@
           <file leaf-file-name="idn_customstc.py" pinned="false" current="true" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/idn_customstc.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="403" column="28" selection-start="15075" selection-end="15075" vertical-scroll-proportion="0.6196319">
+                <state line="351" column="43" selection-start="13386" selection-end="13386" vertical-scroll-proportion="0.73926383">
                   <folding>
                     <element signature="e#0#69#0" expanded="true" />
+                    <element signature="e#14869#17500#0" expanded="false" />
+                    <element signature="e#17545#18682#0" expanded="false" />
                   </folding>
                 </state>
               </provider>
@@ -594,9 +596,11 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/idn_customstc.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="403" column="28" selection-start="15075" selection-end="15075" vertical-scroll-proportion="0.6196319">
+        <state line="351" column="43" selection-start="13386" selection-end="13386" vertical-scroll-proportion="0.73926383">
           <folding>
             <element signature="e#0#69#0" expanded="true" />
+            <element signature="e#14869#17500#0" expanded="false" />
+            <element signature="e#17545#18682#0" expanded="false" />
           </folding>
         </state>
       </provider>

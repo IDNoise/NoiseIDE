@@ -337,14 +337,14 @@ class ErlangSTC(CustomSTC):
         else:
             return False
 
-class ErlangCompleter(wx.Window):
-    SIZE = (800, 400)
-    LIST_SIZE = (300, 100)
+class ErlangCompleter(wx.Frame):
+    SIZE = (820, 400)
+    LIST_SIZE = (320, 150)
 
     def __init__(self, stc):
-        wx.Window.__init__(self, stc, size = self.SIZE)
+        style = wx.BORDER_NONE | wx.STAY_ON_TOP
+        wx.Frame.__init__(self, stc, size = self.SIZE, style = style)
         self.tokenizer = ErlangTokenizer()
-        #self.SetBackgroundColour(wx.Colour(255, 255, 255, alpha = wx.ALPHA_TRANSPARENT))
         self.SetBackgroundStyle(wx.BG_STYLE_TRANSPARENT)
 
         self.stc = stc
@@ -367,26 +367,21 @@ class ErlangCompleter(wx.Window):
         self.list.Bind(wx.EVT_LISTBOX_DCLICK, self.OnItemDoubleClick)
         self.list.Bind(wx.EVT_LISTBOX, self.OnMouseItemSelected)
         self.list.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
-        self.Bind(wx.EVT_PAINT, self.OnPaint)
+        self.stc.Bind(wx.EVT_MOUSE_EVENTS, self.OnSTCMouseDonw)
 
         self.separators = ",;([{<-"
         self.lastText = None
 
-    def OnPaint(self, event):
-        dc = wx.PaintDC(self)
-        dc.SetBackgroundMode(wx.TRANSPARENT)
+    def OnSTCMouseDonw(self, event):
         event.Skip()
+        if event.ButtonDown(wx.MOUSE_BTN_ANY):
+            self.HideCompleter()
 
     def UpdateCompleterPosition(self, pos):
-        shown = self.IsShown()
-        self.Hide()
-        pos = (pos[0], pos[1] + self.lineHeight)
+        pos = self.stc.ClientToScreen((pos[0], pos[1] + self.lineHeight))
         self.SetPosition(pos)
-        self.stc.Update()
-        if shown: self.Show()
 
     def UpdateRecordField(self, record, prefix):
-        #print "update rec field"
         self.prefix = prefix.strip()
         fields = ErlangCache.RecordFields(self.module, record)
         self._PrepareData(fields)
@@ -503,6 +498,7 @@ class ErlangCompleter(wx.Window):
         help = self.list.GetClientData(id)
         if not help:
             self.helpWindow.SetPage("")
+            self.SetSize(self.LIST_SIZE)
             self.sizer.Hide(self.helpWindow)
         else:
             if isinstance(help, tuple):
@@ -512,7 +508,9 @@ class ErlangCompleter(wx.Window):
                 text = help
             self.helpWindow.SetPage(text)
             self.sizer.Show(self.helpWindow)
+            self.SetSize(self.SIZE)
         self.Layout()
+        self.stc.Refresh()
 
     def OnItemDoubleClick(self, event):
         id = event.GetSelection()
@@ -550,7 +548,7 @@ class ErlangCompleter(wx.Window):
         self.HideCompleter()
 
     def HideCompleter(self):
-        wx.Window.Hide(self)
+        wx.Frame.Hide(self)
         self.helpWindow.SetPage("")
 
     def Show(self, show = True):
@@ -560,7 +558,8 @@ class ErlangCompleter(wx.Window):
             self.sizer.Show(self.helpWindow)
         self.Layout()
         if len(self.list.GetStrings()) > 0:
-            wx.Window.Show(self, show)
+            wx.Frame.Show(self, show)
+            self.stc.SetFocus()
 
 class ConsoleSTC(CustomSTC):
     def __init__(self, parent):
