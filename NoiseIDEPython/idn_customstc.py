@@ -342,14 +342,9 @@ class ErlangCompleter(wx.Window):
     LIST_SIZE = (300, 100)
 
     def __init__(self, stc):
-        wx.Window.__init__(self, stc, size = self.SIZE)#,
-        #    style = wx.DEFAULT_FRAME_STYLE | wx.STAY_ON_TOP | wx.FRAME_FLOAT_ON_PARENT |
-        #   wx.FRAME_SHAPED | wx.FRAME_NO_TASKBAR)
+        wx.Window.__init__(self, stc, size = self.SIZE)
         self.tokenizer = ErlangTokenizer()
-        #print self.CanSetTransparent()
-        self.SetBackgroundColour(wx.Colour(255, 255, 255, alpha = wx.ALPHA_TRANSPARENT))
-        #self.SetTransparent(255)
-        #self.SetBackgroundColour
+        #self.SetBackgroundColour(wx.Colour(255, 255, 255, alpha = wx.ALPHA_TRANSPARENT))
         self.SetBackgroundStyle(wx.BG_STYLE_TRANSPARENT)
 
         self.stc = stc
@@ -399,6 +394,9 @@ class ErlangCompleter(wx.Window):
     def ValidateCompleter(self):
         if len(self.list.GetStrings()) == 0:
             self.HideCompleter()
+            return
+        self.list.SetSelection(0)
+        self.OnItemSelected(0)
 
     def Update(self, text, nextChar = None):
         if self.lastText == text: return
@@ -563,7 +561,6 @@ class ErlangCompleter(wx.Window):
         self.Layout()
         if len(self.list.GetStrings()) > 0:
             wx.Window.Show(self, show)
-        self.Raise()
 
 class ConsoleSTC(CustomSTC):
     def __init__(self, parent):

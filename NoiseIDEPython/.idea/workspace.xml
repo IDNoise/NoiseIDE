@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d654c747-d601-49bc-80fe-ab63471b2f11" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_cache.py" afterPath="$PROJECT_DIR$/idn_cache.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_customstc.py" afterPath="$PROJECT_DIR$/idn_customstc.py" />
     </list>
     <ignored path="NoiseIDE.iws" />
@@ -30,7 +29,7 @@
           <file leaf-file-name="idn_customstc.py" pinned="false" current="true" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/idn_customstc.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="343" column="28" selection-start="13053" selection-end="13053" vertical-scroll-proportion="0.452454">
+                <state line="403" column="28" selection-start="15075" selection-end="15075" vertical-scroll-proportion="0.6196319">
                   <folding>
                     <element signature="e#0#69#0" expanded="true" />
                   </folding>
@@ -92,7 +91,7 @@
           <file leaf-file-name="idn_cache.py" pinned="false" current="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/idn_cache.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="36" column="19" selection-start="757" selection-end="763" vertical-scroll-proportion="0.6457055">
+                <state line="32" column="8" selection-start="640" selection-end="640" vertical-scroll-proportion="0.54141104">
                   <folding>
                     <element signature="e#0#9#0" expanded="true" />
                     <element signature="e#9472#9490#0" expanded="false" />
@@ -555,16 +554,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/idn_cache.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="36" column="19" selection-start="757" selection-end="763" vertical-scroll-proportion="0.6457055">
-          <folding>
-            <element signature="e#0#9#0" expanded="true" />
-            <element signature="e#9472#9490#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://C:/Programming/Python27/Lib/site-packages/wx-2.9.3-msw/wx/_gdi.py">
       <provider selected="true" editor-type-id="text-editor">
         <state line="122" column="85" selection-start="4621" selection-end="4633" vertical-scroll-proportion="0.0">
@@ -593,9 +582,19 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/idn_cache.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="32" column="8" selection-start="640" selection-end="640" vertical-scroll-proportion="0.54141104">
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+            <element signature="e#9472#9490#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/idn_customstc.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="343" column="28" selection-start="13053" selection-end="13053" vertical-scroll-proportion="0.452454">
+        <state line="403" column="28" selection-start="15075" selection-end="15075" vertical-scroll-proportion="0.6196319">
           <folding>
             <element signature="e#0#69#0" expanded="true" />
           </folding>
