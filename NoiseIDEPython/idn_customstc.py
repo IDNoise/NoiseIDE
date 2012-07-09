@@ -1,3 +1,6 @@
+from idn_cache import ErlangCache, Function, Record, Macros
+from idn_token import ErlangTokenizer, ErlangTokenType
+
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 
@@ -8,6 +11,7 @@ from wx.stc import STC_FOLDLEVELHEADERFLAG, StyledTextCtrl
 from idn_colorschema import ColorSchema
 from idn_highlight import ErlangHighlightType
 from idn_lexer import ErlangLexer
+from wx import html2
 
 class EditorFoldMixin:
     def __init__(self):
@@ -67,6 +71,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
 
         self.SetupLexer()
         self.filePath = filePath
+        self.hash = None
 
         self.SetCaretWidth(3)
         self.SetCaretLineBackground(ColorSchema.codeEditor["current_line_background"])
@@ -127,17 +132,24 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         if hasattr(self, "lexer"):
             self.Bind(stc.EVT_STC_STYLENEEDED, self.OnStyleNeeded)
         self.Bind(stc.EVT_STC_UPDATEUI, self.HighlightBrackets)
+        self.Bind(stc.EVT_STC_CHANGE , self.OnDocumentChanged)
         self.Bind(stc.EVT_STC_CHARADDED, self.OnCharAdded)
         self.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
 
         self.EnableLineNumbers()
 
+        self.OnInit()
+
         if self.filePath:
             self.LoadFile(self.filePath)
             self.SetSelection(0, 0)
 
+
         #print(self.GetScrollWidth())
         #print(self.Size)
+
+    def OnInit(self):
+        pass
 
     def SetupLexer(self):
         self.lexer = None
@@ -145,18 +157,24 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
     def SetupLanguageStyles(self):
         pass
 
+    def OnDocumentChanged(self, event):
+        self.Changed()
+        event.Skip()
+
     def OnCharAdded(self, event):
         keyCode = event.GetKey()
-        self.Changed()
-        #print keyCode
         if keyCode in [wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER]:
             self.DoIndent()
-            #print "return pressed"
         event.Skip()
 
     def OnKeyDown(self, event):
-        keyCode = event.GetKeyCode()
+        if self.HandleKeyDownEvent(event):
+            return
+        else:
+            event.Skip()
 
+    def HandleKeyDownEvent(self, event):
+        keyCode = event.GetKeyCode()
         if keyCode in [wx.WXK_DOWN, wx.WXK_UP] and event.ControlDown() and event.ShiftDown():
             offset = -1 if keyCode == wx.WXK_UP else 1
             startLine = self.LineFromPosition(self.GetSelectionStart())
@@ -176,8 +194,14 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
             self.hash = hash(self.GetText())
             self.SaveFile(self.filePath)
             self.Changed(False)
+        elif keyCode == wx.WXK_SPACE and event.ControlDown():
+            self.OnAutoComplete()
         else:
-            event.Skip()
+            return False
+        return True
+
+    def OnAutoComplete(self):
+        pass
 
     def Changed(self, changed = True):
         self.changed = changed
@@ -216,7 +240,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         pos = self.GetCurrentPos()
         char = chr(self.GetCharAt(pos))
         if not char in "()[]{}<>":
-            self.BraceBadLight(-1)
+            self.BraceBadLight(-1) #clear
             return
         otherPos = self.BraceMatch(pos)
         if otherPos > 0:
@@ -233,8 +257,14 @@ class YAMLSTC(CustomSTC):
         self.SetLexer(stc.STC_LEX_YAML)
 
 class ErlangSTC(CustomSTC):
+    TYPE_MODULE, TYPE_HRL, TYPE_UNKNOWN = range(3)
+
+    def OnInit(self):
+        self.completer = ErlangCompleter(self)
+        self.Bind(stc.EVT_STC_UPDATEUI, self.UpdateCompleter)
+
     def SetupLexer(self):
-        self.lexer = ErlangLexer()
+        self.lexer = ErlangLexer(self)
         self.SetLexer(stc.STC_LEX_CONTAINER)
 
     def SetupLanguageStyles(self):
@@ -260,6 +290,232 @@ class ErlangSTC(CustomSTC):
         self.StyleSetSpec(ErlangHighlightType.BIF, formats["bif"])
         self.StyleSetSpec(ErlangHighlightType.FULLSTOP, formats["fullstop"])
 
+    def ModuleName(self):
+        name = self.FileName()
+        if name.endswith(".erl"):
+            return name[:-4]
+        else:
+            return name
+
+    def ModuleType(self):
+        name = self.ModuleName()
+        if name.endswith('.hrl'): return self.TYPE_HRL
+        elif name.find('.') < 0: return self.TYPE_MODULE
+        return self.TYPE_UNKNOWN
+
+    def OnAutoComplete(self):
+        self.UpdateCompleter()
+        self.completer.Show()
+
+    def UpdateCompleter(self, event = None):
+        caretPos = self.GetCurrentPos()
+        (isRecField, record, prefix) = self.lexer.RecordFieldUnderCursor()
+        if isRecField:
+            self.completer.UpdateRecordField(record, prefix)
+        else:
+            line = self.GetCurrentLine()
+            prefix = self.GetTextRange(self.PositionFromLine(line), caretPos)
+           # self.completer.Update(prefix, self.GetCharAt(caretPos + 1))
+            self.completer.Update(prefix)
+        windowPosition = self.PointFromPosition(caretPos)
+        self.completer.UpdateCompleterPosition(windowPosition)
+
+    #def OnDocumentChanged(self, event):
+    #    CustomSTC.OnDocumentChanged(self, event)
+        #print "changed"
+        #self.UpdateCompleter()
+
+    def HandleKeyDownEvent(self, event):
+        keyCode = event.GetKeyCode()
+        #print keyCode
+        result = CustomSTC.HandleKeyDownEvent(self, event)
+        if result: return result
+        if (self.completer.IsShown() and
+            keyCode in [wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER,
+                        wx.WXK_DOWN, wx.WXK_UP, wx.WXK_ESCAPE]):
+            self.completer.OnKeyDown(event)
+            return True
+        else:
+            return False
+
+class ErlangCompleter(wx.Window):
+    def __init__(self, stc):
+        wx.Window.__init__(self, stc, size = (700, 150))
+        self.tokenizer = ErlangTokenizer()
+
+        self.stc = stc
+        self.lineHeight = stc.TextHeight(0) + 2
+        self.module = self.stc.ModuleName()
+        self.moduleType = self.stc.ModuleType()
+
+
+        self.list = wx.ListBox(self, size = wx.Size(300, 100),
+            style = wx.LB_SORT | wx.LB_SINGLE | wx.WANTS_CHARS)
+        self.helpWindow = html2.WebView.New(self)
+
+        self.sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.sizer.Add(self.list)
+        self.sizer.Add(self.helpWindow, 1, wx.EXPAND)
+        self.SetSizer(self.sizer)
+        self.Layout()
+        self.Hide()
+
+        self.list.Bind(wx.EVT_LISTBOX_DCLICK, self.OnItemSelected)
+        self.list.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
+
+        self.separators = ",;([{<-"
+        self.lastText = None
+
+    def UpdateCompleterPosition(self, pos):
+        pos = (pos[0], pos[1] + self.lineHeight)
+        self.SetPosition(pos)
+        self.Refresh()
+        self.stc.Refresh()
+
+    def UpdateRecordField(self, record, prefix):
+        print "update rec field"
+        self.prefix = prefix.strip()
+        fields = ErlangCache.RecordFields(self.module, record)
+        print self.module, record, fields
+        #fields = [field for field in fields if field.startswith(prefix)]
+        data = self._PrepareData(fields)
+        self.list.Set(data)
+        self.ValidateCompleter()
+
+    def ValidateCompleter(self):
+        if len(self.list.GetStrings()) == 0:
+            self.Hide()
+
+    def Update(self, text, nextChar = None):
+        if self.lastText == text: return
+        #print "update", text
+        self.lastText = text
+        tokens = self.tokenizer.GetTokens(text)
+        tokens.reverse()
+        data = []
+        self.prefix = ""
+        if not tokens:
+            data = self.GetVars()
+        else:
+            fToken = tokens[0]
+            fType = fToken.type
+            fValue = fToken.value
+            fIsAtom = fType == ErlangTokenType.ATOM
+
+            if (fType == ErlangTokenType.SPACE or
+                (len(tokens) == 1 and fIsAtom) or
+                (fIsAtom and tokens[1].type == ErlangTokenType.SPACE) or
+                (fIsAtom and tokens[1].value in self.separators) or
+                #(fIsAtom and nextChar == "/") or
+                fValue in self.separators):
+                if fValue in self.separators or fType == ErlangTokenType.SPACE:
+                    self.prefix = ""
+                else:
+                    self.prefix = fValue.strip()
+                if self.moduleType == ErlangSTC.TYPE_MODULE:
+                    functions = ErlangCache.ModuleFunctions(self.module, False)
+
+                    data += functions
+                    if True:
+                        data += ErlangCache.Bifs()
+                        data += ErlangCache.AllModules()
+            elif (len(tokens) > 1 and
+                  ((fIsAtom and tokens[1].value == ":") or fValue == ":")):
+                i = 1 if fValue == ":" else 2
+                moduleName = tokens[i].value
+                self.prefix = "" if fValue == ":" else fValue
+                data = ErlangCache.ModuleFunctions(moduleName)
+            elif (fValue == "?" or fType == ErlangTokenType.MACROS):
+                self.prefix = "" if fValue == "?" else fValue[1:]
+                data = ErlangCache.Macroses(self.module)
+            elif (len(tokens) > 2 and fIsAtom and tokens[1].value == "."
+                  and tokens[2].type == ErlangTokenType.RECORD):
+                self.prefix = fValue
+                record = tokens[2].value[1:]
+                data = ErlangCache.RecordFields(self.module, record)
+            elif (len(tokens) > 1 and fValue == "." and tokens[1].type == ErlangTokenType.RECORD):
+                self.prefix = ""
+                record = tokens[1].value[1:]
+                data = ErlangCache.RecordFields(self.module, record)
+            elif fType == ErlangTokenType.RECORD or fValue == "#":
+                self.prefix = "" if fValue == "#" else fValue[1:]
+                data = ErlangCache.ModuleRecords(self.module)
+            elif fType == ErlangTokenType.VAR:
+                self.prefix = fValue
+                data = self.GetVars()
+        data = self._PrepareData(data)
+
+        self.list.Set(data)
+        self.ValidateCompleter()
+
+    def _PrepareData(self, data):
+        result = []
+        for d in data:
+            if isinstance(d, Function):
+                result.append("{}({})".format(d.name, ", ".join(d.params)))
+            elif isinstance(d, Record):
+                result.append(d.name)
+            elif isinstance(d, Macros):
+                result.append(d.name)
+            else:
+                result.append(d)
+        #print self.prefix
+        #print result
+        if self.prefix:
+            result = filter(lambda d: d.startswith(self.prefix), result)
+        return result
+
+    def GetVars(self):
+        funData = self.stc.lexer.GetCurrentFunction()
+        if funData:
+            text = funData[3][:self.stc.GetCurrentPos()]
+            tokens = self.tokenizer.GetTokens(text)
+            return list({token.value for token in tokens
+                         if token.type == ErlangTokenType.VAR and token.value != self.prefix})
+        return []
+
+    def OnItemSelected(self, event):
+        id = event.GetSelection()
+        text = self.list.GetString(id)
+        self.AutoComplete(text)
+
+    def OnKeyDown(self, event):
+        #print "onKEyDown", event.GetKeyCode(), wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER
+        keyCode = event.GetKeyCode()
+        if keyCode in [wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER]:
+            self.AutoComplete(self.list.GetString(self.list.GetSelection()))
+        elif keyCode == wx.WXK_UP:
+            current = self.list.GetSelection()
+            if current == 0:
+                current = self.list.Count - 1
+            else:
+                current -= 1
+            self.list.SetSelection(current)
+        elif keyCode == wx.WXK_DOWN:
+            current = self.list.GetSelection()
+            if current == self.list.Count - 1:
+                current = 0
+            else:
+                current += 1
+            self.list.SetSelection(current)
+        elif keyCode == wx.WXK_ESCAPE:
+            self.Hide()
+
+
+    def AutoComplete(self, text):
+        print "AutoComplete: ", text
+        toInsert = text[len(self.prefix):]
+        self.stc.AddText(toInsert)
+        self.Hide()
+
+    def Show(self, show = True):
+        if not self.helpWindow.GetPageText():
+            self.sizer.Hide(self.helpWindow)
+            self.SetSize(self.list.Size)
+            self.Layout()
+        if len(self.list.GetStrings()) > 0:
+            wx.Window.Show(self, show)
+
 class ConsoleSTC(CustomSTC):
     def __init__(self, parent):
         CustomSTC.__init__(self, parent)
@@ -278,3 +534,6 @@ class ConsoleSTC(CustomSTC):
         self.SetEndAtLastLine(True)
 
         self.SetYCaretPolicy(stc.STC_CARET_SLOP, 10)
+
+    def Changed(self, changed = True):
+        pass

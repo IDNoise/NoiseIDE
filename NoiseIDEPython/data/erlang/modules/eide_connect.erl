@@ -22,7 +22,7 @@ accept(LS) ->
     %io:format("accepted"),
     AcceptResponce = mochijson2:encode({struct, [{response, connect}]}), 
     gen_tcp:send(Socket, AcceptResponce),
-    Workers = [spawn(fun worker/0) || _ <- lists:seq(1, 30)],
+    Workers = [spawn(fun worker/0) || _ <- lists:seq(1, 50)],
     loop(Socket, Workers, spawn(fun worker/0)).
     
 loop(Socket, Workers, FlyCompiler) ->

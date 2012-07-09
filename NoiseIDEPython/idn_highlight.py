@@ -99,8 +99,6 @@ class ErlangHighlighter:
                     tokenType = ErlangHighlightType.MODULE
                 elif i == 2 and firstToken.value == self.RECORD:
                     tokenType = ErlangHighlightType.RECORDDEF
-                elif i == 2 and firstToken.value == self.RECORD:
-                    tokenType = ErlangHighlightType.RECORD
                 elif i == 2 and firstToken.value == self.DEFINE:
                     tokenType = ErlangHighlightType.MACROS
 

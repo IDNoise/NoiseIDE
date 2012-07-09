@@ -54,6 +54,8 @@ class NoiseIDE(wx.Frame):
 
         self.WinMgr.Update()
 
+        self.OpenProject("D:\\Projects\\GIJoe\\server\\gijoe.noiseide.project") #test
+
 
     def SetupMenu(self):
         self.menubar = wx.MenuBar()

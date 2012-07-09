@@ -56,8 +56,8 @@ class ModuleData:
     def __init__(self, module, data):
         self.file = data[FILE]
         self.module = module
-        self.functions = []
 
+        self.functions = []
         for funData in data[FUNS]:
             isBif = funData[BIF] if BIF in funData else False
             fun = Function(module, funData[NAME], funData[ARITY],
@@ -78,9 +78,27 @@ class ModuleData:
 
         self.includes = set(data[INCLUDES])
 
+    def AllRecords(self):
+        records = self.records[:]
+        for include in self.includes:
+            if include in ErlangCache.moduleData:
+                records += ErlangCache.moduleData[include].records
+        return records
+
+    def AllMacroses(self):
+        macroses = self.macroses[:]
+        for include in self.includes:
+            if include in ErlangCache.moduleData:
+                macroses += ErlangCache.moduleData[include].macroses
+        return macroses
+
+    def Functions(self, exported = True):
+        return [fun for fun in self.functions if (exported and fun.exported == exported) or not exported]
+
 class ErlangCache:
     checkers = {}
     modules = set()
+    includes = set()
     moduleData = {}
 
     @classmethod
@@ -119,7 +137,9 @@ class ErlangCache:
                 "module: {}\n\tPath:{}".format(name, file))
             return
 
-        if name[-4:] != ".hrl":
+        if name.endswith(".hrl"):
+            cls.includes.add(name)
+        else:
             cls.modules.add(name)
 
         cls.moduleData[name] = ModuleData(name, data)
@@ -151,26 +171,54 @@ class ErlangCache:
             del cls.checkers[folder]
 
     @classmethod
-    def LoadCacheForFile(cls, event):
-        cls.LoadFile(event.File)
+    def LoadCacheForFile(cls, file):
+        cls.LoadFile(file)
 
     @classmethod
-    def UnloadCacheForFile(cls, event):
-        cls.UnloadFile(event.File)
+    def UnloadCacheForFile(cls, file):
+        cls.UnloadFile(file)
 
     @classmethod
-    def allModules(cls):
+    def AllModules(cls):
         return cls.modules
 
     @classmethod
-    def getDependentModules(cls, include):
+    def GetDependentModules(cls, include):
+        if not module in cls.moduleData: return []
         result = []
         for module in cls.moduleData:
             data = cls.moduleData[module]
             if include in data.includes and data.file.endswith(".erl"):
                 result.append(module)
 
+    @classmethod
+    def RecordFields(cls, module, record):
+        if not module in cls.moduleData: return []
+        for rec in cls.moduleData[module].AllRecords():
+            if rec.name == record:
+                return rec.fields
+        return []
 
+    @classmethod
+    def ModuleFunctions(cls, module, exported = True):
+        if not module in cls.moduleData: return []
+        return cls.moduleData[module].Functions(exported)
+
+    @classmethod
+    def ModuleRecords(cls, module):
+        if not module in cls.moduleData: return []
+        return cls.moduleData[module].AllRecords()
+
+    @classmethod
+    def Bifs(cls):
+        module = "erlang"
+        if not module in cls.moduleData: return []
+        return [fun for fun in cls.moduleData[module].Functions() if fun.bif == True]
+
+    @classmethod
+    def Macroses(cls, module):
+        if not module in cls.moduleData: return []
+        return cls.moduleData[module].AllMacroses()
 
 class Cache():
     modules = set()
