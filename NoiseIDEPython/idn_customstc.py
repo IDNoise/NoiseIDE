@@ -261,7 +261,7 @@ class ErlangSTC(CustomSTC):
 
     def OnInit(self):
         self.completer = ErlangCompleter(self)
-        self.Bind(stc.EVT_STC_UPDATEUI, self.UpdateCompleter)
+        self.Bind(stc.EVT_STC_UPDATEUI, self.OnUpdateCompleter)
 
     def SetupLexer(self):
         self.lexer = ErlangLexer(self)
@@ -307,7 +307,12 @@ class ErlangSTC(CustomSTC):
         self.UpdateCompleter()
         self.completer.Show()
 
+    def OnUpdateCompleter(self, event):
+        if not self.completer.IsShown(): return
+        self.UpdateCompleter()
+
     def UpdateCompleter(self, event = None):
+
         caretPos = self.GetCurrentPos()
         (isRecField, record, prefix) = self.lexer.RecordFieldUnderCursor()
         if isRecField:
@@ -367,20 +372,18 @@ class ErlangCompleter(wx.Window):
         self.lastText = None
 
     def UpdateCompleterPosition(self, pos):
+        shown = self.IsShown()
+        self.Hide()
         pos = (pos[0], pos[1] + self.lineHeight)
         self.SetPosition(pos)
-        self.Refresh()
-        self.stc.Refresh()
+        self.stc.Update()
+        if shown: self.Show()
 
     def UpdateRecordField(self, record, prefix):
-        print "update rec field"
+        #print "update rec field"
         self.prefix = prefix.strip()
         fields = ErlangCache.RecordFields(self.module, record)
-        print self.module, record, fields
-        #fields = [field for field in fields if field.startswith(prefix)]
-        data = self._PrepareData(fields)
-        self.list.Set(data)
-        self.ValidateCompleter()
+        self._PrepareData(fields)
 
     def ValidateCompleter(self):
         if len(self.list.GetStrings()) == 0:
@@ -413,9 +416,7 @@ class ErlangCompleter(wx.Window):
                 else:
                     self.prefix = fValue.strip()
                 if self.moduleType == ErlangSTC.TYPE_MODULE:
-                    functions = ErlangCache.ModuleFunctions(self.module, False)
-
-                    data += functions
+                    data += ErlangCache.ModuleFunctions(self.module, False)
                     if True:
                         data += ErlangCache.Bifs()
                         data += ErlangCache.AllModules()
@@ -443,27 +444,37 @@ class ErlangCompleter(wx.Window):
             elif fType == ErlangTokenType.VAR:
                 self.prefix = fValue
                 data = self.GetVars()
-        data = self._PrepareData(data)
+        self._PrepareData(data)
 
-        self.list.Set(data)
-        self.ValidateCompleter()
 
     def _PrepareData(self, data):
-        result = []
         for d in data:
+            help = None
             if isinstance(d, Function):
-                result.append("{}({})".format(d.name, ", ".join(d.params)))
+                if True:
+                    text = "{}({})".format(d.name, ", ".join(d.params))
+                else:
+                    text = "{}/{}".format(d.name, d.arity)
+
+                if not d.docref:
+                    p = d.params[:]
+                    if d.types and not d.docref:
+                        for i in range(len(p)):
+                            p[i] = p[i] + " :: " + d.types[i]
+                    help = "{}({}) -> {}".format(d.name, ", ".join(p), d.result)
+                else:
+                    help = (docref, d.docref)
             elif isinstance(d, Record):
-                result.append(d.name)
+                text = d.name
+                help = "{} [{}]\nModule:{}".format(d.name, ", ".join(d.fields), d.module)
             elif isinstance(d, Macros):
-                result.append(d.name)
+                text = d.name
+                help = "{} -> {}\nModule:{}".format(d.name, d.value, d.module)
             else:
-                result.append(d)
-        #print self.prefix
-        #print result
-        if self.prefix:
-            result = filter(lambda d: d.startswith(self.prefix), result)
-        return result
+                text = d
+            if text.startswith(self.prefix):
+                self.list.Append(text, help)
+        self.ValidateCompleter()
 
     def GetVars(self):
         funData = self.stc.lexer.GetCurrentFunction()
@@ -503,7 +514,7 @@ class ErlangCompleter(wx.Window):
 
 
     def AutoComplete(self, text):
-        print "AutoComplete: ", text
+        #print "AutoComplete: ", text
         toInsert = text[len(self.prefix):]
         self.stc.AddText(toInsert)
         self.Hide()

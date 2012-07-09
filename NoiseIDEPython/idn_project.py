@@ -96,9 +96,9 @@ class ErlangProject(Project):
         ErlangCache.Init()
         self.SetupDirs()
         self.AddConsoles()
-        self.GenerateErlangCache()
+        #self.GenerateErlangCache() #test
 
-        self.CompileProject()
+        #self.CompileProject() #test
 
         self.explorer.Bind(exp.EVT_PROJECT_FILE_MODIFIED, self.OnProjectFileModified)
         ErlangCache.LoadCacheFromDir("erlang")

@@ -2,12 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d654c747-d601-49bc-80fe-ab63471b2f11" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/data/erlang/modules/eide_connect.erl" afterPath="$PROJECT_DIR$/data/erlang/modules/eide_connect.erl" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_cache.py" afterPath="$PROJECT_DIR$/idn_cache.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_customstc.py" afterPath="$PROJECT_DIR$/idn_customstc.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_highlight.py" afterPath="$PROJECT_DIR$/idn_highlight.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_lexer.py" afterPath="$PROJECT_DIR$/idn_lexer.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_mainframe.py" afterPath="$PROJECT_DIR$/idn_mainframe.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_project.py" afterPath="$PROJECT_DIR$/idn_project.py" />
     </list>
     <ignored path="NoiseIDE.iws" />
@@ -35,7 +30,7 @@
           <file leaf-file-name="idn_customstc.py" pinned="false" current="true" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/idn_customstc.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="451" column="7" selection-start="17386" selection-end="17386" vertical-scroll-proportion="0.5674847">
+                <state line="502" column="28" selection-start="19396" selection-end="19396" vertical-scroll-proportion="0.5935583">
                   <folding>
                     <element signature="e#0#59#0" expanded="true" />
                   </folding>
@@ -97,7 +92,7 @@
           <file leaf-file-name="idn_cache.py" pinned="false" current="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/idn_cache.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="98" column="17" selection-start="2776" selection-end="2776" vertical-scroll-proportion="0.72392637">
+                <state line="388" column="26" selection-start="13121" selection-end="13121" vertical-scroll-proportion="1.0628834">
                   <folding>
                     <element signature="e#0#9#0" expanded="true" />
                     <element signature="e#9458#9476#0" expanded="false" />
@@ -586,7 +581,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/idn_cache.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="98" column="17" selection-start="2776" selection-end="2776" vertical-scroll-proportion="0.72392637">
+        <state line="388" column="26" selection-start="13121" selection-end="13121" vertical-scroll-proportion="1.0628834">
           <folding>
             <element signature="e#0#9#0" expanded="true" />
             <element signature="e#9458#9476#0" expanded="false" />
@@ -596,7 +591,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/idn_customstc.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="451" column="7" selection-start="17386" selection-end="17386" vertical-scroll-proportion="0.5674847">
+        <state line="502" column="28" selection-start="19396" selection-end="19396" vertical-scroll-proportion="0.5935583">
           <folding>
             <element signature="e#0#59#0" expanded="true" />
           </folding>
