@@ -105,9 +105,9 @@ class ErlangCache:
     def Init(cls):
         cls.CACHE_DIR = os.path.join(os.getcwd(), "cache", "erlang")
 
-        erlangLibsCacheDir =  os.path.join(cls.CACHE_DIR, "erlang")
+        cls.ERLANG_LIBS_CACHE_DIR =  os.path.join(cls.CACHE_DIR, "erlang")
         otherCacheDir =  os.path.join(cls.CACHE_DIR, "other")
-        for dir in [cls.CACHE_DIR, erlangLibsCacheDir, otherCacheDir]:
+        for dir in [cls.CACHE_DIR, cls.ERLANG_LIBS_CACHE_DIR, otherCacheDir]:
             if not os.path.isdir(dir):
                 os.makedirs(dir)
 

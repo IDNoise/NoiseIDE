@@ -2,8 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d654c747-d601-49bc-80fe-ab63471b2f11" name="Default" comment="">
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_cache.py" afterPath="$PROJECT_DIR$/idn_cache.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_customstc.py" afterPath="$PROJECT_DIR$/idn_customstc.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_project.py" afterPath="$PROJECT_DIR$/idn_project.py" />
     </list>
     <ignored path="NoiseIDE.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -30,9 +30,9 @@
           <file leaf-file-name="idn_customstc.py" pinned="false" current="true" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/idn_customstc.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="502" column="28" selection-start="19396" selection-end="19396" vertical-scroll-proportion="0.5935583">
+                <state line="343" column="28" selection-start="13053" selection-end="13053" vertical-scroll-proportion="0.452454">
                   <folding>
-                    <element signature="e#0#59#0" expanded="true" />
+                    <element signature="e#0#69#0" expanded="true" />
                   </folding>
                 </state>
               </provider>
@@ -92,10 +92,10 @@
           <file leaf-file-name="idn_cache.py" pinned="false" current="false" current-in-tab="true">
             <entry file="file://$PROJECT_DIR$/idn_cache.py">
               <provider selected="true" editor-type-id="text-editor">
-                <state line="388" column="26" selection-start="13121" selection-end="13121" vertical-scroll-proportion="1.0628834">
+                <state line="36" column="19" selection-start="757" selection-end="763" vertical-scroll-proportion="0.6457055">
                   <folding>
                     <element signature="e#0#9#0" expanded="true" />
-                    <element signature="e#9458#9476#0" expanded="false" />
+                    <element signature="e#9472#9490#0" expanded="false" />
                   </folding>
                 </state>
               </provider>
@@ -481,29 +481,10 @@
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/idn_projectexplorer.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="101" column="91" selection-start="3761" selection-end="4153" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://C:/Programming/Python27/Lib/site-packages/wx-2.9.3-msw/wx/lib/agw/customtreectrl.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="3640" column="21" selection-start="128439" selection-end="128452" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/idn_directoryinfo.py">
       <provider selected="true" editor-type-id="text-editor">
         <state line="97" column="21" selection-start="3404" selection-end="3412" vertical-scroll-proportion="-0.5849624">
           <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://C:/Programming/Python27/Lib/site-packages/wx-2.9.3-msw/wx/html2.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="141" column="19" selection-start="5423" selection-end="5434" vertical-scroll-proportion="0.0">
-          <folding>
-            <element signature="e#4061#4337#0" expanded="false" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -535,23 +516,9 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://C:/Programming/Python27/Lib/site-packages/wx-2.9.3-msw/wx/_core.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="5039" column="8" selection-start="189237" selection-end="189237" vertical-scroll-proportion="-1.1015625">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://C:/Programming/Python27/Lib/site-packages/wx-2.9.3-msw/wx/_controls.py">
       <provider selected="true" editor-type-id="text-editor">
         <state line="1143" column="25" selection-start="46618" selection-end="46618" vertical-scroll-proportion="0.23007518">
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/idn_highlight.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="59" column="31" selection-start="3647" selection-end="3647" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
@@ -579,21 +546,58 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://C:/Programming/Python27/Lib/site-packages/wx-2.9.3-msw/wx/html2.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="99" column="6" selection-start="3760" selection-end="3760" vertical-scroll-proportion="0.0">
+          <folding>
+            <element signature="e#4061#4337#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/idn_cache.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="388" column="26" selection-start="13121" selection-end="13121" vertical-scroll-proportion="1.0628834">
+        <state line="36" column="19" selection-start="757" selection-end="763" vertical-scroll-proportion="0.6457055">
           <folding>
             <element signature="e#0#9#0" expanded="true" />
-            <element signature="e#9458#9476#0" expanded="false" />
+            <element signature="e#9472#9490#0" expanded="false" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://C:/Programming/Python27/Lib/site-packages/wx-2.9.3-msw/wx/_gdi.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="122" column="85" selection-start="4621" selection-end="4633" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://C:/Programming/Python27/Lib/site-packages/wx-2.9.3-msw/wx/_core.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="11609" column="8" selection-start="435047" selection-end="435047" vertical-scroll-proportion="0.3322785">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/idn_highlight.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="59" column="31" selection-start="3647" selection-end="3647" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://C:/Programming/Python27/Lib/site-packages/wx-2.9.3-msw/wx/_windows.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="399" column="6" selection-start="15714" selection-end="15714" vertical-scroll-proportion="-0.71677214">
+          <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/idn_customstc.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="502" column="28" selection-start="19396" selection-end="19396" vertical-scroll-proportion="0.5935583">
+        <state line="343" column="28" selection-start="13053" selection-end="13053" vertical-scroll-proportion="0.452454">
           <folding>
-            <element signature="e#0#59#0" expanded="true" />
+            <element signature="e#0#69#0" expanded="true" />
           </folding>
         </state>
       </provider>

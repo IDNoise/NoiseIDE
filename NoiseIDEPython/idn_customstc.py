@@ -1,4 +1,4 @@
-from idn_cache import ErlangCache, Function, Record, Macros
+from idn_cache import ErlangCache, Function, Record, Macros, readFile
 from idn_token import ErlangTokenizer, ErlangTokenType
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
@@ -11,7 +11,7 @@ from wx.stc import STC_FOLDLEVELHEADERFLAG, StyledTextCtrl
 from idn_colorschema import ColorSchema
 from idn_highlight import ErlangHighlightType
 from idn_lexer import ErlangLexer
-from wx import html2
+from wx import html
 
 class EditorFoldMixin:
     def __init__(self):
@@ -312,7 +312,6 @@ class ErlangSTC(CustomSTC):
         self.UpdateCompleter()
 
     def UpdateCompleter(self, event = None):
-
         caretPos = self.GetCurrentPos()
         (isRecField, record, prefix) = self.lexer.RecordFieldUnderCursor()
         if isRecField:
@@ -324,11 +323,6 @@ class ErlangSTC(CustomSTC):
             self.completer.Update(prefix)
         windowPosition = self.PointFromPosition(caretPos)
         self.completer.UpdateCompleterPosition(windowPosition)
-
-    #def OnDocumentChanged(self, event):
-    #    CustomSTC.OnDocumentChanged(self, event)
-        #print "changed"
-        #self.UpdateCompleter()
 
     def HandleKeyDownEvent(self, event):
         keyCode = event.GetKeyCode()
@@ -344,9 +338,19 @@ class ErlangSTC(CustomSTC):
             return False
 
 class ErlangCompleter(wx.Window):
+    SIZE = (800, 400)
+    LIST_SIZE = (300, 100)
+
     def __init__(self, stc):
-        wx.Window.__init__(self, stc, size = (700, 150))
+        wx.Window.__init__(self, stc, size = self.SIZE)#,
+        #    style = wx.DEFAULT_FRAME_STYLE | wx.STAY_ON_TOP | wx.FRAME_FLOAT_ON_PARENT |
+        #   wx.FRAME_SHAPED | wx.FRAME_NO_TASKBAR)
         self.tokenizer = ErlangTokenizer()
+        #print self.CanSetTransparent()
+        self.SetBackgroundColour(wx.Colour(255, 255, 255, alpha = wx.ALPHA_TRANSPARENT))
+        #self.SetTransparent(255)
+        #self.SetBackgroundColour
+        self.SetBackgroundStyle(wx.BG_STYLE_TRANSPARENT)
 
         self.stc = stc
         self.lineHeight = stc.TextHeight(0) + 2
@@ -354,9 +358,9 @@ class ErlangCompleter(wx.Window):
         self.moduleType = self.stc.ModuleType()
 
 
-        self.list = wx.ListBox(self, size = wx.Size(300, 100),
+        self.list = wx.ListBox(self, size = self.LIST_SIZE,
             style = wx.LB_SORT | wx.LB_SINGLE | wx.WANTS_CHARS)
-        self.helpWindow = html2.WebView.New(self)
+        self.helpWindow = wx.html.HtmlWindow(self)
 
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.sizer.Add(self.list)
@@ -365,11 +369,18 @@ class ErlangCompleter(wx.Window):
         self.Layout()
         self.Hide()
 
-        self.list.Bind(wx.EVT_LISTBOX_DCLICK, self.OnItemSelected)
+        self.list.Bind(wx.EVT_LISTBOX_DCLICK, self.OnItemDoubleClick)
+        self.list.Bind(wx.EVT_LISTBOX, self.OnMouseItemSelected)
         self.list.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
+        self.Bind(wx.EVT_PAINT, self.OnPaint)
 
         self.separators = ",;([{<-"
         self.lastText = None
+
+    def OnPaint(self, event):
+        dc = wx.PaintDC(self)
+        dc.SetBackgroundMode(wx.TRANSPARENT)
+        event.Skip()
 
     def UpdateCompleterPosition(self, pos):
         shown = self.IsShown()
@@ -387,7 +398,7 @@ class ErlangCompleter(wx.Window):
 
     def ValidateCompleter(self):
         if len(self.list.GetStrings()) == 0:
-            self.Hide()
+            self.HideCompleter()
 
     def Update(self, text, nextChar = None):
         if self.lastText == text: return
@@ -448,6 +459,7 @@ class ErlangCompleter(wx.Window):
 
 
     def _PrepareData(self, data):
+        self.list.Clear()
         for d in data:
             help = None
             if isinstance(d, Function):
@@ -463,7 +475,7 @@ class ErlangCompleter(wx.Window):
                             p[i] = p[i] + " :: " + d.types[i]
                     help = "{}({}) -> {}".format(d.name, ", ".join(p), d.result)
                 else:
-                    help = (docref, d.docref)
+                    help = ("docref", d.docref)
             elif isinstance(d, Record):
                 text = d.name
                 help = "{} [{}]\nModule:{}".format(d.name, ", ".join(d.fields), d.module)
@@ -485,13 +497,31 @@ class ErlangCompleter(wx.Window):
                          if token.type == ErlangTokenType.VAR and token.value != self.prefix})
         return []
 
-    def OnItemSelected(self, event):
+    def OnMouseItemSelected(self, event):
+        id = event.GetSelection()
+        self.OnItemSelected(id)
+
+    def OnItemSelected(self, id):
+        help = self.list.GetClientData(id)
+        if not help:
+            self.helpWindow.SetPage("")
+            self.sizer.Hide(self.helpWindow)
+        else:
+            if isinstance(help, tuple):
+                path = os.path.join(ErlangCache.ERLANG_LIBS_CACHE_DIR, help[1])
+                text = readFile(path)
+            else:
+                text = help
+            self.helpWindow.SetPage(text)
+            self.sizer.Show(self.helpWindow)
+        self.Layout()
+
+    def OnItemDoubleClick(self, event):
         id = event.GetSelection()
         text = self.list.GetString(id)
         self.AutoComplete(text)
 
     def OnKeyDown(self, event):
-        #print "onKEyDown", event.GetKeyCode(), wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER
         keyCode = event.GetKeyCode()
         if keyCode in [wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER]:
             self.AutoComplete(self.list.GetString(self.list.GetSelection()))
@@ -502,6 +532,7 @@ class ErlangCompleter(wx.Window):
             else:
                 current -= 1
             self.list.SetSelection(current)
+            self.OnItemSelected(current)
         elif keyCode == wx.WXK_DOWN:
             current = self.list.GetSelection()
             if current == self.list.Count - 1:
@@ -509,23 +540,30 @@ class ErlangCompleter(wx.Window):
             else:
                 current += 1
             self.list.SetSelection(current)
+            self.OnItemSelected(current)
         elif keyCode == wx.WXK_ESCAPE:
-            self.Hide()
+            self.HideCompleter()
 
 
     def AutoComplete(self, text):
         #print "AutoComplete: ", text
         toInsert = text[len(self.prefix):]
         self.stc.AddText(toInsert)
-        self.Hide()
+        self.HideCompleter()
+
+    def HideCompleter(self):
+        wx.Window.Hide(self)
+        self.helpWindow.SetPage("")
 
     def Show(self, show = True):
-        if not self.helpWindow.GetPageText():
+        if not self.helpWindow.ToText():
             self.sizer.Hide(self.helpWindow)
-            self.SetSize(self.list.Size)
-            self.Layout()
+        else:
+            self.sizer.Show(self.helpWindow)
+        self.Layout()
         if len(self.list.GetStrings()) > 0:
             wx.Window.Show(self, show)
+        self.Raise()
 
 class ConsoleSTC(CustomSTC):
     def __init__(self, parent):
