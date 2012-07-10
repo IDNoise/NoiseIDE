@@ -47,7 +47,7 @@ class ErlangTokenizer:
             |(?P<record>\#[a-z][a-z_]*)
             |(?P<number>[0-9]*\.?[0-9]+)
             |(?P<macros>\?[a-zA-Z][a-zA-Z_0-9]*)
-            |(?P<atom>'?[a-zA-Z_0-9]+'?|[a-z][a-zA-Z_0-9]*)
+            |(?P<atom>'.+?'|[a-z][a-zA-Z_0-9]*)
             |(?P<ob>\(|\[|{)
             |(?P<cb>\)|\]|})
             |(?P<operator>\+|\-|/|\*|<=|=<|>=|==|=/=|=:=|<-|!)

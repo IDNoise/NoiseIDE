@@ -27,11 +27,13 @@ def readFile(file):
 
 
 class Function:
-    def __init__(self, module, name, arity, params, types, result, docref, exported, bif):
+    def __init__(self, moduleData, module, name, arity, line, params, types, result, docref, exported, bif):
+        self.moduleData = moduleData
         self.module = module
         self.name = name
         self.arity = arity
         self.params = params
+        self.line = line
         self.types = types
         self.result = result
         self.docref = docref
@@ -39,14 +41,16 @@ class Function:
         self.bif = bif
 
 class Record:
-    def __init__(self, module, name, fields, line):
+    def __init__(self, moduleData, module, name, fields, line):
+        self.moduleData = moduleData
         self.module = module
         self.name = name
         self.fields = fields
         self.line = line
 
 class Macros:
-    def __init__(self, module, name, value, line):
+    def __init__(self, moduleData, module, name, value, line):
+        self.moduleData = moduleData
         self.module = module
         self.name = name
         self.value = value
@@ -60,8 +64,8 @@ class ModuleData:
         self.functions = []
         for funData in data[FUNS]:
             isBif = funData[BIF] if BIF in funData else False
-            fun = Function(module, funData[NAME], funData[ARITY],
-                funData[PARAMS],  funData[TYPES], funData[RESULT],
+            fun = Function(self, module, funData[NAME], funData[ARITY],
+                funData[LINE], funData[PARAMS],  funData[TYPES], funData[RESULT],
                 funData[DOCREF], funData[EXPORTED], isBif)
 
             self.functions.append(fun)
@@ -69,12 +73,12 @@ class ModuleData:
         self.records = []
         for record in data[RECORDS_DATA]:
             recordData = data[RECORDS_DATA][record]
-            self.records.append(Record(module, record, recordData[FIELDS], recordData[LINE]))
+            self.records.append(Record(self, module, record, recordData[FIELDS], recordData[LINE]))
 
         self.macroses = []
         for macros in data[MACROS]:
             macData = data[MACROS][macros]
-            self.macroses.append(Macros(module, macros, macData[VALUE], macData[LINE]))
+            self.macroses.append(Macros(self, module, macros, macData[VALUE], macData[LINE]))
 
         self.includes = set(data[INCLUDES])
 
@@ -115,10 +119,12 @@ class ErlangCache:
 
     @classmethod
     def LoadCacheFromDir(cls, dir):
+        print "loading cache from ", dir
         dir = os.path.join(cls.CACHE_DIR, dir)
         for file in os.listdir(dir):
             file = os.path.join(dir, file)
             cls.LoadFile(file)
+        print "end loading cache from ", dir
 
     @classmethod
     def LoadFile(cls, file):
@@ -143,7 +149,7 @@ class ErlangCache:
             cls.modules.add(name)
 
         cls.moduleData[name] = ModuleData(name, data)
-        print("Loading cache for: " + name)
+        #print("Loading cache for: " + name)
 
     @classmethod
     def UnloadFile(cls, file):
@@ -193,16 +199,30 @@ class ErlangCache:
 
     @classmethod
     def RecordFields(cls, module, record):
-        if not module in cls.moduleData: return []
+        data = cls.RecordData(module, record)
+        if not data: return []
+        return data.fields
+
+    @classmethod
+    def RecordData(cls, module, record):
+        if not module in cls.moduleData: return None
         for rec in cls.moduleData[module].AllRecords():
             if rec.name == record:
-                return rec.fields
-        return []
+                return rec
+        return None
 
     @classmethod
     def ModuleFunctions(cls, module, exported = True):
         if not module in cls.moduleData: return []
         return cls.moduleData[module].Functions(exported)
+
+    @classmethod
+    def ModuleFunction(cls, module, funName, arity):
+        if not module in cls.moduleData: return None
+        for fun in cls.moduleData[module].functions:
+            if fun.name == funName and fun.arity == arity:
+                return fun
+        return None
 
     @classmethod
     def ModuleRecords(cls, module):
@@ -219,6 +239,14 @@ class ErlangCache:
     def Macroses(cls, module):
         if not module in cls.moduleData: return []
         return cls.moduleData[module].AllMacroses()
+
+    @classmethod
+    def MacrosData(cls, module, macros):
+        if not module in cls.moduleData: return None
+        for mac in cls.moduleData[module].AllMacroses():
+            if mac.name == macros or mac.name.startswith(macros + "("):
+                return mac
+        return None
 
 class Cache():
     modules = set()

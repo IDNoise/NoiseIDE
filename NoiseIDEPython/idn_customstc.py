@@ -102,6 +102,9 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.SetMarginSensitive(2, True)
         self.SetMarginWidth(2, 10)
 
+        self.SetVisiblePolicy(stc.STC_VISIBLE_STRICT, 0)
+        #self.SetYCaretPolicy(stc.STC_CARET_STRICT | stc.STC_CARET_EVEN, 0)
+
         foreColor = ColorSchema.codeEditor["fold_area_foreground"]
         backColor = ColorSchema.codeEditor["fold_area_background"]
         self.MarkerDefine(stc.STC_MARKNUM_FOLDEROPEN, stc.STC_MARK_BOXMINUS, foreColor, backColor)
@@ -238,7 +241,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
     def HighlightBrackets(self, event):
         event.Skip()
         pos = self.GetCurrentPos()
-        char = chr(self.GetCharAt(pos))
+        char = self.GetCharAt(pos)
         if not char in "()[]{}<>":
             self.BraceBadLight(-1) #clear
             return
@@ -247,6 +250,9 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
             self.BraceHighlight(pos, otherPos)
         else:
             self.BraceBadLight(pos)
+
+    def GetCharAt(self, pos):
+        return chr(StyledTextCtrl.GetCharAt(self, pos))
 
 class PythonSTC(CustomSTC):
     def SetupLexer(self):
@@ -261,7 +267,25 @@ class ErlangSTC(CustomSTC):
 
     def OnInit(self):
         self.completer = ErlangCompleter(self)
+
+        self.navigateTo = None
+
         self.Bind(stc.EVT_STC_UPDATEUI, self.OnUpdateCompleter)
+#        self.Bind(wx.EVT_SET_FOCUS, self.OnSetFocus)
+#        self.Bind(wx.EVT_KILL_FOCUS, self.OnKillFocus)
+        self.Bind(wx.EVT_MOTION, self.OnMouseMove)
+        self.Bind(wx.EVT_LEFT_DOWN, self.OnMouseClick)
+
+
+#    def OnSetFocus(self, event):
+#        event.Skip()
+#        self.Bind(wx.EVT_MOTION, self.OnMouseMove)
+#        self.Bind(wx.EVT_LEFT_DOWN, self.OnMouseClick)
+#
+#    def OnKillFocus(self, event):
+#        event.Skip()
+#        self.Unbind(wx.EVT_MOTION, handler = self.OnMouseMove)
+#        self.Unbind(wx.EVT_LEFT_DOWN, handler = self.OnMouseClick)
 
     def SetupLexer(self):
         self.lexer = ErlangLexer(self)
@@ -289,6 +313,8 @@ class ErlangSTC(CustomSTC):
         self.StyleSetSpec(ErlangHighlightType.BRACKET, formats["bracket"])
         self.StyleSetSpec(ErlangHighlightType.BIF, formats["bif"])
         self.StyleSetSpec(ErlangHighlightType.FULLSTOP, formats["fullstop"])
+
+        self.IndicatorSetStyle(0, stc.STC_INDIC_PLAIN)
 
     def ModuleName(self):
         name = self.FileName()
@@ -337,8 +363,68 @@ class ErlangSTC(CustomSTC):
         else:
             return False
 
+    def ClearIndicators(self, incidc):
+        self.SetIndicatorCurrent(incidc)
+        self.IndicatorClearRange(incidc, self.Length)
+
+    def OnMouseMove(self, event):
+        event.Skip()
+        self.ClearIndicators(0)
+        self.SetCursor(wx.StockCursor(wx.CURSOR_IBEAM))
+        pos = self.PositionFromPointClose(event.GetPosition()[0],event.GetPosition()[1])
+        if pos == stc.STC_INVALID_POSITION:
+            return
+        self.navigateTo = None
+        if event.ControlDown() and self.HasFocus():
+            style = self.GetStyleAt(pos)
+            if style not in [ErlangHighlightType.ATOM,
+                             ErlangHighlightType.FUNCTION,
+                             ErlangHighlightType.FUNDEC,
+                             ErlangHighlightType.MACROS,
+                             ErlangHighlightType.MODULE,
+                             ErlangHighlightType.RECORD]:
+                self.completer.HideHelp()
+                return
+            start = self.WordStartPosition(pos, True)
+            end = self.WordEndPosition(pos, True)
+            if start == end:
+                self.completer.HideHelp()
+                return
+            self.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
+            self.SetIndicatorCurrent(0)
+            self.IndicatorFillRange(start, end - start)
+
+            line = self.LineFromPosition(pos)
+            lineStart = self.PositionFromLine(line)
+            lineEnd = self.GetLineEndPosition(line)
+            prefix = self.GetTextRange(lineStart, start)
+            postfix = self.GetTextRange(end, lineEnd)
+            value = self.GetTextRange(start, end)
+            #print value ,prefix, postfix
+            if style == ErlangHighlightType.FUNCTION:
+                self.navigateTo = self.completer.ShowFunctionHelp(value, prefix, end)
+            if style == ErlangHighlightType.RECORD:
+                self.navigateTo = self.completer.ShowRecordHelp(value)
+            if style == ErlangHighlightType.MACROS:
+                self.navigateTo = self.completer.ShowMacrosHelp(value)
+        else:
+            self.completer.HideHelp()
+
+            #else:
+    def OnMouseClick(self, event):
+        if event.ControlDown():
+            if self.navigateTo:
+                editor = self.Parent.LoadFile(self.navigateTo[0])
+                line = self.navigateTo[1] - 1
+                editor.GotoLine(line)
+                editor.EnsureVisibleEnforcePolicy(line)
+                self.completer.HideHelp()
+                return
+        event.Skip()
+
+
 class ErlangCompleter(wx.Frame):
-    SIZE = (820, 400)
+    SIZE = (820, 500)
     LIST_SIZE = (320, 150)
 
     def __init__(self, stc):
@@ -351,7 +437,9 @@ class ErlangCompleter(wx.Frame):
         self.lineHeight = stc.TextHeight(0) + 2
         self.module = self.stc.ModuleName()
         self.moduleType = self.stc.ModuleType()
-
+        self.separators = ",;([{<-"
+        self.lastText = None
+        self.showingHelp = False
 
         self.list = wx.ListBox(self, size = self.LIST_SIZE,
             style = wx.LB_SORT | wx.LB_SINGLE | wx.WANTS_CHARS)
@@ -367,19 +455,21 @@ class ErlangCompleter(wx.Frame):
         self.list.Bind(wx.EVT_LISTBOX_DCLICK, self.OnItemDoubleClick)
         self.list.Bind(wx.EVT_LISTBOX, self.OnMouseItemSelected)
         self.list.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
-        self.stc.Bind(wx.EVT_MOUSE_EVENTS, self.OnSTCMouseDonw)
+        self.stc.Bind(wx.EVT_MOUSE_EVENTS, self.OnSTCMouseDown)
 
-        self.separators = ",;([{<-"
-        self.lastText = None
-
-    def OnSTCMouseDonw(self, event):
+    def OnSTCMouseDown(self, event):
         event.Skip()
         if event.ButtonDown(wx.MOUSE_BTN_ANY):
             self.HideCompleter()
 
     def UpdateCompleterPosition(self, pos):
-        pos = self.stc.ClientToScreen((pos[0], pos[1] + self.lineHeight))
-        self.SetPosition(pos)
+        if not self.showingHelp:
+            pos = self.stc.ClientToScreen((pos[0], pos[1] + self.lineHeight))
+            self.SetPosition(pos)
+        else:
+            pos = wx.GetMousePosition()
+            pos = (pos[0], pos[1] + self.lineHeight)
+            self.SetPosition(pos)
 
     def UpdateRecordField(self, record, prefix):
         self.prefix = prefix.strip()
@@ -450,7 +540,6 @@ class ErlangCompleter(wx.Frame):
                 data = self.GetVars()
         self._PrepareData(data)
 
-
     def _PrepareData(self, data):
         self.list.Clear()
         for d in data:
@@ -460,26 +549,36 @@ class ErlangCompleter(wx.Frame):
                     text = "{}({})".format(d.name, ", ".join(d.params))
                 else:
                     text = "{}/{}".format(d.name, d.arity)
-
-                if not d.docref:
-                    p = d.params[:]
-                    if d.types and not d.docref:
-                        for i in range(len(p)):
-                            p[i] = p[i] + " :: " + d.types[i]
-                    help = "{}({}) -> {}".format(d.name, ", ".join(p), d.result)
-                else:
-                    help = ("docref", d.docref)
+                help = self._FunctionHelp(d)
             elif isinstance(d, Record):
                 text = d.name
-                help = "{} [{}]\nModule:{}".format(d.name, ", ".join(d.fields), d.module)
+                help = self._RecordHelp(d)
             elif isinstance(d, Macros):
                 text = d.name
-                help = "{} -> {}\nModule:{}".format(d.name, d.value, d.module)
+                help = self._MacrosHelp(d)
             else:
                 text = d
             if text.startswith(self.prefix):
                 self.list.Append(text, help)
         self.ValidateCompleter()
+
+    def _RecordHelp(self, record):
+        return "#{} [{}]<br/>Module:{}".format(record.name, ", ".join(record.fields), record.module)
+
+    def _MacrosHelp(self, macros):
+        return "?{} -> {}<br/>Module:{}".format(macros.name, macros.value, macros.module)
+
+    def _FunctionHelp(self, fun):
+        if not fun.docref:
+            p = fun.params[:]
+            if fun.types and not fun.docref:
+                for i in range(len(p)):
+                    p[i] = p[i] + " :: " + fun.types[i]
+            help = "{}({}) -> {}".format(fun.name, ", ".join(p), fun.result)
+        else:
+            path = os.path.join(ErlangCache.ERLANG_LIBS_CACHE_DIR, fun.docref)
+            help = readFile(path)
+        return help
 
     def GetVars(self):
         funData = self.stc.lexer.GetCurrentFunction()
@@ -542,7 +641,6 @@ class ErlangCompleter(wx.Frame):
 
 
     def AutoComplete(self, text):
-        #print "AutoComplete: ", text
         toInsert = text[len(self.prefix):]
         self.stc.AddText(toInsert)
         self.HideCompleter()
@@ -556,10 +654,100 @@ class ErlangCompleter(wx.Frame):
             self.sizer.Hide(self.helpWindow)
         else:
             self.sizer.Show(self.helpWindow)
+        self.sizer.Show(self.list)
         self.Layout()
         if len(self.list.GetStrings()) > 0:
             wx.Frame.Show(self, show)
             self.stc.SetFocus()
+
+    def ShowFunctionHelp(self, fun, prefix, pos):
+        arity = self.GetFunArity(pos)
+        module = ""
+        if prefix and prefix[-1] == ":" and prefix[-2].isalpha():
+            i = -2
+            while prefix[i].isalpha() or prefix[i] == "_":
+                module += prefix[i]
+                i -=1
+            module = module[::-1]
+            if not module.islower():
+                module = self.module
+        else:
+            module = self.module
+        funData = ErlangCache.ModuleFunction(module, fun, arity)
+        if not funData: return
+        help = self._FunctionHelp(funData)
+        self.ShowHelp(help)
+        return (funData.moduleData.file, funData.line)
+
+    def GetFunArity(self, pos):
+        open = ['[', '(', '{']
+        close = [']', ')', '}']
+        startPos = pos
+        lvl = 0
+        if self.stc.GetCharAt(pos) == "/":
+            pos += 1
+            arity = ""
+            while self.stc.GetCharAt(pos).isdigit():
+                arity += self.stc.GetCharAt(pos)
+                pos += 1
+            return int(arity)
+
+        arity = 0
+        if self.stc.GetCharAt(pos) != "(": return 0
+        if self.stc.GetCharAt(pos) == "(" and self.stc.GetCharAt(pos + 1) == ")":
+            return 0
+        else:
+            arity = 1
+        while True:
+            if pos > self.stc.GetLength() or\
+               abs(pos - startPos) > 2000: break
+            c = self.stc.GetCharAt(pos)
+            if c in open:
+                lvl += 1
+            elif c == "," and lvl == 1:
+                arity += 1
+            elif c in close:
+                lvl = lvl - 1
+            if lvl == 0:
+                break
+            pos = pos + 1
+        return arity
+
+    def ShowRecordHelp(self, record):
+        recordData = ErlangCache.RecordData(self.module, record)
+        if not recordData: return
+        help = self._RecordHelp(recordData)
+        self.ShowHelp(help)
+        return (recordData.moduleData.file, recordData.line)
+
+    def ShowMacrosHelp(self, macros):
+        macrosData = ErlangCache.MacrosData(self.module, macros)
+        if not macrosData: return
+        help = self._MacrosHelp(macrosData)
+        self.ShowHelp(help)
+        return (macrosData.moduleData.file, macrosData.line)
+
+    def ShowHelp(self, help):
+        if help:
+            #print help
+            self.helpWindow.SetPage(help)
+            self.SetSize((self.SIZE[0] - self.LIST_SIZE[0], self.SIZE[1]))
+            self.sizer.Hide(self.list)
+            self.sizer.Show(self.helpWindow)
+            self.Layout()
+            wx.Frame.Show(self)
+            self.stc.SetFocus()
+            self.showingHelp = True
+        else:
+            self.showingHelp = False
+            self.Hide()
+
+    def HideHelp(self):
+        self.helpWindow.SetPage("")
+        self.showingHelp = False
+        self.Hide()
+        #self.Refresh()
+        #self.stc.Refresh()
 
 class ConsoleSTC(CustomSTC):
     def __init__(self, parent):

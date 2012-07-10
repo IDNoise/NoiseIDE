@@ -78,7 +78,7 @@ class Project:
         #print "save user data"
         openedFiles = []
         for path in self.window.TabMgr.OpenedFiles():
-            if path.startswith(self.projectDir):
+            if path.lower().startswith(self.projectDir.lower()):
                 openedFiles.append(path)
         self.userData[self.CONFIG_LAST_OPENED_FILES] = openedFiles
         self.userData[self.CONFIG_HIDDEN_PATHS] = self.explorer.hiddenPaths
