@@ -72,6 +72,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.SetupLexer()
         self.filePath = filePath
         self.hash = None
+        self.lastHighlightedWord = ""
 
         self.SetCaretWidth(3)
         self.SetCaretLineBackground(ColorSchema.codeEditor["current_line_background"])
@@ -101,6 +102,9 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.SetMarginMask(2, stc.STC_MASK_FOLDERS)
         self.SetMarginSensitive(2, True)
         self.SetMarginWidth(2, 10)
+
+        self.IndicatorSetStyle(0, stc.STC_INDIC_ROUNDBOX)
+        self.IndicatorSetForeground(0, ColorSchema.codeEditor["highlighted_word"])
 
         self.SetVisiblePolicy(stc.STC_VISIBLE_STRICT, 0)
         #self.SetYCaretPolicy(stc.STC_CARET_STRICT | stc.STC_CARET_EVEN, 0)
@@ -135,6 +139,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         if hasattr(self, "lexer"):
             self.Bind(stc.EVT_STC_STYLENEEDED, self.OnStyleNeeded)
         self.Bind(stc.EVT_STC_UPDATEUI, self.HighlightBrackets)
+        self.Bind(stc.EVT_STC_UPDATEUI, self.HighlightSelectedWord)
         self.Bind(stc.EVT_STC_CHANGE , self.OnDocumentChanged)
         self.Bind(stc.EVT_STC_CHARADDED, self.OnCharAdded)
         self.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
@@ -254,6 +259,33 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
     def GetCharAt(self, pos):
         return chr(StyledTextCtrl.GetCharAt(self, pos))
 
+    def ClearIndicator(self, incidc):
+        self.SetIndicatorCurrent(incidc)
+        self.IndicatorClearRange(incidc, self.Length)
+
+    def HighlightSelectedWord(self, event):
+        event.Skip()
+        text = self.GetSelectedText()
+        if self.lastHighlightedWord != text:
+            self.ClearIndicator(0)
+            self.lastHighlightedWord = text
+        else:
+            return
+        if (text and
+            True not in [c in text for c in [" ", "\n", "\r"]]):
+            self.SetIndicatorCurrent(0)
+            self.SetSearchFlags(stc.STC_FIND_MATCHCASE | stc.STC_FIND_WHOLEWORD)
+            self.SetTargetStart(0)
+            self.SetTargetEnd(self.Length)
+            index = self.SearchInTarget(text)
+            while (index != -1 and index < self.Length):
+                self.IndicatorFillRange(index, len(text))
+
+                self.SetTargetStart(index + len(text))
+                self.SetTargetEnd(self.Length)
+                index = self.SearchInTarget(text)
+
+
 class PythonSTC(CustomSTC):
     def SetupLexer(self):
         self.SetLexer(stc.STC_LEX_PYTHON)
@@ -314,7 +346,7 @@ class ErlangSTC(CustomSTC):
         self.StyleSetSpec(ErlangHighlightType.BIF, formats["bif"])
         self.StyleSetSpec(ErlangHighlightType.FULLSTOP, formats["fullstop"])
 
-        self.IndicatorSetStyle(0, stc.STC_INDIC_PLAIN)
+        self.IndicatorSetStyle(1, stc.STC_INDIC_PLAIN)
 
     def ModuleName(self):
         name = self.FileName()
@@ -334,6 +366,7 @@ class ErlangSTC(CustomSTC):
         self.completer.Show()
 
     def OnUpdateCompleter(self, event):
+        event.Skip()
         if not self.completer.IsShown(): return
         self.UpdateCompleter()
 
@@ -363,13 +396,9 @@ class ErlangSTC(CustomSTC):
         else:
             return False
 
-    def ClearIndicators(self, incidc):
-        self.SetIndicatorCurrent(incidc)
-        self.IndicatorClearRange(incidc, self.Length)
-
     def OnMouseMove(self, event):
         event.Skip()
-        self.ClearIndicators(0)
+        self.ClearIndicator(1)
         self.SetCursor(wx.StockCursor(wx.CURSOR_IBEAM))
         pos = self.PositionFromPointClose(event.GetPosition()[0],event.GetPosition()[1])
         if pos == stc.STC_INVALID_POSITION:
@@ -391,7 +420,7 @@ class ErlangSTC(CustomSTC):
                 self.completer.HideHelp()
                 return
             self.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
-            self.SetIndicatorCurrent(0)
+            self.SetIndicatorCurrent(1)
             self.IndicatorFillRange(start, end - start)
 
             line = self.LineFromPosition(pos)

@@ -11,6 +11,7 @@ code_editor:
   brace_bad_background:        '#CF6A4C'
   brace_foreground:            '#CF6A4C'
   brace_bad_foreground:        '#FF0000'
+  highlighted_word:            '#edf58e'
   languages:
     erlang:
       default:    fore:#DDDDDD
