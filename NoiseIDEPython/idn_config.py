@@ -23,3 +23,4 @@ class Config:
     @classmethod
     def SetProp(cls, prop, value):
         cls.data[prop] = value
+

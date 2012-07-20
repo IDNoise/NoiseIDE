@@ -25,17 +25,18 @@ class Notebook(aui.AuiNotebook):
         return [p.filePath for p in self.Pages()]
 
     def LoadFile(self, file):
-        if file.lower() in map(lambda p: p.lower(), self.OpenedFiles()):
-            id = self.FindPageIndexByPath(file)
+        id = self.FindPageIndexByPath(file)
+        if id:
             editor = self[id]
             self.SetSelection(id)
             editor.SetFocus()
             return editor
-        stcType = self.GetSTCTypeByExt(file)
-        editor = stcType(self, file)
-        self.AddPage(editor, editor.FileName(), True)
-        editor.SetFocus()
-        return editor
+        else:
+            stcType = self.GetSTCTypeByExt(file)
+            editor = stcType(self, file)
+            self.AddPage(editor, editor.FileName(), True)
+            editor.SetFocus()
+            return editor
 
     def GetSTCTypeByExt(self, file):
         ext = extension(file)
@@ -49,4 +50,11 @@ class Notebook(aui.AuiNotebook):
             if self.GetPage(index).filePath.lower() == path.lower():
                 return index
         return None
+
+    def FindPageByPath(self, file):
+        id = self.FindPageIndexByPath(file)
+        if id:
+            return self[id]
+        else:
+            return None
 

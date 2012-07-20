@@ -1,3 +1,4 @@
+import idn_global
 from idn_project import loadProject
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
@@ -16,6 +17,7 @@ from idn_config import Config
 class NoiseIDE(wx.Frame):
     def __init__(self, *args, **kwargs):
         wx.Frame.__init__(self, None, wx.ID_ANY, 'Noise IDE', size = (1680, 900), pos = (10, 10))
+
         self.Maximize()
         Config.load()
         ColorSchema.load(Config.GetProp("color_schema"))
@@ -53,8 +55,8 @@ class NoiseIDE(wx.Frame):
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
         self.WinMgr.Update()
-
-        self.OpenProject("D:\\Projects\\GIJoe\\server\\gijoe.noiseide.project") #test
+        idn_global.MainFrame = self
+        self.OpenProject("D:\\Projects\\GIJoe\\server\\gijoe.noiseide.project")
 
 
     def SetupMenu(self):
@@ -98,9 +100,7 @@ class NoiseIDE(wx.Frame):
         dialog.Destroy()
 
     def OpenProject(self, projectFile):
-       # projectPath = "D:\\Projects\\Joe\\server\\gijoe.noiseide.project"
-        self.project = loadProject(self, projectFile)
-        #print "loading project ", projectFile
+        loadProject(self, projectFile)
 
     def OnClose(self, event):
         if self.project:
@@ -111,7 +111,7 @@ class NoiseIDE(wx.Frame):
         self.Close()
 
     def OnEvent(self, event):
-        print(event)
+        #print(event)
         event.Skip()
 
     def AddTestTabs(self, amount):
@@ -123,7 +123,6 @@ class App(wx.App):
         wx.App.__init__(self)
         frame = NoiseIDE()
         frame.Show()
-
 
 if __name__ == '__main__':
     def main():

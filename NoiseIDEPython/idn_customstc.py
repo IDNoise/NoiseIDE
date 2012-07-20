@@ -1,4 +1,5 @@
 from idn_cache import ErlangCache, Function, Record, Macros, readFile
+from idn_connect import CompileErrorInfo
 from idn_token import ErlangTokenizer, ErlangTokenType
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
@@ -11,6 +12,7 @@ from wx.stc import STC_FOLDLEVELHEADERFLAG, StyledTextCtrl
 from idn_colorschema import ColorSchema
 from idn_highlight import ErlangHighlightType
 from idn_lexer import ErlangLexer
+from idn_global import GetProject
 from wx import html
 
 class EditorFoldMixin:
@@ -73,6 +75,8 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.filePath = filePath
         self.hash = None
         self.lastHighlightedWord = ""
+        self.changed = False
+        self.saved = True
 
         self.SetCaretWidth(3)
         self.SetCaretLineBackground(ColorSchema.codeEditor["current_line_background"])
@@ -199,9 +203,10 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
             self.SetSelectionStart(self.PositionFromLine(startLine + offset))
             self.SetSelectionEnd(self.GetLineEndPosition(endLine + offset))
         elif keyCode == ord('S') and event.ControlDown():
-            self.hash = hash(self.GetText())
+            #self.hash = hash(self.GetText())
             self.SaveFile(self.filePath)
             self.Changed(False)
+            self.OnFileSaved()
         elif keyCode == wx.WXK_SPACE and event.ControlDown():
             self.OnAutoComplete()
         else:
@@ -211,11 +216,16 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
     def OnAutoComplete(self):
         pass
 
+    def OnFileSaved(self):
+        pass
+
     def Changed(self, changed = True):
         self.changed = changed
-        if self.changed:
-            self.changed = self.hash != hash(self.GetText())
-        prefix = "* " if self.changed else ""
+        self.Saved(not self.changed)
+
+    def Saved(self, saved = True):
+        self.saved = saved
+        prefix = "* " if self.saved else ""
         index = self.Parent.FindPageIndexByPath(self.filePath)
         if index is not None:
             self.Parent.SetPageText(index, prefix + self.FileName())
@@ -297,27 +307,25 @@ class YAMLSTC(CustomSTC):
 class ErlangSTC(CustomSTC):
     TYPE_MODULE, TYPE_HRL, TYPE_UNKNOWN = range(3)
 
+    MARKER_ERROR, MARKER_WARNING = (20, 21)
+
     def OnInit(self):
         self.completer = ErlangCompleter(self)
 
         self.navigateTo = None
 
         self.Bind(stc.EVT_STC_UPDATEUI, self.OnUpdateCompleter)
-#        self.Bind(wx.EVT_SET_FOCUS, self.OnSetFocus)
-#        self.Bind(wx.EVT_KILL_FOCUS, self.OnKillFocus)
         self.Bind(wx.EVT_MOTION, self.OnMouseMove)
         self.Bind(wx.EVT_LEFT_DOWN, self.OnMouseClick)
 
+        self.flyTimer = wx.Timer(self, wx.NewId())
+        self.Bind(wx.EVT_TIMER, self.OnFlyTimer, self.flyTimer)
+        self.flyTimer.Start(300)
+        self.flyCompileHash = None
 
-#    def OnSetFocus(self, event):
-#        event.Skip()
-#        self.Bind(wx.EVT_MOTION, self.OnMouseMove)
-#        self.Bind(wx.EVT_LEFT_DOWN, self.OnMouseClick)
-#
-#    def OnKillFocus(self, event):
-#        event.Skip()
-#        self.Unbind(wx.EVT_MOTION, handler = self.OnMouseMove)
-#        self.Unbind(wx.EVT_LEFT_DOWN, handler = self.OnMouseClick)
+        self.lastErrors = []
+        self.HighlightErrors(GetProject().GetErrors(self.filePath))
+
 
     def SetupLexer(self):
         self.lexer = ErlangLexer(self)
@@ -347,6 +355,12 @@ class ErlangSTC(CustomSTC):
         self.StyleSetSpec(ErlangHighlightType.FULLSTOP, formats["fullstop"])
 
         self.IndicatorSetStyle(1, stc.STC_INDIC_PLAIN)
+        self.MarkerDefine(self.MARKER_ERROR, stc.STC_MARK_BACKGROUND,
+            foreground = ColorSchema.codeEditor["error_line_color"],
+            background = ColorSchema.codeEditor["error_line_color"])
+        self.MarkerDefine(self.MARKER_WARNING, stc.STC_MARK_BACKGROUND,
+            foreground = ColorSchema.codeEditor["warning_line_color"],
+            background = ColorSchema.codeEditor["warning_line_color"])
 
     def ModuleName(self):
         name = self.FileName()
@@ -400,11 +414,11 @@ class ErlangSTC(CustomSTC):
         event.Skip()
         self.ClearIndicator(1)
         self.SetCursor(wx.StockCursor(wx.CURSOR_IBEAM))
-        pos = self.PositionFromPointClose(event.GetPosition()[0],event.GetPosition()[1])
-        if pos == stc.STC_INVALID_POSITION:
-            return
         self.navigateTo = None
         if event.ControlDown() and self.HasFocus():
+            pos = self.PositionFromPointClose(event.GetPosition()[0],event.GetPosition()[1])
+            if pos == stc.STC_INVALID_POSITION:
+                return
             style = self.GetStyleAt(pos)
             if style not in [ErlangHighlightType.ATOM,
                              ErlangHighlightType.FUNCTION,
@@ -439,7 +453,6 @@ class ErlangSTC(CustomSTC):
         else:
             self.completer.HideHelp()
 
-            #else:
     def OnMouseClick(self, event):
         if event.ControlDown():
             if self.navigateTo:
@@ -451,6 +464,28 @@ class ErlangSTC(CustomSTC):
                 return
         event.Skip()
 
+    def OnFlyTimer(self, event):
+        if GetProject().IsFlyCompileEnabled() and self.changed:
+            currentHash = hash(self.GetText())
+            #print currentHash, self.flyCompileHash
+            if currentHash == self.flyCompileHash: return
+            self.flyCompileHash = currentHash
+            flyPath = os.path.join(os.getcwd(), "data", "erlang", "fly",
+                "fly_" + os.path.basename(self.filePath))
+            self.SaveFile(flyPath)
+            GetProject().shellConsole.shell.CompileFileFly(self.filePath, flyPath)
+
+    def HighlightErrors(self, errors):
+        self.MarkerDeleteAll(20)
+        self.MarkerDeleteAll(21)
+        self.lastErrors = errors
+        for e in errors:
+            if e.type == CompileErrorInfo.WARNING:
+                indic = self.MARKER_WARNING
+            else:
+                indic = self.MARKER_ERROR
+            self.MarkerAdd(e.line, indic)
+
 
 class ErlangCompleter(wx.Frame):
     SIZE = (820, 500)
@@ -458,9 +493,11 @@ class ErlangCompleter(wx.Frame):
 
     def __init__(self, stc):
         style = wx.BORDER_NONE | wx.STAY_ON_TOP
-        wx.Frame.__init__(self, stc, size = self.SIZE, style = style)
+        pre = wx.PreFrame()
+        pre.SetBackgroundStyle(wx.BG_STYLE_TRANSPARENT)
+        pre.Create(stc, size = self.SIZE, style = style)
+        self.PostCreate(pre)
         self.tokenizer = ErlangTokenizer()
-        self.SetBackgroundStyle(wx.BG_STYLE_TRANSPARENT)
 
         self.stc = stc
         self.lineHeight = stc.TextHeight(0) + 2

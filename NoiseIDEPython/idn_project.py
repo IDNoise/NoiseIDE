@@ -6,10 +6,12 @@ __author__ = 'Yaroslav Nikityshev aka IDNoise'
 #from idn_utils import extension
 import os
 import yaml
+import wx
 import time
 import idn_projectexplorer as exp
 from wx.lib.agw import aui
 from idn_console import ErlangIDEConsole, ErlangProjectConsole
+from idn_global import GetTabMgr
 
 class Project:
     EXPLORER_TYPE = exp.ProjectExplorer
@@ -20,6 +22,7 @@ class Project:
 
     def __init__(self, window, filePath, projectData):
         self.window = window
+        window.project = self
         self.projectFilePath = filePath
         self.projectDir = os.path.dirname(filePath)
         self.projectData = projectData
@@ -54,7 +57,7 @@ class Project:
 
     def OpenLastFiles(self):
         for file in self.LastOpenedFiles():
-            self.window.TabMgr.LoadFile(file)
+            GetTabMgr().LoadFile(file)
 
     def AppsPath(self):
         return os.path.join(self.projectDir, self.projectData["apps_dir"])
@@ -77,7 +80,7 @@ class Project:
     def SaveUserData(self):
         #print "save user data"
         openedFiles = []
-        for path in self.window.TabMgr.OpenedFiles():
+        for path in GetTabMgr().OpenedFiles():
             if path.lower().startswith(self.projectDir.lower()):
                 openedFiles.append(path)
         self.userData[self.CONFIG_LAST_OPENED_FILES] = openedFiles
@@ -93,6 +96,8 @@ class ErlangProject(Project):
 
 
     def OnLoadProject(self):
+        self.errors = {}
+
         ErlangCache.Init()
         self.SetupDirs()
         self.AddConsoles()
@@ -106,9 +111,12 @@ class ErlangProject(Project):
         ErlangCache.StartCheckingFolder(self.ProjectName())
 
     def SetupDirs(self):
-        projectCacheDir =  os.path.join(ErlangCache.CACHE_DIR, self.ProjectName())
+        projectCacheDir = os.path.join(ErlangCache.CACHE_DIR, self.ProjectName())
         if not os.path.isdir(projectCacheDir):
             os.makedirs(projectCacheDir)
+        flyDir = os.path.join(os.getcwd(), "data", "erlang", "fly")
+        if not os.path.isdir(flyDir):
+            os.makedirs(flyDir)
 
     def GenerateErlangCache(self):
         self.shellConsole.shell.GenerateErlangCache()
@@ -197,6 +205,18 @@ class ErlangProject(Project):
                         if file not in srcFiles:
                             os.remove(os.path.join(root, fileName))
 
+    def IsFlyCompileEnabled(self):
+        return "fly_compile" in self.projectData and self.projectData["fly_compile"]
+
+    def AddErrors(self, path, errors):
+        self.errors[path] = errors
+        editor = GetTabMgr().FindPageByPath(path)
+        if editor:
+            editor.HighlightErrors(errors)
+
+    def GetErrors(self, path):
+        if path not in self.errors: return []
+        else: return self.errors[path]
 
 def loadProject(window, filePath):
     TYPE_PROJECT_DICT = {

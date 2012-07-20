@@ -7,6 +7,7 @@ import shutil
 import wx.lib.agw.customtreectrl as CT
 from idn_utils import extension, Menu
 from idn_directoryinfo import DirectoryChecker
+from idn_global import GetTabMgr
 
 ICON_SIZE = 16
 
@@ -352,7 +353,7 @@ class ProjectExplorer(CT.CustomTreeCtrl):
     def OnActivateItem(self, event):
         path = self.GetPyData(event.GetItem())
         if os.path.isfile(path):
-            self.Parent.TabMgr.LoadFile(path)
+            GetTabMgr().LoadFile(path)
         else:
             event.Skip()
 

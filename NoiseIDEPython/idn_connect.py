@@ -1,8 +1,3 @@
-import asyncore
-import json
-import random
-import wx
-
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 import io
@@ -16,6 +11,11 @@ from idn_config import Config
 from threading import Thread, Event
 from wx import Process, Execute
 import wx.lib.agw.pyprogress as PP
+import asyncore
+import json
+import random
+import wx
+from idn_global import GetTabMgr, GetProject
 
 class AsyncoreThread(Thread):
     def __init__(self):
@@ -39,13 +39,13 @@ class ErlangSocketConnection(asyncore.dispatcher):
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socketQueue = Queue()
         self.socketHandler = None
-        self.port = self.Port()
+        self.port = random.randrange(55555, 55600)
 
     def Host(self):
         return "127.0.0.1"
 
     def Port(self):
-        return random.randrange(55555, 55600)
+        pass
 
     def Start(self):
         self.connect((self.Host(), self.port))
@@ -101,7 +101,7 @@ class CompileErrorInfo:
     def __init__(self, type, line, msg):
         self.type = self.WARNING if type == "warning" else self.ERROR
         self.msg = msg
-        self.line = line
+        self.line = line - 1
         #print type, line, msg
 
 class ErlangIDEConnectAPI(ErlangSocketConnection):
@@ -118,7 +118,12 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
         self.Bind(wx.EVT_TIMER, self.OnProgressTimer, self.progressTimer)
 
     def CompileFile(self, file):
+        self.tasks.add((self.TASK_COMPILE, file))
         self._ExecRequest("compile_file", '"{}"'.format(file))
+
+    def CompileFileFly(self, realPath, flyPath):
+        self.tasks.add((self.TASK_COMPILE, realPath))
+        self._ExecRequest("compile_file_fly", '["{0}", "{1}"]'.format(erlstr(realPath), erlstr(flyPath)))
 
     def Rpc(self, module, fun):
         self._ExecRequest("rpc", '["{0}", "{1}"]'.format(module, fun))
@@ -159,7 +164,6 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
     def RemovePath(self, path):
         self._ExecRequest("add_path", '"{}"'.format(erlstr(path)))
 
-
     def _CreateProgressDialog(self, text = "IDE Activities"):
         if self.progressDialog:
             pass
@@ -174,10 +178,12 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
             self.progressDialog.ShowDialog()
 
     def _HandleSocketResponse(self, text):
-        js = json.loads(text)
-        if not "response" in js: return
-        res = js["response"]
+        #print "response", text
         try:
+            js = json.loads(text)
+            if not "response" in js: return
+            res = js["response"]
+
             self.lastTaskDone = ""
             if res == "compile":
                 errorsData = js["errors"]
@@ -185,18 +191,25 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
                 for error in errorsData:
                     errors.append(CompileErrorInfo(error["type"], error["line"], error["msg"]))
                 path = pystr(js["path"])
-                self.tasks.remove((self.TASK_COMPILE, path))
+                #print "compile result: {} = {}".format(path, errors)
+                GetProject().AddErrors(path, errors)
                 self.lastTaskDone = "Compiled {}".format(path)
+                task = (self.TASK_COMPILE, path)
+                if task in self.tasks:
+                    self.tasks.remove(task)
             elif res == "gen_file_cache":
                 path = pystr(js["path"])
-                self.tasks.remove((self.TASK_GEN_FILE_CACHE, path))
                 self.lastTaskDone = "Generated cache for {}".format(path)
+                self.tasks.remove((self.TASK_GEN_FILE_CACHE, path))
             elif res == "gen_erlang_cache":
+                self.lastTaskDone = "Generated cache for erlang libs"
                 self.tasks.remove(self.TASK_GEN_ERLANG_CACHE)
+            elif res == "connect":
+                print "socket connected"
         except Exception, e:
             print e
 
-        if len(self.tasks) == 0:
+        if len(self.tasks) == 0 and self.progressDialog:
             self.progressDialog.Destroy()
             self.progressDialog = None
 
