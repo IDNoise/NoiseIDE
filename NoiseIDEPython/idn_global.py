@@ -12,3 +12,6 @@ def GetMainFrame():
 
 def GetTabMgr():
     return MainFrame.TabMgr
+
+def GetToolMgr():
+    return MainFrame.ToolMgr

@@ -313,6 +313,11 @@ class ErlangSTC(CustomSTC):
         self.completer = ErlangCompleter(self)
 
         self.navigateTo = None
+        self.tooltip = wx.ToolTip("")
+        self.tooltip.Enable(False)
+        self.tooltip.SetDelay(300)
+        self.tooltip.SetMaxWidth(400)
+        self.SetToolTip(self.tooltip)
 
         self.Bind(stc.EVT_STC_UPDATEUI, self.OnUpdateCompleter)
         self.Bind(wx.EVT_MOTION, self.OnMouseMove)
@@ -324,6 +329,7 @@ class ErlangSTC(CustomSTC):
         self.flyCompileHash = None
 
         self.lastErrors = []
+        self.errorsLines = []
         self.HighlightErrors(GetProject().GetErrors(self.filePath))
 
 
@@ -415,43 +421,59 @@ class ErlangSTC(CustomSTC):
         self.ClearIndicator(1)
         self.SetCursor(wx.StockCursor(wx.CURSOR_IBEAM))
         self.navigateTo = None
+        pos = self.PositionFromPoint(event.GetPosition())
+        #pos = self.PositionFromPointClose(event.GetPosition()[0],event.GetPosition()[1])
+        #if pos == stc.STC_INVALID_POSITION:
+        #    self.tooltip.Enable(False)
+        #    self.completer.HideHelp()
+        #    return
         if event.ControlDown() and self.HasFocus():
-            pos = self.PositionFromPointClose(event.GetPosition()[0],event.GetPosition()[1])
-            if pos == stc.STC_INVALID_POSITION:
-                return
-            style = self.GetStyleAt(pos)
-            if style not in [ErlangHighlightType.ATOM,
-                             ErlangHighlightType.FUNCTION,
-                             ErlangHighlightType.FUNDEC,
-                             ErlangHighlightType.MACROS,
-                             ErlangHighlightType.MODULE,
-                             ErlangHighlightType.RECORD]:
+            if not self.CheckHelp(pos):
                 self.completer.HideHelp()
-                return
-            start = self.WordStartPosition(pos, True)
-            end = self.WordEndPosition(pos, True)
-            if start == end:
-                self.completer.HideHelp()
-                return
-            self.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
-            self.SetIndicatorCurrent(1)
-            self.IndicatorFillRange(start, end - start)
-
-            line = self.LineFromPosition(pos)
-            lineStart = self.PositionFromLine(line)
-            lineEnd = self.GetLineEndPosition(line)
-            prefix = self.GetTextRange(lineStart, start)
-            postfix = self.GetTextRange(end, lineEnd)
-            value = self.GetTextRange(start, end)
-            #print value ,prefix, postfix
-            if style == ErlangHighlightType.FUNCTION:
-                self.navigateTo = self.completer.ShowFunctionHelp(value, prefix, end)
-            if style == ErlangHighlightType.RECORD:
-                self.navigateTo = self.completer.ShowRecordHelp(value)
-            if style == ErlangHighlightType.MACROS:
-                self.navigateTo = self.completer.ShowMacrosHelp(value)
         else:
             self.completer.HideHelp()
+            line = self.LineFromPosition(pos)
+            errs = list(filter(lambda e: e.line == line, self.lastErrors))
+            if errs:
+                msg = reduce(lambda msg, e: msg + e.msg + "\n", errs, "")
+                self.tooltip.SetTip(msg)
+                self.tooltip.Enable(True)
+            else:
+                self.tooltip.Enable(False)
+
+    def CheckHelp(self, pos):
+        style = self.GetStyleAt(pos)
+        if style not in [ErlangHighlightType.ATOM,
+                         ErlangHighlightType.FUNCTION,
+                         ErlangHighlightType.FUNDEC,
+                         ErlangHighlightType.MACROS,
+                         ErlangHighlightType.MODULE,
+                         ErlangHighlightType.RECORD]:
+            self.completer.HideHelp()
+            return False
+        start = self.WordStartPosition(pos, True)
+        end = self.WordEndPosition(pos, True)
+        if start == end:
+            self.completer.HideHelp()
+            return False
+        self.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
+        self.SetIndicatorCurrent(1)
+        self.IndicatorFillRange(start, end - start)
+
+        line = self.LineFromPosition(pos)
+        lineStart = self.PositionFromLine(line)
+        #lineEnd = self.GetLineEndPosition(line)
+        prefix = self.GetTextRange(lineStart, start)
+        #postfix = self.GetTextRange(end, lineEnd)
+        value = self.GetTextRange(start, end)
+        #print value ,prefix, postfix
+        if style == ErlangHighlightType.FUNCTION:
+            self.navigateTo = self.completer.ShowFunctionHelp(value, prefix, end)
+        if style == ErlangHighlightType.RECORD:
+            self.navigateTo = self.completer.ShowRecordHelp(value)
+        if style == ErlangHighlightType.MACROS:
+            self.navigateTo = self.completer.ShowMacrosHelp(value)
+        return True
 
     def OnMouseClick(self, event):
         if event.ControlDown():
@@ -479,6 +501,7 @@ class ErlangSTC(CustomSTC):
         self.MarkerDeleteAll(20)
         self.MarkerDeleteAll(21)
         self.lastErrors = errors
+        self.errorsLines = map(lambda x: x.line, errors)
         for e in errors:
             if e.type == CompileErrorInfo.WARNING:
                 indic = self.MARKER_WARNING

@@ -1,3 +1,4 @@
+from wx.grid import PyGridTableBase
 from idn_cache import ErlangCache
 from idn_directoryinfo import DirectoryChecker
 
@@ -11,7 +12,7 @@ import time
 import idn_projectexplorer as exp
 from wx.lib.agw import aui
 from idn_console import ErlangIDEConsole, ErlangProjectConsole
-from idn_global import GetTabMgr
+from idn_global import GetTabMgr, GetToolMgr
 
 class Project:
     EXPLORER_TYPE = exp.ProjectExplorer
@@ -101,6 +102,7 @@ class ErlangProject(Project):
         ErlangCache.Init()
         self.SetupDirs()
         self.AddConsoles()
+        self.AddTabs()
         #self.GenerateErlangCache() #test
 
         #self.CompileProject() #test
@@ -122,11 +124,11 @@ class ErlangProject(Project):
         self.shellConsole.shell.GenerateErlangCache()
 
     def AddConsoles(self):
-        self.shellConsole = ErlangIDEConsole(self.window.ToolMgr, self.IDE_MODULES_DIR)
+        self.shellConsole = ErlangIDEConsole(GetToolMgr(), self.IDE_MODULES_DIR)
         self.shellConsole.shell.SetProp("cache_dir", ErlangCache.CACHE_DIR)
         self.shellConsole.shell.SetProp("project_dir", self.AppsPath())
         self.shellConsole.shell.SetProp("project_name", self.ProjectName())
-        self.window.ToolMgr.AddPage(self.shellConsole, "IDE Console")
+        GetToolMgr().AddPage(self.shellConsole, "IDE Console")
 
         self.consoles = {}
         consoles = self.projectData["consoles"]
@@ -148,9 +150,13 @@ class ErlangProject(Project):
             params.append("-config " + data["config"])
 
             params.append("-pa " + dirs)
-            self.consoles[title] = ErlangProjectConsole(self.window.ToolMgr, self.AppsPath(), params)
+            self.consoles[title] = ErlangProjectConsole(GetToolMgr(), self.AppsPath(), params)
             self.consoles[title].SetStartCommand(data["command"])
-            self.window.ToolMgr.AddPage(self.consoles[title], '<{}> Console'.format(title))
+            GetToolMgr().AddPage(self.consoles[title], '<{}> Console'.format(title))
+
+    def AddTabs(self):
+        self.errorsTable = ErrorsTableGrid(GetToolMgr())
+        GetToolMgr().AddPage(self.errorsTable, 'Errors')
 
     def Close(self):
         ErlangCache.StopCheckingFolder(self.ProjectName())
@@ -213,10 +219,101 @@ class ErlangProject(Project):
         editor = GetTabMgr().FindPageByPath(path)
         if editor:
             editor.HighlightErrors(errors)
+        self.errorsTable.AddErrors(path, errors)
 
     def GetErrors(self, path):
         if path not in self.errors: return []
         else: return self.errors[path]
+
+
+class ErrorsTable(PyGridTableBase):
+    def __init__(self, data):
+        PyGridTableBase.__init__(self)
+        self.data = data
+        self.colLabels = ["File", "Line", "Type", "Message"]
+
+    def GetNumberRows(self):
+        return len(self.data)
+
+    def GetNumberCols(self):
+         return len(self.colLabels)
+
+    def IsEmptyCell(self, row, col):
+        try:
+            return not self.data[row][col]
+        except IndexError:
+            return True
+
+    def GetValue(self, row, col):
+        try:
+            return self.data[row][col]
+        except IndexError:
+            return ''
+
+    def GetTypeName(self, row, col):
+        if col == 1:
+            return wx.grid.GRID_VALUE_NUMBER
+        else:
+            return wx.grid.GRID_VALUE_STRING
+
+    def GetColLabelValue(self, col):
+         return self.colLabels[col]
+
+    def SetValue(self, row, col, value):
+        self.data[row][col] = value
+
+class ErrorsTableGrid(wx.grid.Grid):
+    def __init__(self, parent):
+        wx.grid.Grid.__init__(self, parent, -1)
+        self.table = ErrorsTable([])
+        self.SetTable(self.table, True)
+        self.AutoSizeColumns(False)
+        self.SetRowLabelSize(0)
+        self.SetMargins(0,0)
+        self.SetColSize(0, 450)
+        self.SetColSize(1, 50)
+        self.SetColSize(2, 100)
+        self.SetColSize(3, 750)
+        self.SetColMinimalAcceptableWidth(50)
+
+        self.DisableCellEditControl()
+        self.DisableDragCell()
+        self.DisableDragColMove()
+        self.DisableDragColSize()
+        self.DisableDragGridSize()
+        self.DisableDragRowSize()
+        self.Bind(wx.grid.EVT_GRID_CELL_LEFT_DCLICK, self.OnLeftDClick)
+
+    def OnLeftDClick(self, event):
+        row = event.GetRow()
+        rowData = self.table.data[row]
+        file = rowData[0]
+        line = rowData[1]
+        editor = GetTabMgr().LoadFile(file)
+        editor.GotoLine(line)
+
+    def AddErrors(self, path, errors):
+        #print path, errors
+        current = len(self.table.data)
+
+        data = list(filter(lambda x: x[0] != path, self.table.data))
+        for e in errors:
+            data.append((e.path, e.line, e.type, e.msg))
+        data.sort()
+        #print data
+        self.table.data = data
+        new = len(self.table.data)
+        if new < current:
+            msg = wx.grid.GridTableMessage(self.table, wx.grid.GRIDTABLE_NOTIFY_ROWS_DELETED,
+                new, current-new)
+            self.ProcessTableMessage(msg)
+        elif new > current:
+            msg = wx.grid.GridTableMessage(self.table, wx.grid.GRIDTABLE_NOTIFY_ROWS_APPENDED,
+                new - current)
+            self.ProcessTableMessage(msg)
+        msg = wx.grid.GridTableMessage(self.table, wx.grid.GRIDTABLE_REQUEST_VIEW_GET_VALUES)
+        self.ProcessTableMessage(msg)
+        self.ForceRefresh()
 
 def loadProject(window, filePath):
     TYPE_PROJECT_DICT = {

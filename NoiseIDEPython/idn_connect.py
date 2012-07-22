@@ -97,11 +97,12 @@ class ErlangSocketConnection(asyncore.dispatcher):
         pass
 
 class CompileErrorInfo:
-    WARNING, ERROR = range(2)
-    def __init__(self, type, line, msg):
+    WARNING, ERROR = ("Warning", "Error")
+    def __init__(self, path, type, line, msg):
         self.type = self.WARNING if type == "warning" else self.ERROR
         self.msg = msg
         self.line = line - 1
+        self.path = path
         #print type, line, msg
 
 class ErlangIDEConnectAPI(ErlangSocketConnection):
@@ -187,10 +188,10 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
             self.lastTaskDone = ""
             if res == "compile":
                 errorsData = js["errors"]
+                path = pystr(js["path"])
                 errors = []
                 for error in errorsData:
-                    errors.append(CompileErrorInfo(error["type"], error["line"], error["msg"]))
-                path = pystr(js["path"])
+                    errors.append(CompileErrorInfo(path, error["type"], error["line"], error["msg"]))
                 #print "compile result: {} = {}".format(path, errors)
                 GetProject().AddErrors(path, errors)
                 self.lastTaskDone = "Compiled {}".format(path)
