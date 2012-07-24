@@ -17,12 +17,32 @@ from wx import html
 
 class EditorFoldMixin:
     def __init__(self):
+        self.FoldWidth = 10
+        self.SetMarginType(3, stc.STC_MARGIN_SYMBOL)
+        self.SetMarginMask(3, stc.STC_MASK_FOLDERS)
+        self.SetMarginSensitive(3, True)
+        self.SetMarginWidth(3, self.FoldWidth)
+        self.SetProperty("fold", "1")
+
+
+        foreColor = ColorSchema.codeEditor["fold_area_foreground"]
+        backColor = ColorSchema.codeEditor["fold_area_background"]
+        self.MarkerDefine(stc.STC_MARKNUM_FOLDEROPEN, stc.STC_MARK_BOXMINUS, foreColor, backColor)
+        self.MarkerDefine(stc.STC_MARKNUM_FOLDER, stc.STC_MARK_BOXPLUS, foreColor, backColor)
+        self.MarkerDefine(stc.STC_MARKNUM_FOLDERSUB, stc.STC_MARK_VLINE, backColor, foreColor)
+        self.MarkerDefine(stc.STC_MARKNUM_FOLDERTAIL, stc.STC_MARK_LCORNER, foreColor, foreColor)
+        self.MarkerDefine(stc.STC_MARKNUM_FOLDEREND, stc.STC_MARK_VLINE, foreColor, foreColor)
+        self.MarkerDefine(stc.STC_MARKNUM_FOLDEROPENMID, stc.STC_MARK_VLINE, foreColor, foreColor)
+        self.MarkerDefine(stc.STC_MARKNUM_FOLDERMIDTAIL, stc.STC_MARK_VLINE, foreColor, foreColor)
+        self.SetFoldMarginColour(True, backColor)
+        self.SetFoldMarginHiColour(True, backColor)
+
         self.Bind(stc.EVT_STC_MARGINCLICK, self.OnMarginClick)
         self.Bind(stc.EVT_STC_CHANGE, self.OnTextChanged)
 
     def OnMarginClick(self, event):
         lineNum = self.LineFromPosition(event.GetPosition())
-        if event.GetMargin() == 2:
+        if event.GetMargin() == 3:
             self.ToggleFold(lineNum)
         event.Skip()
 
@@ -35,6 +55,8 @@ class EditorFoldMixin:
 
 class EditorLineMarginMixin:
     def __init__(self):
+        self.SetMarginType(1, stc.STC_MARGIN_NUMBER)
+        self.SetMarginMask(1, 0)
         self.Bind(stc.EVT_STC_CHANGE, self.OnUpdateLineAreaWidth)
         self.Bind(stc.EVT_STC_ZOOM, self.OnUpdateLineAreaWidth)
 
@@ -56,13 +78,16 @@ class EditorLineMarginMixin:
 
     def EnableLineNumbers(self, enable=True):
         self.lineNumbersEnabled = enable
-        if enable:
-            self.SetMarginWidth(1, 7 + len(str(self.GetLineCount())) * self.CalcFontWidth())
-        else:
-            self.SetMarginWidth(1, 0)
+        self.SetMarginWidth(1, self.LineNumbersWidth())
 
     def GetDefaultFont(self):
         raise NotImplementedError
+
+    def LineNumbersWidth(self):
+        if self.lineNumbersEnabled:
+            return 7 + len(str(self.GetLineCount())) * self.CalcFontWidth()
+        else:
+            return 0
 
 class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
     def __init__(self, parent, filePath = None):
@@ -97,13 +122,8 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.SetEdgeMode(stc.STC_EDGE_LINE)
 
         self.SetMargins(5, 5)
-        self.SetProperty("fold", "1")
-
-        self.SetMarginType(1, stc.STC_MARGIN_NUMBER)
-        self.SetMarginMask(1, 0)
 
         self.SetMarginType(2, stc.STC_MARGIN_SYMBOL)
-        self.SetMarginMask(2, stc.STC_MASK_FOLDERS)
         self.SetMarginSensitive(2, True)
         self.SetMarginWidth(2, 10)
 
@@ -113,17 +133,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.SetVisiblePolicy(stc.STC_VISIBLE_STRICT, 0)
         #self.SetYCaretPolicy(stc.STC_CARET_STRICT | stc.STC_CARET_EVEN, 0)
 
-        foreColor = ColorSchema.codeEditor["fold_area_foreground"]
-        backColor = ColorSchema.codeEditor["fold_area_background"]
-        self.MarkerDefine(stc.STC_MARKNUM_FOLDEROPEN, stc.STC_MARK_BOXMINUS, foreColor, backColor)
-        self.MarkerDefine(stc.STC_MARKNUM_FOLDER, stc.STC_MARK_BOXPLUS, foreColor, backColor)
-        self.MarkerDefine(stc.STC_MARKNUM_FOLDERSUB, stc.STC_MARK_VLINE, backColor, foreColor)
-        self.MarkerDefine(stc.STC_MARKNUM_FOLDERTAIL, stc.STC_MARK_LCORNER, foreColor, foreColor)
-        self.MarkerDefine(stc.STC_MARKNUM_FOLDEREND, stc.STC_MARK_VLINE, foreColor, foreColor)
-        self.MarkerDefine(stc.STC_MARKNUM_FOLDEROPENMID, stc.STC_MARK_VLINE, foreColor, foreColor)
-        self.MarkerDefine(stc.STC_MARKNUM_FOLDERMIDTAIL, stc.STC_MARK_VLINE, foreColor, foreColor)
-        self.SetFoldMarginColour(True, backColor)
-        self.SetFoldMarginHiColour(True, backColor)
+
 
         self.font = wx.Font(ColorSchema.codeEditor["font_size"],
             wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, False,
@@ -304,6 +314,8 @@ class YAMLSTC(CustomSTC):
     def SetupLexer(self):
         self.SetLexer(stc.STC_LEX_YAML)
 
+#class ErrorMarkersPanel(wx.)
+
 class ErlangSTC(CustomSTC):
     TYPE_MODULE, TYPE_HRL, TYPE_UNKNOWN = range(3)
 
@@ -312,16 +324,14 @@ class ErlangSTC(CustomSTC):
     def OnInit(self):
         self.completer = ErlangCompleter(self)
 
+        self.overlay = wx.Overlay()
+
         self.navigateTo = None
         self.tooltip = wx.ToolTip("")
         self.tooltip.Enable(False)
         self.tooltip.SetDelay(300)
         self.tooltip.SetMaxWidth(400)
         self.SetToolTip(self.tooltip)
-
-        self.Bind(stc.EVT_STC_UPDATEUI, self.OnUpdateCompleter)
-        self.Bind(wx.EVT_MOTION, self.OnMouseMove)
-        self.Bind(wx.EVT_LEFT_DOWN, self.OnMouseClick)
 
         self.flyTimer = wx.Timer(self, wx.NewId())
         self.Bind(wx.EVT_TIMER, self.OnFlyTimer, self.flyTimer)
@@ -331,6 +341,13 @@ class ErlangSTC(CustomSTC):
         self.lastErrors = []
         self.errorsLines = []
         self.HighlightErrors(GetProject().GetErrors(self.filePath))
+
+        self.Bind(stc.EVT_STC_UPDATEUI, self.OnUpdateCompleter)
+        self.Bind(stc.EVT_STC_UPDATEUI, self.OnDrawErrorMarkers)
+        self.Bind(wx.EVT_PAINT, self.OnDrawErrorMarkers)
+        self.Bind(stc.EVT_STC_PAINTED, self.OnDrawErrorMarkers)
+        self.Bind(wx.EVT_MOTION, self.OnMouseMove)
+        self.Bind(wx.EVT_LEFT_DOWN, self.OnMouseClick)
 
 
     def SetupLexer(self):
@@ -419,7 +436,6 @@ class ErlangSTC(CustomSTC):
     def OnMouseMove(self, event):
         event.Skip()
         self.ClearIndicator(1)
-        self.SetCursor(wx.StockCursor(wx.CURSOR_IBEAM))
         self.navigateTo = None
         pos = self.PositionFromPoint(event.GetPosition())
         #pos = self.PositionFromPointClose(event.GetPosition()[0],event.GetPosition()[1])
@@ -427,10 +443,19 @@ class ErlangSTC(CustomSTC):
         #    self.tooltip.Enable(False)
         #    self.completer.HideHelp()
         #    return
+
+        if event.GetPosition()[0] < self.LineNumbersWidth() + self.FoldWidth + 10:
+            self.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+            self.tooltip.Enable(False)
+            self.completer.HideHelp()
+            return
+
         if event.ControlDown() and self.HasFocus():
             if not self.CheckHelp(pos):
+                self.SetCursor(wx.StockCursor(wx.CURSOR_IBEAM))
                 self.completer.HideHelp()
         else:
+            self.SetCursor(wx.StockCursor(wx.CURSOR_IBEAM))
             self.completer.HideHelp()
             line = self.LineFromPosition(pos)
             errs = list(filter(lambda e: e.line == line, self.lastErrors))
@@ -440,6 +465,7 @@ class ErlangSTC(CustomSTC):
                 self.tooltip.Enable(True)
             else:
                 self.tooltip.Enable(False)
+
 
     def CheckHelp(self, pos):
         style = self.GetStyleAt(pos)
@@ -456,9 +482,7 @@ class ErlangSTC(CustomSTC):
         if start == end:
             self.completer.HideHelp()
             return False
-        self.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
-        self.SetIndicatorCurrent(1)
-        self.IndicatorFillRange(start, end - start)
+
 
         line = self.LineFromPosition(pos)
         lineStart = self.PositionFromLine(line)
@@ -473,6 +497,10 @@ class ErlangSTC(CustomSTC):
             self.navigateTo = self.completer.ShowRecordHelp(value)
         if style == ErlangHighlightType.MACROS:
             self.navigateTo = self.completer.ShowMacrosHelp(value)
+        if self.navigateTo:
+            self.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
+            self.SetIndicatorCurrent(1)
+            self.IndicatorFillRange(start, end - start)
         return True
 
     def OnMouseClick(self, event):
@@ -510,12 +538,37 @@ class ErlangSTC(CustomSTC):
             self.MarkerAdd(e.line, indic)
 
 
+    def OnDrawErrorMarkers(self, event):
+        event.Skip()
+        dc = wx.ClientDC(self)
+        odc = wx.DCOverlay(self.overlay, dc)
+        # odc.Clear()
+        left = self.Size[0] - 30#self.LineNumbersWidth()
+        width = 10
+        top = 0
+        height = self.Size[1]
+        color = ColorSchema.codeEditor["line_number_area_background"]
+
+        dc.SetPen(wx.Pen(color))
+        dc.SetBrush(wx.Brush(color))
+        dc.DrawRectangle(left, top, width, height)
+
+        for e in self.lastErrors:
+            y = height / self.LineCount * e.line
+            eHeight = 3
+            dc.SetPen(wx.Pen(wx.RED))
+            dc.SetBrush(wx.Brush(wx.RED))
+            dc.DrawRectangle(left, y, width, eHeight)
+
+        del odc
+
+
 class ErlangCompleter(wx.Frame):
     SIZE = (820, 500)
     LIST_SIZE = (320, 150)
 
     def __init__(self, stc):
-        style = wx.BORDER_NONE | wx.STAY_ON_TOP
+        style = wx.BORDER_NONE | wx.STAY_ON_TOP | wx.FRAME_NO_TASKBAR
         pre = wx.PreFrame()
         pre.SetBackgroundStyle(wx.BG_STYLE_TRANSPARENT)
         pre.Create(stc, size = self.SIZE, style = style)
@@ -832,9 +885,10 @@ class ErlangCompleter(wx.Frame):
             self.Hide()
 
     def HideHelp(self):
-        self.helpWindow.SetPage("")
-        self.showingHelp = False
-        self.Hide()
+        if self.showingHelp:
+            self.helpWindow.SetPage("")
+            self.showingHelp = False
+            self.Hide()
         #self.Refresh()
         #self.stc.Refresh()
 
