@@ -123,6 +123,18 @@ class ErlangProject(Project):
     def GenerateErlangCache(self):
         self.shellConsole.shell.GenerateErlangCache()
 
+    def GetShell(self):
+        return self.shellConsole.shell
+
+    def CompileFile(self, path):
+        if not path.startswith(self.projectFilePath):
+            return
+        app = path.replace(appsPath + os.sep, "")
+        app = app[:app.index(os.sep)]
+        if not app in self.projectData["apps"]:
+            return
+        self.GetShell().CompileProjectFile(path, app)
+
     def AddConsoles(self):
         self.shellConsole = ErlangIDEConsole(GetToolMgr(), self.IDE_MODULES_DIR)
         self.shellConsole.shell.SetProp("cache_dir", ErlangCache.CACHE_DIR)

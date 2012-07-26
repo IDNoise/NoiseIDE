@@ -12,7 +12,7 @@ from wx.stc import STC_FOLDLEVELHEADERFLAG, StyledTextCtrl
 from idn_colorschema import ColorSchema
 from idn_highlight import ErlangHighlightType
 from idn_lexer import ErlangLexer
-from idn_global import GetProject
+from idn_global import GetProject, GetTabMgr
 from wx import html
 
 class EditorFoldMixin:
@@ -90,11 +90,21 @@ class EditorLineMarginMixin:
             return 0
 
 class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
-    def __init__(self, parent, filePath = None):
+    def __init__(self, parent, markerPanel, filePath = None):
         #style = wx.MAXIMIZE_BOX|wx.RESIZE_BORDER|wx.SYSTEM_MENU|wx.CAPTION|wx.CLOSE_BOX
-        StyledTextCtrl.__init__(self, parent)#, style = style)
+        StyledTextCtrl.__init__(self, parent, style = wx.NO_BORDER)#, style = style)
         EditorFoldMixin.__init__(self)
         EditorLineMarginMixin.__init__(self)
+
+        self.tooltip = wx.ToolTip("")
+        self.tooltip.Enable(False)
+        self.tooltip.SetDelay(300)
+        self.tooltip.SetMaxWidth(400)
+        self.SetToolTip(self.tooltip)
+
+        self.markerPanel = markerPanel
+        if self.markerPanel:
+            self.markerPanel.Editor = self
 
         self.SetupLexer()
         self.filePath = filePath
@@ -154,21 +164,23 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
             self.Bind(stc.EVT_STC_STYLENEEDED, self.OnStyleNeeded)
         self.Bind(stc.EVT_STC_UPDATEUI, self.HighlightBrackets)
         self.Bind(stc.EVT_STC_UPDATEUI, self.HighlightSelectedWord)
-        self.Bind(stc.EVT_STC_CHANGE , self.OnDocumentChanged)
         self.Bind(stc.EVT_STC_CHARADDED, self.OnCharAdded)
         self.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
 
         self.EnableLineNumbers()
+
+        self.Bind(stc.EVT_STC_CHANGE , self.OnDocumentChanged)
+        self.SetModEventMask(stc.STC_MOD_INSERTTEXT | stc.STC_MOD_DELETETEXT |
+                             stc.STC_PERFORMED_USER | stc.STC_PERFORMED_UNDO |
+                             stc.STC_PERFORMED_REDO)
 
         self.OnInit()
 
         if self.filePath:
             self.LoadFile(self.filePath)
             self.SetSelection(0, 0)
-
-
-        #print(self.GetScrollWidth())
-        #print(self.Size)
+            self.Bind(stc.EVT_STC_SAVEPOINTLEFT, self.OnSavePointLeft)
+            self.Bind(stc.EVT_STC_SAVEPOINTREACHED, self.OnSavePointReached)
 
     def OnInit(self):
         pass
@@ -180,6 +192,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         pass
 
     def OnDocumentChanged(self, event):
+        #if self.GetText() != self.
         self.Changed()
         event.Skip()
 
@@ -231,14 +244,22 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
 
     def Changed(self, changed = True):
         self.changed = changed
-        self.Saved(not self.changed)
 
-    def Saved(self, saved = True):
-        self.saved = saved
-        prefix = "* " if self.saved else ""
-        index = self.Parent.FindPageIndexByPath(self.filePath)
-        if index is not None:
-            self.Parent.SetPageText(index, prefix + self.FileName())
+    def OnSavePointLeft(self, event):
+        print "left", self.filePath
+        self.saved = False
+        index = GetTabMgr().FindPageIndexByPath(self.filePath)
+        print index
+        if index > 0:
+            GetTabMgr().SetPageText(index, "* " + self.FileName())
+
+    def OnSavePointReached(self, event):
+        print "reached", self.filePath
+        self.saved = True
+        index = GetTabMgr().FindPageIndexByPath(self.filePath)
+        if index > 0:
+            GetTabMgr().SetPageText(index, self.FileName())
+        GetProject().CompileFile(self.filePath)
 
     def LoadFile(self, path):
         self.filePath = path
@@ -305,6 +326,12 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
                 self.SetTargetEnd(self.Length)
                 index = self.SearchInTarget(text)
 
+    def ShowToolTip(self, msg):
+        self.tooltip.SetTip(msg)
+        self.tooltip.Enable(True)
+
+    def HideToolTip(self):
+        self.tooltip.Enable(False)
 
 class PythonSTC(CustomSTC):
     def SetupLexer(self):
@@ -327,11 +354,6 @@ class ErlangSTC(CustomSTC):
         self.overlay = wx.Overlay()
 
         self.navigateTo = None
-        self.tooltip = wx.ToolTip("")
-        self.tooltip.Enable(False)
-        self.tooltip.SetDelay(300)
-        self.tooltip.SetMaxWidth(400)
-        self.SetToolTip(self.tooltip)
 
         self.flyTimer = wx.Timer(self, wx.NewId())
         self.Bind(wx.EVT_TIMER, self.OnFlyTimer, self.flyTimer)
@@ -340,12 +362,12 @@ class ErlangSTC(CustomSTC):
 
         self.lastErrors = []
         self.errorsLines = []
+        self.markerPanel.SetMarkerColor("warning", ColorSchema.codeEditor["warning_line_color"])
+        self.markerPanel.SetMarkerColor("error", ColorSchema.codeEditor["error_line_color"])
+
         self.HighlightErrors(GetProject().GetErrors(self.filePath))
 
         self.Bind(stc.EVT_STC_UPDATEUI, self.OnUpdateCompleter)
-        self.Bind(stc.EVT_STC_UPDATEUI, self.OnDrawErrorMarkers)
-        self.Bind(wx.EVT_PAINT, self.OnDrawErrorMarkers)
-        self.Bind(stc.EVT_STC_PAINTED, self.OnDrawErrorMarkers)
         self.Bind(wx.EVT_MOTION, self.OnMouseMove)
         self.Bind(wx.EVT_LEFT_DOWN, self.OnMouseClick)
 
@@ -438,15 +460,10 @@ class ErlangSTC(CustomSTC):
         self.ClearIndicator(1)
         self.navigateTo = None
         pos = self.PositionFromPoint(event.GetPosition())
-        #pos = self.PositionFromPointClose(event.GetPosition()[0],event.GetPosition()[1])
-        #if pos == stc.STC_INVALID_POSITION:
-        #    self.tooltip.Enable(False)
-        #    self.completer.HideHelp()
-        #    return
 
         if event.GetPosition()[0] < self.LineNumbersWidth() + self.FoldWidth + 10:
             self.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
-            self.tooltip.Enable(False)
+            self.HideToolTip()
             self.completer.HideHelp()
             return
 
@@ -461,11 +478,9 @@ class ErlangSTC(CustomSTC):
             errs = list(filter(lambda e: e.line == line, self.lastErrors))
             if errs:
                 msg = reduce(lambda msg, e: msg + e.msg + "\n", errs, "")
-                self.tooltip.SetTip(msg)
-                self.tooltip.Enable(True)
+                self.ShowToolTip(msg)
             else:
-                self.tooltip.Enable(False)
-
+                self.HideToolTip()
 
     def CheckHelp(self, pos):
         style = self.GetStyleAt(pos)
@@ -522,7 +537,9 @@ class ErlangSTC(CustomSTC):
             self.flyCompileHash = currentHash
             flyPath = os.path.join(os.getcwd(), "data", "erlang", "fly",
                 "fly_" + os.path.basename(self.filePath))
-            self.SaveFile(flyPath)
+            f = open(flyPath, 'w')
+            f.write(self.GetText())
+            f.close()
             GetProject().shellConsole.shell.CompileFileFly(self.filePath, flyPath)
 
     def HighlightErrors(self, errors):
@@ -530,38 +547,18 @@ class ErlangSTC(CustomSTC):
         self.MarkerDeleteAll(21)
         self.lastErrors = errors
         self.errorsLines = map(lambda x: x.line, errors)
+        wMarkers = []
+        eMarkers = []
         for e in errors:
             if e.type == CompileErrorInfo.WARNING:
+                wMarkers.append((e.line, e.msg))
                 indic = self.MARKER_WARNING
             else:
+                eMarkers.append((e.line, e.msg))
                 indic = self.MARKER_ERROR
             self.MarkerAdd(e.line, indic)
-
-
-    def OnDrawErrorMarkers(self, event):
-        event.Skip()
-        dc = wx.ClientDC(self)
-        odc = wx.DCOverlay(self.overlay, dc)
-        # odc.Clear()
-        left = self.Size[0] - 30#self.LineNumbersWidth()
-        width = 10
-        top = 0
-        height = self.Size[1]
-        color = ColorSchema.codeEditor["line_number_area_background"]
-
-        dc.SetPen(wx.Pen(color))
-        dc.SetBrush(wx.Brush(color))
-        dc.DrawRectangle(left, top, width, height)
-
-        for e in self.lastErrors:
-            y = height / self.LineCount * e.line
-            eHeight = 3
-            dc.SetPen(wx.Pen(wx.RED))
-            dc.SetBrush(wx.Brush(wx.RED))
-            dc.DrawRectangle(left, y, width, eHeight)
-
-        del odc
-
+        self.markerPanel.SetMarkers("warning", wMarkers)
+        self.markerPanel.SetMarkers("error", eMarkers)
 
 class ErlangCompleter(wx.Frame):
     SIZE = (820, 500)
@@ -894,7 +891,7 @@ class ErlangCompleter(wx.Frame):
 
 class ConsoleSTC(CustomSTC):
     def __init__(self, parent):
-        CustomSTC.__init__(self, parent)
+        CustomSTC.__init__(self, parent, None)
         self.EnableLineNumbers(False)
         self.SetCaretWidth(1)
         self.SetCaretLineBackground(ColorSchema.codeEditor["current_line_background"])

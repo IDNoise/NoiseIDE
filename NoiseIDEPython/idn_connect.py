@@ -91,6 +91,7 @@ class ErlangSocketConnection(asyncore.dispatcher):
 
     def _ExecRequest(self, action, data):
         request = '{' + '"action": "{}", "data": {}'.format(action, data) + '}'
+        #print "request", request
         self.socketQueue.put(request)
 
     def OnConnect(self):

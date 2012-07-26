@@ -5,6 +5,7 @@ code_editor:
   font_size:  12
   current_line_background:     '#545451'
   line_number_area_background: '#6d6d70'
+  marker_panel_background:     '#6d6d70'
   fold_area_background:        '#6d6d70'
   fold_area_foreground:        '#43a1ff'
   brace_background:            '#1111aa'
