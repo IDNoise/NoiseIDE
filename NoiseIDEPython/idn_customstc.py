@@ -105,6 +105,8 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.markerPanel = markerPanel
         if self.markerPanel:
             self.markerPanel.Editor = self
+            self.markerPanel.SetMarkerColor("selected_word",
+                ColorSchema.codeEditor["selected_word_marker_color"])
 
         self.SetupLexer()
         self.filePath = filePath
@@ -308,23 +310,31 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         event.Skip()
         text = self.GetSelectedText()
         if self.lastHighlightedWord != text:
+            print "clear selected word"
             self.ClearIndicator(0)
             self.lastHighlightedWord = text
         else:
             return
-        if (text and
-            True not in [c in text for c in [" ", "\n", "\r"]]):
+        markers = []
+        print text
+        if (text and True not in [c in text for c in [" ", "\n", "\r"]]):
             self.SetIndicatorCurrent(0)
             self.SetSearchFlags(stc.STC_FIND_MATCHCASE | stc.STC_FIND_WHOLEWORD)
             self.SetTargetStart(0)
             self.SetTargetEnd(self.Length)
             index = self.SearchInTarget(text)
+
             while (index != -1 and index < self.Length):
+                line = self.LineFromPosition(index)
+                print index, line
                 self.IndicatorFillRange(index, len(text))
 
                 self.SetTargetStart(index + len(text))
                 self.SetTargetEnd(self.Length)
                 index = self.SearchInTarget(text)
+                markers.append((line, self.GetLine(line)))
+        self.Refresh()
+        self.markerPanel.SetMarkers("selected_word", markers)
 
     def ShowToolTip(self, msg):
         self.tooltip.SetTip(msg)
