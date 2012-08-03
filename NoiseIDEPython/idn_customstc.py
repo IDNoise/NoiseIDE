@@ -246,7 +246,6 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.changed = changed
 
     def OnSavePointLeft(self, event):
-        print "left", self.filePath
         self.saved = False
         index = GetTabMgr().FindPageIndexByPath(self.filePath)
         print index
@@ -254,7 +253,6 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
             GetTabMgr().SetPageText(index, "* " + self.FileName())
 
     def OnSavePointReached(self, event):
-        print "reached", self.filePath
         self.saved = True
         index = GetTabMgr().FindPageIndexByPath(self.filePath)
         if index > 0:
