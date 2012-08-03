@@ -134,7 +134,10 @@ class ErlangCache:
         name = os.path.basename(file)[:-6]
         if 'nt' == os.name:
             import win32api
-            data[FILE] = os.path.normcase(win32api.GetLongPathName(data[FILE]))
+            try :
+                data[FILE] = os.path.normcase(win32api.GetLongPathName(data[FILE]))
+            except Exception, e:
+                print("error ", e, "on get long path name for ", data[FILE])
         file = data[FILE]
         if (name in cls.modules and name in cls.moduleData and
             cls.moduleData[name].file.lower().startswith(cls.erlangDir) and

@@ -358,6 +358,21 @@ class ProjectExplorer(CT.CustomTreeCtrl):
             event.Skip()
 
 
+    def GetAllFiles(self):
+        id = self.GetRootItem()
+        return self._GetFiles(id)
+
+    def _GetFiles(self, item):
+        #self.SelectAll()
+        result = []
+        if item:
+            if item.HasChildren():
+                for id in item.GetChildren():
+                    result += self._GetFiles(id)
+            else:
+                result.append(self.GetPyData(item))
+        return result
+
 class PythonProjectExplorer(ProjectExplorer):
     def FillNewSubMenu(self, newMenu):
         newMenu.AppendMenuItem("New File", self, self.OnMenuNewFile)

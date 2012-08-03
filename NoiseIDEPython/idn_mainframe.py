@@ -18,6 +18,8 @@ class NoiseIDE(wx.Frame):
     def __init__(self, *args, **kwargs):
         wx.Frame.__init__(self, None, wx.ID_ANY, 'Noise IDE', size = (1680, 900), pos = (10, 10))
 
+        wx.ToolTip.SetMaxWidth(600)
+
         self.Maximize()
         Config.load()
         ColorSchema.load(Config.GetProp("color_schema"))
@@ -56,8 +58,8 @@ class NoiseIDE(wx.Frame):
 
         self.WinMgr.Update()
         idn_global.MainFrame = self
-        #self.OpenProject("D:\\Projects\\GIJoe\\server\\gijoe.noiseide.project")
-        self.OpenProject("D:\\Projects\\Joe\\server\\gijoe.noiseide.project")
+        self.OpenProject("D:\\Projects\\GIJoe\\server\\gijoe.noiseide.project")
+        #self.OpenProject("D:\\Projects\\Joe\\server\\gijoe.noiseide.project")
 
 
     def SetupMenu(self):

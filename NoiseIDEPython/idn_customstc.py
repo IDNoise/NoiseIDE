@@ -1,10 +1,9 @@
-from idn_cache import ErlangCache, Function, Record, Macros, readFile
-from idn_connect import CompileErrorInfo
-from idn_token import ErlangTokenizer, ErlangTokenType
-
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 
+from idn_cache import ErlangCache, Function, Record, Macros, readFile
+from idn_connect import CompileErrorInfo
+from idn_token import ErlangTokenizer, ErlangTokenType
 import os
 import wx
 from wx import stc
@@ -14,6 +13,7 @@ from idn_highlight import ErlangHighlightType
 from idn_lexer import ErlangLexer
 from idn_global import GetProject, GetTabMgr
 from wx import html
+
 
 class EditorFoldMixin:
     def __init__(self):
@@ -96,15 +96,16 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         EditorFoldMixin.__init__(self)
         EditorLineMarginMixin.__init__(self)
 
-        self.tooltip = wx.ToolTip("")
+        self.tooltip = wx.ToolTip("a" * 500)
         self.tooltip.Enable(False)
         self.tooltip.SetDelay(300)
-        self.tooltip.SetMaxWidth(400)
         self.SetToolTip(self.tooltip)
 
         self.markerPanel = markerPanel
         if self.markerPanel:
             self.markerPanel.Editor = self
+            self.markerPanel.SetMarkerColor("selected_word",
+                ColorSchema.codeEditor["selected_word_marker_color"])
 
         self.SetupLexer()
         self.filePath = filePath
@@ -306,23 +307,31 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         event.Skip()
         text = self.GetSelectedText()
         if self.lastHighlightedWord != text:
+            print "clear selected word"
             self.ClearIndicator(0)
             self.lastHighlightedWord = text
         else:
             return
-        if (text and
-            True not in [c in text for c in [" ", "\n", "\r"]]):
+        markers = []
+        print text
+        if (text and True not in [c in text for c in [" ", "\n", "\r"]]):
             self.SetIndicatorCurrent(0)
             self.SetSearchFlags(stc.STC_FIND_MATCHCASE | stc.STC_FIND_WHOLEWORD)
             self.SetTargetStart(0)
             self.SetTargetEnd(self.Length)
             index = self.SearchInTarget(text)
+
             while (index != -1 and index < self.Length):
+                line = self.LineFromPosition(index)
                 self.IndicatorFillRange(index, len(text))
 
                 self.SetTargetStart(index + len(text))
                 self.SetTargetEnd(self.Length)
                 index = self.SearchInTarget(text)
+                marker = Marker(line, self.GetLine(line), index, len(text))
+                markers.append(marker)
+        self.Refresh()
+        self.markerPanel.SetMarkers("selected_word", markers)
 
     def ShowToolTip(self, msg):
         self.tooltip.SetTip(msg)
@@ -549,10 +558,10 @@ class ErlangSTC(CustomSTC):
         eMarkers = []
         for e in errors:
             if e.type == CompileErrorInfo.WARNING:
-                wMarkers.append((e.line, e.msg))
+                wMarkers.append(Marker(e.line, e.msg))
                 indic = self.MARKER_WARNING
             else:
-                eMarkers.append((e.line, e.msg))
+                eMarkers.append(Marker(e.line, e.msg))
                 indic = self.MARKER_ERROR
             self.MarkerAdd(e.line, indic)
         self.markerPanel.SetMarkers("warning", wMarkers)
@@ -908,3 +917,128 @@ class ConsoleSTC(CustomSTC):
 
     def Changed(self, changed = True):
         pass
+
+
+
+class Marker:
+    def __init__(self, line, msg, index = None, length = None):
+        self.line = line
+        self.msg = msg
+
+        self.indexFrom = index
+        self.length = length
+        if index:
+            self.indexTo = index + length
+
+class MarkerPanel(wx.Panel):
+    Editor = None
+    Height = 4
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent, size = (10, 400))
+        self.SetMinSize((10, 400))
+        self.SetMaxSize((10, 20000))
+        self.backColor = ColorSchema.codeEditor["marker_panel_background"]
+        self.SetBackgroundColour(self.backColor)
+
+        self.markers = {}
+        self.markerColor = {}
+        self.areas = []
+
+        self.tooltip = wx.ToolTip("a" * 500)
+        self.ShowToolTip("a" * 500)
+        self.HideToolTip()
+        self.SetToolTip(self.tooltip)
+        self.lastTip = None
+
+        self.Bind(wx.EVT_LEFT_DOWN, self.OnMouseClick)
+        self.Bind(wx.EVT_MOTION, self.OnMouseMove)
+        self.Bind(wx.EVT_SET_FOCUS, self.OnFocus)
+        self.Bind(wx.EVT_PAINT, self.Paint)
+
+    def Paint(self, event = None):
+        dc = wx.ClientDC(self)
+        width = self.Size[0]
+        height = self.Size[1]
+
+        dc.SetPen(wx.Pen(self.backColor))
+        dc.SetBrush(wx.Brush(self.backColor))
+        dc.DrawRectangle(0, 0, width, height)
+
+        for type, markers in self.markers.items():
+            color = self.markerColor[type]
+            for marker in markers:
+                y = height / self.Editor.LineCount * marker.line
+                dc.SetPen(wx.Pen(color))
+                dc.SetBrush(wx.Brush(color))
+                dc.DrawRectangle(0, y, width, self.Height)
+                self.areas.append((y, y + self.Height, marker.line))
+
+    def OnFocus(self, event):
+        self.Editor.SetFocus()
+
+    def OnMouseMove(self, event):
+        event.Skip()
+        pos = event.GetPosition()
+        y = pos[1]
+        mouseLine = None
+        for area in self.areas:
+            if y >= area[0] and y <= area[1]:
+                mouseLine = area[2]
+        result = []
+        if mouseLine:
+            for type, markers in self.markers.items():
+                for marker in markers:
+                    if marker.line == mouseLine:
+                        result.append(marker.msg)
+            msg = "\n".join(result)
+            if msg:
+                self.ShowToolTip(msg)
+                return
+
+        self.HideToolTip()
+
+
+    def OnMouseClick(self, event):
+        pos = event.GetPosition()
+        y = pos[1]
+        mouseLine = None
+        for area in self.areas:
+            if y > area[0] and y < area[1]:
+                mouseLine = area[2]
+        result = None
+        if mouseLine:
+            for type, markers in self.markers.items():
+                for marker in markers:
+                    if marker.line == mouseLine:
+                        result = marker
+                        break
+            if result:
+                self.Editor.GotoLine(result.line)
+                if result.indexFrom:
+                    self.Editor.SetSelection(result.indexFrom, result.indexTo)
+                return
+        event.Skip()
+
+
+    def ClearAllMarkers(self):
+        self.markers = {}
+        self.Paint()
+
+    def ClearMarker(self, type):
+        self.markers[type] = []
+        self.Paint()
+
+    def SetMarkers(self, type, markers):
+        self.markers[type] = markers
+        self.Paint()
+
+    def SetMarkerColor(self, type, color):
+        self.markerColor[type] = color
+        self.Paint()
+
+    def ShowToolTip(self, msg):
+        self.tooltip.SetTip(msg)
+        self.tooltip.Enable(True)
+
+    def HideToolTip(self):
+        self.tooltip.Enable(False)

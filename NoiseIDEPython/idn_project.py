@@ -1,4 +1,5 @@
 from wx.grid import PyGridTableBase
+from TextCtrlAutoComplete import TextCtrlAutoComplete
 from idn_cache import ErlangCache
 from idn_directoryinfo import DirectoryChecker
 
@@ -8,6 +9,8 @@ __author__ = 'Yaroslav Nikityshev aka IDNoise'
 import os
 import yaml
 import wx
+from wx.lib.masked import combobox
+from wx import combo
 import time
 import idn_projectexplorer as exp
 from wx.lib.agw import aui
@@ -111,6 +114,8 @@ class ErlangProject(Project):
         ErlangCache.LoadCacheFromDir("erlang")
         ErlangCache.LoadCacheFromDir(self.ProjectName())
         ErlangCache.StartCheckingFolder(self.ProjectName())
+
+        GetTabMgr().Parent.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
 
     def SetupDirs(self):
         projectCacheDir = os.path.join(ErlangCache.CACHE_DIR, self.ProjectName())
@@ -236,6 +241,56 @@ class ErlangProject(Project):
     def GetErrors(self, path):
         if path not in self.errors: return []
         else: return self.errors[path]
+
+    def OnKeyDown(self, event):
+        if event.GetKeyCode() == ord('O') and event.ControlDown():
+            dialog = FastProjectFileOpenDialog(GetTabMgr(), self)
+            dialog.ShowModal()
+        else:
+            event.Skip()
+
+class FastProjectFileOpenDialog(wx.Dialog):
+    def __init__(self, parent, project):
+        wx.Dialog.__init__(self, parent, size = (600, 55))
+        choices = self.PrepareChoices(project)
+        self.cb = TextCtrlAutoComplete(
+            self,
+            colNames = ["File", "Path"],
+            colFetch = 1,
+            multiChoices = choices,
+            selectCallback = self.OnSelectCallback)
+        self.cb.dropdownlistbox.SetColumnWidth(0, 150)
+        self.cb.dropdownlistbox.SetColumnWidth(1, 450)
+        sizer = wx.BoxSizer()
+        sizer.Add(self.cb, 1, wx.EXPAND)
+        self.SetSizer(sizer)
+        self.Layout()
+        self.CenterOnParent()
+        self.cb.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
+
+    def PrepareChoices(self, project):
+        files = project.explorer.GetAllFiles()
+        result = []
+        for file in files:
+            result.append((os.path.basename(file), file))
+        return result
+
+    def OnKeyDown(self, event):
+        if event.GetKeyCode() == wx.WXK_ESCAPE:
+            self.Close()
+        elif event.GetKeyCode() == wx.WXK_RETURN:
+            value = self.cb.GetValue()
+            if os.path.isfile(value):
+                self.Close()
+                GetTabMgr().LoadFile(value)
+            else:
+                event.Skip()
+        else:
+            event.Skip()
+
+    def OnSelectCallback(self, values):
+        self.Close()
+        GetTabMgr().LoadFile(values[1])
 
 
 class ErrorsTable(PyGridTableBase):
