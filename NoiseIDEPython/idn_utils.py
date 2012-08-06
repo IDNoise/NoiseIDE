@@ -34,3 +34,8 @@ class Menu(wx.Menu):
     def AppendMenuItem(self, text, handlerObject, handler):
         item = self.Append(wx.NewId(), text, text)
         handlerObject.Bind(wx.EVT_MENU, handler, item)
+
+    def AppendCheckMenuItem(self, text, handlerObject, handler, check = False):
+        item = self.Append(wx.NewId(), text, text, wx.ITEM_CHECK)
+        self.Check(item.Id, check)
+        handlerObject.Bind(wx.EVT_MENU, handler, item)
