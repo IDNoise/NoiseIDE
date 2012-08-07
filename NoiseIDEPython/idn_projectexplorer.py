@@ -238,10 +238,8 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         menu = Menu()
         if len(self.popupItemIds) > 1 and self.GetRootItem() not in self.popupItemIds:
             menu.AppendMenuItem("Delete", self, self.OnMenuDelete)
-            if self.GetPyData(self.popupItemIds[0]) in self.hiddenPaths:
-                menu.AppendMenuItem("Show", self, self.OnMenuShow)
-            else:
-                menu.AppendMenuItem("Hide", self, self.OnMenuHide)
+            menu.AppendCheckMenuItem("Hide", self, self.OnMenuHide,
+                self.GetPyData(self.popupItemIds[0]) in self.hiddenPaths)
         else:
             if self.ItemHasChildren(self.popupItemId):
                 newMenu = Menu()
@@ -252,13 +250,10 @@ class ProjectExplorer(CT.CustomTreeCtrl):
             if self.popupItemId != self.GetRootItem():
                 menu.AppendMenuItem("Delete", self, self.OnMenuDelete)
                 menu.AppendSeparator()
-                if self.GetPyData(self.popupItemId) in self.hiddenPaths:
-                    menu.AppendMenuItem("Show", self, self.OnMenuShow)
-                else:
-                    menu.AppendMenuItem("Hide", self, self.OnMenuHide)
+                menu.AppendCheckMenuItem("Hide", self, self.OnMenuHide,
+                    self.GetPyData(self.popupItemId) in self.hiddenPaths)
             if self.popupItemId == self.GetRootItem():
-                prefix = "Disable" if self.showHidden else "Enable"
-                menu.AppendMenuItem(prefix + " show hidden", self, self.OnMenuShowHide)
+                menu.AppendCheckMenuItem("Show hidden", self, self.OnMenuShowHide, self.showHidden)
 
         self.PopupMenu(menu)
 
@@ -300,13 +295,18 @@ class ProjectExplorer(CT.CustomTreeCtrl):
             return self.FindItem(parentId, os.path.basename(path))
 
     def OnMenuHide(self, event):
-        for id in self.popupItemIds:
-            path = self.GetPyData(id)
-            self.hiddenPaths.add(path)
-            self.SetAttrsForHiddenItem(id)
-            #print self.GetItemFont(id).
-            if self.showHidden: return
-            self.Delete(id)
+        if self.GetPyData(self.popupItemIds[0]) in self.hiddenPaths:
+            for id in self.popupItemIds:
+                path = self.GetPyData(id)
+                self.hiddenPaths.remove(path)
+                self.ClearHiddenAttrs(id)
+        else:
+            for id in self.popupItemIds:
+                path = self.GetPyData(id)
+                self.hiddenPaths.add(path)
+                self.SetAttrsForHiddenItem(id)
+                if not self.showHidden:
+                    self.Delete(id)
 
     def SetAttrsForHiddenItem(self, id):
         self.SetItemTextColour(id, wx.Colour(60, 60, 200))
@@ -316,12 +316,6 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         rootId = self.GetRootItem()
         self.SetItemTextColour(id, self.GetItemTextColour(rootId))
         self.SetItemItalic(id, False)
-
-    def OnMenuShow(self, event):
-        for id in self.popupItemIds:
-            path = self.GetPyData(id)
-            self.hiddenPaths.remove(path)
-            self.ClearHiddenAttrs(id)
 
     def OnMenuShowHide(self, event):
         if self.showHidden == True:
