@@ -108,8 +108,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
                 ColorSchema.codeEditor["selected_word_marker_color"])
 
         self.SetupLexer()
-        self.filePath = filePath
-        self.hash = None
+        self.filePath = None
         self.lastHighlightedWord = ""
         self.changed = False
         self.saved = True
@@ -177,11 +176,18 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
 
         self.OnInit()
 
-        if self.filePath:
-            self.LoadFile(self.filePath)
-            self.SetSelection(0, 0)
-            self.Bind(stc.EVT_STC_SAVEPOINTLEFT, self.OnSavePointLeft)
-            self.Bind(stc.EVT_STC_SAVEPOINTREACHED, self.OnSavePointReached)
+        if filePath:
+            self.LoadFile(filePath)
+        self.Bind(stc.EVT_STC_SAVEPOINTLEFT, self.OnSavePointLeft)
+        self.Bind(stc.EVT_STC_SAVEPOINTREACHED, self.OnSavePointReached)
+
+    def LoadFile(self, filePath):
+        self.filePath = filePath
+        self.lastHighlightedWord = ""
+        self.changed = False
+        self.saved = True
+        StyledTextCtrl.LoadFile(self.filePath)
+        self.SetSelection(0, 0)
 
     def OnInit(self):
         pass
@@ -227,7 +233,6 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
             self.SetSelectionStart(self.PositionFromLine(startLine + offset))
             self.SetSelectionEnd(self.GetLineEndPosition(endLine + offset))
         elif keyCode == ord('S') and event.ControlDown():
-            #self.hash = hash(self.GetText())
             self.SaveFile(self.filePath)
             self.Changed(False)
             self.OnFileSaved()
@@ -261,12 +266,6 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         if index > 0:
             GetTabMgr().SetPageText(index, self.FileName())
         GetProject().CompileFile(self.filePath)
-
-    def LoadFile(self, path):
-        self.filePath = path
-        StyledTextCtrl.LoadFile(self, path)
-        self.hash = hash(self.GetText())
-        self.Changed(False)
 
     def DoIndent(self):
         prevIndent = self.GetLineIndentation(self.CurrentLine - 1)
@@ -309,13 +308,13 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         event.Skip()
         text = self.GetSelectedText()
         if self.lastHighlightedWord != text:
-            print "clear selected word"
+            #print "clear selected word"
             self.ClearIndicator(0)
             self.lastHighlightedWord = text
         else:
             return
         markers = []
-        print text
+        #print text
         if (text and True not in [c in text for c in [" ", "\n", "\r"]]):
             self.SetIndicatorCurrent(0)
             self.SetSearchFlags(stc.STC_FIND_MATCHCASE | stc.STC_FIND_WHOLEWORD)
@@ -568,6 +567,9 @@ class ErlangSTC(CustomSTC):
             self.MarkerAdd(e.line, indic)
         self.markerPanel.SetMarkers("warning", wMarkers)
         self.markerPanel.SetMarkers("error", eMarkers)
+
+    def OnFileSaved(self):
+        GetProject().FileSaved(self.filePath)
 
 class ErlangCompleter(wx.Frame):
     SIZE = (820, 500)

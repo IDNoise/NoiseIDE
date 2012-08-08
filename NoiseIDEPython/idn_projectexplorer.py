@@ -393,3 +393,4 @@ class ErlangProjectExplorer(ProjectExplorer):
 
     def DefaultExcludeDirs(self):
         return ProjectExplorer.DefaultExcludeDirs(self) + ["ebin", ".settings"]
+
