@@ -1,6 +1,6 @@
 from wx.grid import PyGridTableBase
 from TextCtrlAutoComplete import TextCtrlAutoComplete
-from idn_cache import ErlangCache
+from idn_cache import ErlangCache, readFile
 from idn_directoryinfo import DirectoryChecker
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
@@ -110,7 +110,9 @@ class ErlangProject(Project):
 
         #self.CompileProject() #test
 
+        self.explorer.Bind(exp.EVT_PROJECT_FILE_CREATED, self.OnProjectFileCreated)
         self.explorer.Bind(exp.EVT_PROJECT_FILE_MODIFIED, self.OnProjectFileModified)
+        self.explorer.Bind(exp.EVT_PROJECT_FILE_DELETED, self.OnProjectFileDeleted)
         ErlangCache.LoadCacheFromDir("erlang")
         ErlangCache.LoadCacheFromDir(self.ProjectName())
         ErlangCache.StartCheckingFolder(self.ProjectName())
@@ -184,11 +186,47 @@ class ErlangProject(Project):
 
     def OnProjectFileModified(self, event):
         file = event.File
+        page = GetTabMgr().FindPageByPath(file)
+        if page:
+            if page.GetText() != readFile(file):
+                dial = wx.MessageDialog(None,
+                    'File "{}" was modified.\nDo you want to reload document?'.format(file),
+                    'File modified',
+                    wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
+                if dial.ShowModal() == wx.YES:
+                    GetTabMgr().DeletePage(GetTabMgr().FindPageIndexByPath(file))
+        else:
+            self.Compile()
+        event.Skip()
+
+    def Compile(self, file):
+        if file.endswith(".erl"):
+            self.GetShell().CompileFile(file)
+        elif file.endswith(".hrl"):
+            self.GetShell().GenerateFileCache(file)
+
+    def FileSaved(self, file):
+        self.Compile(file)
+
+    def OnProjectFileDeleted(self, event):
+        file = event.File
+        page = GetTabMgr().FindPageByPath(file)
+        if page:
+            dial = wx.MessageDialog(None,
+                'File "{}" was deleted.\nDo you want to close tab with deleted document?'.format(file),
+                'File deleted',
+                wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
+            if dial.ShowModal() == wx.YES:
+                GetTabMgr().DeletePage(GetTabMgr().FindPageIndexByPath(file))
+                self.RemoveUnusedBeams()
+        event.Skip()
+    def OnProjectFileCreated(self, event):
+        file = event.File
         if file.endswith(".erl"):
             self.shellConsole.shell.CompileFile(file)
         elif file.endswith(".hrl"):
             self.shellConsole.shell.GenerateFileCache(file)
-        #print event.File
+        event.Skip()
 
     def CompileProject(self):
         #print "compile project"
