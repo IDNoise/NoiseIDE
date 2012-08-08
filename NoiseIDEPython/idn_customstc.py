@@ -174,19 +174,19 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
                              stc.STC_PERFORMED_USER | stc.STC_PERFORMED_UNDO |
                              stc.STC_PERFORMED_REDO)
 
-        self.OnInit()
 
         if filePath:
             self.LoadFile(filePath)
-        self.Bind(stc.EVT_STC_SAVEPOINTLEFT, self.OnSavePointLeft)
-        self.Bind(stc.EVT_STC_SAVEPOINTREACHED, self.OnSavePointReached)
+            self.Bind(stc.EVT_STC_SAVEPOINTLEFT, self.OnSavePointLeft)
+            self.Bind(stc.EVT_STC_SAVEPOINTREACHED, self.OnSavePointReached)
+        self.OnInit()
 
     def LoadFile(self, filePath):
         self.filePath = filePath
         self.lastHighlightedWord = ""
         self.changed = False
         self.saved = True
-        StyledTextCtrl.LoadFile(self.filePath)
+        StyledTextCtrl.LoadFile(self, self.filePath)
         self.SetSelection(0, 0)
 
     def OnInit(self):

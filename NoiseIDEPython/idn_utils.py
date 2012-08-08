@@ -29,6 +29,11 @@ class Timer(Thread):
             self.function()
             self.finished.wait(self.interval)
 
+def CreateButton(parent, label, handler):
+    button = wx.Button(parent, label = label)
+    button.Bind(wx.EVT_BUTTON, handler)
+    return button
+
 
 class Menu(wx.Menu):
     def AppendMenuItem(self, text, handlerObject, handler):
