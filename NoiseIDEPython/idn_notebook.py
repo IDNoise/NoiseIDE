@@ -59,6 +59,12 @@ class Notebook(aui.AuiNotebook):
                 return page
         return None
 
+    def CurrentPage(self):
+        currentPage = self.GetSelection()
+        if currentPage == -1:
+            return None
+        return self[currentPage]
+
 class EditorPanel(wx.Panel):
     def __init__(self, parent, file):
         wx.Panel.__init__(self, parent, style = wx.TAB_TRAVERSAL | wx.NO_BORDER)

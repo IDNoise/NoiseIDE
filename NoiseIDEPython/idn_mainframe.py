@@ -1,4 +1,4 @@
-from idn_findreplace import FindDialog
+from idn_findreplace import FindInFileDialog
 import idn_global
 from idn_project import loadProject
 
@@ -59,11 +59,11 @@ class NoiseIDE(wx.Frame):
 
         self.WinMgr.Update()
 
-        self.findDialog = FindDialog(self)
+        self.findDialog = FindInFileDialog(self)
         self.findDialog.Show()
         idn_global.MainFrame = self
-        #self.OpenProject("D:\\Projects\\GIJoe\\server\\gijoe.noiseide.project")
-        self.OpenProject("D:\\Projects\\Joe\\server\\gijoe.noiseide.project")
+        self.OpenProject("D:\\Projects\\GIJoe\\server\\gijoe.noiseide.project")
+        #self.OpenProject("D:\\Projects\\Joe\\server\\gijoe.noiseide.project")
 
 
     def SetupMenu(self):
