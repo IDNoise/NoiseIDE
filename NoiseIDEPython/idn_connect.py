@@ -91,7 +91,7 @@ class ErlangSocketConnection(asyncore.dispatcher):
 
     def _ExecRequest(self, action, data):
         request = '{' + '"action": "{}", "data": {}'.format(action, data) + '}'
-        #print "request", request
+        print "request", request
         self.socketQueue.put(request)
 
     def OnConnect(self):
@@ -124,7 +124,7 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
         self._ExecRequest("compile_file", '"{}"'.format(file))
 
     def CompileFileFly(self, realPath, flyPath):
-        self.tasks.add((self.TASK_COMPILE, realPath))
+        self.tasks.add((self.TASK_COMPILE, realPath.lower()))
         self._ExecRequest("compile_file_fly", '["{0}", "{1}"]'.format(erlstr(realPath), erlstr(flyPath)))
 
     def Rpc(self, module, fun):
@@ -142,11 +142,11 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
     def CompileProjectFiles(self, files):
         self._CreateProgressDialog("Compiling project")
         for (file, app) in files:
-            self.tasks.add((self.TASK_COMPILE, file))
+            self.tasks.add((self.TASK_COMPILE, file.lower()))
             self.CompileProjectFile(file, app)
 
     def GenerateFileCache(self, file):
-        self.tasks.add((self.TASK_GEN_FILE_CACHE, file))
+        self.tasks.add((self.TASK_GEN_FILE_CACHE, file.lower()))
         self._ExecRequest("gen_file_cache", '"{}"'.format(erlstr(file)))
 
     def GenerateFileCaches(self, files):
@@ -182,7 +182,7 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
             self.progressDialog.ShowDialog()
 
     def _HandleSocketResponse(self, text):
-        #print "response", text
+        print "response", text
         try:
             js = json.loads(text)
             if not "response" in js: return
@@ -198,13 +198,13 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
                 #print "compile result: {} = {}".format(path, errors)
                 GetProject().AddErrors(path, errors)
                 self.lastTaskDone = "Compiled {}".format(path)
-                task = (self.TASK_COMPILE, path)
+                task = (self.TASK_COMPILE, path.lower())
                 if task in self.tasks:
                     self.tasks.remove(task)
             elif res == "gen_file_cache":
                 path = pystr(js["path"])
                 self.lastTaskDone = "Generated cache for {}".format(path)
-                self.tasks.remove((self.TASK_GEN_FILE_CACHE, path))
+                self.tasks.remove((self.TASK_GEN_FILE_CACHE, path.lower()))
             elif res == "gen_erlang_cache":
                 self.lastTaskDone = "Generated cache for erlang libs"
                 self.tasks.remove(self.TASK_GEN_ERLANG_CACHE)
@@ -212,8 +212,8 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
                 print "socket connected"
         except Exception, e:
             print "===== exception ", e
-        #print "tasks left ", len(self.tasks)
-        #if len(self.tasks) < 10: print self.tasks
+        print "tasks left ", len(self.tasks)
+        if len(self.tasks) < 5: print self.tasks
         if len(self.tasks) == 0 and self.progressDialog:
             self.progressDialog.Destroy()
             self.progressDialog = None
@@ -266,6 +266,7 @@ class ErlangProcess(Process):
         result = Process.Kill(self.pid, wx.SIGTERM)
         if result not in [wx.KILL_OK, wx.KILL_NO_PROCESS]:
             Process.Kill(self.pid, wx.SIGABRT)
+            Process.Kill(self.pid, wx.SIGKILL)
 
     def OnTerminate(self, *args, **kwargs):
         if self.timer:

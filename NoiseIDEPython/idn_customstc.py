@@ -127,6 +127,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.SetTabIndents(True)
         self.SetBackSpaceUnIndents(True)
         self.SetIndent(4)
+        self.SetEOLMode(stc.STC_EOL_LF)
 
         self.SetEdgeColumn(140)
         self.SetEdgeMode(stc.STC_EDGE_LINE)
@@ -336,7 +337,8 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
                 markers.append(marker)
                 index = self.SearchInTarget(text)
         self.Refresh()
-        self.markerPanel.SetMarkers("selected_word", markers)
+        if self.markerPanel:
+            self.markerPanel.SetMarkers("selected_word", markers)
 
     def ShowToolTip(self, msg):
         self.tooltip.SetTip(msg)
@@ -533,7 +535,7 @@ class ErlangSTC(CustomSTC):
     def OnMouseClick(self, event):
         if event.ControlDown():
             if self.navigateTo:
-                editor = self.Parent.editor.LoadFile(self.navigateTo[0])
+                editor = GetTabMgr().LoadFile(self.navigateTo[0])
                 line = self.navigateTo[1] - 1
                 editor.GotoLine(line)
                 editor.EnsureVisibleEnforcePolicy(line)

@@ -107,9 +107,9 @@ class ErlangProject(Project):
         self.SetupDirs()
         self.AddConsoles()
         self.AddTabs()
-        #self.GenerateErlangCache() #test
+        self.GenerateErlangCache() #test
 
-        #self.CompileProject() #test
+        self.CompileProject() #test
 
         self.explorer.Bind(exp.EVT_PROJECT_FILE_CREATED, self.OnProjectFileCreated)
         self.explorer.Bind(exp.EVT_PROJECT_FILE_MODIFIED, self.OnProjectFileModified)
@@ -135,10 +135,12 @@ class ErlangProject(Project):
         return self.shellConsole.shell
 
     def CompileFile(self, path):
-        if not path.startswith(self.projectFilePath):
+        #print path, self.AppsPath()
+        if not path.lower().startswith(self.AppsPath().lower()):
             return
-        app = path.replace(appsPath + os.sep, "")
+        app = path.replace(self.AppsPath() + os.sep, "")
         app = app[:app.index(os.sep)]
+        #print app, self.projectData["apps"]
         if not app in self.projectData["apps"]:
             return
         self.GetShell().CompileProjectFile(path, app)
@@ -202,7 +204,7 @@ class ErlangProject(Project):
 
     def Compile(self, file):
         if file.endswith(".erl"):
-            self.GetShell().CompileFile(file)
+            self.CompileFile(file)
         elif file.endswith(".hrl"):
             self.GetShell().GenerateFileCache(file)
 
@@ -221,12 +223,10 @@ class ErlangProject(Project):
                 GetTabMgr().DeletePage(GetTabMgr().FindPageIndexByPath(file))
                 self.RemoveUnusedBeams()
         event.Skip()
+
     def OnProjectFileCreated(self, event):
         file = event.File
-        if file.endswith(".erl"):
-            self.shellConsole.shell.CompileFile(file)
-        elif file.endswith(".hrl"):
-            self.shellConsole.shell.GenerateFileCache(file)
+        self.Compile(file)
         event.Skip()
 
     def CompileProject(self):
