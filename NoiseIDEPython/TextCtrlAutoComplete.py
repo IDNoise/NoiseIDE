@@ -51,10 +51,22 @@ def getSmallDnArrowImage():
 #----------------------------------------------------------------------
 
 class myListCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
-    def __init__(self, parent, ID=-1, pos=wx.DefaultPosition,
-                 size=wx.DefaultSize, style=0):
+    def __init__(self, parent, ID = -1, pos = wx.DefaultPosition,
+                 size = wx.DefaultSize, style = 0):
         wx.ListCtrl.__init__(self, parent, ID, pos, size, style)
         listmix.ListCtrlAutoWidthMixin.__init__(self)
+        #self.selected = 0
+        #self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected)
+
+    def OnItemSelected(self, event):
+        print "on selected item", event.GetIndex()
+        self.SetItemBackgroundColour(self.selected, '#333399')
+        self.selected = event.GetIndex() # Find item selected
+
+        #self.SetItemBackgroundColour(self.selected, 'Green')
+        #self.RefreshItems(0, self.GetItemCount())
+        #self.SetItemState(self.selected, wx.LIST_STATE_FOCUSED, wx.LIST_STATE_SELECTED) # Clear selected flag and just leave focused flag so that a box is drawn round selected item
+        event.Skip()
 
 class TextCtrlAutoComplete (wx.TextCtrl, listmix.ColumnSorterMixin ):
 
@@ -425,6 +437,7 @@ class TextCtrlAutoComplete (wx.TextCtrl, listmix.ColumnSorterMixin ):
         '''
         toSel =  self.dropdownlistbox.GetFirstSelected ()
         if toSel == -1: return
+        self.dropdownlistbox.EnsureVisible( self.dropdownlistbox.GetItemCount() - 1 )
         self.dropdownlistbox.EnsureVisible( toSel )
 
     def _updateDataList(self, choices):

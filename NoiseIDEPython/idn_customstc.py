@@ -11,7 +11,7 @@ from wx.stc import STC_FOLDLEVELHEADERFLAG, StyledTextCtrl
 from idn_colorschema import ColorSchema
 from idn_highlight import ErlangHighlightType
 from idn_lexer import ErlangLexer
-from idn_global import GetProject, GetTabMgr
+from idn_global import GetProject, GetTabMgr, GetMainFrame
 from wx import html
 
 
@@ -163,9 +163,13 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         if hasattr(self, "lexer"):
             self.Bind(stc.EVT_STC_STYLENEEDED, self.OnStyleNeeded)
         self.Bind(stc.EVT_STC_UPDATEUI, self.HighlightBrackets)
-        self.Bind(stc.EVT_STC_UPDATEUI, self.HighlightSelectedWord)
         self.Bind(stc.EVT_STC_CHARADDED, self.OnCharAdded)
         self.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
+
+        self.highlightTimer = wx.Timer(self, wx.NewId())
+        self.Bind(wx.EVT_TIMER, self.OnHighlightTimer, self.highlightTimer)
+        self.highlightTimer.Start(100)
+
 
         self.EnableLineNumbers()
 
@@ -183,6 +187,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
 
     def LoadFile(self, filePath):
         self.filePath = filePath
+        print filePath
         self.lastHighlightedWord = ""
         self.changed = False
         self.saved = True
@@ -197,6 +202,9 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
 
     def SetupLanguageStyles(self):
         pass
+
+    def OnHighlightTimer(self, event):
+        self.HighlightSelectedWord()
 
     def OnDocumentChanged(self, event):
         #if self.GetText() != self.
@@ -302,8 +310,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.SetIndicatorCurrent(incidc)
         self.IndicatorClearRange(incidc, self.Length)
 
-    def HighlightSelectedWord(self, event):
-        event.Skip()
+    def HighlightSelectedWord(self):
         text = self.GetSelectedText()
         if self.lastHighlightedWord != text:
             #print "clear selected word"
@@ -323,12 +330,11 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
             while (index != -1 and index < self.Length):
                 line = self.LineFromPosition(index)
                 self.IndicatorFillRange(index, len(text))
-
                 self.SetTargetStart(index + len(text))
                 self.SetTargetEnd(self.Length)
-                index = self.SearchInTarget(text)
                 marker = Marker(line, self.GetLine(line), index, len(text))
                 markers.append(marker)
+                index = self.SearchInTarget(text)
         self.Refresh()
         self.markerPanel.SetMarkers("selected_word", markers)
 
@@ -527,7 +533,7 @@ class ErlangSTC(CustomSTC):
     def OnMouseClick(self, event):
         if event.ControlDown():
             if self.navigateTo:
-                editor = self.Parent.LoadFile(self.navigateTo[0])
+                editor = self.Parent.editor.LoadFile(self.navigateTo[0])
                 line = self.navigateTo[1] - 1
                 editor.GotoLine(line)
                 editor.EnsureVisibleEnforcePolicy(line)
@@ -541,7 +547,7 @@ class ErlangSTC(CustomSTC):
             #print currentHash, self.flyCompileHash
             if currentHash == self.flyCompileHash: return
             self.flyCompileHash = currentHash
-            flyPath = os.path.join(os.getcwd(), "data", "erlang", "fly",
+            flyPath = os.path.join(GetMainFrame().cwd, "data", "erlang", "fly",
                 "fly_" + os.path.basename(self.filePath))
             f = open(flyPath, 'w')
             f.write(self.GetText())
@@ -969,7 +975,7 @@ class MarkerPanel(wx.Panel):
         for type, markers in self.markers.items():
             color = self.markerColor[type]
             for marker in markers:
-                y = height / self.Editor.LineCount * marker.line
+                y = float(height) / float(self.Editor.LineCount) * float(marker.line)
                 dc.SetPen(wx.Pen(color))
                 dc.SetBrush(wx.Brush(color))
                 dc.DrawRectangle(0, y, width, self.Height)

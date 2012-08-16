@@ -154,6 +154,7 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
             self.GenerateFileCache(file)
 
     def GenerateErlangCache(self):
+        self.tasks.add(self.TASK_GEN_ERLANG_CACHE)
         self._CreateProgressDialog("Generating/Checking erlang cache")
         self._ExecRequest("gen_erlang_cache", '[]')
 
@@ -170,7 +171,8 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
         if self.progressDialog:
             pass
         else:
-            self.progressDialog = PP.PyProgress(message = text, agwStyle= wx.PD_APP_MODAL | wx.PD_ELAPSED_TIME)
+            self.progressDialog = PP.PyProgress(message = text,
+                agwStyle= wx.PD_APP_MODAL | wx.PD_ELAPSED_TIME)
             self.progressDialog.SetGaugeProportion(0.2)
             self.progressDialog.SetGaugeSteps(50)
             self.progressDialog.SetGaugeBackground(wx.BLACK)
@@ -209,8 +211,9 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
             elif res == "connect":
                 print "socket connected"
         except Exception, e:
-            print e
-
+            print "===== exception ", e
+        #print "tasks left ", len(self.tasks)
+        #if len(self.tasks) < 10: print self.tasks
         if len(self.tasks) == 0 and self.progressDialog:
             self.progressDialog.Destroy()
             self.progressDialog = None

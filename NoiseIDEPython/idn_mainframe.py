@@ -18,7 +18,8 @@ from idn_config import Config
 class NoiseIDE(wx.Frame):
     def __init__(self, *args, **kwargs):
         wx.Frame.__init__(self, None, wx.ID_ANY, 'Noise IDE', size = (1680, 900), pos = (10, 10))
-
+        self.cwd = os.getcwd()
+        idn_global.MainFrame = self
         wx.ToolTip.SetMaxWidth(600)
 
         self.Maximize()
@@ -59,10 +60,8 @@ class NoiseIDE(wx.Frame):
 
         self.WinMgr.Update()
 
-        self.findDialog = FindInFileDialog(self)
-        self.findDialog.Show()
-        idn_global.MainFrame = self
-        self.OpenProject("D:\\Projects\\GIJoe\\server\\gijoe.noiseide.project")
+
+        #self.OpenProject("D:\\Projects\\GIJoe\\server\\gijoe.noiseide.project")
         #self.OpenProject("D:\\Projects\\Joe\\server\\gijoe.noiseide.project")
 
 
@@ -123,7 +122,7 @@ class NoiseIDE(wx.Frame):
 
     def AddTestTabs(self, amount):
         for i in range(amount):
-            self.TabMgr.LoadFile(os.path.join(os.getcwd(), "eide_cache.erl"))
+            self.TabMgr.LoadFile(os.path.join(cwd, "eide_cache.erl"))
 
 class App(wx.App):
     def __init__(self):

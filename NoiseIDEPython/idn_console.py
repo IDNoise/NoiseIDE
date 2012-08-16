@@ -1,4 +1,5 @@
 import re
+from idn_global import GetMainFrame
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
@@ -7,13 +8,16 @@ import os
 from idn_customstc import ConsoleSTC
 import idn_connect as connect
 
+def get_image(image):
+    return os.path.join(GetMainFrame().cwd, "data", "images", image)
+
 class ErlangConsole(wx.Panel):
     def __init__(self, parent, cwd = os.getcwd(), params = []):
         wx.Panel.__init__(self, parent)
 
-        self.startButton = wx.BitmapButton(self, wx.NewId(), bitmap = wx.Bitmap('data/images/start_console.png'))
-        self.stopButton = wx.BitmapButton(self, wx.NewId(), bitmap = wx.Bitmap('data/images/stop_console.png'))
-        self.clearButton = wx.BitmapButton(self, wx.NewId(), bitmap = wx.Bitmap('data/images/clear_console.png'))
+        self.startButton = wx.BitmapButton(self, wx.NewId(), bitmap = wx.Bitmap(get_image('start_console.png')))
+        self.stopButton = wx.BitmapButton(self, wx.NewId(), bitmap = wx.Bitmap(get_image('stop_console.png')))
+        self.clearButton = wx.BitmapButton(self, wx.NewId(), bitmap = wx.Bitmap(get_image('clear_console.png')))
         self.stopButton.Enabled = False
         self.startButton.SetToolTip( wx.ToolTip("Start console") )
         self.stopButton.SetToolTip( wx.ToolTip("Stop console") )
@@ -27,7 +31,7 @@ class ErlangConsole(wx.Panel):
 
         self.consoleOut = ConsoleSTC(self)
         self.commandText = wx.TextCtrl(self, wx.NewId())
-        self.commandButton = wx.BitmapButton(self, wx.NewId(), bitmap = wx.Bitmap('data/images/exec_command.png'))
+        self.commandButton = wx.BitmapButton(self, wx.NewId(), bitmap = wx.Bitmap(get_image('exec_command.png')))
         self.commandButton.SetToolTip( wx.ToolTip("Exec command") )
 
         commandSizer = wx.BoxSizer(wx.HORIZONTAL)

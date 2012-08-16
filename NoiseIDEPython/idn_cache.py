@@ -2,6 +2,7 @@ import os
 import json
 from idn_config import Config
 from idn_directoryinfo import DirectoryChecker
+from idn_global import GetMainFrame
 
 FILE = "file"
 NAME = "name"
@@ -107,7 +108,7 @@ class ErlangCache:
 
     @classmethod
     def Init(cls):
-        cls.CACHE_DIR = os.path.join(os.getcwd(), "cache", "erlang")
+        cls.CACHE_DIR = os.path.join(GetMainFrame().cwd, "cache", "erlang")
 
         cls.ERLANG_LIBS_CACHE_DIR =  os.path.join(cls.CACHE_DIR, "erlang")
         otherCacheDir =  os.path.join(cls.CACHE_DIR, "other")

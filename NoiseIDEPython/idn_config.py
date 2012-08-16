@@ -1,3 +1,5 @@
+from idn_global import GetMainFrame
+
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 import __builtin__
@@ -7,7 +9,7 @@ import yaml
 class Config:
     @classmethod
     def load(cls):
-        path = os.path.join(os.getcwd(), "noiseide.yaml")
+        path = os.path.join(GetMainFrame().cwd, "noiseide.yaml")
         stream = file(path, 'r')
         cls.data = yaml.load(stream)
         cls.languagePaths = cls.data["languages"]

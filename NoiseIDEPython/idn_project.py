@@ -2,6 +2,7 @@ from wx.grid import PyGridTableBase
 from TextCtrlAutoComplete import TextCtrlAutoComplete
 from idn_cache import ErlangCache, readFile
 from idn_directoryinfo import DirectoryChecker
+from idn_findreplace import FindInFileDialog, FindInProjectDialog
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
@@ -15,7 +16,7 @@ import time
 import idn_projectexplorer as exp
 from wx.lib.agw import aui
 from idn_console import ErlangIDEConsole, ErlangProjectConsole
-from idn_global import GetTabMgr, GetToolMgr
+from idn_global import GetTabMgr, GetToolMgr, GetMainFrame
 
 class Project:
     EXPLORER_TYPE = exp.ProjectExplorer
@@ -123,7 +124,7 @@ class ErlangProject(Project):
         projectCacheDir = os.path.join(ErlangCache.CACHE_DIR, self.ProjectName())
         if not os.path.isdir(projectCacheDir):
             os.makedirs(projectCacheDir)
-        flyDir = os.path.join(os.getcwd(), "data", "erlang", "fly")
+        flyDir = os.path.join(GetMainFrame().cwd, "data", "erlang", "fly")
         if not os.path.isdir(flyDir):
             os.makedirs(flyDir)
 
@@ -196,7 +197,7 @@ class ErlangProject(Project):
                 if dial.ShowModal() == wx.YES:
                     GetTabMgr().DeletePage(GetTabMgr().FindPageIndexByPath(file))
         else:
-            self.Compile()
+            self.Compile(file)
         event.Skip()
 
     def Compile(self, file):
@@ -284,6 +285,12 @@ class ErlangProject(Project):
         if event.GetKeyCode() == ord('O') and event.ControlDown():
             dialog = FastProjectFileOpenDialog(GetTabMgr(), self)
             dialog.ShowModal()
+        elif event.GetKeyCode() == ord('F') and event.ControlDown():
+            dialog = FindInFileDialog(GetTabMgr())
+            dialog.Show()
+        elif event.GetKeyCode() == ord('F') and event.ControlDown() and event.ShiftDown():
+            dialog = FindInProjectDialog(GetTabMgr())
+            dialog.Show()
         else:
             event.Skip()
 
@@ -305,6 +312,7 @@ class FastProjectFileOpenDialog(wx.Dialog):
         self.Layout()
         self.CenterOnParent()
         self.cb.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
+        self.cb.SetFocus()
 
     def PrepareChoices(self, project):
         files = project.explorer.GetAllFiles()
