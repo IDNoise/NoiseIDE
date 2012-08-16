@@ -1,4 +1,5 @@
-from idn_global import GetTabMgr
+import re
+from idn_global import GetTabMgr, GetProject
 from idn_utils import CreateButton
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
@@ -105,3 +106,113 @@ class FindInFileDialog(wx.Dialog):
             self.OnReplace(None)
             self.OnFind(None)
             found = self.findSuccessful
+
+class FindInProjectDialog(wx.Dialog):
+    def __init__(self, parent):
+        wx.Dialog.__init__(self, parent, id = wx.NewId(), title = "Find / Replace in project", size = (520, 195))
+
+        self.sizer = wx.GridBagSizer(2, 2)
+        self.findTextLabel = wx.StaticText(self, label = "Find text:")
+        self.findText = wx.ComboBox(self, size = (300, 25))
+        self.replaceTextLabel = wx.StaticText(self, label = "Replace text:")
+        self.replaceText = wx.ComboBox(self, size = (300, 25))
+        self.findButton = CreateButton(self, "Find", self.OnFind)
+        self.replaceButton = CreateButton(self, "Replace", self.OnReplace)
+
+        self.wholeWordsCb = wx.CheckBox(self, label = "Whole words")
+        self.matchCaseCb = wx.CheckBox(self, label = "Match case")
+        self.useRegextCb = wx.CheckBox(self, label = "Regexp")
+        self.sizer.Add(self.findTextLabel, (0, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 2)
+        self.sizer.Add(self.findText, (0, 1), flag = wx.ALL | wx.ALIGN_CENTER, border = 2)
+        self.sizer.Add(self.findButton, (0, 2), flag = wx.ALL | wx.ALIGN_CENTER, border = 2)
+        self.sizer.Add(self.replaceTextLabel, (1, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 2)
+        self.sizer.Add(self.replaceText, (1, 1), flag = wx.ALL | wx.ALIGN_CENTER, border = 2)
+        self.sizer.Add(self.replaceButton, (1, 2), flag = wx.ALL | wx.ALIGN_CENTER, border = 2)
+        self.sizer.Add(self.useRegextCb, (2, 0), flag = wx.LEFT | wx.ALIGN_CENTER_VERTICAL, border = 10)
+        self.sizer.Add(self.wholeWordsCb, (3, 0), flag = wx.LEFT | wx.ALIGN_CENTER_VERTICAL, border = 10)
+        self.sizer.Add(self.matchCaseCb, (4, 0), flag = wx.LEFT | wx.ALIGN_CENTER_VERTICAL, border = 10)
+        self.SetSizer(self.sizer)
+        self.Layout()
+
+        self.resultsTable = None
+
+    def OnFind(self, event):
+        self.textToFind = self.findText.Value
+        if not self.textToFind:
+            return
+
+        results = []
+        regexp = self.PrepareRegexp()
+        files = GetProject().explorer.GetAllFiles()
+        for file in sorted(files):
+            try:
+                result = []
+                lineNumber = 0
+                fileText = open(file, "r")
+                for line in fileText:
+                    lineNumber += 1
+                    end = 0
+                    while True:
+                        m = regexp.search(line, end)
+                        if not m: break
+                        start = m.start()
+                        end = m.end()
+                        result.append(SearchResult(file, lineNumber, start, end))
+                results.append((file, result))
+            except Exception, e:
+                print "find in project error", e
+                continue
+        self.FillFindResultsTable(reults)
+
+    def OnReplace(self, event):
+        self.textToFind = self.findText.Value
+        if not self.textToFind:
+            return
+
+        self.textToReplace = self.replaceText.Value
+        if not self.textToReplace:
+            return
+
+        regexp = self.PrepareRegexp()
+        files = GetProject().explorer.GetAllFiles()
+        for file in sorted(files):
+            try:
+                if file in GetTabMgr().OpenedFiles():
+                    editor = GetTabMgr()[file]
+                    text = editor.GetText()
+                    text = regexp.sub(self.textToReplace, text)
+                    editor.SetText(text)
+                else:
+                    fileText = open(file).read()
+                    fileText = regexp.sub(self.textToReplace, fileText)
+                    with open(file, "w") as f:
+                        f.write(fileText)
+            except Exception, e:
+                print "replace in project error", e
+                continue
+
+    def PrepareRegexp(self):
+        wholeWords = self.wholeWordsCb.Value
+        matchCase = self.matchCaseCb.Value
+        useRegexp = self.useRegextCb.Value
+
+        flags = re.MULTILINE | re.DOTALL
+        pattern = self.textToFind
+        if not useRegexp:
+            pattern = re.escape(pattern)
+        if wholeWords:
+            pattern = "\b" + pattern + "\b"
+        if not matchCase:
+            flags |= re.IGNORECASE
+
+        return re.compile(pattern, flags)
+
+    def FillFindResultsTable(self, results):
+        pass
+
+class SearchResult:
+    def __init__(self, file, line, start, end):
+        self.file = file
+        self.line = line
+        self.start = start
+        self.end = end
