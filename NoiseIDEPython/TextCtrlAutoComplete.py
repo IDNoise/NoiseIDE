@@ -59,7 +59,7 @@ class myListCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
         #self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected)
 
     def OnItemSelected(self, event):
-        print "on selected item", event.GetIndex()
+        #print "on selected item", event.GetIndex()
         self.SetItemBackgroundColour(self.selected, '#333399')
         self.selected = event.GetIndex() # Find item selected
 

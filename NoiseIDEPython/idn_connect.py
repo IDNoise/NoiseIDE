@@ -91,7 +91,7 @@ class ErlangSocketConnection(asyncore.dispatcher):
 
     def _ExecRequest(self, action, data):
         request = '{' + '"action": "{}", "data": {}'.format(action, data) + '}'
-        print "request", request
+        #print "request", request
         self.socketQueue.put(request)
 
     def OnConnect(self):
@@ -182,7 +182,7 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
             self.progressDialog.ShowDialog()
 
     def _HandleSocketResponse(self, text):
-        print "response", text
+        #print "response", text
         try:
             js = json.loads(text)
             if not "response" in js: return
@@ -212,8 +212,8 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
                 print "socket connected"
         except Exception, e:
             print "===== exception ", e
-        print "tasks left ", len(self.tasks)
-        if len(self.tasks) < 5: print self.tasks
+        #print "tasks left ", len(self.tasks)
+        if len(self.tasks) < 2: print self.tasks
         if len(self.tasks) == 0 and self.progressDialog:
             self.progressDialog.Destroy()
             self.progressDialog = None

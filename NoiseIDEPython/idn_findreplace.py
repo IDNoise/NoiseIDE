@@ -219,7 +219,7 @@ class FindInProjectDialog(wx.Dialog):
             pattern = "\b" + pattern + "\b"
         if not matchCase:
             flags |= re.IGNORECASE
-        print "search", pattern
+        #print "search", pattern
         return re.compile(pattern, flags)
 
     def FillFindResultsTable(self, results, filesCount):

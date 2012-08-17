@@ -188,7 +188,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
 
     def LoadFile(self, filePath):
         self.filePath = filePath
-        print filePath
+        #print filePath
         self.lastHighlightedWord = ""
         self.changed = False
         self.saved = True
@@ -263,7 +263,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
     def OnSavePointLeft(self, event):
         self.saved = False
         index = GetTabMgr().FindPageIndexByPath(self.filePath)
-        print index
+        #print index
         if index > 0:
             GetTabMgr().SetPageText(index, "* " + self.FileName())
 
