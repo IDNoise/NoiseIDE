@@ -364,7 +364,9 @@ class ProjectExplorer(CT.CustomTreeCtrl):
                 for id in item.GetChildren():
                     result += self._GetFiles(id)
             else:
-                result.append(self.GetPyData(item))
+                path = self.GetPyData(item)
+                if os.path.isfile(path):
+                    result.append(path)
         return result
 
 class PythonProjectExplorer(ProjectExplorer):
