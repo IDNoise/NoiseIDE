@@ -272,7 +272,6 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         index = GetTabMgr().FindPageIndexByPath(self.filePath)
         if index > 0:
             GetTabMgr().SetPageText(index, self.FileName())
-        GetProject().CompileFile(self.filePath)
 
     def DoIndent(self):
         prevIndent = self.GetLineIndentation(self.CurrentLine - 1)
@@ -384,6 +383,7 @@ class ErlangSTC(CustomSTC):
         self.Bind(stc.EVT_STC_UPDATEUI, self.OnUpdateCompleter)
         self.Bind(wx.EVT_MOTION, self.OnMouseMove)
         self.Bind(wx.EVT_LEFT_DOWN, self.OnMouseClick)
+        self.Bind(wx.EVT_MIDDLE_DOWN, self.OnMiddleMouseClick)
 
 
     def SetupLexer(self):
@@ -485,7 +485,7 @@ class ErlangSTC(CustomSTC):
             if not self.CheckHelp(pos):
                 self.SetCursor(wx.StockCursor(wx.CURSOR_IBEAM))
                 self.completer.HideHelp()
-        else:
+        elif self.HasFocus():
             self.SetCursor(wx.StockCursor(wx.CURSOR_IBEAM))
             self.completer.HideHelp()
             line = self.LineFromPosition(pos)
@@ -504,20 +504,18 @@ class ErlangSTC(CustomSTC):
                          ErlangHighlightType.MACROS,
                          ErlangHighlightType.MODULE,
                          ErlangHighlightType.RECORD]:
-            self.completer.HideHelp()
             return False
         start = self.WordStartPosition(pos, True)
         end = self.WordEndPosition(pos, True)
         if start == end:
-            self.completer.HideHelp()
             return False
 
 
         line = self.LineFromPosition(pos)
         lineStart = self.PositionFromLine(line)
-        #lineEnd = self.GetLineEndPosition(line)
+        lineEnd = self.GetLineEndPosition(line)
         prefix = self.GetTextRange(lineStart, start)
-        #postfix = self.GetTextRange(end, lineEnd)
+        postfix = self.GetTextRange(end, lineEnd)
         value = self.GetTextRange(start, end)
         #print value ,prefix, postfix
         if style == ErlangHighlightType.FUNCTION:
@@ -543,8 +541,16 @@ class ErlangSTC(CustomSTC):
                 return
         event.Skip()
 
+    def OnMiddleMouseClick(self, event):
+        if event.ControlDown():
+            if self.navigateTo:
+                self.completer.helpWindow.SetFocus()
+                return
+        event.Skip()
+
     def OnFlyTimer(self, event):
-        if GetProject().IsFlyCompileEnabled() and self.changed:
+        if (GetProject().IsFlyCompileEnabled() and self.changed
+            and self.ModuleType() == self.TYPE_MODULE):
             currentHash = hash(self.GetText())
             #print currentHash, self.flyCompileHash
             if currentHash == self.flyCompileHash: return
@@ -615,7 +621,7 @@ class ErlangCompleter(wx.Frame):
 
     def OnSTCMouseDown(self, event):
         event.Skip()
-        if event.ButtonDown(wx.MOUSE_BTN_ANY):
+        if event.ButtonDown(wx.MOUSE_BTN_LEFT) or event.ButtonDown(wx.MOUSE_BTN_RIGHT):
             self.HideCompleter()
 
     def UpdateCompleterPosition(self, pos):
@@ -670,6 +676,8 @@ class ErlangCompleter(wx.Frame):
                     if True:
                         data += ErlangCache.Bifs()
                         data += ErlangCache.AllModules()
+            #elif (fIsAtom and nextChar == "/"):
+
             elif (len(tokens) > 1 and
                   ((fIsAtom and tokens[1].value == ":") or fValue == ":")):
                 i = 1 if fValue == ":" else 2
@@ -719,10 +727,10 @@ class ErlangCompleter(wx.Frame):
         self.ValidateCompleter()
 
     def _RecordHelp(self, record):
-        return "#{} [{}]<br/>Module:{}".format(record.name, ", ".join(record.fields), record.module)
+        return "#{} [<br/>    {}<br/>]<br/><br/>{}:{}".format(record.name, ",<br/>&nbsp;&nbsp;".join(record.fields), record.module, record.line)
 
     def _MacrosHelp(self, macros):
-        return "?{} -> {}<br/>Module:{}".format(macros.name, macros.value, macros.module)
+        return "?{} -> {}<br/><br/>{}:{}".format(macros.name, macros.value, macros.module, macros.line)
 
     def _FunctionHelp(self, fun):
         if not fun.docref:
@@ -834,6 +842,13 @@ class ErlangCompleter(wx.Frame):
         help = self._FunctionHelp(funData)
         self.ShowHelp(help)
         return (funData.moduleData.file, funData.line)
+
+    #def ShowFunctionHelp(self, fun, arity):
+    #    funData = ErlangCache.ModuleFunction(self.module, fun, arity)
+    #    if not funData: return
+    #    help = self._FunctionHelp(funData)
+    #    self.ShowHelp(help)
+    #    return (funData.moduleData.file, funData.line)
 
     def GetFunArity(self, pos):
         open = ['[', '(', '{']

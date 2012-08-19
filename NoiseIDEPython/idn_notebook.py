@@ -12,6 +12,7 @@ import wx
 
 EXT_STC_TYPE = {
     ".erl": ErlangSTC,
+    ".hrl": ErlangSTC,
     ".yaml": YAMLSTC,
     ".py": PythonSTC
 }

@@ -134,16 +134,19 @@ class ErlangProject(Project):
     def GetShell(self):
         return self.shellConsole.shell
 
-    def CompileFile(self, path):
-        #print path, self.AppsPath()
-        if not path.lower().startswith(self.AppsPath().lower()):
-            return
-        app = path.replace(self.AppsPath() + os.sep, "")
-        app = app[:app.index(os.sep)]
-        #print app, self.projectData["apps"]
-        if not app in self.projectData["apps"]:
-            return
-        self.GetShell().CompileProjectFile(path, app)
+    def Compile(self, path):
+        if path.endswith(".hrl"):
+            self.GetShell().GenerateFileCache(path)
+
+        else:
+            if not path.lower().startswith(self.AppsPath().lower()):
+                return
+            app = path.replace(self.AppsPath() + os.sep, "")
+            app = app[:app.index(os.sep)]
+            #print app, self.projectData["apps"]
+            if not app in self.projectData["apps"]:
+                return
+            self.GetShell().CompileProjectFile(path, app)
 
     def AddConsoles(self):
         self.shellConsole = ErlangIDEConsole(GetToolMgr(), self.IDE_MODULES_DIR)
@@ -204,14 +207,10 @@ class ErlangProject(Project):
             self.Compile(file)
         event.Skip()
 
-    def Compile(self, file):
-        if file.endswith(".erl"):
-            self.CompileFile(file)
-        elif file.endswith(".hrl"):
-            self.GetShell().GenerateFileCache(file)
-
     def FileSaved(self, file):
         self.Compile(file)
+        if file.endswith(".hrl"):
+            [self.Compile(module) for module in ErlangCache.GetDependentModules(file)]
 
     def OnProjectFileDeleted(self, event):
         file = event.File
@@ -249,8 +248,8 @@ class ErlangProject(Project):
                             filesToCache.add(file)
         filesToCompile = sorted(list(filesToCompile))
         filesToCache = sorted(list(filesToCache))
-        self.shellConsole.shell.CompileProjectFiles(filesToCompile)
-        self.shellConsole.shell.GenerateFileCaches(filesToCache)
+        self.GetShell().CompileProjectFiles(filesToCompile)
+        self.GetShell().GenerateFileCaches(filesToCache)
         self.RemoveUnusedBeams()
 
     def RemoveUnusedBeams(self):

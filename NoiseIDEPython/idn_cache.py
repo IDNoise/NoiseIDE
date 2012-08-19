@@ -136,6 +136,10 @@ class ErlangCache:
                 data[FILE] = os.path.normcase(win32api.GetLongPathName(data[FILE]))
             except Exception, e:
                 print("error ", e, "on get long path name for ", data[FILE])
+
+        if not os.path.isfile(data[FILE]):
+            os.remove(file)
+            return
         file = data[FILE]
         if (name in cls.modules and name in cls.moduleData and
             cls.moduleData[name].file.lower().startswith(cls.erlangDir) and
@@ -191,7 +195,6 @@ class ErlangCache:
 
     @classmethod
     def GetDependentModules(cls, include):
-        if not module in cls.moduleData: return []
         result = []
         for module in cls.moduleData:
             data = cls.moduleData[module]

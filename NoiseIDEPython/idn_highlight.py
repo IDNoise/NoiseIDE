@@ -117,6 +117,9 @@ class ErlangHighlighter:
                        and tokens[i - 1].value == ":" and tokens[i - 2].type == ErlangTokenType.ATOM)):
                     tokenType = ErlangHighlightType.FUNCTION
 
+                elif (i + 2 < len(tokens) and tokens[i + 1].value == "/"):
+                    tokenType = ErlangHighlightType.FUNCTION
+
                 else: tokenType = ErlangHighlightType.ATOM
             token.type = tokenType
             result.append(token)
