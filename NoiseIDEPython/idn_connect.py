@@ -213,7 +213,7 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
         except Exception, e:
             print "===== exception ", e
         #print "tasks left ", len(self.tasks)
-        if len(self.tasks) < 2: print self.tasks
+        if len(self.tasks) < 5: print self.tasks
         if len(self.tasks) == 0 and self.progressDialog:
             self.progressDialog.Destroy()
             self.progressDialog = None

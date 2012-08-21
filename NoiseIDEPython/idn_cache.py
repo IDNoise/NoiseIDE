@@ -3,6 +3,7 @@ import json
 from idn_config import Config
 from idn_directoryinfo import DirectoryChecker
 from idn_global import GetMainFrame
+from idn_utils import readFile
 
 FILE = "file"
 NAME = "name"
@@ -21,10 +22,6 @@ FIELDS = "fields"
 RECORDS_DATA = "records_data"
 VALUE = "value"
 MACROS = "macros"
-
-def readFile(file):
-    with open(file) as f:
-        return f.read()
 
 
 class Function:

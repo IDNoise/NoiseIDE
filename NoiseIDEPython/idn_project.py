@@ -189,15 +189,17 @@ class ErlangProject(Project):
 
     def OnProjectFileModified(self, event):
         file = event.File
-        page = GetTabMgr().FindPageByPath(file)
-        if page:
-            if page.GetText() != readFile(file):
+        editor = GetTabMgr().FindPageByPath(file)
+        if editor:
+            if editor.GetText() != readFile(file):
                 dial = wx.MessageDialog(None,
                     'File "{}" was modified.\nDo you want to reload document?'.format(file),
                     'File modified',
                     wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
                 if dial.ShowModal() == wx.YES:
-                    GetTabMgr().DeletePage(GetTabMgr().FindPageIndexByPath(file))
+                    editor.LoadFile(page.filePath)
+                    editor.saved = False
+                    editor.changed = True
         else:
             self.Compile(file)
         event.Skip()
@@ -213,15 +215,16 @@ class ErlangProject(Project):
 
     def OnProjectFileDeleted(self, event):
         file = event.File
-        page = GetTabMgr().FindPageByPath(file)
-        if page:
+        self.RemoveUnusedBeams()
+        page = GetTabMgr().FindPageIndexByPath(file)
+        if page >= 0:
             dial = wx.MessageDialog(None,
                 'File "{}" was deleted.\nDo you want to close tab with deleted document?'.format(file),
                 'File deleted',
                 wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
-            if dial.ShowModal() == wx.YES:
-                GetTabMgr().DeletePage(GetTabMgr().FindPageIndexByPath(file))
-                self.RemoveUnusedBeams()
+            result = dial.ShowModal()
+            if result == wx.ID_YES:
+                GetTabMgr().ClosePage(page)
         event.Skip()
 
     def OnProjectFileCreated(self, event):

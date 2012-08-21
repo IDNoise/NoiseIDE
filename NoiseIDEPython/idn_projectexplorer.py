@@ -1,3 +1,6 @@
+from idn_cache import readFile
+from idn_config import Config
+
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 import os
@@ -5,9 +8,9 @@ import wx
 import time
 import shutil
 import wx.lib.agw.customtreectrl as CT
-from idn_utils import extension, Menu
+from idn_utils import extension, Menu, writeFile
 from idn_directoryinfo import DirectoryChecker
-from idn_global import GetTabMgr
+from idn_global import GetTabMgr, GetMainFrame
 
 ICON_SIZE = 16
 
@@ -78,6 +81,7 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         if path in self.hiddenPaths:
             self.SetAttrsForHiddenItem(dir)
         self.Load(dir, path)
+        self.SortChildren(dir)
         return True
 
     def AppendFile(self, parentNode, path):
@@ -116,6 +120,7 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         self.SetPyData(rootNode, root)
 
         self.Load(rootNode, root)
+        self.SortChildren(rootNode)
         self.Expand(rootNode)
 
     def SetMask(self, mask):
@@ -182,6 +187,7 @@ class ProjectExplorer(CT.CustomTreeCtrl):
     def FileCreated(self, file):
         id = self.FindItemByPath(file)
         if self.AppendFile(id, file):
+            self.SortChildren(id)
             e = ProjectExplorerFileEvent(wxEVT_PROJECT_FILE_CREATED , self.GetId(), file)
             self.GetEventHandler().ProcessEvent(e)
 
@@ -200,6 +206,7 @@ class ProjectExplorer(CT.CustomTreeCtrl):
     def DirCreated(self, dir):
         id = self.FindItemByPath(os.path.dirname(dir))
         self.AppendDir(id, dir)
+        self.SortChildren(id)
 
         e = ProjectExplorerFileEvent(wxEVT_PROJECT_DIR_CREATED, self.GetId(), dir)
         self.GetEventHandler().ProcessEvent(e)
@@ -270,14 +277,9 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         return []
 
     def OnMenuNewDir(self, event):
-        #print "on menu new dir", self.GetPyData(self.popupItemId)
-        dialog = wx.TextEntryDialog(None, "Enter dir name",
-            "New Directory", "new_dir", style=wx.OK | wx.CANCEL)
-        if dialog.ShowModal() == wx.ID_OK:
-            newDir = os.path.join(self.GetPyData(self.popupItemId), dialog.GetValue())
-            if not os.path.isdir(newDir):
-                os.mkdir(newDir)
-        dialog.Destroy()
+        (_, dir) = self.RequestName("New Directory", "Enter dir name", "new_dir")
+        if dir and not os.path.isdir(dir):
+            os.mkdir(dir)
 
     def OnMenuDelete(self, event):
         for id in self.popupItemIds:
@@ -369,6 +371,35 @@ class ProjectExplorer(CT.CustomTreeCtrl):
                     result.append(path)
         return result
 
+    def RequestName(self, title, prompt, default_value):
+        dialog = wx.TextEntryDialog(None, prompt,
+            title, default_value, style=wx.OK | wx.CANCEL)
+        result = None
+        value = None
+        if dialog.ShowModal() == wx.ID_OK:
+            value = dialog.GetValue()
+            result = os.path.join(self.GetPyData(self.popupItemId), value)
+        dialog.Destroy()
+        if result:
+            return (value, result)
+        else:
+            return None
+
+    def OnCompareItems(self, item1, item2):
+        path1 = self.GetPyData(item1)
+        path2 = self.GetPyData(item2)
+
+        if os.path.isdir(path1) and os.path.isdir(path2):
+            result = 1 if path1 > path2 else -1
+        elif os.path.isdir(path1) and os.path.isfile(path2):
+            result = -1
+        elif os.path.isfile(path1) and os.path.isfile(path2):
+            result = 1 if path1 > path2 else -1
+        elif os.path.isfile(path1) and os.path.isdir(path2):
+            result = 1
+        else:
+            result = 0
+        return result
 class PythonProjectExplorer(ProjectExplorer):
     def FillNewSubMenu(self, newMenu):
         newMenu.AppendMenuItem("New File", self, self.OnMenuNewFile)
@@ -385,14 +416,32 @@ class ErlangProjectExplorer(ProjectExplorer):
         newMenu.AppendMenuItem("New Header", self, self.OnMenuNewHeader)
 
     def DefaultMask(self):
-        return [".erl", ".hrl", ".config", "*.c", "*.cpp"]
+        return [".erl", ".hrl", ".config", ".c", ".cpp", ".bat", ".igor"]
 
     def OnMenuNewModule(self, event):
+        (module, path) = self.RequestName("New Module", "Enter module name", "new_module")
+        path = path + ".erl"
+        if path and not os.path.isfile(path):
+            data = self._GetTemplate("module")
+            data = data.replace("[module_name]", module)
+            writeFile(path, data)
+            GetTabMgr().LoadFile(path)
         print "on menu new module"
 
     def OnMenuNewHeader(self, event):
+        (_, path) = self.RequestName("New Header", "Enter header name", "new_header")
+        path = path + ".hrl"
+        if path and not os.path.isfile(path):
+            writeFile(path, "")
+            GetTabMgr().LoadFile(path)
         print "on menu new header"
 
     def DefaultExcludeDirs(self):
         return ProjectExplorer.DefaultExcludeDirs(self) + ["ebin", ".settings"]
 
+    def _GetTemplate(self, template):
+        path = os.path.join(GetMainFrame().cwd, "data", "erlang", "templates", template + ".erl")
+        data = readFile(path)
+        data = data.replace("[username]", Config.GetProp("user_name"))
+        data = data.replace("[date]", time.strftime("%d.%m.%Y"))
+        return data

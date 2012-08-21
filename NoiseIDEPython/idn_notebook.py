@@ -1,3 +1,5 @@
+from wx._aui import AUI_BUTTON_CLOSE, wxEVT_COMMAND_AUINOTEBOOK_PAGE_CLOSED
+from wx.aui import wxEVT_COMMAND_AUINOTEBOOK_TAB_MIDDLE_UP, AuiNotebookEvent, AUI_NB_MIDDLE_CLICK_CLOSE
 from idn_colorschema import ColorSchema
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
@@ -53,6 +55,12 @@ class Notebook(aui.AuiNotebook):
                 return index
         return -1
 
+    def FindPageIndexByEditor(self, editor):
+        for index in range(self.GetPageCount()):
+            if self[index] == editor.Parent:
+                return index
+        return None
+
     def FindPageByPath(self, file):
         for page in self.Pages():
             if page.filePath.lower() == file.lower():
@@ -64,6 +72,20 @@ class Notebook(aui.AuiNotebook):
         if currentPage == -1:
             return None
         return self[currentPage]
+
+    def ClosePage(self, pageId):
+        self.DeletePage(pageId)
+
+        # notify owner that the tab has been closed
+        e2 = AuiNotebookEvent(wxEVT_COMMAND_AUINOTEBOOK_PAGE_CLOSED, self.GetId())
+        e2.SetSelection(pageId)
+        e2.SetEventObject(self)
+        self.GetEventHandler().ProcessEvent(e2)
+
+        if self.GetPageCount() == 0:
+            mgr = self.GetAuiManager()
+            win = mgr.GetManagedWindow()
+            win.SendSizeEvent()
 
 class EditorPanel(wx.Panel):
     def __init__(self, parent, file):

@@ -5,6 +5,18 @@ __author__ = 'Yaroslav'
 import os
 import wx
 
+def readFile(file):
+    f = open(file)
+    data = f.read()
+    f.close()
+    return data
+
+def writeFile(file, data):
+    f = open(file, 'w')
+    f.write(data)
+    f.flush()
+    f.close()
+
 def extension(path):
     name, ext = os.path.splitext(path)
     return ext
