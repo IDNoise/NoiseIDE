@@ -587,6 +587,11 @@ class ErlangSTC(CustomSTC):
             indent += 4
         elif (text.endswith(";") or text.endswith(".")):
             indent -= 4
+        else:
+            for (op, cl) in [("(", ")"), ("{", "}"), ("[", "]")]:
+                if text.count(op) > text.count(cl) and text.endswith(","):
+                    indent += 4
+
         self.InsertText(self.CurrentPos, " " * indent)
         pos = self.PositionFromLine(self.CurrentLine)
         self.GotoPos(pos + indent)
