@@ -213,8 +213,8 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         event.Skip()
 
     def OnCharAdded(self, event):
-        keyCode = event.GetKey()
-        if keyCode in [wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER]:
+        char = event.GetKey()
+        if char == ord('\n'):
             self.DoIndent()
         event.Skip()
 
@@ -263,20 +263,21 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
     def OnSavePointLeft(self, event):
         self.saved = False
         index = GetTabMgr().FindPageIndexByPath(self.filePath)
-        #print index
-        if index > 0:
+        if index >= 0:
             GetTabMgr().SetPageText(index, "* " + self.FileName())
 
     def OnSavePointReached(self, event):
         self.saved = True
         index = GetTabMgr().FindPageIndexByPath(self.filePath)
-        if index > 0:
+        if index >= 0:
             GetTabMgr().SetPageText(index, self.FileName())
+        GetProject().CompileFile(self.filePath)
 
     def DoIndent(self):
-        prevIndent = self.GetLineIndentation(self.CurrentLine - 1)
-        self.InsertText(self.CurrentPos, " " * prevIndent)
-        self.GotoPos(self.GetLineEndPosition(self.CurrentLine))
+        indent = self.GetLineIndentation(self.CurrentLine - 1)
+        self.InsertText(self.CurrentPos, " " * indent)
+        pos = self.PositionFromLine(self.CurrentLine)
+        self.GotoPos(pos + indent)
 
     def FileName(self):
         return os.path.basename(self.filePath)
@@ -368,10 +369,11 @@ class ErlangSTC(CustomSTC):
 
         self.navigateTo = None
 
-        self.flyTimer = wx.Timer(self, wx.NewId())
-        self.Bind(wx.EVT_TIMER, self.OnFlyTimer, self.flyTimer)
-        self.flyTimer.Start(300)
-        self.flyCompileHash = None
+        if self.ModuleType() == self.TYPE_MODULE:
+            self.flyTimer = wx.Timer(self, wx.NewId())
+            self.Bind(wx.EVT_TIMER, self.OnFlyTimer, self.flyTimer)
+            self.flyTimer.Start(300)
+            self.flyCompileHash = None
 
         self.lastErrors = []
         self.errorsLines = []
@@ -513,9 +515,7 @@ class ErlangSTC(CustomSTC):
 
         line = self.LineFromPosition(pos)
         lineStart = self.PositionFromLine(line)
-        lineEnd = self.GetLineEndPosition(line)
         prefix = self.GetTextRange(lineStart, start)
-        postfix = self.GetTextRange(end, lineEnd)
         value = self.GetTextRange(start, end)
         #print value ,prefix, postfix
         if style == ErlangHighlightType.FUNCTION:
@@ -549,18 +549,11 @@ class ErlangSTC(CustomSTC):
         event.Skip()
 
     def OnFlyTimer(self, event):
-        if (GetProject().IsFlyCompileEnabled() and self.changed
-            and self.ModuleType() == self.TYPE_MODULE):
+        if GetProject().IsFlyCompileEnabled() and self.changed:
             currentHash = hash(self.GetText())
-            #print currentHash, self.flyCompileHash
             if currentHash == self.flyCompileHash: return
             self.flyCompileHash = currentHash
-            flyPath = os.path.join(GetMainFrame().cwd, "data", "erlang", "fly",
-                "fly_" + os.path.basename(self.filePath))
-            f = open(flyPath, 'w')
-            f.write(self.GetText())
-            f.close()
-            GetProject().shellConsole.shell.CompileFileFly(self.filePath, flyPath)
+            GetProject().CompileFileFly(os.path.basename(self.filePath), self.filePath, self.GetText())
 
     def HighlightErrors(self, errors):
         self.MarkerDeleteAll(20)
@@ -582,6 +575,30 @@ class ErlangSTC(CustomSTC):
 
     def OnFileSaved(self):
         GetProject().FileSaved(self.filePath)
+
+    def DoIndent(self):
+        text = self.GetLine(self.CurrentLine - 1).strip()
+        indent = self.GetLineIndentation(self.CurrentLine - 1)
+        if (text.endswith("{") or
+            text.endswith("[") or
+            text.endswith("[") or
+            text.endswith("||") or
+            text.endswith("begin") or
+            text.endswith("when") or
+            text.endswith("of") or
+            text.endswith("->") or
+            text.endswith("(")):
+            indent += 4
+        elif (text.endswith(";") or text.endswith(".")):
+            indent -= 4
+        else:
+            for (op, cl) in [("(", ")"), ("{", "}"), ("[", "]")]:
+                if text.count(op) > text.count(cl) and text.endswith(","):
+                    indent += 4
+
+        self.InsertText(self.CurrentPos, " " * indent)
+        pos = self.PositionFromLine(self.CurrentLine)
+        self.GotoPos(pos + indent)
 
 class ErlangCompleter(wx.Frame):
     SIZE = (820, 500)
@@ -676,8 +693,6 @@ class ErlangCompleter(wx.Frame):
                     if True:
                         data += ErlangCache.Bifs()
                         data += ErlangCache.AllModules()
-            #elif (fIsAtom and nextChar == "/"):
-
             elif (len(tokens) > 1 and
                   ((fIsAtom and tokens[1].value == ":") or fValue == ":")):
                 i = 1 if fValue == ":" else 2
@@ -727,7 +742,8 @@ class ErlangCompleter(wx.Frame):
         self.ValidateCompleter()
 
     def _RecordHelp(self, record):
-        return "#{} [<br/>    {}<br/>]<br/><br/>{}:{}".format(record.name, ",<br/>&nbsp;&nbsp;".join(record.fields), record.module, record.line)
+        return "#{} [<br/>&nbsp;{}<br/>]<br/><br/>{}:{}".format(record.name, ",<br/>&nbsp;".join(record.fields),
+            record.module, record.line)
 
     def _MacrosHelp(self, macros):
         return "?{} -> {}<br/><br/>{}:{}".format(macros.name, macros.value, macros.module, macros.line)
@@ -735,10 +751,15 @@ class ErlangCompleter(wx.Frame):
     def _FunctionHelp(self, fun):
         if not fun.docref:
             p = fun.params[:]
+            t = p[:]
             if fun.types and not fun.docref:
                 for i in range(len(p)):
-                    p[i] = p[i] + " :: " + fun.types[i]
-            help = "{}({}) -> {}".format(fun.name, ", ".join(p), fun.result)
+                    t[i] = p[i] + " :: " + fun.types[i]
+            res = [fun.result, ""]
+            if " :: " in fun.result:
+                res = fun.result.split(" :: ")
+                t.append(fun.result)
+            help = "{}({}) -> {}. <br/>Types:<br/>&nbsp;{}".format(fun.name, ", ".join(p), res[0], ",<br/>&nbsp;".join(t))
         else:
             path = os.path.join(ErlangCache.ERLANG_LIBS_CACHE_DIR, fun.docref)
             help = readFile(path)
@@ -842,13 +863,6 @@ class ErlangCompleter(wx.Frame):
         help = self._FunctionHelp(funData)
         self.ShowHelp(help)
         return (funData.moduleData.file, funData.line)
-
-    #def ShowFunctionHelp(self, fun, arity):
-    #    funData = ErlangCache.ModuleFunction(self.module, fun, arity)
-    #    if not funData: return
-    #    help = self._FunctionHelp(funData)
-    #    self.ShowHelp(help)
-    #    return (funData.moduleData.file, funData.line)
 
     def GetFunArity(self, pos):
         open = ['[', '(', '{']

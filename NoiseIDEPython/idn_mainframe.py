@@ -8,10 +8,10 @@ import os
 import wx
 from wx.lib.agw import aui
 from idn_colorschema import ColorSchema
-from idn_customstc import CustomSTC
+from idn_customstc import CustomSTC, ConsoleSTC
 from idn_projectexplorer import ProjectExplorer, PythonProjectExplorer
 from idn_winmanager import Manager
-from idn_notebook import  Notebook
+from idn_notebook import  Notebook, EditorNotebook
 from idn_project import loadProject
 from idn_config import Config
 
@@ -41,16 +41,20 @@ class NoiseIDE(wx.Frame):
                    aui.AUI_NB_SMART_TABS | \
                    aui.AUI_NB_TAB_FLOAT | \
                    aui.AUI_NB_WINDOWLIST_BUTTON
-        self.TabMgr = Notebook(self, agwStyle = agwStyle)
+        self.TabMgr = EditorNotebook(self, agwStyle = agwStyle)
 
         self.WinMgr.AddPane1(self.TabMgr, aui.AuiPaneInfo().Center()#.Caption("Code Editor")
             .MaximizeButton().MinimizeButton().CaptionVisible(False)
             .CloseButton(False).Floatable(False))
 
         agwStyle = aui.AUI_NB_DEFAULT_STYLE ^ aui.AUI_NB_CLOSE_ON_ACTIVE_TAB
-        self.ToolMgr = aui.AuiNotebook(self, agwStyle = agwStyle)
+        self.ToolMgr = Notebook(self, agwStyle = agwStyle)
         self.WinMgr.AddPane1(self.ToolMgr, aui.AuiPaneInfo().Bottom()#.Caption("Tools")
             .MaximizeButton().MinimizeButton().CloseButton(False).Floatable(False).BestSize(400, 300))
+
+        self.log = ConsoleSTC(self.ToolMgr)
+        self.log.SetReadOnly(True)
+        self.ToolMgr.AddPage(self.log, "Log")
 
         self.SetupMenu()
 

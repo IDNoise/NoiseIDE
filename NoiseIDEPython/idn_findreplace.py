@@ -6,7 +6,7 @@ import wx
 import re
 from wx import stc
 import wx.lib.agw.customtreectrl as CT
-from idn_global import GetTabMgr, GetProject, GetToolMgr
+from idn_global import GetTabMgr, GetProject, GetToolMgr, Log
 from idn_utils import CreateButton
 
 class FindInFileDialog(wx.Dialog):
@@ -175,7 +175,7 @@ class FindInProjectDialog(wx.Dialog):
                 if result:
                     results.append((file, result))
             except Exception, e:
-                print "find in project error", e
+                Log("find in project error", e)
                 continue
         self.FillFindResultsTable(results, len(files))
 
@@ -203,7 +203,7 @@ class FindInProjectDialog(wx.Dialog):
                     with open(file, "w") as f:
                         f.write(fileText)
             except Exception, e:
-                print "replace in project error", e
+                Log("replace in project error", e)
                 continue
 
     def PrepareRegexp(self):
@@ -273,7 +273,7 @@ class ErrorsTree(CT.CustomTreeCtrl):
         if data.lineNumber:
             editor.GotoLine(data.lineNumber)
             pos = editor.PositionFromLine(data.lineNumber)
-            print data.lineNumber, pos, data.start, data.end
+            #Log(data.lineNumber, pos, data.start, data.end)
            # editor.SetSelection(pos, pos + 1)
             editor.SetSelection(pos + data.start, pos + data.end)
 

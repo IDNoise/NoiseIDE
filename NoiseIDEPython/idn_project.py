@@ -1,8 +1,10 @@
 from wx.grid import PyGridTableBase
 from TextCtrlAutoComplete import TextCtrlAutoComplete
 from idn_cache import ErlangCache, readFile
+from idn_connect import CompileErrorInfo
 from idn_directoryinfo import DirectoryChecker
 from idn_findreplace import FindInFileDialog, FindInProjectDialog
+from idn_utils import writeFile
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
@@ -16,7 +18,7 @@ import time
 import idn_projectexplorer as exp
 from wx.lib.agw import aui
 from idn_console import ErlangIDEConsole, ErlangProjectConsole
-from idn_global import GetTabMgr, GetToolMgr, GetMainFrame
+from idn_global import GetTabMgr, GetToolMgr, GetMainFrame, Log
 
 class Project:
     EXPLORER_TYPE = exp.ProjectExplorer
@@ -61,8 +63,16 @@ class Project:
             return set()
 
     def OpenLastFiles(self):
+        removedFiles = []
         for file in self.LastOpenedFiles():
-            GetTabMgr().LoadFile(file)
+            if not os.path.isfile(file):
+                removedFiles.append(file)
+            else:
+                GetTabMgr().LoadFile(file)
+        if removedFiles:
+            self.userData[self.CONFIG_LAST_OPENED_FILES] = \
+                [file for file in self.userData[self.CONFIG_LAST_OPENED_FILES] if file not in removedFiles]
+
 
     def AppsPath(self):
         return os.path.join(self.projectDir, self.projectData["apps_dir"])
@@ -124,9 +134,12 @@ class ErlangProject(Project):
         projectCacheDir = os.path.join(ErlangCache.CACHE_DIR, self.ProjectName())
         if not os.path.isdir(projectCacheDir):
             os.makedirs(projectCacheDir)
-        flyDir = os.path.join(GetMainFrame().cwd, "data", "erlang", "fly")
-        if not os.path.isdir(flyDir):
-            os.makedirs(flyDir)
+        self.flyDir = os.path.join(GetMainFrame().cwd, "data", "erlang", "fly")
+        if not os.path.isdir(self.flyDir):
+            os.makedirs(self.flyDir)
+        for file in os.listdir(self.flyDir):
+            if file.endswith(".erl"):
+                os.remove(os.path.join(self.flyDir, file))
 
     def GenerateErlangCache(self):
         self.shellConsole.shell.GenerateErlangCache()
@@ -181,7 +194,7 @@ class ErlangProject(Project):
 
     def AddTabs(self):
         self.errorsTable = ErrorsTableGrid(GetToolMgr())
-        GetToolMgr().AddPage(self.errorsTable, 'Errors')
+        GetToolMgr().AddPage(self.errorsTable, 'Errors: 0, Warnings: 0')
 
     def Close(self):
         ErlangCache.StopCheckingFolder(self.ProjectName())
@@ -200,7 +213,7 @@ class ErlangProject(Project):
                     'File modified',
                     wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
                 if dial.ShowModal() == wx.YES:
-                    editor.LoadFile(page.filePath)
+                    editor.LoadFile(editor.filePath)
                     editor.saved = False
                     editor.changed = True
         else:
@@ -208,6 +221,7 @@ class ErlangProject(Project):
         event.Skip()
 
     def FileSaved(self, file):
+        Log("saved", file)
         self.Compile(file)
         if file.endswith(".hrl"):
             [self.Compile(module) for module in ErlangCache.GetDependentModules(file)]
@@ -215,15 +229,22 @@ class ErlangProject(Project):
     def OnProjectFileDeleted(self, event):
         file = event.File
         self.RemoveUnusedBeams()
-        page = GetTabMgr().FindPageIndexByPath(file)
-        if page >= 0:
-            dial = wx.MessageDialog(None,
-                'File "{}" was deleted.\nDo you want to close tab with deleted document?'.format(file),
-                'File deleted',
-                wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
-            result = dial.ShowModal()
-            if result == wx.ID_YES:
-                GetTabMgr().ClosePage(page)
+        editor = GetTabMgr().FindPageByPath(file)
+
+        if editor:
+            wx.MessageBox(('File "{}" was deleted.\nYour copy remains in opened tabs.' +
+                          '\nYou can close it or save to disk again.').format(file),
+                'File deleted')
+            editor.OnSavePointLeft(None)
+            editor.Changed()
+           # dial = wx.MessageDialog(None,
+           #     'File "{}" was deleted.\nDo you want to close tab with deleted document?',
+            #    ,
+            #    wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
+            #result = dial.ShowModal()
+            #if result == wx.ID_YES:
+            #    GetTabMgr()[page].changed = True
+            #????
         event.Skip()
 
     def OnProjectFileCreated(self, event):
@@ -278,6 +299,16 @@ class ErlangProject(Project):
         if editor:
             editor.HighlightErrors(errors)
         self.errorsTable.AddErrors(path, errors)
+        errorCount = 0
+        warningCount = 0
+        for (_, err) in self.errors.items():
+            for e in err:
+                if e.type == CompileErrorInfo.WARNING:
+                    warningCount += 1
+                else:
+                    errorCount += 1
+        index = GetToolMgr().FindPageIndexByWindow(self.errorsTable)
+        GetToolMgr().SetPageText(index, "Errors: {}, Warnings: {}".format(errorCount, warningCount))
 
     def GetErrors(self, path):
         if path not in self.errors: return []
@@ -295,6 +326,11 @@ class ErlangProject(Project):
             dialog.Show()
         else:
             event.Skip()
+
+    def CompileFileFly(self, file, realPath, data):
+        flyPath = os.path.join(self.flyDir, "fly_" + file)
+        writeFile(flyPath, data)
+        self.GetShell().CompileFileFly(realPath, flyPath)
 
 class FastProjectFileOpenDialog(wx.Dialog):
     def __init__(self, parent, project):

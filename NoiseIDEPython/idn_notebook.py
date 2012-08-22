@@ -27,6 +27,40 @@ def GetSTCTypeByExt(file):
 class Notebook(aui.AuiNotebook):
     def __getitem__(self, index):
         if index < self.GetPageCount():
+            return self.GetPage(index)
+        else:
+            raise IndexError
+
+    def Pages(self):
+        return [self[index] for index in range(self.GetPageCount())]
+
+    def FindPageIndexByTitle(self, title):
+        for index in range(self.GetPageCount()):
+            if self.GetPageText(index).lower() == title:
+                return index
+        return -1
+
+    def FindPageIndexByWindow(self, window):
+        for index in range(self.GetPageCount()):
+            if self[index] == window:
+                return index
+        return None
+
+    def FindPageByTitle(self, title):
+        index = self.FindPageIndexByTitle(title)
+        if index >= 0:
+            return self[index]
+        return None
+
+    def CurrentPage(self):
+        currentPage = self.GetSelection()
+        if currentPage == -1:
+            return None
+        return self[currentPage]
+
+class EditorNotebook(aui.AuiNotebook):
+    def __getitem__(self, index):
+        if index < self.GetPageCount():
             return self.GetPage(index).editor
         else:
             raise IndexError
@@ -68,25 +102,6 @@ class Notebook(aui.AuiNotebook):
                 return page
         return None
 
-    def CurrentPage(self):
-        currentPage = self.GetSelection()
-        if currentPage == -1:
-            return None
-        return self[currentPage]
-
-    def ClosePage(self, pageId):
-        self.DeletePage(pageId)
-
-        # notify owner that the tab has been closed
-        e2 = AuiNotebookEvent(wxEVT_COMMAND_AUINOTEBOOK_PAGE_CLOSED, self.GetId())
-        e2.SetSelection(pageId)
-        e2.SetEventObject(self)
-        self.GetEventHandler().ProcessEvent(e2)
-
-        if self.GetPageCount() == 0:
-            mgr = self.GetAuiManager()
-            win = mgr.GetManagedWindow()
-            win.SendSizeEvent()
 
 class EditorPanel(wx.Panel):
     def __init__(self, parent, file):

@@ -15,3 +15,9 @@ def GetTabMgr():
 
 def GetToolMgr():
     return MainFrame.ToolMgr
+
+def Log(*text):
+    MainFrame.log.SetReadOnly(False)
+    MainFrame.log.AppendText(" ".join([str(t) for t in text]) + "\n")
+    MainFrame.log.SetReadOnly(True)
+    MainFrame.log.ScrollToLine(MainFrame.log.GetLineCount())

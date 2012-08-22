@@ -15,7 +15,7 @@ import asyncore
 import json
 import random
 import wx
-from idn_global import GetTabMgr, GetProject
+from idn_global import GetTabMgr, GetProject, Log
 
 class AsyncoreThread(Thread):
     def __init__(self):
@@ -91,7 +91,7 @@ class ErlangSocketConnection(asyncore.dispatcher):
 
     def _ExecRequest(self, action, data):
         request = '{' + '"action": "{}", "data": {}'.format(action, data) + '}'
-        #print "request", request
+        #Log("request", request)
         self.socketQueue.put(request)
 
     def OnConnect(self):
@@ -114,10 +114,11 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
         self.tasks = set()
         self.SetSocketHandler(self._HandleSocketResponse)
         self.progressDialog = None
-        self.lastTaskDone = ""
+        self.lastTaskDone = None
         self.progressTimer = wx.Timer(self, wx.NewId())
         self.progressTimer.Start(250)
         self.Bind(wx.EVT_TIMER, self.OnProgressTimer, self.progressTimer)
+        self.lastTaskTime = time.time()
 
     def CompileFile(self, file):
         self.tasks.add((self.TASK_COMPILE, file))
@@ -182,13 +183,12 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
             self.progressDialog.ShowDialog()
 
     def _HandleSocketResponse(self, text):
-        #print "response", text
+        #Log("response", text)
         try:
             js = json.loads(text)
             if not "response" in js: return
             res = js["response"]
 
-            self.lastTaskDone = ""
             if res == "compile":
                 errorsData = js["errors"]
                 path = pystr(js["path"])
@@ -209,18 +209,23 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
                 self.lastTaskDone = "Generated cache for erlang libs"
                 self.tasks.remove(self.TASK_GEN_ERLANG_CACHE)
             elif res == "connect":
-                print "socket connected"
+                Log("socket connected")
         except Exception, e:
-            print "===== exception ", e
-        #print "tasks left ", len(self.tasks)
-        if len(self.tasks) < 5: print self.tasks
+            Log("===== exception ", e)
+
         if len(self.tasks) == 0 and self.progressDialog:
             self.progressDialog.Destroy()
             self.progressDialog = None
 
     def OnProgressTimer(self, event):
         if self.progressDialog:
-            self.progressDialog.UpdatePulse(self.lastTaskDone)
+            if self.lastTaskDone:
+                self.lastTaskTime = time.time()
+                self.progressDialog.UpdatePulse(self.lastTaskDone)
+                self.lastTaskDone = None
+            if time.time() - self.lastTaskTime > 7 and len(self.tasks) > 0:
+                Log("####\n 7 seconds from last task done. Tasks left ", len(self.tasks))
+                Log("\n\t".join([str(t) for t in self.tasks]))
 
 class ErlangProcess(Process):
     def __init__(self, cwd = os.getcwd(), params = []):

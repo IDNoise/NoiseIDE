@@ -2,7 +2,7 @@ import os
 import json
 from idn_config import Config
 from idn_directoryinfo import DirectoryChecker
-from idn_global import GetMainFrame
+from idn_global import GetMainFrame, Log
 from idn_utils import readFile
 
 FILE = "file"
@@ -117,34 +117,34 @@ class ErlangCache:
 
     @classmethod
     def LoadCacheFromDir(cls, dir):
-        print "loading cache from ", dir
+        Log("loading cache from ", dir)
         dir = os.path.join(cls.CACHE_DIR, dir)
         for file in os.listdir(dir):
             file = os.path.join(dir, file)
             cls.LoadFile(file)
-        print "end loading cache from ", dir
+        Log("end loading cache from ", dir)
 
     @classmethod
     def LoadFile(cls, file):
         if not os.path.isfile(file): return
         if not file.endswith(".cache"): return
         data = json.loads(readFile(file))
-        name = os.path.basename(file)[:-6]
-        if 'nt' == os.name:
-            import win32api
-            try :
-                data[FILE] = os.path.normcase(win32api.GetLongPathName(data[FILE]))
-            except Exception, e:
-                print("error ", e, "on get long path name for ", data[FILE])
-
         if not os.path.isfile(data[FILE]):
             os.remove(file)
             return
+        name = os.path.basename(file)[:-6]
+        if 'nt' == os.name:
+            import win32api
+            try:
+                data[FILE] = os.path.normcase(win32api.GetLongPathName(data[FILE]))
+            except Exception, e:
+                Log("error ", e, "on get long path name for ", data[FILE])
         file = data[FILE]
+        Log("loading cache for", file)
         if (name in cls.modules and name in cls.moduleData and
             cls.moduleData[name].file.lower().startswith(cls.erlangDir) and
             file != cls.moduleData[name].file):
-            print("Ignoring replace of cache for standard erlang " +
+            Log("Ignoring replace of cache for standard erlang " +
                 "module: {}\n\tPath:{}".format(name, file))
             return
 
@@ -154,8 +154,7 @@ class ErlangCache:
             cls.modules.add(name)
 
         cls.moduleData[name] = ModuleData(name, data)
-        #print("Loading cache for: " + name)
-
+        Log("loading cache for", file, "done")
     @classmethod
     def UnloadFile(cls, file):
         if not os.path.isfile(file): return
@@ -195,6 +194,7 @@ class ErlangCache:
 
     @classmethod
     def GetDependentModules(cls, include):
+        if not module in cls.moduleData: return []
         result = []
         for module in cls.moduleData:
             data = cls.moduleData[module]

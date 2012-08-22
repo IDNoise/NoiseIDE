@@ -1,5 +1,3 @@
-from idn_cache import readFile
-from idn_config import Config
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
@@ -10,7 +8,11 @@ import shutil
 import wx.lib.agw.customtreectrl as CT
 from idn_utils import extension, Menu, writeFile
 from idn_directoryinfo import DirectoryChecker
-from idn_global import GetTabMgr, GetMainFrame
+from idn_global import GetTabMgr, GetMainFrame, Log
+import subprocess
+from idn_cache import readFile
+from idn_config import Config
+
 
 ICON_SIZE = 16
 
@@ -142,7 +144,7 @@ class ProjectExplorer(CT.CustomTreeCtrl):
                 key = self.imageList.Add(wx.Bitmap(path, wx.BITMAP_TYPE_PNG))
                 self.iconIndex[id] = key
         except Exception, e:
-            print e
+            Log("Add icon error: ", e)
 
     def AddIconFromArt(self, id, image):
         icon = wx.ArtProvider_GetBitmap(image, wx.ART_OTHER, (ICON_SIZE, ICON_SIZE))
@@ -226,8 +228,20 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         id = self.GetRootItem()
         items = self.SplitOnItemsFromRoot(path)
         for item in items:
-            id = self.FindItem(id, item)
+            children = self.GetItemChildren(id)
+            for c in children:
+                if self.GetPyData(c).endswith(item):
+                    id = c
+                    break
         return id
+
+    def GetItemChildren(self, item):
+        child, cookie = self.GetFirstChild(item)
+        children = []
+        while child:
+            children.append(child)
+            child, cookie = self.GetNextChild(item, cookie)
+        return children
 
     def SplitOnItemsFromRoot(self, path):
         items = []
@@ -261,6 +275,9 @@ class ProjectExplorer(CT.CustomTreeCtrl):
                     self.GetPyData(self.popupItemId) in self.hiddenPaths)
             if self.popupItemId == self.GetRootItem():
                 menu.AppendCheckMenuItem("Show hidden", self, self.OnMenuShowHide, self.showHidden)
+            if extension(self.GetPyData(self.popupItemId)) in [".bat", ".exe", ".cmd"]:
+                menu.AppendSeparator()
+                menu.AppendMenuItem("Execute", self, self.OnMenuExecute)
 
         self.PopupMenu(menu)
 
@@ -289,6 +306,16 @@ class ProjectExplorer(CT.CustomTreeCtrl):
             else:
                 os.remove(path)
 
+    def OnMenuExecute(self, event):
+        path = self.GetPyData(self.popupItemId)
+        path = path.replace("\\", "/")
+        pp = subprocess.Popen(path, shell = True, stdout = subprocess.PIPE)
+
+        Log("=======Executing " + path)
+        for out in pp.stdout:
+            Log(out)
+        Log("=======")
+        #os.system()
     def GetIdByPath(self, path):
         if os.path.isdir(path):
             return self.FindItemByPath(path)
@@ -327,15 +354,17 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         else:
             self.showHidden = True
             for path in sorted(self.hiddenPaths):
+                #print path
                 if os.path.dirname(path) in self.hiddenPaths: continue
                 if os.path.isdir(path):
                     id = self.FindItemByPath(os.path.dirname(path))
+                    #print "dir"
                     self.AppendDir(id, path)
                 else:
                     id = self.FindItemByPath(path)
                     self.AppendFile(id, path)
-                if id:
-                    self.SortChildren(id)
+                    #print "file"
+                self.SortChildren(id)
 
     def DeleteItemByPath(self, path):
         if os.path.isfile(path):
@@ -345,6 +374,8 @@ class ProjectExplorer(CT.CustomTreeCtrl):
             id = self.FindItemByPath(path)
         if self.GetPyData(id) == path:
             self.Delete(id)
+            return True
+        return False
 
     def OnActivateItem(self, event):
         path = self.GetPyData(event.GetItem())
@@ -426,7 +457,6 @@ class ErlangProjectExplorer(ProjectExplorer):
             data = data.replace("[module_name]", module)
             writeFile(path, data)
             GetTabMgr().LoadFile(path)
-        print "on menu new module"
 
     def OnMenuNewHeader(self, event):
         (_, path) = self.RequestName("New Header", "Enter header name", "new_header")
@@ -434,7 +464,6 @@ class ErlangProjectExplorer(ProjectExplorer):
         if path and not os.path.isfile(path):
             writeFile(path, "")
             GetTabMgr().LoadFile(path)
-        print "on menu new header"
 
     def DefaultExcludeDirs(self):
         return ProjectExplorer.DefaultExcludeDirs(self) + ["ebin", ".settings"]
