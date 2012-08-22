@@ -213,8 +213,8 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         event.Skip()
 
     def OnCharAdded(self, event):
-        keyCode = event.GetKey()
-        if keyCode in [wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER]:
+        char = event.GetKey()
+        if char == ord('\n'):
             self.DoIndent()
         event.Skip()
 
@@ -274,10 +274,10 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         GetProject().CompileFile(self.filePath)
 
     def DoIndent(self):
-        prevIndent = self.GetLineIndentation(self.CurrentLine - 1)
-        print "indent", prevIndent, self.GetLineIndentation(self.CurrentLine)
-        self.InsertText(self.CurrentPos, " " * prevIndent)
-        self.GotoPos(self.GetLineEndPosition(self.CurrentLine))
+        indent = self.GetLineIndentation(self.CurrentLine - 1)
+        self.InsertText(self.CurrentPos, " " * indent)
+        pos = self.PositionFromLine(self.CurrentLine)
+        self.GotoPos(pos + indent)
 
     def FileName(self):
         return os.path.basename(self.filePath)
@@ -571,6 +571,25 @@ class ErlangSTC(CustomSTC):
 
     def OnFileSaved(self):
         GetProject().FileSaved(self.filePath)
+
+    def DoIndent(self):
+        text = self.GetLine(self.CurrentLine - 1).strip()
+        indent = self.GetLineIndentation(self.CurrentLine - 1)
+        if (text.endswith("{") or
+            text.endswith("[") or
+            text.endswith("[") or
+            text.endswith("||") or
+            text.endswith("begin") or
+            text.endswith("when") or
+            text.endswith("of") or
+            text.endswith("->") or
+            text.endswith("(")):
+            indent += 4
+        elif (text.endswith(";") or text.endswith(".")):
+            indent -= 4
+        self.InsertText(self.CurrentPos, " " * indent)
+        pos = self.PositionFromLine(self.CurrentLine)
+        self.GotoPos(pos + indent)
 
 class ErlangCompleter(wx.Frame):
     SIZE = (820, 500)
