@@ -194,8 +194,8 @@ class ErlangCache:
 
     @classmethod
     def GetDependentModules(cls, include):
-        if not module in cls.moduleData: return []
         result = []
+        if not include in cls.moduleData: return result
         for module in cls.moduleData:
             data = cls.moduleData[module]
             if include in data.includes and data.file.endswith(".erl"):

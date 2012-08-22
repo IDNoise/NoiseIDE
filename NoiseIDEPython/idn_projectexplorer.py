@@ -6,9 +6,9 @@ import wx
 import time
 import shutil
 import wx.lib.agw.customtreectrl as CT
-from idn_utils import extension, Menu, writeFile
+from idn_utils import extension, Menu, writeFile, CreateButton
 from idn_directoryinfo import DirectoryChecker
-from idn_global import GetTabMgr, GetMainFrame, Log
+from idn_global import GetTabMgr, GetMainFrame, Log, GetProject
 import subprocess
 from idn_cache import readFile
 from idn_config import Config
@@ -44,13 +44,14 @@ class ProjectExplorerFileEvent(wx.PyCommandEvent):
 class ProjectExplorer(CT.CustomTreeCtrl):
     FILE, DIRECTORY_OPEN, DIRECTORY_CLOSED = range(3)
     INTERVAL = 1
-    def __init__(self, parent):
-        style = wx.TR_MULTIPLE | wx.DIRCTRL_3D_INTERNAL | wx.TR_HAS_BUTTONS
 
+    def __init__(self, parent, project):
+        style = wx.TR_MULTIPLE | wx.DIRCTRL_3D_INTERNAL | wx.TR_HAS_BUTTONS
         CT.CustomTreeCtrl.__init__(self, parent, agwStyle = style)
 
+        self.project = project
         self.root = None
-        self.mask = self.DefaultMask()
+        self.mask = self.DefaultMask() + project.GetMask()
         self.excludeDirs = self.DefaultExcludeDirs()
         self.excludePaths = self.DefaultExcludePaths()
         self.hiddenPaths = set()
@@ -125,13 +126,22 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         self.SortChildren(rootNode)
         self.Expand(rootNode)
 
-    def SetMask(self, mask):
-        self.mask = mask
+    def UpdateMask(self):
         self.DeleteAllItems()
         self.SetRoot(self.root)
 
     def AddMask(self, mask):
-        self.SetMask(self.mask + mask)
+        if not mask in self.mask:
+            self.mask.append(mask)
+            self.UpdateMask()
+
+    def RemoveMask(self, mask):
+        if mask in self.mask:
+            self.mask.remove(mask)
+            self.UpdateMask()
+
+    def GetCustomMask(self):
+        return [m for m in self.mask if m not in self.DefaultMask()]
 
     def SetHiddenList(self, list):
         self.hiddenPaths = list
@@ -274,6 +284,7 @@ class ProjectExplorer(CT.CustomTreeCtrl):
                 menu.AppendCheckMenuItem("Hide", self, self.OnMenuHide,
                     self.GetPyData(self.popupItemId) in self.hiddenPaths)
             if self.popupItemId == self.GetRootItem():
+                menu.AppendMenuItem("Setup masks", self, self.OnMenuSetupMasks)
                 menu.AppendCheckMenuItem("Show hidden", self, self.OnMenuShowHide, self.showHidden)
             if extension(self.GetPyData(self.popupItemId)) in [".bat", ".exe", ".cmd"]:
                 menu.AppendSeparator()
@@ -315,7 +326,7 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         for out in pp.stdout:
             Log(out)
         Log("=======")
-        #os.system()
+
     def GetIdByPath(self, path):
         if os.path.isdir(path):
             return self.FindItemByPath(path)
@@ -365,6 +376,11 @@ class ProjectExplorer(CT.CustomTreeCtrl):
                     self.AppendFile(id, path)
                     #print "file"
                 self.SortChildren(id)
+
+    def OnMenuSetupMasks(self, event):
+        dlg = MaskEditor(self)
+        dlg.ShowModal()
+        dlg.Destroy()
 
     def DeleteItemByPath(self, path):
         if os.path.isfile(path):
@@ -431,6 +447,7 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         else:
             result = 0
         return result
+
 class PythonProjectExplorer(ProjectExplorer):
     def FillNewSubMenu(self, newMenu):
         newMenu.AppendMenuItem("New File", self, self.OnMenuNewFile)
@@ -474,3 +491,34 @@ class ErlangProjectExplorer(ProjectExplorer):
         data = data.replace("[username]", Config.GetProp("user_name"))
         data = data.replace("[date]", time.strftime("%d.%m.%Y"))
         return data
+
+class MaskEditor(wx.Dialog):
+    def __init__(self, parent):
+        wx.Dialog.__init__(self, parent)
+        self.explorer = parent
+        self.sizer = wx.BoxSizer()
+        buttonSizer = wx.BoxSizer(wx.VERTICAL)
+        self.list = wx.ListBox(self, pos = (10, 10), size = (100, 400),
+            choices = self.explorer.mask, style = wx.LB_SINGLE)
+        buttonAdd = CreateButton(self, "Add", self.OnAddMask)
+        buttonRemove = CreateButton(self, "Remove", self.OnRemoveMask)
+        buttonSizer.Add(buttonAdd)
+        buttonSizer.Add(buttonRemove)
+        self.sizer.Add(self.list)
+        self.sizer.AddSizer(buttonSizer)
+        self.SetSizer(self.sizer)
+        self.Layout()
+
+    def OnAddMask(self, event):
+        dlg = wx.TextEntryDialog(self, 'Mask:', 'Add Mask',
+                    style = wx.OK | wx.CANCEL)
+        dlg.SetValue("")
+        if dlg.ShowModal() == wx.ID_OK:
+            self.explorer.AddMask(dlg.Value)
+            self.list.SetItems(self.explorer.mask)
+        dlg.Destroy()
+
+    def OnRemoveMask(self, event):
+        if self.list.Selection != wx.NOT_FOUND:
+            self.explorer.RemoveMask(self.list.GetString(self.list.Selection))
+            self.list.SetItems(self.explorer.mask)

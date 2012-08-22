@@ -26,6 +26,7 @@ class Project:
 
     CONFIG_LAST_OPENED_FILES = "last_opened_files"
     CONFIG_HIDDEN_PATHS = "hidden_paths"
+    CONFIG_MASK = "mask"
 
     def __init__(self, window, filePath, projectData):
         self.window = window
@@ -81,12 +82,17 @@ class Project:
         raise NotImplementedError
 
     def CreateExplorer(self):
-        self.explorer = self.EXPLORER_TYPE(self.window)
+        self.explorer = self.EXPLORER_TYPE(self.window, self)
         self.explorer.SetRoot(self.projectDir)
         self.explorer.SetHiddenList(self.HiddenPathsList())
         self.window.WinMgr.AddPane1(self.explorer, aui.AuiPaneInfo().Left().Caption("Project Explorer")
             .MinimizeButton().CloseButton(False).BestSize2(300, 600))
         self.window.WinMgr.Update()
+
+    def GetMask(self):
+        if self.CONFIG_MASK in self.userData:
+            return self.userData[self.CONFIG_MASK]
+        return []
 
     def Close(self):
         self.explorer.StopTrackingProject()
@@ -100,7 +106,8 @@ class Project:
                 openedFiles.append(path)
         self.userData[self.CONFIG_LAST_OPENED_FILES] = openedFiles
         self.userData[self.CONFIG_HIDDEN_PATHS] = self.explorer.hiddenPaths
-        #print(self.userData[self.CONFIG_LAST_OPENED_FILES])
+        self.userData[self.CONFIG_MASK] = self.explorer.GetCustomMask()
+        print(self.userData[self.CONFIG_MASK])
         #print(self.userData[self.CONFIG_HIDDEN_PATHS])
         yaml.dump(self.userData, open(self.userDataFile, 'w'))
 
