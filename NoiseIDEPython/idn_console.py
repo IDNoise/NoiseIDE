@@ -70,7 +70,7 @@ class ErlangConsole(wx.Panel):
         try:
             self.shell.Stop()
         except Exception, e:
-            print e
+            Log(e)
         finally:
             self.WriteToConsoleOut("\n\nSTOPPED\n\n")
             self.startButton.Enabled = True

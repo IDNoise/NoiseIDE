@@ -263,19 +263,19 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
     def OnSavePointLeft(self, event):
         self.saved = False
         index = GetTabMgr().FindPageIndexByPath(self.filePath)
-        #print index
-        if index > 0:
+        if index >= 0:
             GetTabMgr().SetPageText(index, "* " + self.FileName())
 
     def OnSavePointReached(self, event):
         self.saved = True
         index = GetTabMgr().FindPageIndexByPath(self.filePath)
-        if index > 0:
+        if index >= 0:
             GetTabMgr().SetPageText(index, self.FileName())
         GetProject().CompileFile(self.filePath)
 
     def DoIndent(self):
         prevIndent = self.GetLineIndentation(self.CurrentLine - 1)
+        print "indent", prevIndent, self.GetLineIndentation(self.CurrentLine)
         self.InsertText(self.CurrentPos, " " * prevIndent)
         self.GotoPos(self.GetLineEndPosition(self.CurrentLine))
 
@@ -369,10 +369,11 @@ class ErlangSTC(CustomSTC):
 
         self.navigateTo = None
 
-        self.flyTimer = wx.Timer(self, wx.NewId())
-        self.Bind(wx.EVT_TIMER, self.OnFlyTimer, self.flyTimer)
-        self.flyTimer.Start(300)
-        self.flyCompileHash = None
+        if self.ModuleType() == self.TYPE_MODULE:
+            self.flyTimer = wx.Timer(self, wx.NewId())
+            self.Bind(wx.EVT_TIMER, self.OnFlyTimer, self.flyTimer)
+            self.flyTimer.Start(300)
+            self.flyCompileHash = None
 
         self.lastErrors = []
         self.errorsLines = []
@@ -546,15 +547,9 @@ class ErlangSTC(CustomSTC):
     def OnFlyTimer(self, event):
         if GetProject().IsFlyCompileEnabled() and self.changed:
             currentHash = hash(self.GetText())
-            #print currentHash, self.flyCompileHash
             if currentHash == self.flyCompileHash: return
             self.flyCompileHash = currentHash
-            flyPath = os.path.join(GetMainFrame().cwd, "data", "erlang", "fly",
-                "fly_" + os.path.basename(self.filePath))
-            f = open(flyPath, 'w')
-            f.write(self.GetText())
-            f.close()
-            GetProject().shellConsole.shell.CompileFileFly(self.filePath, flyPath)
+            GetProject().CompileFileFly(os.path.basename(self.filePath), self.filePath, self.GetText())
 
     def HighlightErrors(self, errors):
         self.MarkerDeleteAll(20)
@@ -719,18 +714,24 @@ class ErlangCompleter(wx.Frame):
         self.ValidateCompleter()
 
     def _RecordHelp(self, record):
-        return "#{} [{}]<br/>Module:{}".format(record.name, ", ".join(record.fields), record.module)
+        return "#{} [<br/>&nbsp;{}<br/>]<br/><br/>{}:{}".format(record.name, ",<br/>&nbsp;".join(record.fields),
+            record.module, record.line)
 
     def _MacrosHelp(self, macros):
-        return "?{} -> {}<br/>Module:{}".format(macros.name, macros.value, macros.module)
+        return "?{} -> {}<br/><br/>{}:{}".format(macros.name, macros.value, macros.module, macros.line)
 
     def _FunctionHelp(self, fun):
         if not fun.docref:
             p = fun.params[:]
+            t = p[:]
             if fun.types and not fun.docref:
                 for i in range(len(p)):
-                    p[i] = p[i] + " :: " + fun.types[i]
-            help = "{}({}) -> {}".format(fun.name, ", ".join(p), fun.result)
+                    t[i] = p[i] + " :: " + fun.types[i]
+            res = [fun.result, ""]
+            if " :: " in fun.result:
+                res = fun.result.split(" :: ")
+                t.append(fun.result)
+            help = "{}({}) -> {}. <br/>Types:<br/>&nbsp;{}".format(fun.name, ", ".join(p), res[0], ",<br/>&nbsp;".join(t))
         else:
             path = os.path.join(ErlangCache.ERLANG_LIBS_CACHE_DIR, fun.docref)
             help = readFile(path)

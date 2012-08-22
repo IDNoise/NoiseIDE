@@ -1,3 +1,4 @@
+from idn_global import Log
 from idn_utils import Timer, extension
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
@@ -38,7 +39,7 @@ class DirectoryInfo:
                         continue
                     self.files[file] = mtime
             except Exception, e:
-                print e
+                Log("Gather dir info error: ", e)
 
 
 class DirectoryInfoDiff:
