@@ -224,6 +224,7 @@ class ErlangProject(Project):
                     editor.saved = False
                     editor.changed = True
         else:
+            print "modified", file
             self.Compile(file)
         event.Skip()
 
@@ -235,6 +236,7 @@ class ErlangProject(Project):
 
     def OnProjectFileDeleted(self, event):
         file = event.File
+        self.AddErrors(file, [])
         self.RemoveUnusedBeams()
         editor = GetTabMgr().FindPageByPath(file)
         page = GetTabMgr().FindPageIndexByPath(file)
@@ -423,6 +425,38 @@ class ErrorsTable(PyGridTableBase):
     def SetValue(self, row, col, value):
         self.data[row][col] = value
 
+    def ResetView(self, grid, currentRows):
+        """
+        (Grid) -> Reset the grid view.   Call this to
+        update the grid if rows and columns have been added or deleted
+        """
+        grid.BeginBatch()
+
+        for current, new, delmsg, addmsg in [
+            (currentRows, self.GetNumberRows(), wx.grid.GRIDTABLE_NOTIFY_ROWS_DELETED, wx.grid.GRIDTABLE_NOTIFY_ROWS_APPENDED)
+        ]:
+
+            if new < current:
+                msg = wx.grid.GridTableMessage(self,delmsg,new,current-new)
+                grid.ProcessTableMessage(msg)
+            elif new > current:
+                msg = wx.grid.GridTableMessage(self,addmsg,new-current)
+                grid.ProcessTableMessage(msg)
+            self.UpdateValues(grid)
+
+        grid.EndBatch()
+
+        # update the scrollbars and the displayed part of the grid
+        grid.AdjustScrollbars()
+        grid.ForceRefresh()
+
+
+    def UpdateValues(self, grid):
+        """Update all displayed values"""
+        # This sends an event to the grid table to update all of the values
+        msg = wx.grid.GridTableMessage(self, wx.grid.GRIDTABLE_REQUEST_VIEW_GET_VALUES)
+        grid.ProcessTableMessage(msg)
+
 class ErrorsTableGrid(wx.grid.Grid):
     def __init__(self, parent):
         wx.grid.Grid.__init__(self, parent, -1)
@@ -451,30 +485,33 @@ class ErrorsTableGrid(wx.grid.Grid):
         file = rowData[0]
         line = rowData[1]
         editor = GetTabMgr().LoadFile(file)
-        editor.GotoLine(line)
+        editor.GotoLine(line - 1)
 
     def AddErrors(self, path, errors):
         #print path, errors
-        current = len(self.table.data)
+        currentRows = len(self.table.data)
 
         data = list(filter(lambda x: x[0] != path, self.table.data))
         for e in errors:
-            data.append((e.path, e.line, e.type, e.msg))
-        data.sort()
+            data.append((e.path, e.line + 1, e.TypeToStr(), e.msg))
+        #data.sort(key = lambda e: e[0])
+        #data.sort(key = lambda e: CompileErrorInfo.StrToType(e[2]), reverse= True)
         #print data
         self.table.data = data
-        new = len(self.table.data)
-        if new < current:
-            msg = wx.grid.GridTableMessage(self.table, wx.grid.GRIDTABLE_NOTIFY_ROWS_DELETED,
-                new, current-new)
-            self.ProcessTableMessage(msg)
-        elif new > current:
-            msg = wx.grid.GridTableMessage(self.table, wx.grid.GRIDTABLE_NOTIFY_ROWS_APPENDED,
-                new - current)
-            self.ProcessTableMessage(msg)
-        msg = wx.grid.GridTableMessage(self.table, wx.grid.GRIDTABLE_REQUEST_VIEW_GET_VALUES)
-        self.ProcessTableMessage(msg)
-        self.ForceRefresh()
+        self.table.ResetView(self, currentRows)
+#        new = len(self.table.data)
+#        if new < current:
+#            msg = wx.grid.GridTableMessage(self.table, wx.grid.GRIDTABLE_NOTIFY_ROWS_DELETED,
+#                new, current-new)
+#            self.ProcessTableMessage(msg)
+#        elif new > current:
+#            msg = wx.grid.GridTableMessage(self.table, wx.grid.GRIDTABLE_NOTIFY_ROWS_APPENDED,
+#                new - current)
+#            self.ProcessTableMessage(msg)
+#        msg = wx.grid.GridTableMessage(self.table, wx.grid.GRIDTABLE_REQUEST_VIEW_GET_VALUES)
+#        self.ProcessTableMessage(msg)
+
+        #self.ForceRefresh()
 
 def loadProject(window, filePath):
     TYPE_PROJECT_DICT = {

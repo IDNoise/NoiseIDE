@@ -7,7 +7,7 @@ import re
 from wx import stc
 import wx.lib.agw.customtreectrl as CT
 from idn_global import GetTabMgr, GetProject, GetToolMgr, Log
-from idn_utils import CreateButton
+from idn_utils import CreateButton, extension, writeFile, readFile
 
 class FindInFileDialog(wx.Dialog):
     def __init__(self, parent):
@@ -189,22 +189,8 @@ class FindInProjectDialog(wx.Dialog):
             return
 
         regexp = self.PrepareRegexp()
-        files = GetProject().explorer.GetAllFiles()
-        for file in sorted(files):
-            try:
-                if file in GetTabMgr().OpenedFiles():
-                    editor = GetTabMgr()[file]
-                    text = editor.GetText()
-                    text = regexp.sub(self.textToReplace, text)
-                    editor.SetText(text)
-                else:
-                    fileText = open(file).read()
-                    fileText = regexp.sub(self.textToReplace, fileText)
-                    with open(file, "w") as f:
-                        f.write(fileText)
-            except Exception, e:
-                Log("replace in project error", e)
-                continue
+        ReplaceInProject(regexp, self.textToReplace)
+
 
     def PrepareRegexp(self):
         wholeWords = self.wholeWordsCb.Value
@@ -216,7 +202,7 @@ class FindInProjectDialog(wx.Dialog):
         if not useRegexp:
             pattern = re.escape(pattern)
         if wholeWords:
-            pattern = "\b" + pattern + "\b"
+            pattern = r"\b" + pattern + r"\b"
         if not matchCase:
             flags |= re.IGNORECASE
         #print "search", pattern
@@ -235,6 +221,30 @@ class FindInProjectDialog(wx.Dialog):
             self.Close()
         else:
             event.Skip()
+
+def ReplaceInProject(regexp, replacement, mask = None):
+    files = GetProject().explorer.GetAllFiles()
+    for file in sorted(files):
+        if mask and extension(file) not in mask:
+            continue
+        ReplaceInFile(file, regexp, replacement)
+
+def ReplaceInFile(file, regexp, replacement):
+    try:
+        if file in GetTabMgr().OpenedFiles():
+            editor = GetTabMgr().FindPageByPath(file)
+            text = editor.GetText()
+            if regexp.search(text):
+                text = regexp.sub(replacement, text)
+                editor.SetText(text)
+                editor.Save()
+        else:
+            fileText = readFile(file)
+            if regexp.search(fileText):
+                fileText = regexp.sub(replacement, fileText)
+                writeFile(file, fileText)
+    except Exception, e:
+        Log("replace in project error: '", file, e)
 
 class ErrorsTree(CT.CustomTreeCtrl):
     def __init__(self, parent):

@@ -74,9 +74,13 @@ compile_internal(FileName, Options, ToBinary, RealPath) ->
              end,
     Errs = 
         [[begin
-              {Line, M, Error} = Er,
-              Msg = iolist_to_binary(M:format_error(Error)),
-              [{type, error}, {line, Line}, {msg, Msg}]
+            case Er of
+                {compile,{module_name, MName, FName}} ->
+                    [{type, error}, {line, 2}, {msg, iolist_to_binary("Module in file '" ++ FName ++ "' has wrong name: '" ++ atom_to_list(MName) ++ "'.")}];
+                {Line, M, Error}  ->
+                  Msg = iolist_to_binary(M:format_error(Error)),
+                  [{type, error}, {line, Line}, {msg, Msg}]
+            end
           end || Er <- Err] 
          || {_File, Err} <- E], 
     Warns = 

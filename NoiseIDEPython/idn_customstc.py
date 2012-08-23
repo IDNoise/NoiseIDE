@@ -242,14 +242,17 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
             self.SetSelectionStart(self.PositionFromLine(startLine + offset))
             self.SetSelectionEnd(self.GetLineEndPosition(endLine + offset))
         elif keyCode == ord('S') and event.ControlDown():
-            self.SaveFile(self.filePath)
-            self.Changed(False)
-            self.OnFileSaved()
+            self.Save()
         elif keyCode == wx.WXK_SPACE and event.ControlDown():
             self.OnAutoComplete()
         else:
             return False
         return True
+
+    def Save(self):
+        self.SaveFile(self.filePath)
+        self.Changed(False)
+        self.OnFileSaved()
 
     def OnAutoComplete(self):
         pass
@@ -262,21 +265,28 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
 
     def OnSavePointLeft(self, event):
         self.saved = False
-        index = GetTabMgr().FindPageIndexByPath(self.filePath)
-        if index >= 0:
-            GetTabMgr().SetPageText(index, "* " + self.FileName())
+        self.UpdateTabTitle()
 
     def OnSavePointReached(self, event):
         self.saved = True
-        index = GetTabMgr().FindPageIndexByPath(self.filePath)
-        if index >= 0:
-            GetTabMgr().SetPageText(index, self.FileName())
+        self.UpdateTabTitle()
 
     def DoIndent(self):
         indent = self.GetLineIndentation(self.CurrentLine - 1)
         self.InsertText(self.CurrentPos, " " * indent)
         pos = self.PositionFromLine(self.CurrentLine)
         self.GotoPos(pos + indent)
+
+    def UpdateTabTitle(self):
+        index = GetTabMgr().FindPageIndexByPath(self.filePath)
+        if index >= 0:
+            if self.saved:
+                title = self.FileName()
+            else:
+                title = "* " + self.FileName()
+            GetTabMgr().SetPageText(index, title)
+
+
 
     def FileName(self):
         return os.path.basename(self.filePath)
@@ -552,7 +562,10 @@ class ErlangSTC(CustomSTC):
             currentHash = hash(self.GetText())
             if currentHash == self.flyCompileHash: return
             self.flyCompileHash = currentHash
-            GetProject().CompileFileFly(os.path.basename(self.filePath), self.filePath, self.GetText())
+            self.CompileFly()
+
+    def CompileFly(self):
+        GetProject().CompileFileFly(os.path.basename(self.filePath), self.filePath, self.GetText())
 
     def HighlightErrors(self, errors):
         self.MarkerDeleteAll(20)

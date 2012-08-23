@@ -1,6 +1,7 @@
 from wx._aui import AUI_BUTTON_CLOSE, wxEVT_COMMAND_AUINOTEBOOK_PAGE_CLOSED
 from wx.aui import wxEVT_COMMAND_AUINOTEBOOK_TAB_MIDDLE_UP, AuiNotebookEvent, AUI_NB_MIDDLE_CLICK_CLOSE
 from idn_colorschema import ColorSchema
+from idn_global import GetProject
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
@@ -89,7 +90,12 @@ class EditorNotebook(aui.AuiNotebook):
             while self.GetPageCount() > 0:
                 self.ClosePage(0)
 
+        def renameFile(event):
+            GetProject().explorer.Rename(editor.filePath)
+
         menu = Menu()
+        menu.AppendMenuItem("Rename", self, renameFile)
+        menu.AppendSeparator()
         menu.AppendMenuItem("Close this tab", self, closeCurrent)
         menu.AppendMenuItem("Close other tabs", self, closeOther)
         menu.AppendMenuItem("Close all tabs", self, closeAll)

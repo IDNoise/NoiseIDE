@@ -100,11 +100,21 @@ class ErlangSocketConnection(asyncore.dispatcher):
 class CompileErrorInfo:
     WARNING, ERROR = (0, 1)
     def __init__(self, path, type, line, msg):
-        self.type = self.WARNING if type == "warning" else self.ERROR
+        self.type = self.StrToType(type)
         self.msg = msg
         self.line = line - 1
         self.path = path
         #print type, line, msg
+
+    def TypeToStr(self):
+        if self.type == self.WARNING:
+            return "Warning"
+        else:
+            return "Error"
+
+    @classmethod
+    def StrToType(cls, str):
+        return cls.WARNING if str == "warning" else cls.ERROR
 
 class ErlangIDEConnectAPI(ErlangSocketConnection):
     TASK_COMPILE, TASK_GEN_FILE_CACHE, TASK_GEN_ERLANG_CACHE = range(3)
@@ -226,6 +236,11 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
             if time.time() - self.lastTaskTime > 7 and len(self.tasks) > 0:
                 Log("####\n 7 seconds from last task done. Tasks left ", len(self.tasks))
                 Log("\n\t".join([str(t) for t in self.tasks]))
+            if time.time() - self.lastTaskTime > 15 and len(self.tasks) > 0:
+                Log("####\n 15 seconds from last task done. Tasks left ", len(self.tasks))
+                Log("\n\t".join([str(t) for t in self.tasks]))
+                self.progressDialog.Destroy()
+                self.progressDialog = None
 
 class ErlangProcess(Process):
     def __init__(self, cwd = os.getcwd(), params = []):

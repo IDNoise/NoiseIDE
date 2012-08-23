@@ -154,7 +154,8 @@ class ErlangCache:
             cls.modules.add(name)
 
         cls.moduleData[name] = ModuleData(name, data)
-        Log("Cache:", file)
+        #Log("Cache:", file)
+
     @classmethod
     def UnloadFile(cls, file):
         if not os.path.isfile(file): return

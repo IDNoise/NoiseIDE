@@ -1,3 +1,5 @@
+import re
+from idn_findreplace import ReplaceInProject, ReplaceInFile
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
@@ -197,11 +199,12 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         self.dirChecker.Stop()
 
     def FileCreated(self, file):
-        id = self.FindItemByPath(file)
-        if self.AppendFile(id, file):
+        e = ProjectExplorerFileEvent(wxEVT_PROJECT_FILE_CREATED , self.GetId(), file)
+        self.GetEventHandler().ProcessEvent(e)
+        id = self.FindItemByPath(os.path.dirname(file))
+        if id and self.AppendFile(id, file):
             self.SortChildren(id)
-            e = ProjectExplorerFileEvent(wxEVT_PROJECT_FILE_CREATED , self.GetId(), file)
-            self.GetEventHandler().ProcessEvent(e)
+
 
     def FileModified(self, file):
         if self.mask and extension(file) not in self.mask: return
@@ -210,28 +213,31 @@ class ProjectExplorer(CT.CustomTreeCtrl):
 
     def FileDeleted(self, file):
         if self.mask and extension(file) not in self.mask: return
-        id = self.GetIdByPath(file)
         e = ProjectExplorerFileEvent(wxEVT_PROJECT_FILE_DELETED , self.GetId(), file)
         self.GetEventHandler().ProcessEvent(e)
-        self.Delete(id)
+        id = self.FindItemByPath(file)
+        if id:
+            self.Delete(id)
 
     def DirCreated(self, dir):
-        id = self.FindItemByPath(os.path.dirname(dir))
-        self.AppendDir(id, dir)
-        self.SortChildren(id)
-
         e = ProjectExplorerFileEvent(wxEVT_PROJECT_DIR_CREATED, self.GetId(), dir)
         self.GetEventHandler().ProcessEvent(e)
+        id = self.FindItemByPath(os.path.dirname(dir))
+        if id:
+            self.AppendDir(id, dir)
+            self.SortChildren(id)
+
+
 
     def DirModified(self, dir):
         e = ProjectExplorerFileEvent(wxEVT_PROJECT_DIR_MODIFIED, self.GetId(), dir)
         self.GetEventHandler().ProcessEvent(e)
 
     def DirDeleted(self, dir):
+        e = ProjectExplorerFileEvent(wxEVT_PROJECT_DIR_DELETED , self.GetId(), dir)
+        self.GetEventHandler().ProcessEvent(e)
         id = self.FindItemByPath(dir)
-        if self.GetPyData(id) == dir:
-            e = ProjectExplorerFileEvent(wxEVT_PROJECT_DIR_DELETED , self.GetId(), dir)
-            self.GetEventHandler().ProcessEvent(e)
+        if id:
             self.Delete(id)
 
     def FindItemByPath(self, path):
@@ -243,7 +249,9 @@ class ProjectExplorer(CT.CustomTreeCtrl):
                 if self.GetPyData(c).endswith(item):
                     id = c
                     break
-        return id
+        if self.GetPyData(id) == path:
+            return id
+        return None
 
     def GetItemChildren(self, item):
         child, cookie = self.GetFirstChild(item)
@@ -255,8 +263,6 @@ class ProjectExplorer(CT.CustomTreeCtrl):
 
     def SplitOnItemsFromRoot(self, path):
         items = []
-        if os.path.isfile(path):
-            path = os.path.dirname(path)
         while path != self.root:
             (path, folder) = os.path.split(path)
             items.append(folder)
@@ -279,6 +285,8 @@ class ProjectExplorer(CT.CustomTreeCtrl):
                 self.FillNewSubMenu(newMenu)
                 menu.AppendMenu(wx.NewId(), "New", newMenu)
             if self.popupItemId != self.GetRootItem():
+                menu.AppendMenuItem("Rename", self, self.OnMenuRename)
+                menu.AppendSeparator()
                 menu.AppendMenuItem("Delete", self, self.OnMenuDelete)
                 menu.AppendSeparator()
                 menu.AppendCheckMenuItem("Hide", self, self.OnMenuHide,
@@ -326,13 +334,6 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         for out in pp.stdout:
             Log(out)
         Log("=======")
-
-    def GetIdByPath(self, path):
-        if os.path.isdir(path):
-            return self.FindItemByPath(path)
-        else:
-            parentId = self.FindItemByPath(path)
-            return self.FindItem(parentId, os.path.basename(path))
 
     def OnMenuHide(self, event):
         if self.GetPyData(self.popupItemIds[0]) in self.hiddenPaths:
@@ -382,13 +383,58 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         dlg.ShowModal()
         dlg.Destroy()
 
-    def DeleteItemByPath(self, path):
+    def OnMenuRename(self, event):
+        path = self.GetPyData(self.popupItemId)
+        self.Rename(path)
+
+    def Rename(self, path):
         if os.path.isfile(path):
-            parentId = self.FindItemByPath(path)
-            id = self.FindItem(parentId, os.path.basename(path))
+            what = "file"
         else:
-            id = self.FindItemByPath(path)
-        if self.GetPyData(id) == path:
+            what = "dir"
+        title = 'New ' + what + ' name:'
+        dlg = wx.TextEntryDialog(self, title + ':', title,
+            style = wx.OK | wx.CANCEL)
+        dlg.SetValue(os.path.basename(path))
+        if dlg.ShowModal() == wx.ID_OK:
+            newPath = os.path.join(os.path.dirname(path), dlg.Value)
+
+            def updateEditor(old, new):
+                page = GetTabMgr().FindPageIndexByPath(old)
+                editor = GetTabMgr()[page]
+                editor.filePath = new
+                editor.UpdateTabTitle()
+
+            if os.path.isfile(path):
+                if path in GetTabMgr().OpenedFiles():
+                    if path.endswith(".erl"):
+                        (oldModuleName, ext) = os.path.splitext(os.path.basename(path))
+                        (newModuleName, ext) = os.path.splitext(os.path.basename(newPath))
+                        self.ReplaceOccurencesInProject(path, oldModuleName, newModuleName)
+
+                    updateEditor(path, newPath)
+
+            if os.path.isdir(path):
+                for oPath in GetTabMgr().OpenedFiles():
+                    if oPath.startswith(path):
+                        oNewPath = oPath.replace(path, newPath)
+                        updateEditor(oPath, oNewPath)
+
+            os.rename(path, newPath)
+
+        dlg.Destroy()
+
+    def ReplaceOccurencesInProject(self, path, oldModuleName, newModuleName):
+        what = "-module\(" + oldModuleName + "\)"
+        on = "-module(" + newModuleName + ")"
+        ReplaceInFile(path, re.compile(what, re.MULTILINE | re.DOTALL), on)
+        what = r"\b" + oldModuleName + ":"
+        on = newModuleName + ":"
+        ReplaceInProject(re.compile(what, re.MULTILINE | re.DOTALL), on, [".erl", ".hrl"])
+
+    def DeleteItemByPath(self, path):
+        id = self.FindItemByPath(path)
+        if id:
             self.Delete(id)
             return True
         return False
@@ -402,8 +448,14 @@ class ProjectExplorer(CT.CustomTreeCtrl):
 
 
     def GetAllFiles(self):
-        id = self.GetRootItem()
-        return self._GetFiles(id)
+        result = []
+        for root, dirs, files in os.walk(self.root):
+            for file in files:
+                fileName = os.path.join(root, file)
+                if self.mask and extension(fileName) not in self.mask:
+                    continue
+                result.append(fileName)
+        return result
 
     def _GetFiles(self, item):
         #self.SelectAll()
