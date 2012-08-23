@@ -107,7 +107,7 @@ class Project:
         self.userData[self.CONFIG_LAST_OPENED_FILES] = openedFiles
         self.userData[self.CONFIG_HIDDEN_PATHS] = self.explorer.hiddenPaths
         self.userData[self.CONFIG_MASK] = self.explorer.GetCustomMask()
-        print(self.userData[self.CONFIG_MASK])
+        #print(self.userData[self.CONFIG_MASK])
         #print(self.userData[self.CONFIG_HIDDEN_PATHS])
         yaml.dump(self.userData, open(self.userDataFile, 'w'))
 
@@ -237,21 +237,24 @@ class ErlangProject(Project):
         file = event.File
         self.RemoveUnusedBeams()
         editor = GetTabMgr().FindPageByPath(file)
+        page = GetTabMgr().FindPageIndexByPath(file)
 
         if editor:
-            wx.MessageBox(('File "{}" was deleted.\nYour copy remains in opened tabs.' +
-                          '\nYou can close it or save to disk again.').format(file),
-                'File deleted')
-            editor.OnSavePointLeft(None)
-            editor.Changed()
-           # dial = wx.MessageDialog(None,
-           #     'File "{}" was deleted.\nDo you want to close tab with deleted document?',
-            #    ,
-            #    wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
-            #result = dial.ShowModal()
-            #if result == wx.ID_YES:
-            #    GetTabMgr()[page].changed = True
-            #????
+            #wx.MessageBox(('File "{}" was deleted.\nYour copy remains in opened tabs.' +
+            #              '\nYou can close it or save to disk again.').format(file),
+            #    'File deleted')
+            #editor.OnSavePointLeft(None)
+            #editor.Changed()
+            dial = wx.MessageDialog(None,
+                'File "{}" was deleted.\nDo you want to close tab with deleted document?'.format(file),
+                "File deleted",
+                wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
+            result = dial.ShowModal()
+            if result == wx.ID_YES:
+                wx.CallAfter(GetTabMgr().ClosePage, page)
+            else:
+                editor.OnSavePointLeft(None)
+                editor.Changed()
         event.Skip()
 
     def OnProjectFileCreated(self, event):

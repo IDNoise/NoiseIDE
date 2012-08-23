@@ -1,5 +1,6 @@
 user_name: "Yaroslav 'IDNoise' Nikityshev"
 flymake: true
 color_schema: dark
+last_project: "D:\\Projects\\GIJoe\\server\\gijoe.noiseide.project"
 languages:
   erlang: 'C:\\Programming\\erl5.9\\bin\\erl'

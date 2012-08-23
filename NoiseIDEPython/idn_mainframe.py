@@ -36,19 +36,15 @@ class NoiseIDE(wx.Frame):
         self.WinMgr = Manager(self, agwFlags = agwFlags )
 
 
-        agwStyle = aui.AUI_NB_DEFAULT_STYLE | \
-                   aui.AUI_NB_CLOSE_ON_ALL_TABS | \
-                   aui.AUI_NB_SMART_TABS | \
-                   aui.AUI_NB_TAB_FLOAT | \
-                   aui.AUI_NB_WINDOWLIST_BUTTON
-        self.TabMgr = EditorNotebook(self, agwStyle = agwStyle)
+
+        self.TabMgr = EditorNotebook(self)
+        self.TabMgr.SetArtProvider(aui.ChromeTabArt())
 
         self.WinMgr.AddPane1(self.TabMgr, aui.AuiPaneInfo().Center()#.Caption("Code Editor")
             .MaximizeButton().MinimizeButton().CaptionVisible(False)
             .CloseButton(False).Floatable(False))
 
-        agwStyle = aui.AUI_NB_DEFAULT_STYLE ^ aui.AUI_NB_CLOSE_ON_ACTIVE_TAB
-        self.ToolMgr = Notebook(self, agwStyle = agwStyle)
+        self.ToolMgr = Notebook(self)
         self.WinMgr.AddPane1(self.ToolMgr, aui.AuiPaneInfo().Bottom()#.Caption("Tools")
             .MaximizeButton().MinimizeButton().CloseButton(False).Floatable(False).BestSize(400, 300))
 

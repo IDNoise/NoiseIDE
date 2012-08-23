@@ -561,6 +561,7 @@ class ErlangSTC(CustomSTC):
         self.errorsLines = map(lambda x: x.line, errors)
         wMarkers = []
         eMarkers = []
+        errors = sorted(errors, key = lambda e: e.type)
         for e in errors:
             if e.type == CompileErrorInfo.WARNING:
                 wMarkers.append(Marker(e.line, e.msg))
@@ -568,6 +569,7 @@ class ErlangSTC(CustomSTC):
             else:
                 eMarkers.append(Marker(e.line, e.msg))
                 indic = self.MARKER_ERROR
+                self.MarkerDelete(e.line, self.MARKER_WARNING)
             self.MarkerAdd(e.line, indic)
         self.markerPanel.SetMarkers("warning", wMarkers)
         self.markerPanel.SetMarkers("error", eMarkers)

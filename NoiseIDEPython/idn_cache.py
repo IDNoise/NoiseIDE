@@ -140,7 +140,7 @@ class ErlangCache:
             except Exception, e:
                 Log("error ", e, "on get long path name for ", data[FILE])
         file = data[FILE]
-        Log("loading cache for", file)
+        #Log("loading cache for", file)
         if (name in cls.modules and name in cls.moduleData and
             cls.moduleData[name].file.lower().startswith(cls.erlangDir) and
             file != cls.moduleData[name].file):
@@ -154,7 +154,7 @@ class ErlangCache:
             cls.modules.add(name)
 
         cls.moduleData[name] = ModuleData(name, data)
-        Log("loading cache for", file, "done")
+        Log("Cache:", file)
     @classmethod
     def UnloadFile(cls, file):
         if not os.path.isfile(file): return

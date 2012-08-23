@@ -6,7 +6,7 @@ __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 import os
 from wx.lib.agw import aui
-from idn_utils import extension
+from idn_utils import extension, Menu
 from idn_customstc import CustomSTC, ErlangSTC, YAMLSTC, PythonSTC, MarkerPanel
 import wx
 
@@ -25,6 +25,10 @@ def GetSTCTypeByExt(file):
         return CustomSTC
 
 class Notebook(aui.AuiNotebook):
+    def __init__(self, parent):
+        agwStyle = aui.AUI_NB_DEFAULT_STYLE ^ aui.AUI_NB_CLOSE_ON_ACTIVE_TAB
+        aui.AuiNotebook.__init__(self, parent, agwStyle = agwStyle)
+
     def __getitem__(self, index):
         if index < self.GetPageCount():
             return self.GetPage(index)
@@ -59,6 +63,39 @@ class Notebook(aui.AuiNotebook):
         return self[currentPage]
 
 class EditorNotebook(aui.AuiNotebook):
+    def __init__(self, parent):
+        agwStyle = aui.AUI_NB_DEFAULT_STYLE |\
+                   aui.AUI_NB_CLOSE_ON_ALL_TABS |\
+                   aui.AUI_NB_SMART_TABS |\
+                   aui.AUI_NB_TAB_FLOAT |\
+                   aui.AUI_NB_WINDOWLIST_BUTTON
+        aui.AuiNotebook.__init__(self, parent, agwStyle = agwStyle)
+        self.Bind(aui.EVT_AUINOTEBOOK_TAB_RIGHT_UP, self.OnTabRightUp)
+
+    def OnTabRightUp(self, event):
+        page = event.GetSelection()
+        editor = self[page]
+        def closeCurrent(event):
+            self.ClosePage(page)
+
+        def closeOther(event):
+            i = 0
+            while self.GetPageCount() > 1:
+                if self[i] == editor:
+                    i += 1
+                self.ClosePage(i)
+
+        def closeAll(event):
+            while self.GetPageCount() > 0:
+                self.ClosePage(0)
+
+        menu = Menu()
+        menu.AppendMenuItem("Close this tab", self, closeCurrent)
+        menu.AppendMenuItem("Close other tabs", self, closeOther)
+        menu.AppendMenuItem("Close all tabs", self, closeAll)
+        self.PopupMenu(menu)
+
+
     def __getitem__(self, index):
         if index < self.GetPageCount():
             return self.GetPage(index).editor
@@ -101,6 +138,19 @@ class EditorNotebook(aui.AuiNotebook):
             if page.filePath.lower() == file.lower():
                 return page
         return None
+
+    def ClosePage(self, page):
+        tabControl = None
+        for tabControl in self.GetChildren():
+            if isinstance(tabControl, aui.AuiTabCtrl):
+                break
+
+        event = wx.aui.AuiNotebookEvent(wx.aui.EVT_AUINOTEBOOK_PAGE_CLOSE.typeId, tabControl.Id)
+        event.SetOldSelection(-1)
+        event.SetSelection(page)
+        event.SetEventObject(tabControl)
+        event.SetInt(aui.AUI_BUTTON_CLOSE)
+        self.OnTabButton(event)
 
 
 class EditorPanel(wx.Panel):

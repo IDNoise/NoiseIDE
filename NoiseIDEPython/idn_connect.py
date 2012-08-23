@@ -98,7 +98,7 @@ class ErlangSocketConnection(asyncore.dispatcher):
         pass
 
 class CompileErrorInfo:
-    WARNING, ERROR = ("Warning", "Error")
+    WARNING, ERROR = (0, 1)
     def __init__(self, path, type, line, msg):
         self.type = self.WARNING if type == "warning" else self.ERROR
         self.msg = msg
