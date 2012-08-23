@@ -271,7 +271,6 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         index = GetTabMgr().FindPageIndexByPath(self.filePath)
         if index >= 0:
             GetTabMgr().SetPageText(index, self.FileName())
-        GetProject().CompileFile(self.filePath)
 
     def DoIndent(self):
         indent = self.GetLineIndentation(self.CurrentLine - 1)
