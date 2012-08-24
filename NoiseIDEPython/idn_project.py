@@ -219,7 +219,7 @@ class ErlangProject(Project):
                     'File "{}" was modified.\nDo you want to reload document?'.format(file),
                     'File modified',
                     wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
-                if dial.ShowModal() == wx.YES:
+                if dial.ShowModal() == wx.ID_YES:
                     editor.LoadFile(editor.filePath)
                     editor.saved = False
                     editor.changed = True

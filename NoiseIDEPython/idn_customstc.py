@@ -615,7 +615,7 @@ class ErlangSTC(CustomSTC):
         self.GotoPos(pos + indent)
 
 class ErlangCompleter(wx.Frame):
-    SIZE = (820, 500)
+    SIZE = (820, 350)
     LIST_SIZE = (320, 150)
 
     def __init__(self, stc):
@@ -756,7 +756,7 @@ class ErlangCompleter(wx.Frame):
         self.ValidateCompleter()
 
     def _RecordHelp(self, record):
-        return "#{} [<br/>&nbsp;{}<br/>]<br/><br/>{}:{}".format(record.name, ",<br/>&nbsp;".join(record.fields),
+        return "#{} [<br/>&nbsp;&nbsp;&nbsp;{}<br/>]<br/><br/>{}:{}".format(record.name, ",<br/>&nbsp;&nbsp;&nbsp;".join(record.fields),
             record.module, record.line)
 
     def _MacrosHelp(self, macros):
@@ -773,7 +773,7 @@ class ErlangCompleter(wx.Frame):
             if " :: " in fun.result:
                 res = fun.result.split(" :: ")
                 t.append(fun.result)
-            help = "{}({}) -> {}. <br/>Types:<br/>&nbsp;{}".format(fun.name, ", ".join(p), res[0], ",<br/>&nbsp;".join(t))
+            help = "{}({}) -> {}. <br/>Types:<br/>&nbsp;&nbsp;{}".format(fun.name, ", ".join(p), res[0], ",<br/>&nbsp;&nbsp;".join(t))
         else:
             path = os.path.join(ErlangCache.ERLANG_LIBS_CACHE_DIR, fun.docref)
             help = readFile(path)

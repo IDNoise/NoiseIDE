@@ -60,10 +60,19 @@ class NoiseIDE(wx.Frame):
 
         self.WinMgr.Update()
 
-
+        wx.CallAfter(self.TryLoadLastProject)
         #self.OpenProject("D:\\Projects\\GIJoe\\server\\gijoe.noiseide.project")
         #self.OpenProject("D:\\Projects\\Joe\\server\\gijoe.noiseide.project")
 
+    def TryLoadLastProject(self):
+        lastProject = Config.GetProp("last_project")
+        if lastProject and os.path.isfile(lastProject):
+            dial = wx.MessageDialog(None,
+                'Do you want to open last project {}?'.format(os.path.basename(lastProject)),
+                'Last project',
+                wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
+            if dial.ShowModal() == wx.ID_YES:
+                self.OpenProject(lastProject)
 
     def SetupMenu(self):
         self.menubar = wx.MenuBar()
@@ -106,11 +115,13 @@ class NoiseIDE(wx.Frame):
         dialog.Destroy()
 
     def OpenProject(self, projectFile):
+        Config.SetProp("last_project", projectFile)
         loadProject(self, projectFile)
 
     def OnClose(self, event):
         if self.project:
             self.project.Close()
+        Config.save()
         event.Skip()
 
     def OnQuit(self, event):

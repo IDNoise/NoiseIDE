@@ -2,16 +2,11 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="d654c747-d601-49bc-80fe-ab63471b2f11" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/data/erlang/modules/eide_compiler.beam" afterPath="$PROJECT_DIR$/data/erlang/modules/eide_compiler.beam" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/data/erlang/modules/eide_compiler.erl" afterPath="$PROJECT_DIR$/data/erlang/modules/eide_compiler.erl" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_cache.py" afterPath="$PROJECT_DIR$/idn_cache.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_connect.py" afterPath="$PROJECT_DIR$/idn_connect.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_config.py" afterPath="$PROJECT_DIR$/idn_config.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_customstc.py" afterPath="$PROJECT_DIR$/idn_customstc.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_findreplace.py" afterPath="$PROJECT_DIR$/idn_findreplace.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_notebook.py" afterPath="$PROJECT_DIR$/idn_notebook.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_mainframe.py" afterPath="$PROJECT_DIR$/idn_mainframe.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_project.py" afterPath="$PROJECT_DIR$/idn_project.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_projectexplorer.py" afterPath="$PROJECT_DIR$/idn_projectexplorer.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/noiseide.yaml" afterPath="$PROJECT_DIR$/noiseide.yaml" />
     </list>
     <ignored path="NoiseIDE.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -33,48 +28,39 @@
   </component>
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="idn_projectexplorer.py" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/idn_projectexplorer.py">
+      <file leaf-file-name="idn_findreplace.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/idn_findreplace.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="424" column="21" selection-start="15886" selection-end="15886" vertical-scroll-proportion="0.0">
+            <state line="265" column="36" selection-start="11096" selection-end="11096" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="idn_mainframe.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/idn_mainframe.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="118" column="38" selection-start="4309" selection-end="4309" vertical-scroll-proportion="0.0">
               <folding>
-                <element signature="e#0#9#0" expanded="true" />
+                <element signature="e#0#44#0" expanded="true" />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="idn_findreplace.py" pinned="false" current="true" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/idn_findreplace.py">
+      <file leaf-file-name="noiseide.yaml" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/noiseide.yaml">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="293" column="26" selection-start="12492" selection-end="12492" vertical-scroll-proportion="0.6130501">
+            <state line="0" column="18" selection-start="18" selection-end="18" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="idn_token.py" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/idn_token.py">
+      <file leaf-file-name="idn_config.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/idn_config.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="22" column="21" selection-start="520" selection-end="520" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="idn_utils.py" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/idn_utils.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="19" column="4" selection-start="275" selection-end="275" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="re.py" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://C:/Programming/Python27/Lib/re.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="187" column="4" selection-start="8882" selection-end="8882" vertical-scroll-proportion="0.0">
+            <state line="17" column="12" selection-start="388" selection-end="392" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -93,9 +79,7 @@
         <entry file="file://$PROJECT_DIR$/idn_cache.py">
           <provider selected="true" editor-type-id="text-editor">
             <state line="148" column="18" selection-start="4812" selection-end="4812" vertical-scroll-proportion="0.0">
-              <folding>
-                <element signature="e#0#9#0" expanded="true" />
-              </folding>
+              <folding />
             </state>
           </provider>
         </entry>
@@ -109,10 +93,10 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="idn_customstc.py" pinned="false" current="false" current-in-tab="false">
+      <file leaf-file-name="idn_customstc.py" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/idn_customstc.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="249" column="19" selection-start="9574" selection-end="9574" vertical-scroll-proportion="0.0">
+            <state line="904" column="24" selection-start="33958" selection-end="33958" vertical-scroll-proportion="0.68448275">
               <folding />
             </state>
           </provider>
@@ -121,7 +105,7 @@
       <file leaf-file-name="idn_project.py" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/idn_project.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="507" column="58" selection-start="18597" selection-end="18597" vertical-scroll-proportion="0.0">
+            <state line="519" column="0" selection-start="18977" selection-end="18977" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -141,7 +125,6 @@
   <component name="IdeDocumentHistory">
     <option name="changedFiles">
       <list>
-        <option value="$PROJECT_DIR$/TextCtrlAutoComplete.py" />
         <option value="$PROJECT_DIR$/idn_utils.py" />
         <option value="C:/Programming/Python27/Lib/site-packages/wx-2.9.3-msw/wx/lib/agw/aui/auibook.py" />
         <option value="$PROJECT_DIR$/idn_console.py" />
@@ -149,14 +132,15 @@
         <option value="$PROJECT_DIR$/idn_global.py" />
         <option value="$USER_HOME$/.PyCharm20/system/python_stubs/90031232/__builtin__.py" />
         <option value="$PROJECT_DIR$/noiseide.yaml" />
-        <option value="$PROJECT_DIR$/idn_mainframe.py" />
         <option value="$PROJECT_DIR$/idn_notebook.py" />
-        <option value="$PROJECT_DIR$/idn_customstc.py" />
         <option value="$PROJECT_DIR$/idn_projectexplorer.py" />
         <option value="$PROJECT_DIR$/idn_connect.py" />
         <option value="$PROJECT_DIR$/idn_cache.py" />
-        <option value="$PROJECT_DIR$/idn_project.py" />
         <option value="$PROJECT_DIR$/idn_findreplace.py" />
+        <option value="$PROJECT_DIR$/idn_config.py" />
+        <option value="$PROJECT_DIR$/idn_project.py" />
+        <option value="$PROJECT_DIR$/idn_mainframe.py" />
+        <option value="$PROJECT_DIR$/idn_customstc.py" />
       </list>
     </option>
   </component>
@@ -164,7 +148,7 @@
     <option name="x" value="-8" />
     <option name="y" value="-8" />
     <option name="width" value="1936" />
-    <option name="height" value="1186" />
+    <option name="height" value="1066" />
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true">
     <OptionsSetting value="true" id="Add" />
@@ -227,10 +211,10 @@
   </component>
   <component name="PropertiesComponent">
     <property name="options.splitter.main.proportions" value="0.3" />
-    <property name="options.lastSelected" value="editor.preferences.appearance" />
     <property name="recentsLimit" value="5" />
-    <property name="options.searchVisible" value="true" />
+    <property name="options.lastSelected" value="editor.preferences.appearance" />
     <property name="options.splitter.details.proportions" value="0.2" />
+    <property name="options.searchVisible" value="true" />
   </component>
   <component name="PyConsoleOptionsProvider">
     <option name="myPythonConsoleState">
@@ -373,22 +357,22 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="-8" y="-8" width="1936" height="1186" extended-state="6" />
+    <frame x="-8" y="-8" width="1936" height="1066" extended-state="6" />
     <editor active="true" />
     <layout>
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3294347" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
+      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3222958" sideWeight="0.4897206" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.14760147" sideWeight="0.21832359" order="1" side_tool="true" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.16341592" sideWeight="0.6666667" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.16341592" sideWeight="0.66777045" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.39668617" sideWeight="0.4939378" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.14781217" sideWeight="0.33040935" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33040935" sideWeight="0.5007907" order="8" side_tool="true" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.33333334" sideWeight="0.49551925" order="5" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.33222958" sideWeight="0.49551925" order="5" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="9" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
-      <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32261208" sideWeight="0.4897206" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.2497332" sideWeight="0.67108166" order="2" side_tool="false" content_ui="combo" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
@@ -457,34 +441,19 @@
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$USER_HOME$/.PyCharm20/system/python_stubs/90031232/nt.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="333" column="4" selection-start="6929" selection-end="6929" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/.PyCharm20/system/python_stubs/90031232/__builtin__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="3234" column="8" selection-start="110151" selection-end="110151" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
-    <entry file="file://C:/Programming/Python27/Lib/site-packages/wx-2.9.3-msw/wx/lib/agw/customtreectrl.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="5126" column="8" selection-start="177513" selection-end="177513" vertical-scroll-proportion="0.33333334" />
-      </provider>
-    </entry>
     <entry file="file://C:/Programming/Python27/Lib/shutil.py">
       <provider selected="true" editor-type-id="text-editor">
         <state line="207" column="4" selection-start="6305" selection-end="6305" vertical-scroll-proportion="-0.28723404" />
       </provider>
     </entry>
-    <entry file="file://C:/Programming/Python27/Lib/site-packages/wx-2.9.4-msw/wx/stc.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="3340" column="8" selection-start="123096" selection-end="123096" vertical-scroll-proportion="0.33282673" />
-      </provider>
-    </entry>
     <entry file="file://C:/Programming/Python27/Lib/os.py">
       <provider selected="true" editor-type-id="text-editor">
         <state line="208" column="4" selection-start="5915" selection-end="5915" vertical-scroll-proportion="0.0" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/idn_projectexplorer.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="424" column="21" selection-start="15886" selection-end="15886" vertical-scroll-proportion="0.0" />
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/idn_token.py">
@@ -502,53 +471,68 @@
         <state line="187" column="4" selection-start="8882" selection-end="8882" vertical-scroll-proportion="0.0" />
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/idn_connect.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="196" column="12" selection-start="6040" selection-end="6040" vertical-scroll-proportion="0.0" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/idn_cache.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="148" column="18" selection-start="4812" selection-end="4812" vertical-scroll-proportion="0.0" />
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/idn_notebook.py">
       <provider selected="true" editor-type-id="text-editor">
         <state line="141" column="8" selection-start="4382" selection-end="4382" vertical-scroll-proportion="0.0" />
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/idn_customstc.py">
+    <entry file="file://$PROJECT_DIR$/idn_findreplace.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="249" column="19" selection-start="9574" selection-end="9574" vertical-scroll-proportion="0.0">
+        <state line="265" column="36" selection-start="11096" selection-end="11096" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/idn_projectexplorer.py">
+    <entry file="file://$PROJECT_DIR$/noiseide.yaml">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="424" column="21" selection-start="15886" selection-end="15886" vertical-scroll-proportion="0.0">
-          <folding>
-            <element signature="e#0#9#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/idn_connect.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="196" column="12" selection-start="6040" selection-end="6040" vertical-scroll-proportion="0.0">
+        <state line="0" column="18" selection-start="18" selection-end="18" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/idn_cache.py">
+    <entry file="file://$PROJECT_DIR$/idn_config.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="148" column="18" selection-start="4812" selection-end="4812" vertical-scroll-proportion="0.0">
-          <folding>
-            <element signature="e#0#9#0" expanded="true" />
-          </folding>
+        <state line="17" column="12" selection-start="388" selection-end="392" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://C:/Programming/Python27/Lib/site-packages/wx-2.9.3-msw/wx/_core.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="9159" column="8" selection-start="344852" selection-end="344852" vertical-scroll-proportion="0.3327674">
+          <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/idn_project.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="507" column="58" selection-start="18597" selection-end="18597" vertical-scroll-proportion="0.0">
+        <state line="519" column="0" selection-start="18977" selection-end="18977" vertical-scroll-proportion="0.0">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/idn_findreplace.py">
+    <entry file="file://$PROJECT_DIR$/idn_mainframe.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="293" column="26" selection-start="12492" selection-end="12492" vertical-scroll-proportion="0.6130501">
+        <state line="118" column="38" selection-start="4309" selection-end="4309" vertical-scroll-proportion="0.0">
+          <folding>
+            <element signature="e#0#44#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/idn_customstc.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="904" column="24" selection-start="33958" selection-end="33958" vertical-scroll-proportion="0.68448275">
           <folding />
         </state>
       </provider>
