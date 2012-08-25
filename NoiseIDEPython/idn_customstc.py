@@ -464,8 +464,7 @@ class ErlangSTC(CustomSTC):
             prefix = self.GetTextRange(self.PositionFromLine(line), caretPos)
            # self.completer.Update(prefix, self.GetCharAt(caretPos + 1))
             self.completer.Update(prefix)
-        windowPosition = self.PointFromPosition(caretPos)
-        self.completer.UpdateCompleterPosition(windowPosition)
+        self.completer.UpdateCompleterPosition(self.PointFromPosition(caretPos))
 
     def HandleKeyDownEvent(self, event):
         keyCode = event.GetKeyCode()
@@ -506,6 +505,7 @@ class ErlangSTC(CustomSTC):
                 self.ShowToolTip(msg)
             else:
                 self.HideToolTip()
+
 
     def CheckHelp(self, pos):
         style = self.GetStyleAt(pos)
@@ -929,6 +929,8 @@ class ErlangCompleter(wx.Frame):
     def ShowHelp(self, help):
         if help:
             #print help
+            self.showingHelp = True
+            self.UpdateCompleterPosition(None)
             self.helpWindow.SetPage(help)
             self.SetSize((self.SIZE[0] - self.LIST_SIZE[0], self.SIZE[1]))
             self.sizer.Hide(self.list)
@@ -936,7 +938,7 @@ class ErlangCompleter(wx.Frame):
             self.Layout()
             wx.Frame.Show(self)
             self.stc.SetFocus()
-            self.showingHelp = True
+
         else:
             self.showingHelp = False
             self.Hide()

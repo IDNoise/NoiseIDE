@@ -333,9 +333,9 @@ class ErlangProject(Project):
         elif event.GetKeyCode() == ord('F') and event.ControlDown() and event.ShiftDown():
             dialog = FindInProjectDialog(GetTabMgr())
             dialog.Show()
-        elif event.GetKeyCode() == ord('F') and event.ControlDown():
-            dialog = FindInFileDialog(GetTabMgr())
-            dialog.Show()
+#        elif event.GetKeyCode() == ord('F') and event.ControlDown():
+#            dialog = FindInFileDialog(GetTabMgr())
+#            dialog.Show()
         else:
             event.Skip()
 

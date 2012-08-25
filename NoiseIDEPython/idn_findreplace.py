@@ -7,7 +7,7 @@ import re
 from wx import stc
 import wx.lib.agw.customtreectrl as CT
 from idn_global import GetTabMgr, GetProject, GetToolMgr, Log
-from idn_utils import CreateButton, extension, writeFile, readFile
+from idn_utils import CreateButton, extension, writeFile, readFile, CreateBitmapButton
 
 class FindInFileDialog(wx.Dialog):
     def __init__(self, parent):
@@ -118,6 +118,119 @@ class FindInFileDialog(wx.Dialog):
         else:
             event.Skip()
 
+class FindInFilePanel(wx.Panel):
+    def __init__(self, parent, editor):
+        wx.Panel.__init__(self, parent, size = (2000, 25))
+        self.SetMaxSize((3000, 25))
+
+        self.editor = editor
+
+        self.sizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.findText = wx.ComboBox(self, size = (200, 25))
+        self.replaceText = wx.ComboBox(self, size = (200, 25))
+        self.findButton = CreateButton(self, "Find", self.OnFind, wx.BU_EXACTFIT)
+        self.replaceButton = CreateButton(self, "Replace", self.OnReplace, wx.BU_EXACTFIT)
+        self.replaceAllButton = CreateButton(self, "Replace All", self.OnReplaceAll, wx.BU_EXACTFIT)
+        self.closeButton = CreateBitmapButton(self, 'clear_console.png', self.OnClose)
+        self.closeButton.SetMaxSize((25, 25))
+        self.searchUpCb = wx.CheckBox(self, label = "Search up")
+        self.wholeWordsCb = wx.CheckBox(self, label = "Whole words")
+        self.matchCaseCb = wx.CheckBox(self, label = "Match case")
+        self.useRegextCb = wx.CheckBox(self, label = "Regexp")
+
+        self.sizer.Add(self.findText, 0, wx.ALL, 2)
+        self.sizer.Add(self.findButton)
+        self.sizer.AddSpacer(5)
+        self.sizer.Add(self.searchUpCb, flag = wx.ALIGN_CENTER_VERTICAL)
+        self.sizer.Add(self.wholeWordsCb, flag = wx.ALIGN_CENTER_VERTICAL)
+        self.sizer.Add(self.matchCaseCb, flag = wx.ALIGN_CENTER_VERTICAL)
+        self.sizer.Add(self.useRegextCb, flag = wx.ALIGN_CENTER_VERTICAL)
+        self.sizer.AddSpacer(5)
+        self.sizer.Add(self.replaceText, 0, wx.ALL, 2)
+        self.sizer.Add(self.replaceButton)
+        self.sizer.Add(self.replaceAllButton)
+        self.sizer.AddStretchSpacer()
+        self.sizer.Add(self.closeButton, 0, flag = wx.ALIGN_RIGHT)
+
+        self.SetSizer(self.sizer)
+        self.Layout()
+
+        #self.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
+
+    def OnFind(self, event):
+        self.textToFind = self.findText.Value
+        self.findSuccessful = False
+        if self.textToFind and self.editor:
+            if not self.textToFind in self.findText.Items:
+                self.findText.Append(self.textToFind)
+
+            findOptions = 0
+            wholeWords = self.wholeWordsCb.Value
+            matchCase = self.matchCaseCb.Value
+            searchDown = not self.searchUpCb.Value
+            useRegexp = self.useRegextCb.Value
+            if useRegexp:
+                findOptions |= stc.STC_FIND_REGEXP
+            else:
+                if wholeWords:
+                    findOptions |= stc.STC_FIND_WHOLEWORD
+                if matchCase:
+                    findOptions |= stc.STC_FIND_MATCHCASE
+
+            for attempt in range(2):
+                caretPosition = self.editor.CurrentPos
+                self.editor.SetAnchor(caretPosition)
+                self.editor.SearchAnchor()
+                if searchDown:
+                    pos = self.editor.SearchNext(findOptions, self.textToFind)
+                else:
+                    pos = self.editor.SearchPrev(findOptions, self.textToFind)
+                if pos >= 0:
+                    if searchDown:
+                        self.editor.GotoPos(pos + len(self.textToFind))
+                        self.editor.SetAnchor(pos)
+                    else:
+                        self.editor.GotoPos(pos)
+                        self.editor.SetAnchor(pos + len(self.textToFind))
+                    self.findSuccessful = True
+                    break
+                else:
+                    if attempt == 0:
+                        if searchDown:
+                            self.editor.SetCurrentPos(0)
+                        else:
+                            self.editor.SetCurrentPos(self.editor.Length)
+                        continue
+                    else:
+                        self.editor.SetCurrentPos(caretPosition)
+                        break
+
+    def OnReplace(self, event):
+        replaceText = self.replaceText.Value
+        if self.editor and self.findText.Value == self.textToFind:
+            if replaceText and not replaceText in self.replaceText.Items:
+                self.replaceText.Append(replaceText)
+
+            self.editor.ReplaceSelection(self.replaceText.Value)
+            self.OnFind(None)
+
+    def OnReplaceAll(self, event):
+        if not self.findText.Value:
+            return
+        self.OnFind(None)
+        while self.findSuccessful:
+            self.OnReplace(None)
+            self.OnFind(None)
+
+    def OnClose(self, event):
+        self.Parent.HideFind()
+
+    def OnKeyDown(self, event):
+        keyCode = event.GetKeyCode()
+        if keyCode == wx.WXK_ESCAPE:
+            self.Parent.HideFind()
+        else:
+            event.Skip()
 
 class FindInProjectDialog(wx.Dialog):
     def __init__(self, parent):
@@ -218,7 +331,8 @@ class FindInProjectDialog(wx.Dialog):
     def OnKeyDown(self, event):
         keyCode = event.GetKeyCode()
         if keyCode == wx.WXK_ESCAPE:
-            self.Close()
+            self.Parent.sizer.Show(self.Parent.findPanel, False)
+            self.Parent.Layout()
         else:
             event.Skip()
 

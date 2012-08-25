@@ -1,6 +1,7 @@
 from wx._aui import AUI_BUTTON_CLOSE, wxEVT_COMMAND_AUINOTEBOOK_PAGE_CLOSED
 from wx.aui import wxEVT_COMMAND_AUINOTEBOOK_TAB_MIDDLE_UP, AuiNotebookEvent, AUI_NB_MIDDLE_CLICK_CLOSE
 from idn_colorschema import ColorSchema
+from idn_findreplace import FindInFilePanel
 from idn_global import GetProject
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
@@ -165,10 +166,37 @@ class EditorPanel(wx.Panel):
         stcType = GetSTCTypeByExt(file)
         self.markPanel = MarkerPanel(self)
         self.editor = stcType(self, self.markPanel, file)
-        self.sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.sizer.Add(self.editor, 1, wx.EXPAND)
-        self.editor.markPanel = self.markPanel
-        self.sizer.Add(self.markPanel, 0, wx.EXPAND)
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.findPanel = FindInFilePanel(self, self.editor)
+        self.sizer.Add(self.findPanel)#, 1, wx.EXPAND)
+        self.HideFind()
+        hSizer = wx.BoxSizer(wx.HORIZONTAL)
+        hSizer.Add(self.editor, 1, wx.EXPAND)
+        hSizer.Add(self.markPanel, 0, wx.EXPAND)
+        self.sizer.AddSizer(hSizer, 1, wx.EXPAND)
         self.SetSizer(self.sizer)
         self.Layout()
         self.Fit()
+
+        self.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
+
+    def OnKeyDown(self, event):
+        keycode = event.GetKeyCode()
+        if keycode == ord('F') and event.ControlDown():
+            self.ShowFind()
+        elif keycode == wx.WXK_ESCAPE and self.helpVisible:
+            self.HideFind()
+            event.Skip()
+        else:
+            event.Skip()
+
+    def ShowFind(self):
+        self.sizer.Show(self.findPanel, True)
+        self.Layout()
+        self.findPanel.findText.SetFocus()
+        self.helpVisible = True
+
+    def HideFind(self):
+        self.sizer.Show(self.findPanel, False)
+        self.Layout()
+        self.helpVisible = False

@@ -446,15 +446,12 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         else:
             event.Skip()
 
-
     def GetAllFiles(self):
         result = []
-        for root, dirs, files in os.walk(self.root):
-            for file in files:
-                fileName = os.path.join(root, file)
-                if self.mask and extension(fileName) not in self.mask:
-                    continue
-                result.append(fileName)
+        for file in self.dirChecker.files:
+            if self.mask and extension(file) not in self.mask:
+                continue
+            result.append(file)
         return result
 
     def _GetFiles(self, item):

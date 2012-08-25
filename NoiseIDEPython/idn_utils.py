@@ -1,4 +1,5 @@
 from threading import Thread, Event
+from idn_global import GetMainFrame
 
 __author__ = 'Yaroslav'
 
@@ -41,11 +42,22 @@ class Timer(Thread):
             self.function()
             self.finished.wait(self.interval)
 
-def CreateButton(parent, label, handler):
-    button = wx.Button(parent, label = label)
+def CreateButton(parent, label, handler, style = 0):
+    button = wx.Button(parent, label = label, style = style)
     button.Bind(wx.EVT_BUTTON, handler)
     return button
 
+def get_image(image):
+    return os.path.join(GetMainFrame().cwd, "data", "images", image)
+
+def CreateBitmapButton(parent, image, handler, drawBorder = True):
+    if drawBorder:
+        button = wx.BitmapButton(parent, wx.NewId(), bitmap = wx.Bitmap(get_image(image)))
+    else:
+        button = wx.BitmapButton(parent, wx.NewId(), bitmap = wx.Bitmap(get_image(image)), style = wx.BORDER_NONE)
+
+    button.Bind(wx.EVT_BUTTON, handler)
+    return button
 
 class Menu(wx.Menu):
     def AppendMenuItem(self, text, handlerObject, handler):

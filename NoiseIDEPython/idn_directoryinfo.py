@@ -92,7 +92,9 @@ class DirectoryChecker:
             self.dirSnapshot = self.GetDirectoryInfo()
 
     def GetDirectoryInfo(self):
-        return DirectoryInfo(self.root, self.recursive, self.fileMask, self.excludeDirs, self.excludePaths)
+        info = DirectoryInfo(self.root, self.recursive, self.fileMask, self.excludeDirs, self.excludePaths)
+        self.files = info.files.keys()
+        return info
 
     def AddHandler(self, type, fun):
         if type not in self.HANDLER_TYPES: raise Exception("Wrong handler type")
@@ -138,6 +140,7 @@ class DirectoryChecker:
 
     def CheckDirectoryChanges(self):
         dirSnapshot = self.GetDirectoryInfo()
+
         diff = DirectoryInfoDiff(dirSnapshot, self.dirSnapshot)
         self.SendEvents(self.HANDLER_DIR_CREATED, diff.createdDirs)
         self.SendEvents(self.HANDLER_DIR_DELETED, diff.deletedDirs)
