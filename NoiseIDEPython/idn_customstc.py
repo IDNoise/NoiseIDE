@@ -1,3 +1,5 @@
+from idn_outline import ErlangOutline
+
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 
@@ -489,6 +491,10 @@ class ErlangSTC(ErlangHighlightedSTCBase):
             keyCode in [wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER,
                         wx.WXK_DOWN, wx.WXK_UP, wx.WXK_ESCAPE]):
             self.completer.OnKeyDown(event)
+            return True
+        elif keyCode == ord('H') and event.ControlDown():
+            dlg = ErlangOutline(self, self.ModuleName())
+            dlg.ShowModal()
             return True
         else:
             return False

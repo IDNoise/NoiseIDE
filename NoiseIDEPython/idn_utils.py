@@ -47,14 +47,18 @@ def CreateButton(parent, label, handler, style = 0):
     button.Bind(wx.EVT_BUTTON, handler)
     return button
 
-def get_image(image):
+def GetImagePath(image):
     return os.path.join(GetMainFrame().cwd, "data", "images", image)
+
+def GetImage(image):
+    path = GetImagePath(image)
+    return wx.Bitmap(path, wx.BITMAP_TYPE_PNG)
 
 def CreateBitmapButton(parent, image, handler, drawBorder = True):
     if drawBorder:
-        button = wx.BitmapButton(parent, wx.NewId(), bitmap = wx.Bitmap(get_image(image)))
+        button = wx.BitmapButton(parent, wx.NewId(), bitmap = wx.Bitmap(GetImagePath(image)))
     else:
-        button = wx.BitmapButton(parent, wx.NewId(), bitmap = wx.Bitmap(get_image(image)), style = wx.BORDER_NONE)
+        button = wx.BitmapButton(parent, wx.NewId(), bitmap = wx.Bitmap(GetImagePath(image)), style = wx.BORDER_NONE)
 
     button.Bind(wx.EVT_BUTTON, handler)
     return button
