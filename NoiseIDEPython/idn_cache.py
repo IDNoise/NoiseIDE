@@ -98,13 +98,9 @@ class ModuleData:
         return [fun for fun in self.functions if (exported and fun.exported == exported) or not exported]
 
 class ErlangCache:
-    checkers = {}
-    modules = set()
-    includes = set()
-    moduleData = {}
 
     @classmethod
-    def Init(cls):
+    def Init(cls, project):
         cls.CACHE_DIR = os.path.join(GetMainFrame().cwd, "cache", "erlang")
 
         cls.ERLANG_LIBS_CACHE_DIR =  os.path.join(cls.CACHE_DIR, "erlang")
@@ -113,16 +109,21 @@ class ErlangCache:
             if not os.path.isdir(dir):
                 os.makedirs(dir)
 
-        cls.erlangDir = os.path.dirname(os.path.dirname(Config.LanguageExec("erlang")))
+        cls.erlangDir = os.path.dirname(os.path.dirname(project.GetErlangPath()))
+
+        cls.checkers = {}
+        cls.modules = set()
+        cls.includes = set()
+        cls.moduleData = {}
 
     @classmethod
     def LoadCacheFromDir(cls, dir):
-        Log("loading cache from ", dir)
+        Log("loading cache from", dir)
         dir = os.path.join(cls.CACHE_DIR, dir)
         for file in os.listdir(dir):
             file = os.path.join(dir, file)
             cls.LoadFile(file)
-        Log("end loading cache from ", dir)
+        Log("end loading cache from", dir)
 
     @classmethod
     def LoadFile(cls, file):

@@ -1,10 +1,10 @@
-from idn_global import Log
-from idn_utils import Timer, extension
-
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 import os
 from stat import ST_MTIME
+from idn_utils import Timer, extension
+from idn_global import Log
+
 
 class DirectoryInfo:
     def __init__(self, root, recursive = True, fileMask = [], excludeDirs = [], excludePaths = []):

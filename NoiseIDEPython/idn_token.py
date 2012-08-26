@@ -1,6 +1,6 @@
-import re
-
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
+
+import re
 
 class Token:
     def __init__(self, type, value, start, end):

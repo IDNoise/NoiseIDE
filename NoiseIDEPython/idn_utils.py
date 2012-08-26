@@ -1,7 +1,7 @@
+__author__ = 'Yaroslav'
+
 from threading import Thread, Event
 from idn_global import GetMainFrame
-
-__author__ = 'Yaroslav'
 
 import os
 import wx
@@ -59,10 +59,14 @@ def CreateBitmapButton(parent, image, handler, drawBorder = True):
     button.Bind(wx.EVT_BUTTON, handler)
     return button
 
+def CreateLabel(parent, text):
+    return wx.StaticText(parent, label = text)
+
 class Menu(wx.Menu):
     def AppendMenuItem(self, text, handlerObject, handler):
         item = self.Append(wx.NewId(), text, text)
         handlerObject.Bind(wx.EVT_MENU, handler, item)
+        return item
 
     def AppendCheckMenuItem(self, text, handlerObject, handler, check = False):
         item = self.Append(wx.NewId(), text, text, wx.ITEM_CHECK)

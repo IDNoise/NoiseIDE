@@ -1,16 +1,12 @@
-from wx._aui import AUI_BUTTON_CLOSE, wxEVT_COMMAND_AUINOTEBOOK_PAGE_CLOSED
-from wx.aui import wxEVT_COMMAND_AUINOTEBOOK_TAB_MIDDLE_UP, AuiNotebookEvent, AUI_NB_MIDDLE_CLICK_CLOSE
-from idn_colorschema import ColorSchema
-from idn_findreplace import FindInFilePanel
-from idn_global import GetProject
-
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
-import os
+import wx
 from wx.lib.agw import aui
+from wx.aui import wxEVT_COMMAND_AUINOTEBOOK_TAB_MIDDLE_UP
+from idn_findreplace import FindInFilePanel
+from idn_global import GetProject
 from idn_utils import extension, Menu
 from idn_customstc import CustomSTC, ErlangSTC, YAMLSTC, PythonSTC, MarkerPanel
-import wx
 
 EXT_STC_TYPE = {
     ".erl": ErlangSTC,
@@ -182,7 +178,7 @@ class EditorPanel(wx.Panel):
 
     def OnKeyDown(self, event):
         keycode = event.GetKeyCode()
-        if keycode == ord('F') and event.ControlDown():
+        if keycode == ord('F') and event.ControlDown() and not event.ShiftDown() and not event.AltDown():
             self.ShowFind()
         elif keycode == wx.WXK_ESCAPE and self.helpVisible:
             self.HideFind()

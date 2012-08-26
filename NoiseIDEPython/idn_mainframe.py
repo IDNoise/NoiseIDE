@@ -1,6 +1,4 @@
-from idn_findreplace import FindInFileDialog
-import idn_global
-from idn_project import loadProject
+from idn_utils import Menu
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
@@ -8,12 +6,12 @@ import os
 import wx
 from wx.lib.agw import aui
 from idn_colorschema import ColorSchema
-from idn_customstc import CustomSTC, ConsoleSTC
-from idn_projectexplorer import ProjectExplorer, PythonProjectExplorer
+from idn_customstc import ConsoleSTC
 from idn_winmanager import Manager
 from idn_notebook import  Notebook, EditorNotebook
-from idn_project import loadProject
 from idn_config import Config
+import idn_global
+from idn_project import loadProject, ErlangProjectFrom
 
 class NoiseIDE(wx.Frame):
     def __init__(self, *args, **kwargs):
@@ -24,7 +22,7 @@ class NoiseIDE(wx.Frame):
 
         self.Maximize()
         Config.load()
-        ColorSchema.load(Config.GetProp("color_schema"))
+        ColorSchema.load(Config.ColorSchema())
 
         icon = wx.Icon('data/images/icon.png', wx.BITMAP_TYPE_PNG, 16, 16)
         self.SetIcon(icon)
@@ -64,6 +62,9 @@ class NoiseIDE(wx.Frame):
         #self.OpenProject("D:\\Projects\\GIJoe\\server\\gijoe.noiseide.project")
         #self.OpenProject("D:\\Projects\\Joe\\server\\gijoe.noiseide.project")
 
+    def Log(self, text):
+        self.log.Append(text)
+
     def TryLoadLastProject(self):
         lastProject = Config.GetProp("last_project")
         if lastProject and os.path.isfile(lastProject):
@@ -76,15 +77,17 @@ class NoiseIDE(wx.Frame):
 
     def SetupMenu(self):
         self.menubar = wx.MenuBar()
-        self.fileMenu = wx.Menu()
-        mOpen = self.fileMenu.Append(wx.NewId(), 'Open File', 'Open File')
+        self.fileMenu = Menu()
+        self.fileMenu.AppendMenuItem('Open File', self, self.OnOpen)
         self.fileMenu.AppendSeparator()
-        mOpenProject = self.fileMenu.Append(wx.NewId(), 'Open Project', 'Open Project')
+        projectsMenu = Menu()
+        projectsMenu.AppendMenuItem('Erlang', self, self.OnNewErlangProject)
+        self.fileMenu.AppendMenu(wx.NewId(), "New project", projectsMenu)
+        self.fileMenu.AppendMenuItem('Open Project', self, self.OnOpenProject)
+        self.mEditProject = self.fileMenu.AppendMenuItem('Edit Project', self, self.OnEditProject)
+        self.mEditProject.Enable(False)
         self.fileMenu.AppendSeparator()
-        mQuit = self.fileMenu.Append(wx.ID_EXIT, 'Quit', 'Quit application')
-        self.Bind(wx.EVT_MENU, self.OnOpen, mOpen)
-        self.Bind(wx.EVT_MENU, self.OnOpenProject, mOpenProject)
-        self.Bind(wx.EVT_MENU, self.OnQuit, mQuit)
+        self.fileMenu.AppendMenuItem('Quit', self, self.OnQuit)
         self.menubar.Append(self.fileMenu, '&File')
         self.SetMenuBar(self.menubar)
 
@@ -115,8 +118,19 @@ class NoiseIDE(wx.Frame):
         dialog.Destroy()
 
     def OpenProject(self, projectFile):
+        if self.project:
+            self.project.Close()
         Config.SetProp("last_project", projectFile)
         loadProject(self, projectFile)
+        self.mEditProject.Enable(True)
+
+    def OnNewErlangProject(self, event):
+        ErlangProjectFrom().ShowModal()
+
+    def OnEditProject(self, event):
+        if not self.project: return
+        form = self.project.GetEditForm()
+        form(self.project).ShowModal()
 
     def OnClose(self, event):
         if self.project:
@@ -127,13 +141,8 @@ class NoiseIDE(wx.Frame):
     def OnQuit(self, event):
         self.Close()
 
-    def OnEvent(self, event):
-        #print(event)
-        event.Skip()
-
-    def AddTestTabs(self, amount):
-        for i in range(amount):
-            self.TabMgr.LoadFile(os.path.join(cwd, "eide_cache.erl"))
+#    def OnEvent(self, event):
+#        event.Skip()
 
 class App(wx.App):
     def __init__(self):

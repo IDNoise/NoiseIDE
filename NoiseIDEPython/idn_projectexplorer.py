@@ -1,17 +1,16 @@
-import re
-from idn_findreplace import ReplaceInProject, ReplaceInFile
-
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
+import re
 import os
 import wx
 import time
+import subprocess
 import shutil
 import wx.lib.agw.customtreectrl as CT
 from idn_utils import extension, Menu, writeFile, CreateButton
+from idn_findreplace import ReplaceInProject, ReplaceInFile
 from idn_directoryinfo import DirectoryChecker
-from idn_global import GetTabMgr, GetMainFrame, Log, GetProject
-import subprocess
+from idn_global import GetTabMgr, GetMainFrame, Log
 from idn_cache import readFile
 from idn_config import Config
 
@@ -537,7 +536,7 @@ class ErlangProjectExplorer(ProjectExplorer):
     def _GetTemplate(self, template):
         path = os.path.join(GetMainFrame().cwd, "data", "erlang", "templates", template + ".erl")
         data = readFile(path)
-        data = data.replace("[username]", Config.GetProp("user_name"))
+        data = data.replace("[username]", Config.UserName())
         data = data.replace("[date]", time.strftime("%d.%m.%Y"))
         return data
 

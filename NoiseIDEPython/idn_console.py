@@ -1,10 +1,12 @@
+from idn_global import Log
+from idn_highlight import ErlangHighlighter
+
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 import re
-from idn_global import GetMainFrame
-from idn_utils import CreateBitmapButton
 import wx
 import os
+from idn_utils import CreateBitmapButton
 from idn_customstc import ConsoleSTC
 import idn_connect as connect
 
@@ -29,7 +31,7 @@ class ErlangConsole(wx.Panel):
         self.buttonSizer.AddStretchSpacer()
 
         self.consoleOut = ConsoleSTC(self)
-        self.commandText = wx.TextCtrl(self, wx.NewId())
+        self.commandText = wx.TextCtrl(self, wx.NewId(), size = (500, 40), style = wx.TE_MULTILINE)# | wx.TE_RICH)
         self.commandButton = CreateBitmapButton(self, 'exec_command.png', lambda e: self.Exec())
         self.commandButton.SetToolTip( wx.ToolTip("Exec command") )
 
@@ -50,10 +52,15 @@ class ErlangConsole(wx.Panel):
         self.SetSizer(mainSizer)
         self.Layout()
 
-        self.commandText.Bind(wx.EVT_KEY_UP, self.OnCommandTextKeyUp)
+        self.commandText.Bind(wx.EVT_KEY_DOWN, self.OnCommandTextKeyDown)
+        #self.commandText.Bind(wx.EVT_TEXT, self.OnTextChanged)
 
         self.CreateShell(cwd, params)
-        self.promptRegexp = re.compile(r"^\s*(\([\S]*\))?\d*>\s*")
+        self.promptRegexp = re.compile(r"\s*(\([\S]*\))?\d*>\s*")
+
+        self.lastCommands = []
+
+        self.highlighter = ErlangHighlighter()
 
     def Start(self):
         self.Clear()
@@ -79,18 +86,43 @@ class ErlangConsole(wx.Panel):
     def Exec(self):
         cmd = self.commandText.GetValue()
         if cmd:
+            lastCommands = list(filter(lambda x: x != cmd, self.lastCommands))
+            lastCommands.append(cmd)
+            self.lastCommands = lastCommands
             self.shell.SendCommandToProcess(cmd)
         self.commandText.SetValue("")
+        self.commandText.SetInsertionPoint(0)
         self.WriteToConsoleOut(cmd + '\n')
 
-    def OnCommandTextKeyUp(self, event):
+    def OnCommandTextKeyDown(self, event):
         keyCode = event.GetKeyCode()
         if keyCode == wx.WXK_RETURN:
-            self.Exec()
+            if event.ControlDown():
+                self.commandText.AppendText("\n")
+            else:
+                self.Exec()
         elif keyCode == wx.WXK_ESCAPE:
             self.commandText.SetValue("")
+        elif event.ControlDown() and self.lastCommands and keyCode == wx.WXK_UP:
+            newText = self.lastCommands[-1]
+            self.commandText.SetValue(newText)
+            self.lastCommands = self.lastCommands[:-1]
+            self.lastCommands.insert(0, newText)
+        elif event.ControlDown() and self.lastCommands and keyCode == wx.WXK_DOWN:
+            newText = self.lastCommands[0]
+            self.commandText.SetValue(newText)
+            self.lastCommands = self.lastCommands[1:]
+            self.lastCommands.append(newText)
         else:
             event.Skip()
+
+    def OnTextChanged(self, event):
+        event.Skip()
+        text = self.commandText.Value
+        tokens = self.highlighter.GetHighlightingTokens(text)
+        for token in tokens:
+            self.commandText.SetStyle(0, len(text), None)
+            self.commandText.SetStyle(token.start, len(token.value), token.type)
 
     def CreateShell(self, cwd, params):
         self.shell = connect.ErlangProcess(cwd, params)
@@ -98,23 +130,11 @@ class ErlangConsole(wx.Panel):
 
     def WriteToConsoleOut(self, text):
         text = "\n".join([re.sub(self.promptRegexp, "", line) for line in text.split("\n")])
-        maxLine = self.consoleOut.GetLineCount()
-        self.consoleOut.SetReadOnly(False)
-        self.consoleOut.AppendText(text)
-        self.consoleOut.SetReadOnly(True)
-        if self.GetLastVisibleLine() >= maxLine:
-            self.consoleOut.ScrollToLine(self.consoleOut.GetLineCount())
+        self.consoleOut.Append(text)
 
-    def GetLastVisibleLine(self):
-        """
-        return the last visible line on the screen,
-        taking into consideration the folded lines
-        """
-        return self.consoleOut.LineFromPosition(
-            self.consoleOut.PositionFromPoint(
-                wx.Point(self.consoleOut.GetPosition()[0],
-                    self.consoleOut.GetPosition()[1] + self.consoleOut.GetSize()[1]))
-        )
+    def SetParams(self, params):
+        self.shell.SetParams(params)
+
 
 class ErlangProjectConsole(ErlangConsole):
     def __init__(self, parent, cwd, params):

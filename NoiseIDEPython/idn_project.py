@@ -1,22 +1,16 @@
+__author__ = 'Yaroslav Nikityshev aka IDNoise'
+
+import os
+import yaml
+import wx
+from wx.lib.agw import aui
 from wx.grid import PyGridTableBase
 from TextCtrlAutoComplete import TextCtrlAutoComplete
 from idn_cache import ErlangCache, readFile
 from idn_connect import CompileErrorInfo
-from idn_directoryinfo import DirectoryChecker
-from idn_findreplace import FindInFileDialog, FindInProjectDialog
-from idn_utils import writeFile
-
-__author__ = 'Yaroslav Nikityshev aka IDNoise'
-
-#from idn_utils import extension
-import os
-import yaml
-import wx
-from wx.lib.masked import combobox
-from wx import combo
-import time
+from idn_findreplace import FindInProjectDialog
+from idn_utils import writeFile, CreateButton, CreateLabel
 import idn_projectexplorer as exp
-from wx.lib.agw import aui
 from idn_console import ErlangIDEConsole, ErlangProjectConsole
 from idn_global import GetTabMgr, GetToolMgr, GetMainFrame, Log
 
@@ -27,6 +21,9 @@ class Project:
     CONFIG_LAST_OPENED_FILES = "last_opened_files"
     CONFIG_HIDDEN_PATHS = "hidden_paths"
     CONFIG_MASK = "mask"
+    CONFIG_PROJECT_NAME = "project_name"
+    CONFIG_PROJECT_TYPE = "project_type"
+
 
     def __init__(self, window, filePath, projectData):
         self.window = window
@@ -49,7 +46,9 @@ class Project:
         self.OpenLastFiles()
 
     def ProjectName(self):
-        return self.projectData["project_name"]
+        return self.projectData[self.CONFIG_PROJECT_NAME]
+
+    def GetEditForm(self): pass
 
     def LastOpenedFiles(self):
         if self.CONFIG_LAST_OPENED_FILES in self.userData:
@@ -73,10 +72,6 @@ class Project:
         if removedFiles:
             self.userData[self.CONFIG_LAST_OPENED_FILES] = \
                 [file for file in self.userData[self.CONFIG_LAST_OPENED_FILES] if file not in removedFiles]
-
-
-    def AppsPath(self):
-        return os.path.join(self.projectDir, self.projectData["apps_dir"])
 
     def OnLoadProject(self):
         raise NotImplementedError
@@ -116,11 +111,22 @@ class ErlangProject(Project):
     IDE_MODULES_DIR = os.path.join(os.getcwd(), 'data', 'erlang', 'modules')
     EXPLORER_TYPE = exp.ErlangProjectExplorer
 
+    CONFIG_ERLANG_PATH = "erlang_path"
+    CONFIG_EXCLUDED_DIRS = "excluded_dirs"
+    CONFIG_FLY_COMPILE = "fly_compile"
+    CONFIG_APPS_DIR = "apps_dir"
+
+    CONFIG_CONSOLES = "consoles"
+    CONFIG_CONSOLE_SNAME = "sname"
+    CONFIG_CONSOLE_COOKIE = "cookie"
+    CONFIG_CONSOLE_PARAMS = "params"
+    CONFIG_CONSOLE_COMMAND = "command"
 
     def OnLoadProject(self):
         self.errors = {}
+        self.consoleTabs = {}
 
-        ErlangCache.Init()
+        ErlangCache.Init(self)
         self.SetupDirs()
         self.AddConsoles()
         self.AddTabs()
@@ -131,11 +137,22 @@ class ErlangProject(Project):
         self.explorer.Bind(exp.EVT_PROJECT_FILE_CREATED, self.OnProjectFileCreated)
         self.explorer.Bind(exp.EVT_PROJECT_FILE_MODIFIED, self.OnProjectFileModified)
         self.explorer.Bind(exp.EVT_PROJECT_FILE_DELETED, self.OnProjectFileDeleted)
+        self.explorer.Bind(exp.EVT_PROJECT_DIR_CREATED, self.OnProjectDirCreated)
         ErlangCache.LoadCacheFromDir("erlang")
         ErlangCache.LoadCacheFromDir(self.ProjectName())
         ErlangCache.StartCheckingFolder(self.ProjectName())
 
         GetTabMgr().Parent.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
+
+    def GetEditForm(self): return ErlangProjectFrom
+
+    def AppsPath(self):
+        if not self.CONFIG_APPS_DIR in self.projectData or not self.projectData[self.CONFIG_APPS_DIR]:
+            return self.projectDir
+        return os.path.join(self.projectDir, self.projectData[self.CONFIG_APPS_DIR])
+
+    def GetErlangPath(self):
+        return self.projectData[self.CONFIG_ERLANG_PATH]
 
     def SetupDirs(self):
         projectCacheDir = os.path.join(ErlangCache.CACHE_DIR, self.ProjectName())
@@ -163,8 +180,7 @@ class ErlangProject(Project):
                 return
             app = path.replace(self.AppsPath() + os.sep, "")
             app = app[:app.index(os.sep)]
-            #print app, self.projectData["apps"]
-            if not app in self.projectData["apps"]:
+            if app in self.projectData[self.CONFIG_EXCLUDED_DIRS]:
                 return
             self.GetShell().CompileProjectFile(path, app)
 
@@ -175,29 +191,59 @@ class ErlangProject(Project):
         self.shellConsole.shell.SetProp("project_name", self.ProjectName())
         GetToolMgr().AddPage(self.shellConsole, "IDE Console")
 
-        self.consoles = {}
-        consoles = self.projectData["consoles"]
+        self.UpdatePaths()
 
+        self.UpdateProjectConsoles()
+
+    def UpdatePaths(self):
         dirs = ""
-        for app in self.projectData["apps"]:
+        for app in self.GetApps():
             appPath = os.path.join(self.AppsPath(), app)
-            if os.path.isdir(appPath):
-                ebinDir = os.path.join(appPath, "ebin")
-                self.shellConsole.shell.AddPath(ebinDir)
-                dirs += ' "{}"'.format(ebinDir)
+            ebinDir = os.path.join(appPath, "ebin")
+            self.shellConsole.shell.AddPath(ebinDir)
+            dirs += ' "{}"'.format(ebinDir)
         dirs += ' "{}"'.format(self.IDE_MODULES_DIR)
+        self.dirs = dirs
+
+    def UpdateProjectConsoles(self):
+        self.consoles = {}
+
+        consoles = self.projectData[self.CONFIG_CONSOLES]
+
+        for console in self.consoleTabs:
+            if console not in consoles:
+                c = self.consoleTabs[console]
+                c.Stop()
+                index = GetToolMgr().FindPageIndexByWindow(c)
+                GetToolMgr().DeletePage(index)
 
         for title in consoles:
             data = consoles[title]
             params = []
-            params.append("-sname " + data["sname"])
-            params.append("-cookie " + data["cookie"])
-            params.append("-config " + data["config"])
+            params.append("-sname " + data[self.CONFIG_CONSOLE_SNAME])
+            params.append("-cookie " + data[self.CONFIG_CONSOLE_COOKIE])
+            params.append(data[self.CONFIG_CONSOLE_PARAMS])
 
-            params.append("-pa " + dirs)
-            self.consoles[title] = ErlangProjectConsole(GetToolMgr(), self.AppsPath(), params)
-            self.consoles[title].SetStartCommand(data["command"])
-            GetToolMgr().AddPage(self.consoles[title], '<{}> Console'.format(title))
+            params.append("-pa " + self.dirs)
+
+            if title in self.consoleTabs:
+                self.consoleTabs[title].SetParams(params)
+            else:
+                self.consoles[title] = ErlangProjectConsole(GetToolMgr(), self.AppsPath(), params)
+                self.consoles[title].SetStartCommand(data[self.CONFIG_CONSOLE_COMMAND])
+                GetToolMgr().AddPage(self.consoles[title], '<{}> Console'.format(title))
+                self.consoleTabs[title] = self.consoles[title]
+
+    def GetApps(self):
+        apps = []
+        for app in os.listdir(self.AppsPath()):
+            if app in self.projectData[self.CONFIG_EXCLUDED_DIRS]:
+                continue
+            appPath = os.path.join(self.AppsPath(), app)
+            if not os.path.isdir(appPath):
+                continue
+            apps.append(app)
+        return apps
 
     def AddTabs(self):
         self.errorsTable = ErrorsTableGrid(GetToolMgr())
@@ -221,8 +267,7 @@ class ErlangProject(Project):
                     wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
                 if dial.ShowModal() == wx.ID_YES:
                     editor.LoadFile(editor.filePath)
-                    editor.saved = False
-                    editor.changed = True
+                    #editor.OnSavePointReached(None)
         else:
             print "modified", file
             self.Compile(file)
@@ -242,11 +287,6 @@ class ErlangProject(Project):
         page = GetTabMgr().FindPageIndexByPath(file)
 
         if editor:
-            #wx.MessageBox(('File "{}" was deleted.\nYour copy remains in opened tabs.' +
-            #              '\nYou can close it or save to disk again.').format(file),
-            #    'File deleted')
-            #editor.OnSavePointLeft(None)
-            #editor.Changed()
             dial = wx.MessageDialog(None,
                 'File "{}" was deleted.\nDo you want to close tab with deleted document?'.format(file),
                 "File deleted",
@@ -264,14 +304,23 @@ class ErlangProject(Project):
         self.Compile(file)
         event.Skip()
 
+    def OnProjectDirCreated(self, event):
+        appPath = event.File
+        (root, app) = os.path.split(appPath)
+        if root == self.AppsPath():
+            self.UpdatePaths()
+            self.UpdateProjectConsoles()
+        event.Skip()
+
     def CompileProject(self):
         #print "compile project"
         filesToCompile = set()
         filesToCache = set()
-        for app in self.projectData["apps"]:
+        for app in self.GetApps():
             srcPath = os.path.join(os.path.join(self.AppsPath(), app), "src")
             includePath = os.path.join(os.path.join(self.AppsPath(), app), "include")
             for path in [srcPath, includePath]:
+                #if not os.path.isdir(path): continue
                 for root, _, files in os.walk(path):
                     for file in files:
                         file = os.path.join(root, file)
@@ -287,7 +336,7 @@ class ErlangProject(Project):
 
     def RemoveUnusedBeams(self):
         srcFiles = set()
-        for app in self.projectData["apps"]:
+        for app in self.GetApps():
             path = os.path.join(self.AppsPath(), app, "src")
             for root, _, files in os.walk(path):
                 for fileName in files:
@@ -303,7 +352,7 @@ class ErlangProject(Project):
                             os.remove(os.path.join(root, fileName))
 
     def IsFlyCompileEnabled(self):
-        return "fly_compile" in self.projectData and self.projectData["fly_compile"]
+        return self.CONFIG_FLY_COMPILE in self.projectData and self.projectData[self.CONFIG_FLY_COMPILE]
 
     def AddErrors(self, path, errors):
         self.errors[path] = errors
@@ -343,6 +392,10 @@ class ErlangProject(Project):
         flyPath = os.path.join(self.flyDir, "fly_" + file)
         writeFile(flyPath, data)
         self.GetShell().CompileFileFly(realPath, flyPath)
+
+    def UpdateProject(self):
+        self.UpdatePaths()
+        self.UpdateProjectConsoles()
 
 class FastProjectFileOpenDialog(wx.Dialog):
     def __init__(self, parent, project):
@@ -488,35 +541,329 @@ class ErrorsTableGrid(wx.grid.Grid):
         editor.GotoLine(line - 1)
 
     def AddErrors(self, path, errors):
-        #print path, errors
         currentRows = len(self.table.data)
 
         data = list(filter(lambda x: x[0] != path, self.table.data))
         for e in errors:
             data.append((e.path, e.line + 1, e.TypeToStr(), e.msg))
-        #data.sort(key = lambda e: e[0])
-        #data.sort(key = lambda e: CompileErrorInfo.StrToType(e[2]), reverse= True)
-        #print data
         self.table.data = data
         self.table.ResetView(self, currentRows)
-#        new = len(self.table.data)
-#        if new < current:
-#            msg = wx.grid.GridTableMessage(self.table, wx.grid.GRIDTABLE_NOTIFY_ROWS_DELETED,
-#                new, current-new)
-#            self.ProcessTableMessage(msg)
-#        elif new > current:
-#            msg = wx.grid.GridTableMessage(self.table, wx.grid.GRIDTABLE_NOTIFY_ROWS_APPENDED,
-#                new - current)
-#            self.ProcessTableMessage(msg)
-#        msg = wx.grid.GridTableMessage(self.table, wx.grid.GRIDTABLE_REQUEST_VIEW_GET_VALUES)
-#        self.ProcessTableMessage(msg)
 
-        #self.ForceRefresh()
+
+class ErlangProjectFrom(wx.Dialog):
+    def __init__(self, project = None):
+        wx.Dialog.__init__(self, GetMainFrame(), size = (340, 500), title = "Create\Edit project",
+            style = wx.DEFAULT_DIALOG_STYLE | wx.WS_EX_VALIDATE_RECURSIVELY)
+
+        self.consoles = {}
+
+        self.CreateForm()
+
+        self.project = project
+        if self.project:
+            self.SetCurrentValues()
+
+    def CreateForm(self):
+        self.projectNameTB = wx.TextCtrl(self, value = "Project_name", size = (250, 20), validator = NotEmptyTextValidator("Title"))
+        self.projectNameTB.SetToolTipString("Project name")
+
+        self.projectPathTB = wx.TextCtrl(self, value = "C:\\YourProjectFolder", size = (250, 20), validator = NotEmptyTextValidator("Project dir"))
+        self.projectPathTB.SetToolTipString("Path to folder")
+        self.projectPathTB.Bind(wx.EVT_TEXT, self.OnPathChanged)
+
+        self.appsDirTB = wx.TextCtrl(self, value = "apps", size = (250, 20))
+        self.appsDirTB.SetToolTipString("Apps folder name")
+        self.appsDirTB.Bind(wx.EVT_TEXT, self.OnPathChanged)
+
+        self.flyCB = wx.CheckBox(self, label = "Fly compilation")
+        self.flyCB.SetValue(True)
+        self.flyCB.SetToolTipString("Enable fly compilation. Highlights errors while you enter code")
+
+        self.excludedDirList = wx.CheckListBox(self, choices = [], size = (220, 150))
+        self.excludedDirList.SetToolTipString("Directories to exclude from compilation")
+
+        self.erlangPathTB = wx.TextCtrl(self, value = "C:\\Programming\\erl5.9\\bin\\erl.exe", size = (250, 20), validator = PathExistsValidator("Erlang path"))
+        self.erlangPathTB.SetToolTipString("Path to erlang executeable. Example: 'C:\\Programming\\erl5.9\\bin\\erl.exe'")
+
+
+        self.consolesList = wx.ListBox(self, size = (200, 70))
+        self.consolesList.SetToolTipString("Consoles list for project. Each console has own params and can be started independent")
+
+        self.addConsoleButton = CreateButton(self, "Add", self.OnAddConsole)
+        self.editConsoleButton = CreateButton(self, "Edit", self.OnEditConsole)
+        self.removeConsoleButton = CreateButton(self, "Remove", self.OnRemoveConsole)
+
+        self.closeButton = CreateButton(self, "Close", lambda e: self.Close())
+        self.saveButton = CreateButton(self, "Save", self.OnSave)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        gSizer = wx.GridBagSizer(2, 2)
+
+        gSizer.Add(CreateLabel(self, "Title:"), (0, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
+        gSizer.Add(self.projectNameTB, (0, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
+
+        gSizer.Add(CreateLabel(self, "Project dir:"), (1, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
+        gSizer.Add(self.projectPathTB, (1, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
+
+        gSizer.Add(CreateLabel(self, "Apps dir:"), (2, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
+        gSizer.Add(self.appsDirTB, (2, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
+
+        gSizer.Add(CreateLabel(self, "Erlang path:"), (3, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
+        gSizer.Add(self.erlangPathTB, (3, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
+
+        gSizer.Add(self.flyCB, (4, 1), flag = wx.ALL | wx.ALIGN_LEFT, border = 4)
+
+        sizer.AddSizer(gSizer)
+
+        excludedAppsSizer = wx.StaticBoxSizer(wx.StaticBox(self, label = "Excluded dirs"), wx.HORIZONTAL)
+
+        excludedAppsSizer.Add(self.excludedDirList, 1, flag = wx.ALL | wx.ALIGN_LEFT | wx.EXPAND, border = 4)
+        sizer.AddSizer(excludedAppsSizer, flag = wx.EXPAND)
+
+        cSizerH = wx.StaticBoxSizer(wx.StaticBox(self, label = "Consoles"), wx.HORIZONTAL)
+
+        bSizer = wx.BoxSizer(wx.VERTICAL)
+        bSizer.Add(self.addConsoleButton)
+        bSizer.Add(self.editConsoleButton)
+        bSizer.Add(self.removeConsoleButton)
+
+        cSizerH.Add(self.consolesList, 1, flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
+        cSizerH.AddSizer(bSizer, flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
+
+        sizer.AddSizer(cSizerH, flag =  wx.EXPAND)
+
+        bSizerH = wx.BoxSizer(wx.HORIZONTAL)
+        bSizerH.Add(self.closeButton, flag = wx.ALL | wx.ALIGN_LEFT, border = 4)
+        bSizerH.AddStretchSpacer()
+        bSizerH.Add(self.saveButton, flag = wx.ALL | wx.ALIGN_RIGHT, border = 4)
+
+        sizer.AddSizer(bSizerH, 1, flag = wx.EXPAND)
+
+        self.SetSizer(sizer)
+        self.Layout()
+
+    def SetCurrentValues(self):
+        self.projectNameTB.Value = self.project.projectData[Project.CONFIG_PROJECT_NAME]
+        self.projectNameTB.Disable()
+        self.projectPathTB.Value = self.project.projectDir
+        self.projectPathTB.Disable()
+        self.appsDirTB.Value = self.project.projectData[ErlangProject.CONFIG_APPS_DIR]
+        self.erlangPathTB.Value = self.project.projectData[ErlangProject.CONFIG_ERLANG_PATH]
+        self.flyCB.Value = self.project.projectData[ErlangProject.CONFIG_FLY_COMPILE]
+
+        self.excludedDirList.SetItems(self.project.projectData[ErlangProject.CONFIG_EXCLUDED_DIRS] + self.project.GetApps())
+        self.excludedDirList.SetCheckedStrings(self.project.projectData[ErlangProject.CONFIG_EXCLUDED_DIRS])
+
+        self.consoles = self.project.projectData[ErlangProject.CONFIG_CONSOLES]
+        self.UpdateConsoles()
+
+
+    def OnPathChanged(self, event):
+        dir = self.projectPathTB.Value
+        if dir and os.path.isdir(dir):
+            apps = self.appsDirTB.Value
+            appsDir = os.path.join(dir, apps)
+            if apps and os.path.isdir(appsDir):
+                dir = appsDir
+
+            allDirs = [d for d in os.listdir(dir) if os.path.isdir(os.path.join(dir, d))]
+            self.excludedDirList.SetItems(allDirs)
+
+
+    def UpdateConsoles(self):
+        self.consolesList.Clear()
+        for console in self.consoles:
+            self.consolesList.Append(console)
+
+    def OnAddConsole(self, event):
+        dlg = ConsoleCreateEditDialog(self)
+        dlg.ShowModal()
+        self.UpdateConsoles()
+
+    def OnRemoveConsole(self, event):
+        del self.consoles[self.consolesList.GetStringSelection()]
+        self.UpdateConsoles()
+
+    def OnEditConsole(self, event):
+        dlg = ConsoleCreateEditDialog(self, self.consolesList.GetStringSelection())
+        dlg.ShowModal()
+        self.UpdateConsoles()
+
+    def OnSave(self, event):
+
+        if not self.Validate(): return
+
+        title = self.projectNameTB.Value
+        path = self.projectPathTB.Value
+        apps = self.appsDirTB.Value
+        erlang = self.erlangPathTB.Value
+        flyCB = self.flyCB.Value
+        excludedDirs = list(self.excludedDirList.GetCheckedStrings())
+
+        data = {}
+        data[Project.CONFIG_PROJECT_NAME] = title
+        data[Project.CONFIG_PROJECT_TYPE] = "erlang"
+        data[ErlangProject.CONFIG_APPS_DIR] = apps
+        data[ErlangProject.CONFIG_ERLANG_PATH] = erlang
+        data[ErlangProject.CONFIG_FLY_COMPILE] = flyCB
+        data[ErlangProject.CONFIG_EXCLUDED_DIRS] = excludedDirs
+
+        data[ErlangProject.CONFIG_CONSOLES] = self.consoles
+
+        pFile = os.path.join(path, title + ".noiseide.project")
+        if not os.path.isdir(path):
+            os.makedirs(path)
+        if apps:
+            appsPath = os.path.join(path, apps)
+            if not os.path.isdir(appsPath):
+                os.mkdir(appsPath)
+
+        stream = file(pFile, 'w')
+        yaml.dump(data, stream)
+
+        if self.project:
+            self.project.projectData = data
+            wx.CallAfter(self.project.UpdateProject)
+        else:
+            wx.CallAfter(GetMainFrame().OpenProject, pFile)
+
+        self.Close()
+
+class ConsoleCreateEditDialog(wx.Dialog):
+    def __init__(self, parent, console = None):
+        wx.Dialog.__init__(self, parent, title = "Console props",
+            style = wx.DEFAULT_DIALOG_STYLE | wx.WS_EX_VALIDATE_RECURSIVELY)
+
+        self.currentConsole = console
+
+        self.titleTB = wx.TextCtrl(self, value = "New console", size = (250, 20), validator = NotEmptyTextValidator("Title"))
+        self.snameTB = wx.TextCtrl(self, value = "sname", size = (250, 20), validator = NotEmptyTextValidator("SName"))
+        self.cookieTB = wx.TextCtrl(self, value = "123", size = (250, 20), validator = NotEmptyTextValidator("Cookie"))
+        self.paramsTB = wx.TextCtrl(self, value = "", size = (250, 20))
+        self.commandTB = wx.TextCtrl(self, value = "", size = (250, 20))
+
+        self.saveB = CreateButton(self, "Save", self.OnSave)
+        self.cancelB = CreateButton(self, "Cancel", lambda e: self.Close())
+
+        if console:
+            data = self.Parent.consoles[console]
+            self.titleTB.SetValue(console)
+            self.snameTB.SetValue(data[ErlangProject.CONFIG_CONSOLE_SNAME])
+            self.cookieTB.SetValue(data[ErlangProject.CONFIG_CONSOLE_COOKIE])
+            self.paramsTB.SetValue(data[ErlangProject.CONFIG_CONSOLE_PARAMS])
+            self.commandTB.SetValue(data[ErlangProject.CONFIG_CONSOLE_COMMAND])
+
+        gSizer = wx.GridBagSizer(2, 2)
+
+        gSizer.Add(CreateLabel(self, "Title:"), (0, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
+        gSizer.Add(self.titleTB, (0, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
+
+        gSizer.Add(CreateLabel(self, "SName:"), (1, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
+        gSizer.Add(self.snameTB, (1, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
+
+        gSizer.Add(CreateLabel(self, "Cookie:"), (2, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
+        gSizer.Add(self.cookieTB, (2, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
+
+        gSizer.Add(CreateLabel(self, "Params:"), (3, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
+        gSizer.Add(self.paramsTB, (3, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
+
+        gSizer.Add(CreateLabel(self, "Start command:"), (4, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
+        gSizer.Add(self.commandTB, (4, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
+
+        gSizer.Add(self.cancelB, (5, 0), flag = wx.ALL | wx.ALIGN_LEFT | wx.EXPAND, border = 4)
+        gSizer.Add(self.saveB, (5, 1), flag = wx.ALL | wx.ALIGN_RIGHT | wx.EXPAND, border = 4)
+
+        self.SetSizer(gSizer)
+        self.Layout()
+
+    def OnSave(self, event):
+
+        if not self.Validate(): return
+
+        title = self.titleTB.Value
+        sname = self.snameTB.Value
+        cookie = self.cookieTB.Value
+        params = self.paramsTB.Value
+        command = self.commandTB.Value
+
+        if (title and self.currentConsole
+            and self.currentConsole != title
+            and not title in self.Parent.consoles ):
+            del self.Parent.consoles[self.currentConsole]
+
+        data = {}
+        data[ErlangProject.CONFIG_CONSOLE_SNAME] = sname
+        data[ErlangProject.CONFIG_CONSOLE_COOKIE] = cookie
+        data[ErlangProject.CONFIG_CONSOLE_PARAMS] = params
+        data[ErlangProject.CONFIG_CONSOLE_COMMAND] = command
+
+        self.Parent.consoles[title] = data
+        self.Close()
+
+
+class BasicValidator(wx.PyValidator):
+    def __init__(self, title):
+        wx.PyValidator.__init__(self)
+        self.title = title
+
+    def TransferToWindow(self):
+        return True
+
+    def TransferFromWindow(self):
+        return True
+
+    def Clone(self):
+        return type(self)(self.title)
+
+    def Error(self):
+        wnd = self.GetWindow()
+        wnd.SetBackgroundColour("pink")
+        wnd.SetFocus()
+        wnd.Refresh()
+        return False
+
+    def Ok(self):
+        wnd = self.GetWindow()
+        wnd.SetBackgroundColour(
+            wx.SystemSettings_GetColour(wx.SYS_COLOUR_WINDOW))
+        wnd.Refresh()
+        return True
+
+class NotEmptyTextValidator(BasicValidator):
+    def Validate(self, win):
+        textCtrl = self.GetWindow()
+        text = textCtrl.GetValue()
+
+        if len(text) == 0:
+            wx.MessageBox(self.title + " must be not empty", "Error")
+            return self.Error()
+        else:
+            return self.Ok()
+
+class PathExistsValidator(BasicValidator):
+    def __init__(self, title, isDir = False):
+        BasicValidator.__init__(self, title)
+        self.isDir = isDir
+
+    def Validate(self, win):
+        textCtrl = self.GetWindow()
+        text = textCtrl.GetValue()
+
+        if self.isDir:
+            result = os.path.isdir(text)
+        else:
+            result = os.path.isfile(text)
+
+        if not result:
+            wx.MessageBox(self.title + " must be existing " + ("dir" if self.isDir else "file"), "Error")
+            return self.Error()
+        else:
+            return self.Ok()
 
 def loadProject(window, filePath):
     TYPE_PROJECT_DICT = {
         "erlang": ErlangProject
     }
     projectData = yaml.load(file(filePath, 'r'))
-    type = projectData["project_type"]
+    type = projectData[Project.CONFIG_PROJECT_TYPE]
     return TYPE_PROJECT_DICT[type](window, filePath, projectData)

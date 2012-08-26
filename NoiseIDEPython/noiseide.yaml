@@ -1,5 +1,2 @@
-color_schema: dark
-flymake: true
-languages: {erlang: 'C:\\Programming\\erl5.9\\bin\\erl'}
-last_project: !!python/unicode 'D:\Projects\Joe\Server\gijoe.noiseide.project'
-user_name: Yaroslav 'IDNoise' Nikityshev
+{color_schema: dark, last_project: !!python/unicode 'd:\Projects\GIJoe\server\GIJoeE.noiseide.project',
+  user_name: Yaroslav 'IDNoise' Nikityshev}

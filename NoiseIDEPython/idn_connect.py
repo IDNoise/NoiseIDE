@@ -1,21 +1,18 @@
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
-import io
 import socket
 import os
 import time
 import struct
-import subprocess as sub
 from Queue import Queue
-from idn_config import Config
 from threading import Thread, Event
-from wx import Process, Execute
+from wx import Process
 import wx.lib.agw.pyprogress as PP
 import asyncore
 import json
 import random
 import wx
-from idn_global import GetTabMgr, GetProject, Log
+from idn_global import GetProject, Log
 
 class AsyncoreThread(Thread):
     def __init__(self):
@@ -247,7 +244,7 @@ class ErlangProcess(Process):
         Process.__init__(self)
         self.Redirect()
         self.cwd = cwd
-        erlang = Config.LanguageExec("erlang")
+        erlang = GetProject().GetErlangPath()
         self.cmd = "{} {}".format(erlang, ' '.join(params + ["-s reloader"]))
         self.pid = None
         self.handler = None
@@ -255,6 +252,10 @@ class ErlangProcess(Process):
 
         self.timer = wx.Timer(self, wx.NewId())
         self.Bind(wx.EVT_TIMER, self.OnTimer, self.timer)
+
+    def SetParams(self, params):
+        erlang = GetProject().GetErlangPath()
+        self.cmd = "{} {}".format(erlang, ' '.join(params + ["-s reloader"]))
 
     def SendCommandToProcess(self, cmd):
         cmd += '\n'
@@ -284,9 +285,16 @@ class ErlangProcess(Process):
             self.timer.Stop()
         if not self.pid: return
         result = Process.Kill(self.pid, wx.SIGTERM)
-        if result not in [wx.KILL_OK, wx.KILL_NO_PROCESS]:
-            Process.Kill(self.pid, wx.SIGABRT)
-            Process.Kill(self.pid, wx.SIGKILL)
+        tries = 0
+        try:
+            while result not in [wx.KILL_OK, wx.KILL_NO_PROCESS]:
+                if tries < 3:
+                    result = Process.Kill(self.pid, wx.SIGABRT)
+                else:
+                    result = Process.Kill(self.pid, wx.SIGKILL)
+                tries += 1
+        except Exception, e:
+            os.kill(self.pid)
 
     def OnTerminate(self, *args, **kwargs):
         if self.timer:

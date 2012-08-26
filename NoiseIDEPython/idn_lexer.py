@@ -1,8 +1,8 @@
-from wx.stc import STC_FOLDLEVELHEADERFLAG, STC_FOLDLEVELBASE
-
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
+from wx.stc import STC_FOLDLEVELHEADERFLAG, STC_FOLDLEVELBASE
 from idn_highlight import ErlangHighlighter, ErlangHighlightType
+
 
 class BaseLexer:
     def __init__(self, stc):

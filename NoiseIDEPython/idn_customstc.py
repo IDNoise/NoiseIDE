@@ -1,18 +1,18 @@
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 
-from idn_cache import ErlangCache, Function, Record, Macros, readFile
-from idn_connect import CompileErrorInfo
-from idn_token import ErlangTokenizer, ErlangTokenType
 import os
 import wx
 from wx import stc
+from wx import html
 from wx.stc import STC_FOLDLEVELHEADERFLAG, StyledTextCtrl
+from idn_cache import ErlangCache, Function, Record, Macros, readFile
+from idn_connect import CompileErrorInfo
+from idn_token import ErlangTokenizer, ErlangTokenType
 from idn_colorschema import ColorSchema
 from idn_highlight import ErlangHighlightType
 from idn_lexer import ErlangLexer
 from idn_global import GetProject, GetTabMgr, GetMainFrame
-from wx import html
 
 
 class EditorFoldMixin:
@@ -185,6 +185,17 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
             self.Bind(stc.EVT_STC_SAVEPOINTLEFT, self.OnSavePointLeft)
             self.Bind(stc.EVT_STC_SAVEPOINTREACHED, self.OnSavePointReached)
         self.OnInit()
+
+    def GetLastVisibleLine(self):
+        """
+        return the last visible line on the screen,
+        taking into consideration the folded lines
+        """
+        return self.LineFromPosition(
+            self.PositionFromPoint(
+                wx.Point(self.GetPosition()[0],
+                    self.GetPosition()[1] + self.GetSize()[1]))
+        )
 
     def LoadFile(self, filePath):
         self.filePath = filePath
@@ -366,7 +377,35 @@ class YAMLSTC(CustomSTC):
 
 #class ErrorMarkersPanel(wx.)
 
-class ErlangSTC(CustomSTC):
+class ErlangHighlightedSTCBase(CustomSTC):
+    def SetupLexer(self):
+        self.lexer = ErlangLexer(self)
+        self.SetLexer(stc.STC_LEX_CONTAINER)
+
+    def SetupLanguageStyles(self):
+        formats = ColorSchema.LanguageFormats("erlang")
+        self.StyleSetSpec(ErlangHighlightType.DEFAULT, formats["default"])
+        self.StyleSetSpec(ErlangHighlightType.STRING, formats["string"])
+        self.StyleSetSpec(ErlangHighlightType.COMMENT, formats["comment"])
+        self.StyleSetSpec(ErlangHighlightType.ARROW, formats["arrow"])
+        self.StyleSetSpec(ErlangHighlightType.VAR, formats["variable"])
+        self.StyleSetSpec(ErlangHighlightType.MACROS, formats["macros"])
+        self.StyleSetSpec(ErlangHighlightType.ATOM, formats["atom"])
+        self.StyleSetSpec(ErlangHighlightType.MODULE, formats["module"])
+        self.StyleSetSpec(ErlangHighlightType.SPEC, formats["preproc"])
+        self.StyleSetSpec(ErlangHighlightType.FUNCTION, formats["function"])
+        self.StyleSetSpec(ErlangHighlightType.KEYWORD, formats["keyword"])
+        self.StyleSetSpec(ErlangHighlightType.MODULEATTR, formats["moduleattr"])
+        self.StyleSetSpec(ErlangHighlightType.PREPROC, formats["preproc"])
+        self.StyleSetSpec(ErlangHighlightType.RECORD, formats["record"])
+        self.StyleSetSpec(ErlangHighlightType.RECORDDEF, formats["record"])
+        self.StyleSetSpec(ErlangHighlightType.NUMBER, formats["number"])
+        self.StyleSetSpec(ErlangHighlightType.FUNDEC, formats["fundec"])
+        self.StyleSetSpec(ErlangHighlightType.BRACKET, formats["bracket"])
+        self.StyleSetSpec(ErlangHighlightType.BIF, formats["bif"])
+        self.StyleSetSpec(ErlangHighlightType.FULLSTOP, formats["fullstop"])
+
+class ErlangSTC(ErlangHighlightedSTCBase):
     TYPE_MODULE, TYPE_HRL, TYPE_UNKNOWN = range(3)
 
     MARKER_ERROR, MARKER_WARNING = (20, 21)
@@ -396,33 +435,8 @@ class ErlangSTC(CustomSTC):
         self.Bind(wx.EVT_LEFT_DOWN, self.OnMouseClick)
         self.Bind(wx.EVT_MIDDLE_DOWN, self.OnMiddleMouseClick)
 
-
-    def SetupLexer(self):
-        self.lexer = ErlangLexer(self)
-        self.SetLexer(stc.STC_LEX_CONTAINER)
-
     def SetupLanguageStyles(self):
-        formats = ColorSchema.LanguageFormats("erlang")
-        self.StyleSetSpec(ErlangHighlightType.DEFAULT, formats["default"])
-        self.StyleSetSpec(ErlangHighlightType.STRING, formats["string"])
-        self.StyleSetSpec(ErlangHighlightType.COMMENT, formats["comment"])
-        self.StyleSetSpec(ErlangHighlightType.ARROW, formats["arrow"])
-        self.StyleSetSpec(ErlangHighlightType.VAR, formats["variable"])
-        self.StyleSetSpec(ErlangHighlightType.MACROS, formats["macros"])
-        self.StyleSetSpec(ErlangHighlightType.ATOM, formats["atom"])
-        self.StyleSetSpec(ErlangHighlightType.MODULE, formats["module"])
-        self.StyleSetSpec(ErlangHighlightType.SPEC, formats["preproc"])
-        self.StyleSetSpec(ErlangHighlightType.FUNCTION, formats["function"])
-        self.StyleSetSpec(ErlangHighlightType.KEYWORD, formats["keyword"])
-        self.StyleSetSpec(ErlangHighlightType.MODULEATTR, formats["moduleattr"])
-        self.StyleSetSpec(ErlangHighlightType.PREPROC, formats["preproc"])
-        self.StyleSetSpec(ErlangHighlightType.RECORD, formats["record"])
-        self.StyleSetSpec(ErlangHighlightType.RECORDDEF, formats["record"])
-        self.StyleSetSpec(ErlangHighlightType.NUMBER, formats["number"])
-        self.StyleSetSpec(ErlangHighlightType.FUNDEC, formats["fundec"])
-        self.StyleSetSpec(ErlangHighlightType.BRACKET, formats["bracket"])
-        self.StyleSetSpec(ErlangHighlightType.BIF, formats["bif"])
-        self.StyleSetSpec(ErlangHighlightType.FULLSTOP, formats["fullstop"])
+        ErlangHighlightedSTCBase.SetupLanguageStyles(self)
 
         self.IndicatorSetStyle(1, stc.STC_INDIC_PLAIN)
         self.MarkerDefine(self.MARKER_ERROR, stc.STC_MARK_BACKGROUND,
@@ -955,6 +969,8 @@ class ConsoleSTC(CustomSTC):
     def __init__(self, parent):
         CustomSTC.__init__(self, parent, None)
         self.EnableLineNumbers(False)
+        self.SetMarginWidth(3, 0)
+
         self.SetCaretWidth(1)
         self.SetCaretLineBackground(ColorSchema.codeEditor["current_line_background"])
         self.SetCaretLineVisible(True)
@@ -973,6 +989,20 @@ class ConsoleSTC(CustomSTC):
     def Changed(self, changed = True):
         pass
 
+    def Append(self, text):
+        text += "\n"
+        wx.CallAfter(self._AppendText, text)
+
+    def _AppendText(self, text):
+        try:
+            linesCount = self.GetLineCount()
+            self.SetReadOnly(False)
+            self.AppendText(text)
+            self.SetReadOnly(True)
+            if self.GetLastVisibleLine() >= linesCount:
+                self.ScrollToLine(self.GetLineCount())
+        except Exception, e:
+            print "append text error", e
 
 
 class Marker:

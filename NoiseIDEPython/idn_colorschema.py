@@ -1,9 +1,8 @@
-from idn_global import GetMainFrame
-
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 import yaml
 import os
+from idn_global import GetMainFrame
 
 class ColorSchema:
     @classmethod
