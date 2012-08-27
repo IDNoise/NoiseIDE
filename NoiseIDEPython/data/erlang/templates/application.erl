@@ -29,12 +29,12 @@
 %% @end
 %%--------------------------------------------------------------------
 start(_StartType, _StartArgs) ->
-        case 'TopSupervisor':start_link() of
-                {ok, Pid} ->
-                        {ok, Pid};
-                Error ->
-                        Error
-        end.
+    case 'TopSupervisor':start_link() of
+        {ok, Pid} ->
+            {ok, Pid};
+        Error ->
+            Error
+    end.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -47,7 +47,7 @@ start(_StartType, _StartArgs) ->
 %% @end
 %%--------------------------------------------------------------------
 stop(_State) ->
-        ok.
+    ok.
 
 %%%===================================================================
 %%% Internal functions

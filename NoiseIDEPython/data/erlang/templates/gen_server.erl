@@ -32,7 +32,7 @@ start_link() -> gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 %%                     {stop, Reason}
 %% @end
 init([]) ->
-        {ok, #state{}}.
+    {ok, #state{}}.
 
 %% @spec handle_call(Request, From, State) ->
 %%                                   {reply, Reply, State} |
@@ -43,22 +43,22 @@ init([]) ->
 %%                                   {stop, Reason, State}
 %% @end
 handle_call(_Request, _From, State) ->
-        Reply = ok,
-        {reply, Reply, State}.
+    Reply = ok,
+    {reply, Reply, State}.
 
 %% @spec handle_cast(Msg, State) -> {noreply, State} |
 %%                                  {noreply, State, Timeout} |
 %%                                  {stop, Reason, State}
 %% @end
 handle_cast(_Msg, State) ->
-        {noreply, State}.
+    {noreply, State}.
 
 %% @spec handle_info(Info, State) -> {noreply, State} |
 %%                                   {noreply, State, Timeout} |
 %%                                   {stop, Reason, State}
 %% @end
 handle_info(_Info, State) ->
-        {noreply, State}.
+    {noreply, State}.
 
 %% @spec terminate(Reason, State) -> void()
 %% @end

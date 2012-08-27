@@ -17,8 +17,11 @@ EXT_STC_TYPE = {
 
 def GetSTCTypeByExt(file):
     ext = extension(file)
-    if ext in EXT_STC_TYPE:
-        return EXT_STC_TYPE[ext]
+    types = EXT_STC_TYPE
+    if GetProject():
+        types.update(GetProject().GetEditorTypes())
+    if ext in types:
+        return types[ext]
     else:
         return CustomSTC
 

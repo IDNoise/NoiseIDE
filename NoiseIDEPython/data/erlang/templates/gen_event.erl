@@ -23,12 +23,12 @@
 %% @spec start_link() -> {ok, Pid} | {error, Error}
 %% @end
 start_link() ->
-        gen_event:start_link({local, ?SERVER}).
+    gen_event:start_link({local, ?SERVER}).
 
 %% @spec add_handler() -> ok | {'EXIT', Reason} | term()
 %% @end
 add_handler() ->
-        gen_event:add_handler(?SERVER, ?MODULE, []).
+    gen_event:add_handler(?SERVER, ?MODULE, []).
 
 %%%===================================================================
 %%% gen_event callbacks
@@ -37,7 +37,7 @@ add_handler() ->
 %% @spec init(Args) -> {ok, State}
 %% @end
 init([]) ->
-        {ok, #state{}}.
+    {ok, #state{}}.
 
 %% @spec handle_event(Event, State) ->
 %%                          {ok, State} |
@@ -45,7 +45,7 @@ init([]) ->
 %%                          remove_handler
 %% @end
 handle_event(_Event, State) ->
-        {ok, State}.
+    {ok, State}.
 
 %% @spec handle_call(Request, State) ->
 %%                   {ok, Reply, State} |
@@ -53,8 +53,8 @@ handle_event(_Event, State) ->
 %%                   {remove_handler, Reply}
 %% @end
 handle_call(_Request, State) ->
-        Reply = ok,
-        {ok, Reply, State}.
+    Reply = ok,
+    {ok, Reply, State}.
 
 %% @spec handle_info(Info, State) ->
 %%                         {ok, State} |
@@ -62,7 +62,7 @@ handle_call(_Request, State) ->
 %%                         remove_handler
 %% @end
 handle_info(_Info, State) ->
-        {ok, State}.
+    {ok, State}.
 
 %% @spec terminate(Reason, State) -> void()
 %% @end

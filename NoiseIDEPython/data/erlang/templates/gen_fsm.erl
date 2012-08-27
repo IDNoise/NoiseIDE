@@ -33,7 +33,7 @@ start_link() -> gen_fsm:start_link({local, ?SERVER}, ?MODULE, [], []).
 %%                     {stop, StopReason}
 %% @end
 init([]) ->
-        {ok, state_name, #state{}}.
+    {ok, state_name, #state{}}.
 
 %% @spec state_name(Event, State) ->
 %%                   {next_state, NextStateName, NextState} |
@@ -41,7 +41,7 @@ init([]) ->
 %%                   {stop, Reason, NewState}
 %% @end
 state_name(_Event, State) ->
-        {next_state, state_name, State}.
+    {next_state, state_name, State}.
 
 %% @spec state_name(Event, From, State) ->
 %%                   {next_state, NextStateName, NextState} |
@@ -52,8 +52,8 @@ state_name(_Event, State) ->
 %%                   {stop, Reason, Reply, NewState}
 %% @end
 state_name(_Event, _From, State) ->
-        Reply = ok,
-        {reply, Reply, state_name, State}.
+    Reply = ok,
+    {reply, Reply, state_name, State}.
 
 %% @spec handle_event(Event, StateName, State) ->
 %%                   {next_state, NextStateName, NextState} |
@@ -61,7 +61,7 @@ state_name(_Event, _From, State) ->
 %%                   {stop, Reason, NewState}
 %% @end
 handle_event(_Event, StateName, State) ->
-        {next_state, StateName, State}.
+    {next_state, StateName, State}.
 
 %% @spec handle_sync_event(Event, From, StateName, State) ->
 %%                   {next_state, NextStateName, NextState} |
@@ -72,8 +72,8 @@ handle_event(_Event, StateName, State) ->
 %%                   {stop, Reason, Reply, NewState}
 %% @end
 handle_sync_event(_Event, _From, StateName, State) ->
-        Reply = ok,
-        {reply, Reply, StateName, State}.
+    Reply = ok,
+    {reply, Reply, StateName, State}.
 
 %% @spec handle_info(Info,StateName,State)->
 %%                   {next_state, NextStateName, NextState} |
@@ -81,7 +81,7 @@ handle_sync_event(_Event, _From, StateName, State) ->
 %%                   {stop, Reason, NewState}
 %% @end
 handle_info(_Info, StateName, State) ->
-        {next_state, StateName, State}.
+    {next_state, StateName, State}.
 
 %% @spec terminate(Reason, StateName, State) -> void()
 %% @end

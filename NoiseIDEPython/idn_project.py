@@ -1,3 +1,5 @@
+from idn_customstc import ErlangHighlightedSTCBase
+
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 import os
@@ -105,6 +107,8 @@ class Project:
         #print(self.userData[self.CONFIG_MASK])
         #print(self.userData[self.CONFIG_HIDDEN_PATHS])
         yaml.dump(self.userData, open(self.userDataFile, 'w'))
+
+    def GetEditorTypes(self): return []
 
 
 class ErlangProject(Project):
@@ -311,6 +315,11 @@ class ErlangProject(Project):
             self.UpdatePaths()
             self.UpdateProjectConsoles()
         event.Skip()
+
+    def GetEditorTypes(self):
+        return {".config": ErlangHighlightedSTCBase,
+                ".src": ErlangHighlightedSTCBase,
+                ".app": ErlangHighlightedSTCBase}
 
     def CompileProject(self):
         #print "compile project"
