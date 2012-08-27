@@ -273,7 +273,7 @@ class ErlangProject(Project):
                     editor.LoadFile(editor.filePath)
                     #editor.OnSavePointReached(None)
         else:
-            print "modified", file
+            #print "modified", file
             self.Compile(file)
         event.Skip()
 

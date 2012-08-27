@@ -638,7 +638,7 @@ class ErlangProjectExplorer(ProjectExplorer):
         menu.AppendMenuItem("Application", self, lambda e:
             self.CreateFromTemplate("application.erl", "Application", "application_1"))
         menu.AppendMenuItem("App Src", self, lambda e:
-            self.CreateFromTemplate("app.src", "App Src", ".app.src", "application_1", "Enter application name:"))
+            self.CreateFromTemplate("app.src", "App Src", "application_1", ".app.src", "Enter application name:"))
         newMenu.AppendMenu(wx.NewId(), "Template", menu)
 
     def DefaultMask(self):
@@ -696,7 +696,7 @@ class ErlangProjectExplorer(ProjectExplorer):
         data = data.replace("[date]", time.strftime("%d.%m.%Y"))
         return data
 
-    def CreateFromTemplate(self, template, title, ext = ".erl", defaultValue = "new_module_name", prompt = "Enter module name:"):
+    def CreateFromTemplate(self, template, title, defaultValue = "new_module_name", ext = ".erl", prompt = "Enter module name:"):
         (module, path) = self.RequestName(title, prompt, defaultValue)
         path = path + ext
         if path and not os.path.isfile(path):

@@ -230,10 +230,12 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
                 self.lastTaskTime = time.time()
                 self.progressDialog.UpdatePulse(self.lastTaskDone)
                 self.lastTaskDone = None
-            if time.time() - self.lastTaskTime > 7 and len(self.tasks) > 0:
+            if (time.time() - self.lastTaskTime > 7 and len(self.tasks) > 0 and 
+                 not self.TASK_GEN_ERLANG_CACHE in self.tasks):
                 Log("####\n 7 seconds from last task done. Tasks left ", len(self.tasks))
                 Log("\n\t".join([str(t) for t in self.tasks]))
-            if time.time() - self.lastTaskTime > 15 and len(self.tasks) > 0:
+            if (time.time() - self.lastTaskTime > 15 and len(self.tasks) > 0 and
+                   not self.TASK_GEN_ERLANG_CACHE in self.tasks):
                 Log("####\n 15 seconds from last task done. Tasks left ", len(self.tasks))
                 Log("\n\t".join([str(t) for t in self.tasks]))
                 self.progressDialog.Destroy()
@@ -249,6 +251,7 @@ class ErlangProcess(Process):
         self.pid = None
         self.handler = None
         self.processQueue = Queue()
+        self.stopped = False
 
         self.timer = wx.Timer(self, wx.NewId())
         self.Bind(wx.EVT_TIMER, self.OnTimer, self.timer)
@@ -270,6 +273,7 @@ class ErlangProcess(Process):
         self.timer.Start(100)
         self.inputStream = self.GetInputStream()
         self.outputStream = self.GetOutputStream()
+        self.stopped = False
 
     def OnTimer(self, event):
         if  self.inputStream.CanRead():
@@ -283,18 +287,9 @@ class ErlangProcess(Process):
     def Stop(self):
         if self.timer:
             self.timer.Stop()
-        if not self.pid: return
-        result = Process.Kill(self.pid, wx.SIGTERM)
-        tries = 0
-        try:
-            while result not in [wx.KILL_OK, wx.KILL_NO_PROCESS]:
-                if tries < 3:
-                    result = Process.Kill(self.pid, wx.SIGABRT)
-                else:
-                    result = Process.Kill(self.pid, wx.SIGKILL)
-                tries += 1
-        except Exception, e:
-            os.kill(self.pid)
+        if not self.pid or self.stopped: return
+        wx.Kill(self.pid, wx.SIGKILL, wx.KILL_CHILDREN)
+        self.stopped = True
 
     def OnTerminate(self, *args, **kwargs):
         if self.timer:

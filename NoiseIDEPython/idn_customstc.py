@@ -205,6 +205,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.lastHighlightedWord = ""
         self.changed = False
         self.saved = True
+        self.Clear()
         StyledTextCtrl.LoadFile(self, self.filePath)
         self.SetSelection(0, 0)
 
@@ -618,12 +619,14 @@ class ErlangSTC(ErlangHighlightedSTCBase):
             text.endswith("[") or
             text.endswith("||") or
             text.endswith("begin") or
+            text.endswith("andalso") or
+            text.endswith("orelse") or
             text.endswith("when") or
             text.endswith("of") or
             text.endswith("->") or
             text.endswith("(")):
             indent += 4
-        elif (text.endswith(";") or text.endswith(".")):
+        elif (text.endswith(".")):
             indent -= 4
         else:
             for (op, cl) in [("(", ")"), ("{", "}"), ("[", "]")]:
