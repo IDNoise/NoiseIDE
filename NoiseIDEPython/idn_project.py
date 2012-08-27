@@ -1,4 +1,4 @@
-from idn_customstc import ErlangHighlightedSTCBase
+import time
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
@@ -7,16 +7,74 @@ import yaml
 import wx
 from wx.lib.agw import aui
 from wx.grid import PyGridTableBase
+import wx.lib.agw.pyprogress as PP
 from TextCtrlAutoComplete import TextCtrlAutoComplete
 from idn_cache import ErlangCache, readFile
-from idn_connect import CompileErrorInfo
+from idn_connect import CompileErrorInfo, ErlangIDEConnectAPI
 from idn_findreplace import FindInProjectDialog
-from idn_utils import writeFile, CreateButton, CreateLabel
+from idn_utils import writeFile, CreateButton, CreateLabel, Menu
 import idn_projectexplorer as exp
 from idn_console import ErlangIDEConsole, ErlangProjectConsole
 from idn_global import GetTabMgr, GetToolMgr, GetMainFrame, Log
+from idn_customstc import ErlangHighlightedSTCBase
 
-class Project:
+class ProgressTaskManagerDialog(wx.EvtHandler):
+    def __init__(self):
+        wx.EvtHandler.__init__(self)
+        self.progressDialog = None
+        self.progressTimer = wx.Timer(self, wx.NewId())
+        self.progressTimer.Start(250)
+        self.progressTimer.Bind(wx.EVT_TIMER, self.OnProgressTimer, self.progressTimer)
+        self.tasks = set()
+        self.lastTaskTime = time.time()
+
+    def AddTask(self, task):
+        self.tasks.add(task)
+
+    def TaskDone(self, description, task = None):
+        self.lastTaskDone = description
+        self.progressDialog.UpdatePulse(self.lastTaskDone)
+        self.lastTaskTime = time.time()
+        if task in self.tasks:
+            self.tasks.remove(task)
+        if len(self.tasks) == 0:
+            self.DestroyDialog()
+
+    def CreateProgressDialog(self, text = "IDE Activities"):
+        if self.progressDialog:
+            pass
+        else:
+            self.progressDialog = PP.PyProgress(message = text,
+                agwStyle = wx.PD_APP_MODAL | wx.PD_ELAPSED_TIME)
+            self.progressDialog.SetGaugeProportion(0.2)
+            self.progressDialog.SetGaugeSteps(50)
+            self.progressDialog.SetGaugeBackground(wx.BLACK)
+            self.progressDialog.SetFirstGradientColour(wx.GREEN)
+            self.progressDialog.SetSecondGradientColour(wx.BLUE)
+            self.progressDialog.SetSize((500, 150))
+            self.progressDialog.ShowDialog()
+
+    def OnProgressTimer(self, event):
+        if self.progressDialog:
+            self.progressDialog.UpdatePulse("Tasks in queue: {}".format(len(self.tasks)))
+
+            if (time.time() - self.lastTaskTime > 10 and len(self.tasks) > 0 and
+                not ErlangIDEConnectAPI.TASK_GEN_ERLANG_CACHE in self.tasks):
+                Log("####\n 10 seconds from last task done. Tasks left ", len(self.tasks))
+                Log("\n\t".join([str(t) for t in self.tasks]))
+            if (time.time() - self.lastTaskTime > 15 and len(self.tasks) > 0 and
+                not ErlangIDEConnectAPI.TASK_GEN_ERLANG_CACHE in self.tasks):
+                Log("####\n 15 seconds from last task done. Tasks left ", len(self.tasks))
+                Log("\n\t".join([str(t) for t in self.tasks]))
+                self.DestroyDialog()
+
+    def DestroyDialog(self):
+        if self.progressDialog:
+            self.progressDialog.Destroy()
+            self.progressDialog = None
+
+class Project(ProgressTaskManagerDialog):
+
     EXPLORER_TYPE = exp.ProjectExplorer
     USER_DATA_FOLDER = os.path.join(os.getcwd(), 'userdata')
 
@@ -28,6 +86,7 @@ class Project:
 
 
     def __init__(self, window, filePath, projectData):
+        ProgressTaskManagerDialog.__init__(self)
         self.window = window
         window.project = self
         self.projectFilePath = filePath
@@ -43,9 +102,16 @@ class Project:
         else:
             self.userData = {}
 
+        self.menu = Menu()
+        window.MenuBar().Insert(window.MenuBar().GetMenuCount() - 1, self.menu, "&Project")
+        self.SetupMenu()
+
         self.CreateExplorer()
         self.OnLoadProject()
         self.OpenLastFiles()
+
+    def SetupMenu(self):
+        pass
 
     def ProjectName(self):
         return self.projectData[self.CONFIG_PROJECT_NAME]
@@ -148,6 +214,10 @@ class ErlangProject(Project):
 
         GetTabMgr().Parent.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
 
+    def SetupMenu(self):
+        self.menu.AppendMenuItem("Generate erlang cache", self.menu, lambda e: self.GenerateErlangCache())
+        self.menu.AppendMenuItem("Rebuild project", self.menu, lambda e: self.CompileProject())
+
     def GetEditForm(self): return ErlangProjectFrom
 
     def AppsPath(self):
@@ -170,7 +240,7 @@ class ErlangProject(Project):
                 os.remove(os.path.join(self.flyDir, file))
 
     def GenerateErlangCache(self):
-        self.shellConsole.shell.GenerateErlangCache()
+        self.GetShell().GenerateErlangCache()
 
     def GetShell(self):
         return self.shellConsole.shell

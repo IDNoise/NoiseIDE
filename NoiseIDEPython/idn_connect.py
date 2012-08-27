@@ -7,7 +7,6 @@ import struct
 from Queue import Queue
 from threading import Thread, Event
 from wx import Process
-import wx.lib.agw.pyprogress as PP
 import asyncore
 import json
 import random
@@ -118,21 +117,14 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
 
     def __init__(self):
         ErlangSocketConnection.__init__(self)
-        self.tasks = set()
         self.SetSocketHandler(self._HandleSocketResponse)
-        self.progressDialog = None
-        self.lastTaskDone = None
-        self.progressTimer = wx.Timer(self, wx.NewId())
-        self.progressTimer.Start(250)
-        self.Bind(wx.EVT_TIMER, self.OnProgressTimer, self.progressTimer)
-        self.lastTaskTime = time.time()
 
     def CompileFile(self, file):
-        self.tasks.add((self.TASK_COMPILE, file))
+        GetProject().AddTask((self.TASK_COMPILE, file))
         self._ExecRequest("compile_file", '"{}"'.format(file))
 
     def CompileFileFly(self, realPath, flyPath):
-        self.tasks.add((self.TASK_COMPILE, realPath.lower()))
+        GetProject().AddTask((self.TASK_COMPILE, realPath.lower()))
         self._ExecRequest("compile_file_fly", '["{0}", "{1}"]'.format(erlstr(realPath), erlstr(flyPath)))
 
     def Rpc(self, module, fun):
@@ -148,13 +140,13 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
         self._ExecRequest("compile_project_file", '["{0}", "{1}"]'.format(erlstr(file), app))
 
     def CompileProjectFiles(self, files):
-        self._CreateProgressDialog("Compiling project")
+        GetProject().CreateProgressDialog("Compiling project")
         for (file, app) in files:
-            self.tasks.add((self.TASK_COMPILE, file.lower()))
+            GetProject().AddTask((self.TASK_COMPILE, file.lower()))
             self.CompileProjectFile(file, app)
 
     def GenerateFileCache(self, file):
-        self.tasks.add((self.TASK_GEN_FILE_CACHE, file.lower()))
+        GetProject().AddTask((self.TASK_GEN_FILE_CACHE, file.lower()))
         self._ExecRequest("gen_file_cache", '"{}"'.format(erlstr(file)))
 
     def GenerateFileCaches(self, files):
@@ -162,8 +154,8 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
             self.GenerateFileCache(file)
 
     def GenerateErlangCache(self):
-        self.tasks.add(self.TASK_GEN_ERLANG_CACHE)
-        self._CreateProgressDialog("Generating/Checking erlang cache")
+        GetProject().AddTask(self.TASK_GEN_ERLANG_CACHE)
+        GetProject().CreateProgressDialog("Generating/Checking erlang cache")
         self._ExecRequest("gen_erlang_cache", '[]')
 
     def GenerateProjectCache(self):
@@ -175,22 +167,9 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
     def RemovePath(self, path):
         self._ExecRequest("add_path", '"{}"'.format(erlstr(path)))
 
-    def _CreateProgressDialog(self, text = "IDE Activities"):
-        if self.progressDialog:
-            pass
-        else:
-            self.progressDialog = PP.PyProgress(message = text,
-                agwStyle= wx.PD_APP_MODAL | wx.PD_ELAPSED_TIME)
-            self.progressDialog.SetGaugeProportion(0.2)
-            self.progressDialog.SetGaugeSteps(50)
-            self.progressDialog.SetGaugeBackground(wx.BLACK)
-            self.progressDialog.SetFirstGradientColour(wx.GREEN)
-            self.progressDialog.SetSecondGradientColour(wx.BLUE)
-            self.progressDialog.SetSize((500, 150))
-            self.progressDialog.ShowDialog()
-
     def _HandleSocketResponse(self, text):
         #Log("response", text)
+        self.lastTaskDone = None
         try:
             js = json.loads(text)
             if not "response" in js: return
@@ -204,42 +183,16 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
                     errors.append(CompileErrorInfo(path, error["type"], error["line"], error["msg"]))
                 #print "compile result: {} = {}".format(path, errors)
                 GetProject().AddErrors(path, errors)
-                self.lastTaskDone = "Compiled {}".format(path)
-                task = (self.TASK_COMPILE, path.lower())
-                if task in self.tasks:
-                    self.tasks.remove(task)
+                GetProject().TaskDone("Compiled {}".format(path), (self.TASK_COMPILE, path.lower()))
             elif res == "gen_file_cache":
                 path = pystr(js["path"])
-                self.lastTaskDone = "Generated cache for {}".format(path)
-                self.tasks.remove((self.TASK_GEN_FILE_CACHE, path.lower()))
+                GetProject().TaskDone("Generated cache for {}".format(path), (self.TASK_GEN_FILE_CACHE, path.lower()))
             elif res == "gen_erlang_cache":
-                self.lastTaskDone = "Generated cache for erlang libs"
-                self.tasks.remove(self.TASK_GEN_ERLANG_CACHE)
+                GetProject().TaskDone("Generated cache for erlang libs", self.TASK_GEN_ERLANG_CACHE)
             elif res == "connect":
                 Log("socket connected")
         except Exception, e:
             Log("===== exception ", e)
-
-        if len(self.tasks) == 0 and self.progressDialog:
-            self.progressDialog.Destroy()
-            self.progressDialog = None
-
-    def OnProgressTimer(self, event):
-        if self.progressDialog:
-            if self.lastTaskDone:
-                self.lastTaskTime = time.time()
-                self.progressDialog.UpdatePulse(self.lastTaskDone)
-                self.lastTaskDone = None
-            if (time.time() - self.lastTaskTime > 7 and len(self.tasks) > 0 and 
-                 not self.TASK_GEN_ERLANG_CACHE in self.tasks):
-                Log("####\n 7 seconds from last task done. Tasks left ", len(self.tasks))
-                Log("\n\t".join([str(t) for t in self.tasks]))
-            if (time.time() - self.lastTaskTime > 15 and len(self.tasks) > 0 and
-                   not self.TASK_GEN_ERLANG_CACHE in self.tasks):
-                Log("####\n 15 seconds from last task done. Tasks left ", len(self.tasks))
-                Log("\n\t".join([str(t) for t in self.tasks]))
-                self.progressDialog.Destroy()
-                self.progressDialog = None
 
 class ErlangProcess(Process):
     def __init__(self, cwd = os.getcwd(), params = []):

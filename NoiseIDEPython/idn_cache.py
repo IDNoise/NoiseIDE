@@ -101,6 +101,7 @@ class ErlangCache:
 
     @classmethod
     def Init(cls, project):
+        cls.project = project
         cls.CACHE_DIR = os.path.join(GetMainFrame().cwd, "cache", "erlang")
 
         cls.ERLANG_LIBS_CACHE_DIR =  os.path.join(cls.CACHE_DIR, "erlang")
@@ -155,6 +156,7 @@ class ErlangCache:
             cls.modules.add(name)
 
         cls.moduleData[name] = ModuleData(name, data)
+        cls.project.TaskDone("Cache for {} loaded".format(name))
         #Log("Cache:", file)
 
     @classmethod

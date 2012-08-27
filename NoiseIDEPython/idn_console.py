@@ -38,7 +38,7 @@ class ErlangConsole(wx.Panel):
         commandSizer = wx.BoxSizer(wx.HORIZONTAL)
         commandSizer.Add(self.commandText, 1, wx.EXPAND)
         commandSizer.AddSpacer(5)
-        commandSizer.Add(self.commandButton)
+        commandSizer.Add(self.commandButton, 0, wx.ALIGN_CENTER)
 
         consoleSizer = wx.BoxSizer(wx.VERTICAL)
         consoleSizer.Add(self.consoleOut, 1, wx.EXPAND | wx.BOTTOM)

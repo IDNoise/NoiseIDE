@@ -205,7 +205,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.lastHighlightedWord = ""
         self.changed = False
         self.saved = True
-        self.Clear()
+        self.ClearAll()
         StyledTextCtrl.LoadFile(self, self.filePath)
         self.SetSelection(0, 0)
 

@@ -89,7 +89,16 @@ class NoiseIDE(wx.Frame):
         self.fileMenu.AppendSeparator()
         self.fileMenu.AppendMenuItem('Quit', self, self.OnQuit)
         self.menubar.Append(self.fileMenu, '&File')
+        helpMenu = Menu()
+        helpMenu.AppendMenuItem("About", self, self.OnHelpAbout)
+        self.menubar.Append(helpMenu, '&Help')
         self.SetMenuBar(self.menubar)
+
+    def OnHelpAbout(self, event):
+        wx.MessageBox("IDE with good functionality for Erlang programming language.\nMade by Yaroslav 'IDNoise' Nikityshev.", "Noise IDE v0.1")
+
+    def MenuBar(self):
+        return self.menubar
 
     def OnOpen(self, event):
         dialog = wx.FileDialog(
