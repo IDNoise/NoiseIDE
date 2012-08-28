@@ -24,19 +24,24 @@ class ProgressTaskManagerDialog(wx.EvtHandler):
         self.progressDialog = None
         self.progressTimer = wx.Timer(self, wx.NewId())
         self.progressTimer.Start(250)
-        self.progressTimer.Bind(wx.EVT_TIMER, self.OnProgressTimer, self.progressTimer)
+        self.Bind(wx.EVT_TIMER, self.OnProgressTimer, self.progressTimer)
         self.tasks = set()
         self.lastTaskTime = time.time()
 
     def AddTask(self, task):
+        #print "add task", task
         self.tasks.add(task)
 
     def TaskDone(self, description, task = None):
         self.lastTaskDone = description
         self.progressDialog.UpdatePulse(self.lastTaskDone)
         self.lastTaskTime = time.time()
-        if task in self.tasks:
-            self.tasks.remove(task)
+        if task:
+            if task in self.tasks:
+                #print "done", task
+                self.tasks.remove(task)
+            else:
+                print "task not in tasks", task
         if len(self.tasks) == 0:
             self.DestroyDialog()
 
@@ -56,6 +61,9 @@ class ProgressTaskManagerDialog(wx.EvtHandler):
 
     def OnProgressTimer(self, event):
         if self.progressDialog:
+            #print "task left", len(self.tasks)
+            #if len(self.tasks) < 10:
+            #    print self.tasks
             self.progressDialog.UpdatePulse("Tasks in queue: {}".format(len(self.tasks)))
 
             if (time.time() - self.lastTaskTime > 10 and len(self.tasks) > 0 and

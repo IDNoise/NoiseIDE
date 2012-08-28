@@ -46,10 +46,14 @@ create_response(FilePath, Errors, Args) ->
                                 {errors, Errors}, 
                                 {path, iolist_to_binary(FilePath)},
                                 {args, Args}]}).
+create_response_fly(FilePath, Errors) -> 
+    mochijson2:encode({struct, [{response, compile_fly}, 
+                                {errors, Errors}, 
+                                {path, iolist_to_binary(FilePath)}]}).
 
 compile_file_fly(RealPath, NewPath) -> 
     Includes = generate_includes(eide_connect:prop(project_dir)),
-    create_response(RealPath, 
+    create_response_fly(RealPath, 
                     compile_internal(NewPath, Includes, false, RealPath)).
 
 compile_internal(FileName, Options) ->

@@ -113,7 +113,7 @@ class CompileErrorInfo:
         return cls.WARNING if str == "warning" else cls.ERROR
 
 class ErlangIDEConnectAPI(ErlangSocketConnection):
-    TASK_COMPILE, TASK_GEN_FILE_CACHE, TASK_GEN_ERLANG_CACHE = range(3)
+    TASK_COMPILE, TASK_COMPILE_FLY, TASK_GEN_FILE_CACHE, TASK_GEN_ERLANG_CACHE = range(4)
 
     def __init__(self):
         ErlangSocketConnection.__init__(self)
@@ -124,7 +124,7 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
         self._ExecRequest("compile_file", '"{}"'.format(file))
 
     def CompileFileFly(self, realPath, flyPath):
-        GetProject().AddTask((self.TASK_COMPILE, realPath.lower()))
+        GetProject().AddTask((self.TASK_COMPILE_FLY, realPath.lower()))
         self._ExecRequest("compile_file_fly", '["{0}", "{1}"]'.format(erlstr(realPath), erlstr(flyPath)))
 
     def Rpc(self, module, fun):
@@ -175,7 +175,7 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
             if not "response" in js: return
             res = js["response"]
 
-            if res == "compile":
+            if res == "compile" or res == "compile_fly":
                 errorsData = js["errors"]
                 path = pystr(js["path"])
                 errors = []
@@ -183,7 +183,11 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
                     errors.append(CompileErrorInfo(path, error["type"], error["line"], error["msg"]))
                 #print "compile result: {} = {}".format(path, errors)
                 GetProject().AddErrors(path, errors)
-                GetProject().TaskDone("Compiled {}".format(path), (self.TASK_COMPILE, path.lower()))
+                if res == "compile":
+                    done = (self.TASK_COMPILE, path.lower())
+                else:
+                    done = (self.TASK_COMPILE_FLY, path.lower())
+                GetProject().TaskDone("Compiled {}".format(path), done)
             elif res == "gen_file_cache":
                 path = pystr(js["path"])
                 GetProject().TaskDone("Generated cache for {}".format(path), (self.TASK_GEN_FILE_CACHE, path.lower()))

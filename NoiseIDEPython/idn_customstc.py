@@ -202,11 +202,11 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
     def LoadFile(self, filePath):
         self.filePath = filePath
         #print filePath
-        self.lastHighlightedWord = ""
-        self.changed = False
-        self.saved = True
         self.ClearAll()
         StyledTextCtrl.LoadFile(self, self.filePath)
+        self.changed = False
+        self.saved = True
+        self.lastHighlightedWord = ""
         self.SetSelection(0, 0)
 
     def OnInit(self):
@@ -299,8 +299,6 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
             else:
                 title = "* " + self.FileName()
             GetTabMgr().SetPageText(index, title)
-
-
 
     def FileName(self):
         return os.path.basename(self.filePath)
