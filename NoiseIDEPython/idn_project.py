@@ -113,13 +113,13 @@ class Project(ProgressTaskManagerDialog):
         else:
             self.userData = {}
 
-        self.menu = Menu()
-        window.MenuBar().Insert(window.MenuBar().GetMenuCount() - 1, self.menu, "&Project")
-        self.SetupMenu()
-
         self.CreateExplorer()
         self.OnLoadProject()
         self.OpenLastFiles()
+
+        self.menu = Menu()
+        self.SetupMenu()
+        self.window.MenuBar().Insert(window.MenuBar().GetMenuCount() - 1, self.menu, "&Project")
 
     def SetupMenu(self):
         pass
@@ -187,7 +187,6 @@ class Project(ProgressTaskManagerDialog):
 
     def GetEditorTypes(self): return []
 
-
 class ErlangProject(Project):
     IDE_MODULES_DIR = os.path.join(os.getcwd(), 'data', 'erlang', 'modules')
     EXPLORER_TYPE = exp.ErlangProjectExplorer
@@ -224,13 +223,17 @@ class ErlangProject(Project):
 
         GetTabMgr().Parent.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
 
-        ErlangCache.LoadCacheFromDir("erlang")
         ErlangCache.LoadCacheFromDir(self.ProjectName())
         ErlangCache.StartCheckingFolder(self.ProjectName())
 
+    def TaskDone(self, description, task = None):
+        Project.TaskDone(self, description, task)
+        if task == ErlangIDEConnectAPI.TASK_GEN_ERLANG_CACHE:
+            ErlangCache.LoadCacheFromDir("erlang")
+
     def SetupMenu(self):
-        self.menu.AppendMenuItem("Generate erlang cache", self.menu, lambda e: self.GenerateErlangCache())
-        self.menu.AppendMenuItem("Rebuild project", self.menu, lambda e: self.CompileProject())
+        self.menu.AppendMenuItem("Generate erlang cache", self, lambda e: self.GenerateErlangCache())
+        self.menu.AppendMenuItem("Rebuild project", self, lambda e: self.CompileProject())
 
     def GetEditForm(self): return ErlangProjectFrom
 
@@ -254,6 +257,7 @@ class ErlangProject(Project):
                 os.remove(os.path.join(self.flyDir, file))
 
     def GenerateErlangCache(self):
+        print "generate erlang cache"
         self.GetShell().GenerateErlangCache()
 
     def GetShell(self):
@@ -408,7 +412,7 @@ class ErlangProject(Project):
                 ".app": ErlangHighlightedSTCBase}
 
     def CompileProject(self):
-        #print "compile project"
+        print "compile project"
         filesToCompile = set()
         filesToCache = set()
         for app in self.GetApps():

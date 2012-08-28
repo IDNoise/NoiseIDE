@@ -24,7 +24,7 @@ class DirectoryInfo:
         files = os.listdir(root)
         for file in files:
             try:
-                file = os.path.join(root, file)
+                file = os.path.normcase(os.path.join(root, file))
                 if self.excludePaths and file in self.excludePaths:
                     continue
                 mtime = os.stat(file)[ST_MTIME]

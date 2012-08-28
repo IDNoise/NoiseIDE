@@ -122,7 +122,7 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         self.dirChecker.Start()
 
     def SetRoot(self, root):
-        self.root = root
+        self.root = os.path.normcase(root)
         self.SetupChecker()
         rootNode = self.AddRoot(root)
         self.SetItemHasChildren(rootNode, True)
@@ -175,7 +175,7 @@ class ProjectExplorer(CT.CustomTreeCtrl):
 
         files = os.listdir(dir)
         for f in files:
-            path = os.path.join(dir, f)
+            path = os.path.normcase(os.path.join(dir, f))
             if os.path.isdir(path):
                 self.AppendDir(node, path)
             else:
@@ -255,14 +255,18 @@ class ProjectExplorer(CT.CustomTreeCtrl):
     def FindItemByPath(self, path):
         id = self.GetRootItem()
         items = self.SplitOnItemsFromRoot(path)
+        #print "items", list(items)
         for item in items:
             children = self.GetItemChildren(id)
             for c in children:
                 if self.GetPyData(c).endswith(item):
                     id = c
                     break
+        #print self.GetPyData(id)
+        #print path
         if self.GetPyData(id) == path:
             return id
+        print "not found"
         return None
 
     def GetItemChildren(self, item):
@@ -278,6 +282,7 @@ class ProjectExplorer(CT.CustomTreeCtrl):
             return []
 
     def SplitOnItemsFromRoot(self, path):
+        #print "split", path, self.root
         items = []
         while path != self.root:
             (path, folder) = os.path.split(path)
@@ -438,6 +443,7 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         self.SetItemItalic(id, False)
 
     def OnMenuShowHide(self, event):
+        #print "on show hide all"
         if self.showHidden == True:
             self.showHidden = False
             for path in self.hiddenPaths:
@@ -445,16 +451,18 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         else:
             self.showHidden = True
             for path in sorted(self.hiddenPaths):
-                #print path
+                #print "hidden", path
                 if os.path.dirname(path) in self.hiddenPaths: continue
                 if os.path.isdir(path):
                     id = self.FindItemByPath(os.path.dirname(path))
-                    #print "dir"
-                    self.AppendDir(id, path)
+                    #print "dir", id
+                    if id:
+                        self.AppendDir(id, path)
                 else:
-                    id = self.FindItemByPath(path)
-                    self.AppendFile(id, path)
-                    #print "file"
+                    id = self.FindItemByPath(os.path.dirname(path))
+                    #print "file", id
+                    if id:
+                        self.AppendFile(id, path)
                 self.SortChildren(id)
 
     def OnMenuSetupMasks(self, event):
