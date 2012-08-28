@@ -232,8 +232,8 @@ class ErlangProject(Project):
             ErlangCache.LoadCacheFromDir("erlang")
 
     def SetupMenu(self):
-        self.menu.AppendMenuItem("Generate erlang cache", self, lambda e: self.GenerateErlangCache())
-        self.menu.AppendMenuItem("Rebuild project", self, lambda e: self.CompileProject())
+        self.menu.AppendMenuItem("Generate erlang cache", self.window, lambda e: self.GenerateErlangCache())
+        self.menu.AppendMenuItem("Rebuild project", self.window, lambda e: self.CompileProject())
 
     def GetEditForm(self): return ErlangProjectFrom
 

@@ -69,7 +69,7 @@ def CreateLabel(parent, text):
 class Menu(wx.Menu):
     def AppendMenuItem(self, text, handlerObject, handler):
         item = self.Append(wx.NewId(), text, text)
-        handlerObject.Bind(wx.EVT_MENU, handler, item)
+        handlerObject.Connect(item.GetId(), -1, wx.wxEVT_COMMAND_MENU_SELECTED, handler)
         return item
 
     def AppendCheckMenuItem(self, text, handlerObject, handler, check = False):
