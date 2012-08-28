@@ -23,7 +23,7 @@ class ProgressTaskManagerDialog(wx.EvtHandler):
         wx.EvtHandler.__init__(self)
         self.progressDialog = None
         self.progressTimer = wx.Timer(self, wx.NewId())
-        self.progressTimer.Start(250)
+        self.progressTimer.Start(100)
         self.Bind(wx.EVT_TIMER, self.OnProgressTimer, self.progressTimer)
         self.tasks = set()
         self.lastTaskTime = time.time()
@@ -34,14 +34,15 @@ class ProgressTaskManagerDialog(wx.EvtHandler):
 
     def TaskDone(self, description, task = None):
         self.lastTaskDone = description
-        self.progressDialog.UpdatePulse(self.lastTaskDone)
+        if self.progressDialog:
+            self.progressDialog.UpdatePulse(self.lastTaskDone)
         self.lastTaskTime = time.time()
         if task:
             if task in self.tasks:
                 #print "done", task
                 self.tasks.remove(task)
-            else:
-                print "task not in tasks", task
+            #else:
+            #    print "task not in tasks", task
         if len(self.tasks) == 0:
             self.DestroyDialog()
 
@@ -64,16 +65,18 @@ class ProgressTaskManagerDialog(wx.EvtHandler):
             #print "task left", len(self.tasks)
             #if len(self.tasks) < 10:
             #    print self.tasks
+#            if self.lastTaskDone:
+#                self.progressDialog.UpdatePulse(self.lastTaskDone)
+#                self.lastTaskDone = None
+#            else:
             self.progressDialog.UpdatePulse("Tasks in queue: {}".format(len(self.tasks)))
 
-            if (time.time() - self.lastTaskTime > 10 and len(self.tasks) > 0 and
-                not ErlangIDEConnectAPI.TASK_GEN_ERLANG_CACHE in self.tasks):
+            if (time.time() - self.lastTaskTime > 10 and len(self.tasks) > 0):
                 Log("####\n 10 seconds from last task done. Tasks left ", len(self.tasks))
-                Log("\n\t".join([str(t) for t in self.tasks]))
-            if (time.time() - self.lastTaskTime > 15 and len(self.tasks) > 0 and
-                not ErlangIDEConnectAPI.TASK_GEN_ERLANG_CACHE in self.tasks):
-                Log("####\n 15 seconds from last task done. Tasks left ", len(self.tasks))
-                Log("\n\t".join([str(t) for t in self.tasks]))
+                #Log("\n\t".join([str(t) for t in self.tasks]))
+            if (time.time() - self.lastTaskTime > 15 and len(self.tasks) > 0):
+                #Log("####\n 15 seconds from last task done. Tasks left ", len(self.tasks))
+                #Log("\n\t".join([str(t) for t in self.tasks]))
                 self.DestroyDialog()
 
     def DestroyDialog(self):
@@ -205,6 +208,7 @@ class ErlangProject(Project):
         self.consoleTabs = {}
 
         ErlangCache.Init(self)
+
         self.SetupDirs()
         self.AddConsoles()
         self.AddTabs()
@@ -216,11 +220,13 @@ class ErlangProject(Project):
         self.explorer.Bind(exp.EVT_PROJECT_FILE_MODIFIED, self.OnProjectFileModified)
         self.explorer.Bind(exp.EVT_PROJECT_FILE_DELETED, self.OnProjectFileDeleted)
         self.explorer.Bind(exp.EVT_PROJECT_DIR_CREATED, self.OnProjectDirCreated)
+
+
+        GetTabMgr().Parent.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
+
         ErlangCache.LoadCacheFromDir("erlang")
         ErlangCache.LoadCacheFromDir(self.ProjectName())
         ErlangCache.StartCheckingFolder(self.ProjectName())
-
-        GetTabMgr().Parent.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
 
     def SetupMenu(self):
         self.menu.AppendMenuItem("Generate erlang cache", self.menu, lambda e: self.GenerateErlangCache())
@@ -254,22 +260,24 @@ class ErlangProject(Project):
         return self.shellConsole.shell
 
     def Compile(self, path):
+        #print path
         if path.endswith(".hrl"):
             self.GetShell().GenerateFileCache(path)
-
         else:
+            #print self.AppsPath()
             if not path.lower().startswith(self.AppsPath().lower()):
                 return
-            app = path.replace(self.AppsPath() + os.sep, "")
+            app = path.lower().replace(self.AppsPath().lower() + os.sep, "")
             app = app[:app.index(os.sep)]
+            #print app
             if app in self.projectData[self.CONFIG_EXCLUDED_DIRS]:
                 return
             self.GetShell().CompileProjectFile(path, app)
 
     def AddConsoles(self):
         self.shellConsole = ErlangIDEConsole(GetToolMgr(), self.IDE_MODULES_DIR)
-        self.shellConsole.shell.SetProp("cache_dir", ErlangCache.CACHE_DIR)
-        self.shellConsole.shell.SetProp("project_dir", self.AppsPath())
+        self.shellConsole.shell.SetProp("cache_dir", os.path.normcase(ErlangCache.CACHE_DIR))
+        self.shellConsole.shell.SetProp("project_dir", os.path.normcase(self.AppsPath()))
         self.shellConsole.shell.SetProp("project_name", self.ProjectName())
         GetToolMgr().AddPage(self.shellConsole, "IDE Console")
 

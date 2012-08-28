@@ -33,6 +33,7 @@ class ErlangSocketConnection(asyncore.dispatcher):
     def __init__(self):
         asyncore.dispatcher.__init__(self)
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+        #self.socket.setsockopt( socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
         self.socketQueue = Queue()
         self.socketHandler = None
         self.port = random.randrange(55555, 55600)
@@ -178,16 +179,21 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
             if res == "compile" or res == "compile_fly":
                 errorsData = js["errors"]
                 path = pystr(js["path"])
-                errors = []
-                for error in errorsData:
-                    errors.append(CompileErrorInfo(path, error["type"], error["line"], error["msg"]))
-                #print "compile result: {} = {}".format(path, errors)
-                GetProject().AddErrors(path, errors)
+
                 if res == "compile":
                     done = (self.TASK_COMPILE, path.lower())
                 else:
                     done = (self.TASK_COMPILE_FLY, path.lower())
                 GetProject().TaskDone("Compiled {}".format(path), done)
+
+                errors = []
+                for error in errorsData:
+                    if error["line"] == "none":
+                        return
+                    errors.append(CompileErrorInfo(path, error["type"], error["line"], error["msg"]))
+                #print "compile result: {} = {}".format(path, errors)
+                GetProject().AddErrors(path, errors)
+
             elif res == "gen_file_cache":
                 path = pystr(js["path"])
                 GetProject().TaskDone("Generated cache for {}".format(path), (self.TASK_GEN_FILE_CACHE, path.lower()))
@@ -196,7 +202,7 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
             elif res == "connect":
                 Log("socket connected")
         except Exception, e:
-            Log("===== exception ", e)
+            Log("===== connection exception ", e)
 
 class ErlangProcess(Process):
     def __init__(self, cwd = os.getcwd(), params = []):
@@ -268,7 +274,7 @@ class ErlangProcessWithConnection(ErlangProcess, ErlangIDEConnectAPI):
 
 
 def erlstr(str):
-    return str.replace(os.sep, "/")
+    return os.path.normcase(str).replace(os.sep, "/")
 
 def pystr(str):
-    return str.replace("/", os.sep)
+    return os.path.normcase(str).replace("/", os.sep)

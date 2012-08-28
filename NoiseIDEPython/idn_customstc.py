@@ -200,7 +200,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         )
 
     def LoadFile(self, filePath):
-        self.filePath = filePath
+        self.filePath = os.path.normcase(filePath)
         #print filePath
         self.ClearAll()
         StyledTextCtrl.LoadFile(self, self.filePath)
@@ -616,6 +616,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
             text.endswith("[") or
             text.endswith("[") or
             text.endswith("||") or
+            text.endswith("=") or
             text.endswith("begin") or
             text.endswith("andalso") or
             text.endswith("orelse") or
