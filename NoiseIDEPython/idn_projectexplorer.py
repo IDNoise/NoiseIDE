@@ -52,7 +52,9 @@ class ProjectExplorer(CT.CustomTreeCtrl):
 
         self.project = project
         self.root = None
-        self.mask = self.DefaultMask() + project.GetMask()
+        self.mask = project.GetMask()
+        if not self.mask:
+            self.mask = self.DefaultMask()
         self.excludeDirs = self.DefaultExcludeDirs()
         self.excludePaths = self.DefaultExcludePaths()
         self.hiddenPaths = set()
@@ -149,7 +151,7 @@ class ProjectExplorer(CT.CustomTreeCtrl):
             self.UpdateMask()
 
     def GetCustomMask(self):
-        return [m for m in self.mask if m not in self.DefaultMask()]
+        return self.mask
 
     def SetHiddenList(self, list):
         self.hiddenPaths = list
@@ -236,8 +238,6 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         if id:
             self.AppendDir(id, dir)
             self.SortChildren(id)
-
-
 
     def DirModified(self, dir):
         #print "dir mod", dir

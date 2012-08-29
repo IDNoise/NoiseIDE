@@ -632,6 +632,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                 if text.count(op) > text.count(cl) and text.endswith(","):
                     indent += 4
 
+        indent = 0 if indent < 0 else indent
         self.InsertText(self.CurrentPos, " " * indent)
         pos = self.PositionFromLine(self.CurrentLine)
         self.GotoPos(pos + indent)
@@ -915,7 +916,9 @@ class ErlangCompleter(wx.Frame):
 
         arity = 0
         if self.stc.GetCharAt(pos) != "(": return 0
-        if self.stc.GetCharAt(pos) == "(" and self.stc.GetText()[pos + 1 : pos + 6].strip()[0] == ")":
+        sF = pos + 1 if pos + 1 < self.stc.GetLength() else self.stc.GetLength()
+        sT = pos + 6 if pos + 6 < self.stc.GetLength() else self.stc.GetLength(),
+        if self.stc.GetCharAt(pos) == "(" and self.stc.GetText()[sF : sT].strip()[0] == ")":
             return 0
         else:
             arity = 1

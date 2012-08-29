@@ -23,19 +23,30 @@ class ProgressTaskManagerDialog(wx.EvtHandler):
         wx.EvtHandler.__init__(self)
         self.progressDialog = None
         self.progressTimer = wx.Timer(self, wx.NewId())
-        self.progressTimer.Start(100)
+        self.progressTimer.Start(250)
         self.Bind(wx.EVT_TIMER, self.OnProgressTimer, self.progressTimer)
         self.tasks = set()
         self.lastTaskTime = time.time()
+
+        self.taskDoneHistory = []
+        self.taskDoneHistoryString = ""
 
     def AddTask(self, task):
         #print "add task", task
         self.tasks.add(task)
 
-    def TaskDone(self, description, task = None):
-        self.lastTaskDone = description
+    def AddTaskDescToHistory(self, description):
+        self.taskDoneHistory.append(description)
+        self.taskDoneHistory = self.taskDoneHistory[-5:]
+        self.taskDoneHistoryString = "\n".join(self.taskDoneHistory)
+
+    def UpdatePulse(self, description):
         if self.progressDialog:
-            self.progressDialog.UpdatePulse(self.lastTaskDone)
+            self.AddTaskDescToHistory(description)
+            self.progressDialog.UpdatePulse(self.taskDoneHistoryString)
+
+    def TaskDone(self, description, task = None):
+        self.UpdatePulse(description)
         self.lastTaskTime = time.time()
         if task:
             if task in self.tasks:
@@ -51,25 +62,19 @@ class ProgressTaskManagerDialog(wx.EvtHandler):
             pass
         else:
             self.progressDialog = PP.PyProgress(message = text,
-                agwStyle = wx.PD_APP_MODAL | wx.PD_ELAPSED_TIME)
-            self.progressDialog.SetGaugeProportion(0.2)
-            self.progressDialog.SetGaugeSteps(50)
+                agwStyle = wx.PD_APP_MODAL | wx.PD_ELAPSED_TIME, style = wx.BORDER_NONE)
+            self.progressDialog.SetGaugeProportion(0.1)
+            self.progressDialog.SetGaugeSteps(70)
             self.progressDialog.SetGaugeBackground(wx.BLACK)
-            self.progressDialog.SetFirstGradientColour(wx.GREEN)
-            self.progressDialog.SetSecondGradientColour(wx.BLUE)
-            self.progressDialog.SetSize((500, 150))
+            self.progressDialog.SetFirstGradientColour(wx.RED)
+            self.progressDialog.SetSecondGradientColour(wx.GREEN)
+            self.progressDialog.SetSize((600, 170))
             self.progressDialog.ShowDialog()
 
     def OnProgressTimer(self, event):
         if self.progressDialog:
-            #print "task left", len(self.tasks)
-            #if len(self.tasks) < 10:
-            #    print self.tasks
-#            if self.lastTaskDone:
-#                self.progressDialog.UpdatePulse(self.lastTaskDone)
-#                self.lastTaskDone = None
-#            else:
-            self.progressDialog.UpdatePulse("Tasks in queue: {}".format(len(self.tasks)))
+            if (time.time() - self.lastTaskTime) > 0.5:
+                self.UpdatePulse("Tasks left: {}".format(len(self.tasks)))
 
             if (time.time() - self.lastTaskTime > 10 and len(self.tasks) > 0):
                 Log("####\n 10 seconds from last task done. Tasks left ", len(self.tasks))
@@ -166,7 +171,7 @@ class Project(ProgressTaskManagerDialog):
     def GetMask(self):
         if self.CONFIG_MASK in self.userData:
             return self.userData[self.CONFIG_MASK]
-        return []
+        return None
 
     def Close(self):
         self.explorer.StopTrackingProject()
@@ -368,7 +373,7 @@ class ErlangProject(Project):
         event.Skip()
 
     def FileSaved(self, file):
-        Log("saved", file)
+        #Log("saved", file)
         self.Compile(file)
         if file.endswith(".hrl"):
             [self.Compile(module) for module in ErlangCache.GetDependentModules(file)]
