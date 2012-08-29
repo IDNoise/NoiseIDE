@@ -6,8 +6,6 @@
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/data/erlang/modules/eide_cache.erl" afterPath="$PROJECT_DIR$/data/erlang/modules/eide_cache.erl" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_customstc.py" afterPath="$PROJECT_DIR$/idn_customstc.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_project.py" afterPath="$PROJECT_DIR$/idn_project.py" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_projectexplorer.py" afterPath="$PROJECT_DIR$/idn_projectexplorer.py" />
     </list>
     <ignored path="NoiseIDE.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -56,15 +54,6 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="idn_mainframe.py" pinned="false" current="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/idn_mainframe.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state line="122" column="9" selection-start="4458" selection-end="4458" vertical-scroll-proportion="0.0">
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
       <file leaf-file-name="idn_utils.py" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/idn_utils.py">
           <provider selected="true" editor-type-id="text-editor">
@@ -95,7 +84,16 @@
       <file leaf-file-name="idn_customstc.py" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/idn_customstc.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="635" column="0" selection-start="23873" selection-end="23873" vertical-scroll-proportion="0.3602585">
+            <state line="640" column="20" selection-start="24002" selection-end="24002" vertical-scroll-proportion="0.63489497">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="stc.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://C:/Programming/Python27/Lib/site-packages/wx-2.9.3-msw/wx/stc.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="1806" column="8" selection-start="75381" selection-end="75381" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -450,11 +448,6 @@
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/idn_cache.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="155" column="33" selection-start="4994" selection-end="4994" vertical-scroll-proportion="0.0" />
-      </provider>
-    </entry>
     <entry file="file://C:/Programming/Python27/Lib/ntpath.py">
       <provider selected="true" editor-type-id="text-editor">
         <state line="26" column="0" selection-start="865" selection-end="865" vertical-scroll-proportion="0.23382519">
@@ -551,9 +544,16 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://C:/Programming/Python27/Lib/site-packages/wx-2.9.3-msw/wx/stc.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="1806" column="8" selection-start="75381" selection-end="75381" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/idn_customstc.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="635" column="0" selection-start="23873" selection-end="23873" vertical-scroll-proportion="0.3602585">
+        <state line="640" column="20" selection-start="24002" selection-end="24002" vertical-scroll-proportion="0.63489497">
           <folding />
         </state>
       </provider>

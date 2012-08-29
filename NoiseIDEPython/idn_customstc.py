@@ -638,7 +638,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         self.GotoPos(pos + indent)
 
 class ErlangCompleter(wx.Frame):
-    SIZE = (820, 350)
+    SIZE = (740, 270)
     LIST_SIZE = (320, 150)
 
     def __init__(self, stc):
@@ -917,7 +917,8 @@ class ErlangCompleter(wx.Frame):
         arity = 0
         if self.stc.GetCharAt(pos) != "(": return 0
         sF = pos + 1 if pos + 1 < self.stc.GetLength() else self.stc.GetLength()
-        sT = pos + 6 if pos + 6 < self.stc.GetLength() else self.stc.GetLength(),
+        sT = pos + 6 if pos + 6 < self.stc.GetLength() else self.stc.GetLength()
+        #print pos, self.stc.GetLength(), sF, sT
         if self.stc.GetCharAt(pos) == "(" and self.stc.GetText()[sF : sT].strip()[0] == ")":
             return 0
         else:
