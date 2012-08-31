@@ -128,35 +128,38 @@ class ErlangCache:
 
     @classmethod
     def LoadFile(cls, file):
-        if not os.path.isfile(file): return
-        if not file.endswith(".cache"): return
-        data = json.loads(readFile(file))
-        if not os.path.isfile(data[FILE]):
-            os.remove(file)
-            return
-        name = os.path.basename(file)[:-6]
-        if 'nt' == os.name:
-            import win32api
-            try:
-                data[FILE] = os.path.normcase(win32api.GetLongPathName(data[FILE]))
-            except Exception, e:
-                Log("error ", e, "on get long path name for ", data[FILE])
-        file = data[FILE]
-        #Log("loading cache for", file)
-        if (name in cls.modules and name in cls.moduleData and
-            cls.moduleData[name].file.lower().startswith(cls.erlangDir) and
-            file != cls.moduleData[name].file):
-            Log("Ignoring replace of cache for standard erlang " +
-                "module: {}\n\tPath:{}".format(name, file))
-            return
+        try:
+            if not os.path.isfile(file): return
+            if not file.endswith(".cache"): return
+            data = json.loads(readFile(file))
+            if not os.path.isfile(data[FILE]):
+                os.remove(file)
+                return
+            name = os.path.basename(file)[:-6]
+            if 'nt' == os.name:
+                import win32api
+                try:
+                    data[FILE] = os.path.normcase(win32api.GetLongPathName(data[FILE]))
+                except Exception, e:
+                    Log("error ", e, "on get long path name for ", data[FILE])
+            file = data[FILE]
+            #Log("loading cache for", file)
+            if (name in cls.modules and name in cls.moduleData and
+                cls.moduleData[name].file.lower().startswith(cls.erlangDir) and
+                file != cls.moduleData[name].file):
+                Log("Ignoring replace of cache for standard erlang " +
+                    "module: {}\n\tPath:{}".format(name, file))
+                return
 
-        if name.endswith(".hrl"):
-            cls.includes.add(name)
-        else:
-            cls.modules.add(name)
+            if name.endswith(".hrl"):
+                cls.includes.add(name)
+            else:
+                cls.modules.add(name)
 
-        cls.moduleData[name] = ModuleData(name, data)
-        cls.project.TaskDone("Cache for {} loaded".format(name))
+            cls.moduleData[name] = ModuleData(name, data)
+            cls.project.TaskDone("Cache for {} loaded".format(name))
+        except  Exception, e:
+            Log("load cache file error", e)
         #Log("Cache:", file)
 
     @classmethod

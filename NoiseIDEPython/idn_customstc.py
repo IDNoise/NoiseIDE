@@ -259,12 +259,19 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
             self.Save()
         elif keyCode == wx.WXK_SPACE and event.ControlDown():
             self.OnAutoComplete()
+        elif keyCode == ord('G') and event.ControlDown():
+            dlg = wx.TextEntryDialog(self, 'Line:', 'Goto Line', style = wx.OK | wx.CANCEL)
+            dlg.SetValue("")
+            if dlg.ShowModal() == wx.ID_OK:
+                self.GotoLine(int(dlg.Value) - 1)
+            dlg.Destroy()
         else:
             return False
         return True
 
     def Save(self):
         self.SaveFile(self.filePath)
+        self.savedText = self.GetText()
         self.Changed(False)
         self.OnFileSaved()
 
@@ -618,8 +625,8 @@ class ErlangSTC(ErlangHighlightedSTCBase):
             text.endswith("||") or
             text.endswith("=") or
             text.endswith("begin") or
-            text.endswith("andalso") or
-            text.endswith("orelse") or
+            #text.endswith("andalso") or
+            #text.endswith("orelse") or
             text.endswith("when") or
             text.endswith("of") or
             text.endswith("->") or
@@ -998,6 +1005,8 @@ class ConsoleSTC(CustomSTC):
 
         self.SetYCaretPolicy(stc.STC_CARET_SLOP, 10)
 
+        self.SetToolTip(None)
+
     def Changed(self, changed = True):
         pass
 
@@ -1041,8 +1050,9 @@ class MarkerPanel(wx.Panel):
         self.markerColor = {}
         self.areas = []
 
-        self.tooltip = wx.ToolTip("a" * 500)
-        self.ShowToolTip("a" * 500)
+        self.tooltip = wx.ToolTip(" " * 500)
+        self.ShowToolTip(" " * 500)
+        self.ShowToolTip(" ")
         self.HideToolTip()
         self.SetToolTip(self.tooltip)
         self.lastTip = None

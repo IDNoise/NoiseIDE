@@ -7,7 +7,6 @@ import yaml
 import wx
 from wx.lib.agw import aui
 from wx.grid import PyGridTableBase
-import wx.lib.agw.pyprogress as PP
 from TextCtrlAutoComplete import TextCtrlAutoComplete
 from idn_cache import ErlangCache, readFile
 from idn_connect import CompileErrorInfo, ErlangIDEConnectAPI
@@ -17,6 +16,7 @@ import idn_projectexplorer as exp
 from idn_console import ErlangIDEConsole, ErlangProjectConsole
 from idn_global import GetTabMgr, GetToolMgr, GetMainFrame, Log
 from idn_customstc import ErlangHighlightedSTCBase
+from PyProgress import PyProgress
 
 class ProgressTaskManagerDialog(wx.EvtHandler):
     def __init__(self):
@@ -37,7 +37,7 @@ class ProgressTaskManagerDialog(wx.EvtHandler):
 
     def AddTaskDescToHistory(self, description):
         self.taskDoneHistory.append(description)
-        self.taskDoneHistory = self.taskDoneHistory[-5:]
+        self.taskDoneHistory = self.taskDoneHistory[-2:]
         self.taskDoneHistoryString = "\n".join(self.taskDoneHistory)
 
     def UpdatePulse(self, description):
@@ -61,14 +61,14 @@ class ProgressTaskManagerDialog(wx.EvtHandler):
         if self.progressDialog:
             pass
         else:
-            self.progressDialog = PP.PyProgress(message = text,
+            self.progressDialog = PyProgress(message = text,
                 agwStyle = wx.PD_APP_MODAL | wx.PD_ELAPSED_TIME, style = wx.BORDER_NONE)
             self.progressDialog.SetGaugeProportion(0.1)
             self.progressDialog.SetGaugeSteps(70)
             self.progressDialog.SetGaugeBackground(wx.BLACK)
             self.progressDialog.SetFirstGradientColour(wx.RED)
             self.progressDialog.SetSecondGradientColour(wx.GREEN)
-            self.progressDialog.SetSize((600, 170))
+            self.progressDialog.SetSize((600, 110))
             self.progressDialog.ShowDialog()
 
     def OnProgressTimer(self, event):
@@ -76,8 +76,8 @@ class ProgressTaskManagerDialog(wx.EvtHandler):
             if (time.time() - self.lastTaskTime) > 0.5:
                 self.UpdatePulse("Tasks left: {}".format(len(self.tasks)))
 
-            if (time.time() - self.lastTaskTime > 10 and len(self.tasks) > 0):
-                Log("####\n 10 seconds from last task done. Tasks left ", len(self.tasks))
+            #if (time.time() - self.lastTaskTime > 10 and len(self.tasks) > 0):
+                #Log("####\n 10 seconds from last task done. Tasks left ", len(self.tasks))
                 #Log("\n\t".join([str(t) for t in self.tasks]))
             if (time.time() - self.lastTaskTime > 15 and len(self.tasks) > 0):
                 #Log("####\n 15 seconds from last task done. Tasks left ", len(self.tasks))
@@ -359,14 +359,15 @@ class ErlangProject(Project):
         file = event.File
         editor = GetTabMgr().FindPageByPath(file)
         if editor:
-            if editor.GetText() != readFile(file):
+            if editor.savedText != readFile(file):
                 dial = wx.MessageDialog(None,
                     'File "{}" was modified.\nDo you want to reload document?'.format(file),
                     'File modified',
                     wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
                 if dial.ShowModal() == wx.ID_YES:
-                    editor.LoadFile(editor.filePath)
+                    editor.SetText(readFile(editor.filePath))
                     #editor.OnSavePointReached(None)
+                    #editor.Changed(False)
         else:
             #print "modified", file
             self.Compile(file)

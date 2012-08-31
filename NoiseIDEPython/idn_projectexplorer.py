@@ -295,42 +295,48 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         self.eventItem = event.GetItem()
         menu = Menu()
 
-        if self.selectedItems and self.GetRootItem() not in self.selectedItems:
+        if self.eventItem == self.GetRootItem():
+            menu.AppendMenuItem("Setup masks", self, self.OnMenuSetupMasks)
+            menu.AppendCheckMenuItem("Show hidden", self, self.OnMenuShowHide, self.showHidden)
+        elif self.GetRootItem() in self.selectedItems:
+            pass
+        else:
+            if len(self.selectedItems) == 1:
+                if self.ItemHasChildren(self.eventItem):
+                    newMenu = Menu()
+                    newMenu.AppendMenuItem("New Dir", self, self.OnMenuNewDir)
+                    newMenu.AppendSeparator()
+                    self.FillNewSubMenu(newMenu)
+                    menu.AppendMenu(wx.NewId(), "New", newMenu)
+                    menu.AppendSeparator()
+
+                if (self.IsExecutable(self.eventItem) and self.IsEditable(self.eventItem)):
+                    menu.AppendMenuItem("Edit", self, self.OnMenuEditExecutable)
+                    menu.AppendSeparator()
+
+                menu.AppendMenuItem("Rename", self, self.OnMenuRename)
+                menu.AppendSeparator()
+
             menu.AppendMenuItem("Cut", self, self.OnMenuCut)
             menu.AppendMenuItem("Copy", self, self.OnMenuCopy)
 
-        if self.tempData and self.ItemHasChildren(self.eventItem):
-            menu.AppendMenuItem("Paste", self, self.OnMenuPaste)
-
-        if len(self.selectedItems) > 1 and self.GetRootItem() not in self.selectedItems:
+            if self.tempData and self.ItemHasChildren(self.eventItem):
+                menu.AppendMenuItem("Paste", self, self.OnMenuPaste)
             menu.AppendMenuItem("Delete", self, self.OnMenuDelete)
             menu.AppendCheckMenuItem("Hide", self, self.OnMenuHide,
                 self.GetPyData(self.selectedItems[0]) in self.hiddenPaths)
-        elif self.eventItem == self.GetRootItem():
-            menu.AppendMenuItem("Setup masks", self, self.OnMenuSetupMasks)
-            menu.AppendCheckMenuItem("Show hidden", self, self.OnMenuShowHide, self.showHidden)
-        else:
-            if self.ItemHasChildren(self.eventItem):
-                newMenu = Menu()
-                newMenu.AppendMenuItem("New Dir", self, self.OnMenuNewDir)
-                newMenu.AppendSeparator()
-                self.FillNewSubMenu(newMenu)
-                menu.AppendMenu(wx.NewId(), "New", newMenu)
-                menu.AppendSeparator()
 
-            menu.AppendMenuItem("Rename", self, self.OnMenuRename)
-            menu.AppendMenuItem("Delete", self, self.OnMenuDelete)
-            menu.AppendCheckMenuItem("Hide", self, self.OnMenuHide,
-                self.GetPyData(self.eventItem) in self.hiddenPaths)
 
-            if self.IsExecutable(self.eventItem):
-                menu.AppendSeparator()
-                menu.AppendMenuItem("Execute", self, self.OnMenuExecute)
+
+
 
         self.PopupMenu(menu)
 
     def IsExecutable(self, item):
         return extension(self.GetPyData(item)) in [".bat", ".exe", ".cmd"]
+
+    def IsEditable(self, item):
+        return extension(self.GetPyData(item)) in [".bat", ".cmd"]
 
     def FillNewSubMenu(self, newMenu):
         pass
@@ -409,15 +415,16 @@ class ProjectExplorer(CT.CustomTreeCtrl):
                 i += 1
         return name
 
+    def OnMenuEditExecutable(self, event):
+        path = self.GetPyData(self.eventItem)
+        if not self.OpenFile(path):
+            event.Skip()
+
     def OnMenuExecute(self, event):
         path = self.GetPyData(self.eventItem)
         path = path.replace("\\", "/")
-        pp = subprocess.Popen(path, shell = True, stdout = subprocess.PIPE)
-
-        Log("=======Executing " + path)
-        for out in pp.stdout:
-            Log(out)
-        Log("=======")
+        import webbrowser
+        webbrowser.open(path)
 
     def OnMenuHide(self, event):
         if self.GetPyData(self.selectedItems[0]) in self.hiddenPaths:
@@ -527,11 +534,20 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         return False
 
     def OnActivateItem(self, event):
-        path = self.GetPyData(event.GetItem())
+        item = event.GetItem()
+        path = self.GetPyData(item)
+        if self.IsExecutable(item):
+            import webbrowser
+            webbrowser.open(path)
+        else:
+            if not self.OpenFile(path):
+                event.Skip()
+
+    def OpenFile(self, path):
         if os.path.isfile(path):
             GetTabMgr().LoadFile(path)
-        else:
-            event.Skip()
+            return True
+        return False
 
     def GetAllFiles(self):
         result = []
@@ -613,7 +629,7 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         elif not rootInSelection and (code == wx.WXK_DELETE or (code == ord("D") and CTRL)):
             self.OnMenuDelete(None)
         elif self.IsExecutable(self.eventItem) and code == ord("E") and CTRL:
-            self.OnMenuExecute(None)
+            self.OnMenuEditExecutable(None)
         else:
             event.Skip()
 
