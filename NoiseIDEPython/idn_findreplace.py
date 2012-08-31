@@ -123,6 +123,8 @@ class FindInFilePanel(wx.Panel):
             event.Skip()
 
 class FindInProjectDialog(wx.Dialog):
+    resultsTable = None
+
     def __init__(self, parent):
         wx.Dialog.__init__(self, parent, id = wx.NewId(), title = "Find / Replace in project", size = (520, 195))
 
@@ -150,8 +152,6 @@ class FindInProjectDialog(wx.Dialog):
         self.Layout()
 
         self.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
-
-        self.resultsTable = None
 
     def OnFind(self, event):
         self.textToFind = self.findText.Value
@@ -215,11 +215,11 @@ class FindInProjectDialog(wx.Dialog):
         return re.compile(pattern, flags)
 
     def FillFindResultsTable(self, results, filesCount):
-        if not self.resultsTable:
-            self.resultsTable = ErrorsTree(self)
+        if not FindInProjectDialog.resultsTable:
+            FindInProjectDialog.resultsTable = ErrorsTree(GetToolMgr())
             GetToolMgr().AddPage(self.resultsTable, "Find Results")
-        GetToolMgr().SetSelection(GetToolMgr().GetPageIndex(self.resultsTable))
-        self.resultsTable.SetResults(results, filesCount)
+        GetToolMgr().SetSelection(GetToolMgr().GetPageIndex(FindInProjectDialog.resultsTable))
+        FindInProjectDialog.resultsTable.SetResults(results, filesCount)
 
     def OnKeyDown(self, event):
         keyCode = event.GetKeyCode()

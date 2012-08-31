@@ -541,10 +541,12 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                          ErlangHighlightType.MACROS,
                          ErlangHighlightType.MODULE,
                          ErlangHighlightType.RECORD]:
+            #print "wrong style", style
             return False
         start = self.WordStartPosition(pos, True)
         end = self.WordEndPosition(pos, True)
         if start == end:
+            #print "same pos"
             return False
 
 
@@ -552,7 +554,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         lineStart = self.PositionFromLine(line)
         prefix = self.GetTextRange(lineStart, start)
         value = self.GetTextRange(start, end)
-        #print value ,prefix, postfix
+        #print value, prefix
         if style == ErlangHighlightType.FUNCTION:
             self.navigateTo = self.completer.ShowFunctionHelp(value, prefix, end)
         if style == ErlangHighlightType.RECORD:
@@ -902,6 +904,7 @@ class ErlangCompleter(wx.Frame):
                 module = self.module
         else:
             module = self.module
+        #print "show fun help", module, fun, arity
         funData = ErlangCache.ModuleFunction(module, fun, arity)
         if not funData: return
         help = self._FunctionHelp(funData)
@@ -923,8 +926,8 @@ class ErlangCompleter(wx.Frame):
 
         arity = 0
         if self.stc.GetCharAt(pos) != "(": return 0
-        sF = pos + 1 if pos + 1 < self.stc.GetLength() else self.stc.GetLength()
-        sT = pos + 6 if pos + 6 < self.stc.GetLength() else self.stc.GetLength()
+        sF = pos + 1 if pos + 1 < self.stc.GetLength() else self.stc.GetLength() - 1
+        sT = pos + 6 if pos + 6 < self.stc.GetLength() else self.stc.GetLength() - 1
         #print pos, self.stc.GetLength(), sF, sT
         if self.stc.GetCharAt(pos) == "(" and self.stc.GetText()[sF : sT].strip()[0] == ")":
             return 0

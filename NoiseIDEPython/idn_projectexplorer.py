@@ -633,6 +633,12 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         else:
             event.Skip()
 
+    def OnPaint(self, event):
+        try:
+            CT.CustomTreeCtrl.OnPaint(self, event)
+        except Exception, e:
+            print "tree control pain exception", e
+
 
 class PythonProjectExplorer(ProjectExplorer):
     def FillNewSubMenu(self, newMenu):

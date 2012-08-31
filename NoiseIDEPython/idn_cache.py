@@ -230,9 +230,15 @@ class ErlangCache:
     @classmethod
     def ModuleFunction(cls, module, funName, arity):
         if not module in cls.moduleData: return None
+        funs = []
         for fun in cls.moduleData[module].functions:
-            if fun.name == funName and fun.arity == arity:
+            if fun.name == funName:
+                funs.append(fun)
+        for fun in funs:
+            if fun.arity == arity:
                 return fun
+        if funs:
+            return funs[0]
         return None
 
     @classmethod

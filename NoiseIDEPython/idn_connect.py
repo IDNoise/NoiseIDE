@@ -33,6 +33,7 @@ class ErlangSocketConnection(asyncore.dispatcher):
     def __init__(self):
         asyncore.dispatcher.__init__(self)
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         #self.socket.setsockopt( socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
         self.socketQueue = Queue()
         self.socketHandler = None
@@ -45,7 +46,12 @@ class ErlangSocketConnection(asyncore.dispatcher):
         pass
 
     def Start(self):
-        self.connect((self.Host(), self.port))
+        while True:
+            try:
+                self.connect((self.Host(), self.port))
+                break
+            except Exception, e:
+                pass
         self.asyncoreThread = AsyncoreThread()
         self.asyncoreThread.Start()
 

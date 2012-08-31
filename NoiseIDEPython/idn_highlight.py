@@ -108,8 +108,9 @@ class ErlangHighlighter:
                     tokenType = ErlangHighlightType.MODULE
 
                 elif i + 1 < len(tokens) and tokens[i + 1].value == "(":
-                    if token.value in self.BIF: tokenType = ErlangHighlightType.BIF
-                    else: tokenType = ErlangHighlightType.FUNCTION
+                    #if token.value in self.BIF: tokenType = ErlangHighlightType.BIF
+                    #else: tokenType = ErlangHighlightType.FUNCTION
+                    tokenType = ErlangHighlightType.FUNCTION
 
                 elif ((i - 2 >= 0 and tokens[i - 2].value == self.FUN
                        and tokens[i - 1].type == ErlangTokenType.SPACE) or
