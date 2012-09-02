@@ -124,6 +124,13 @@ class FindInFilePanel(wx.Panel):
 
 class FindInProjectDialog(wx.Dialog):
     resultsTable = None
+    dialog = None
+
+    @classmethod
+    def GetDialog(cls, parent):
+        if not FindInProjectDialog.dialog:
+            FindInProjectDialog.dialog = FindInProjectDialog(parent)
+        return FindInProjectDialog.dialog
 
     def __init__(self, parent):
         wx.Dialog.__init__(self, parent, id = wx.NewId(), title = "Find / Replace in project", size = (520, 195))
@@ -158,6 +165,9 @@ class FindInProjectDialog(wx.Dialog):
         if not self.textToFind:
             return
 
+        if not self.textToFind in self.findText.Items:
+            self.findText.Append(self.textToFind)
+
         results = []
         regexp = self.PrepareRegexp()
         files = GetProject().explorer.GetAllFiles()
@@ -189,10 +199,15 @@ class FindInProjectDialog(wx.Dialog):
         self.textToFind = self.findText.Value
         if not self.textToFind:
             return
+        if not self.textToFind in self.findText.Items:
+            self.findText.Append(self.textToFind)
 
         self.textToReplace = self.replaceText.Value
         if not self.textToReplace:
             return
+
+        if not self.textToReplace in self.replaceText.Items:
+            self.replaceText.Append(self.textToReplace)
 
         regexp = self.PrepareRegexp()
         ReplaceInProject(regexp, self.textToReplace)
