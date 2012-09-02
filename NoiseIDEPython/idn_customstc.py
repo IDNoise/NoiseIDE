@@ -204,6 +204,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         #print filePath
         self.ClearAll()
         StyledTextCtrl.LoadFile(self, self.filePath)
+        self.savedText = self.GetText()
         self.changed = False
         self.saved = True
         self.lastHighlightedWord = ""
@@ -270,8 +271,8 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         return True
 
     def Save(self):
-        self.SaveFile(self.filePath)
         self.savedText = self.GetText()
+        self.SaveFile(self.filePath)
         self.Changed(False)
         self.OnFileSaved()
 

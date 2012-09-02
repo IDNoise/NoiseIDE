@@ -82,6 +82,7 @@ class ProgressTaskManagerDialog(wx.EvtHandler):
             if (time.time() - self.lastTaskTime > 15 and len(self.tasks) > 0):
                 #Log("####\n 15 seconds from last task done. Tasks left ", len(self.tasks))
                 #Log("\n\t".join([str(t) for t in self.tasks]))
+                Log("tasks left:", self.tasks)
                 self.DestroyDialog()
 
     def DestroyDialog(self):
@@ -320,7 +321,7 @@ class ErlangProject(Project):
             data = consoles[title]
             params = []
             params.append("-sname " + data[self.CONFIG_CONSOLE_SNAME])
-            params.append("-cookie " + data[self.CONFIG_CONSOLE_COOKIE])
+            params.append("-setcookie " + data[self.CONFIG_CONSOLE_COOKIE])
             params.append(data[self.CONFIG_CONSOLE_PARAMS])
 
             params.append("-pa " + self.dirs)
@@ -359,13 +360,18 @@ class ErlangProject(Project):
         file = event.File
         editor = GetTabMgr().FindPageByPath(file)
         if editor:
-            if editor.savedText != readFile(file):
+            text = readFile(file)
+            if editor.savedText != text:
                 dial = wx.MessageDialog(None,
                     'File "{}" was modified.\nDo you want to reload document?'.format(file),
                     'File modified',
                     wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
                 if dial.ShowModal() == wx.ID_YES:
-                    editor.SetText(readFile(editor.filePath))
+                   # print "changing", editor.GetText() == text
+                    wx.CallAfter(editor.SetText, text)
+                    wx.CallAfter(editor.OnSavePointReached, None)
+                    wx.CallAfter(editor.Changed, False)
+                    #print "done"
                     #editor.OnSavePointReached(None)
                     #editor.Changed(False)
         else:

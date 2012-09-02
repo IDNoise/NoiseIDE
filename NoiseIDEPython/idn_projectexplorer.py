@@ -327,9 +327,6 @@ class ProjectExplorer(CT.CustomTreeCtrl):
                 self.GetPyData(self.selectedItems[0]) in self.hiddenPaths)
 
 
-
-
-
         self.PopupMenu(menu)
 
     def IsExecutable(self, item):
