@@ -171,7 +171,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
 
         self.highlightTimer = wx.Timer(self, wx.NewId())
         self.Bind(wx.EVT_TIMER, self.OnHighlightTimer, self.highlightTimer)
-        self.highlightTimer.Start(100)
+        self.highlightTimer.Start(200)
 
 
         self.EnableLineNumbers()
@@ -350,7 +350,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
             return
         markers = []
         #print text
-        if (text and True not in [c in text for c in [" ", "\n", "\r"]]):
+        if (text and True not in [c in text for c in [" ", "\n", "\r", ",", ".", ":"]]):
             self.SetIndicatorCurrent(0)
             self.SetSearchFlags(stc.STC_FIND_MATCHCASE | stc.STC_FIND_WHOLEWORD)
             self.SetTargetStart(0)
@@ -503,8 +503,35 @@ class ErlangSTC(ErlangHighlightedSTCBase):
             dlg = ErlangOutline(self, self.ModuleName())
             dlg.ShowModal()
             return True
+        elif keyCode == ord('/') and event.ControlDown():
+            self.CommentLines()
+            return True
         else:
             return False
+
+    def CommentLines(self):
+        start = self.GetSelectionStart()
+        end = self.GetSelectionEnd()
+        startLine = self.LineFromPosition(start)
+        endLine = self.LineFromPosition(end)
+
+        lines = range(startLine, endLine + 1)
+        allComments = True
+        for line in lines:
+            text = self.GetLine(line).strip()
+            if text and not text.startswith('%'):
+                allComments = False
+                break
+        for line in lines:
+            text = self.GetLine(line).rstrip()
+            if not text: continue
+            if allComments:
+                text = text.replace("%", "", 1)
+            else:
+                text = "%" + text
+            self.SetTargetStart(self.PositionFromLine(line))
+            self.SetTargetEnd(self.GetLineEndPosition(line))
+            self.ReplaceTarget(text)
 
     def OnMouseMove(self, event):
         event.Skip()
