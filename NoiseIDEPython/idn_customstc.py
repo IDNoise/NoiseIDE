@@ -593,6 +593,10 @@ class ErlangSTC(ErlangHighlightedSTCBase):
             self.navigateTo = self.completer.ShowRecordHelp(value)
         if style == ErlangHighlightType.MACROS:
             self.navigateTo = self.completer.ShowMacrosHelp(value)
+        if style in [ErlangHighlightType.ATOM, ErlangHighlightType.MODULE]:
+            if value in ErlangCache.AllModules():
+                self.navigateTo = (ErlangCache.moduleData[value].file, 0)
+
         if self.navigateTo:
             self.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
             self.SetIndicatorCurrent(1)
