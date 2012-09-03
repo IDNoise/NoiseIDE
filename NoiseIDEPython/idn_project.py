@@ -491,7 +491,7 @@ class ErlangProject(Project):
             dialog = FastProjectFileOpenDialog(GetTabMgr(), self)
             dialog.ShowModal()
         elif event.GetKeyCode() == ord('F') and event.ControlDown() and event.ShiftDown():
-            dialog = FindInProjectDialog(GetTabMgr())
+            dialog = FindInProjectDialog.GetDialog(GetTabMgr())
             dialog.Show()
 #        elif event.GetKeyCode() == ord('F') and event.ControlDown():
 #            dialog = FindInFileDialog(GetTabMgr())

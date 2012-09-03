@@ -1,3 +1,5 @@
+import re
+
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 from wx.stc import STC_FOLDLEVELHEADERFLAG, STC_FOLDLEVELBASE
@@ -228,6 +230,21 @@ class ErlangLexer(BaseLexer):
             #print("end -----------------------")
         return (result, record, prefix)
 
+    def GetAllExports(self):
+        regexp = "^-export\(\[(.*?)\s*\]\)\."
+        r = re.compile(regexp, re.MULTILINE | re.DOTALL)
+        text = self.stc.GetText()
+        pos = 0
+        result = ""
+        lastInsertPosition = None
+        while True:
+            match = r.search(text, pos)
+            if not match:
+                break
+            pos = match.end(0)
+            lastInsertPosition = match.end(1)
+            result += match.group(1)
+        return (result, lastInsertPosition)
 
 #    def UpdateLineData(self, line, tokens):
 #        data = LineData()

@@ -5,6 +5,7 @@ __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 import os
 import wx
+import re
 from wx import stc
 from wx import html
 from wx.stc import STC_FOLDLEVELHEADERFLAG, StyledTextCtrl
@@ -506,6 +507,9 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         elif keyCode == ord('/') and event.ControlDown():
             self.CommentLines()
             return True
+        elif keyCode == ord('E') and event.ControlDown():
+            self.AddToExport()
+            return True
         else:
             return False
 
@@ -565,7 +569,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         style = self.GetStyleAt(pos)
         if style not in [ErlangHighlightType.ATOM,
                          ErlangHighlightType.FUNCTION,
-                         ErlangHighlightType.FUNDEC,
+                         #ErlangHighlightType.FUNDEC,
                          ErlangHighlightType.MACROS,
                          ErlangHighlightType.MODULE,
                          ErlangHighlightType.RECORD]:
@@ -673,6 +677,23 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         self.InsertText(self.CurrentPos, " " * indent)
         pos = self.PositionFromLine(self.CurrentLine)
         self.GotoPos(pos + indent)
+
+    def AddToExport(self):
+        line = self.GetCurrentLine()
+        pos = self.PositionFromLine(line)
+        text = self.GetLine(line)
+        tokens = self.lexer.highlighter.GetHighlightingTokens(text)
+        if not tokens[0].type == ErlangHighlightType.FUNDEC:
+            return
+
+        fun = self.GetTextRange(pos + tokens[0].start, pos + tokens[0].end)
+        arity = self.completer.GetFunArity(pos + tokens[0].end)
+        fun = ",\n    {}/{}".format(fun, arity)
+        (exports, insertPos) = self.lexer.GetAllExports()
+        if fun in exports:
+            return
+        if insertPos:
+            self.InsertText(insertPos, fun)
 
 class ErlangCompleter(wx.Frame):
     SIZE = (740, 270)
