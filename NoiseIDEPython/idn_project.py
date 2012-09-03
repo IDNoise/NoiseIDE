@@ -69,6 +69,7 @@ class ProgressTaskManagerDialog(wx.EvtHandler):
             self.progressDialog.SetFirstGradientColour(wx.RED)
             self.progressDialog.SetSecondGradientColour(wx.GREEN)
             self.progressDialog.SetSize((600, 110))
+            self.lastTaskTime = time.time()
             self.progressDialog.ShowDialog()
 
     def OnProgressTimer(self, event):
@@ -79,7 +80,7 @@ class ProgressTaskManagerDialog(wx.EvtHandler):
             #if (time.time() - self.lastTaskTime > 10 and len(self.tasks) > 0):
                 #Log("####\n 10 seconds from last task done. Tasks left ", len(self.tasks))
                 #Log("\n\t".join([str(t) for t in self.tasks]))
-            if (time.time() - self.lastTaskTime > 15 and len(self.tasks) > 0):
+            if (time.time() - self.lastTaskTime > 30 and len(self.tasks) > 0):
                 #Log("####\n 15 seconds from last task done. Tasks left ", len(self.tasks))
                 #Log("\n\t".join([str(t) for t in self.tasks]))
                 Log("tasks left:", self.tasks)
