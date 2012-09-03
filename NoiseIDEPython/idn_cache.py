@@ -22,10 +22,11 @@ FIELDS = "fields"
 RECORDS_DATA = "records_data"
 VALUE = "value"
 MACROS = "macros"
+COMMENT = "comment"
 
 
 class Function:
-    def __init__(self, moduleData, module, name, arity, line, params, types, result, docref, exported, bif):
+    def __init__(self, moduleData, module, name, arity, line, params, types, result, docref, exported, bif, comment):
         self.moduleData = moduleData
         self.module = module
         self.name = name
@@ -37,6 +38,7 @@ class Function:
         self.docref = docref
         self.exported = exported
         self.bif = bif
+        self.comment = comment
 
 class Record:
     def __init__(self, moduleData, module, name, fields, line):
@@ -62,9 +64,11 @@ class ModuleData:
         self.functions = []
         for funData in data[FUNS]:
             isBif = funData[BIF] if BIF in funData else False
+            comment = funData[COMMENT] if COMMENT in funData else ""
+            docref = funData[DOCREF] if DOCREF in funData else None
             fun = Function(self, module, funData[NAME], funData[ARITY],
                 funData[LINE], funData[PARAMS],  funData[TYPES], funData[RESULT],
-                funData[DOCREF], funData[EXPORTED], isBif)
+                docref, funData[EXPORTED], isBif, comment)
 
             self.functions.append(fun)
 

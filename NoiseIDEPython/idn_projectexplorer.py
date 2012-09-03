@@ -298,6 +298,8 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         if self.eventItem == self.GetRootItem():
             menu.AppendMenuItem("Setup masks", self, self.OnMenuSetupMasks)
             menu.AppendCheckMenuItem("Show hidden", self, self.OnMenuShowHide, self.showHidden)
+            menu.AppendSeparator()
+            menu.AppendCheckMenuItem("New Dir", self, self.OnMenuNewDir)
         elif self.GetRootItem() in self.selectedItems:
             pass
         else:

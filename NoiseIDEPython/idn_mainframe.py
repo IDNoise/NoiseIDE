@@ -84,8 +84,6 @@ class NoiseIDE(wx.Frame):
         projectsMenu.AppendMenuItem('Erlang', self, self.OnNewErlangProject)
         self.fileMenu.AppendMenu(wx.NewId(), "New project", projectsMenu)
         self.fileMenu.AppendMenuItem('Open Project', self, self.OnOpenProject)
-        self.mEditProject = self.fileMenu.AppendMenuItem('Edit Project', self, self.OnEditProject)
-        self.mEditProject.Enable(False)
         self.fileMenu.AppendSeparator()
         self.fileMenu.AppendMenuItem('Quit', self, self.OnQuit)
         self.menubar.Append(self.fileMenu, '&File')
@@ -131,15 +129,10 @@ class NoiseIDE(wx.Frame):
             self.project.Close()
         Config.SetProp("last_project", projectFile)
         loadProject(self, projectFile)
-        self.mEditProject.Enable(True)
+        self.project.mEditProject.Enable(True)
 
     def OnNewErlangProject(self, event):
         ErlangProjectFrom().ShowModal()
-
-    def OnEditProject(self, event):
-        if not self.project: return
-        form = self.project.GetEditForm()
-        form(self.project).ShowModal()
 
     def OnClose(self, event):
         if self.project:

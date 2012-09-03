@@ -1,22 +1,23 @@
 -module(eide_cache).
+
+-include_lib("edoc/src/edoc_types.hrl").
  
 -define(log(P), io:format("~p~n", [P])).
 -define(TERM, "term()").
 -define(VAR, "Var"). 
-
--export([
+  
+-export([ 
     %generate/2,
-    generate/4,
+    generate/3,
     create_cache/2,
-    create_cache/3,
     create_cache/4, 
     create_cache_for_erlang_libs/2,
     create_cache_file_fly/2,
-    generate_file/5,
+    generate_file/4,
     %generate_html_file/3, 
     ignores/0,
     gen_file_cache/1,
-    gen_erlang_cache/0,
+    gen_erlang_cache/0, 
     gen_project_cache/0
 ]).
 
@@ -28,7 +29,8 @@
     result,
     exported,
     doc,
-    bif = false     
+    bif = false,    
+    comment = []     
 }).
 
 -record(content, {
@@ -41,7 +43,7 @@
     records = [], 
     macros = [],          
     includes = [],
-    exports = []  
+    exports = [] 
 }).  
 
 -record(spec, {name, vars = [], types = [], result}).
@@ -51,22 +53,22 @@
 -record(field, {name, type}).
 
 -record(macro, {name, value, line, file}).
-
--include_lib("edoc/src/edoc_types.hrl").
 %erlang_cache:create_cache_for_erlang_libs("D:/temp/erlang_cache", erlang_cache:ignores()).
 %erlang_cache:create_cache("d:/temp/erlang_cache", "d:/projects/joe/server/apps", undefined, erlang_cache:ignores()).
 %erlang_cache:create_cache("d:/temp/erlang_cache", "d:/projects/gijoe/server/apps", undefined, erlang_cache:ignores()).
-%erlang_cache:generate_file("D:/temp/erlang_cache", "crypto", "c:/Programming/erl5.9/lib/crypto-2.1/src/crypto.erl", "c:/Programming/erl5.9/lib/crypto-2.1/doc/html/crypto.html", [], self()).
-
+%eide_cache:generate_file("D:/temp/erlang_cache", "eide_cache", "d:/Proects/noiseide/noiseidepython/data/erlang/modules/noiseide/src/eide_cache.erl", "", []).
 %appmon, aptransform, asn, commontest, compiler, cosEvent, cosEventDomain, cosFileTransfer, cosNotification, cosProperty, cosTime, cosTransactions, couchbeam, crypto, debugger, dialyzer, diameter, edoc, ejson, erldocgen, erlinterface, erts, et, eunit, genleader, gproc, gs, hipe, ibrowse, ic, inets, inviso, jinterface, kernel, megaco, mnesia, mochiweb, oauth, observer, odbc, orber, osmon, otpmibs, parsetools, percept, pman, proper, publickey, reltool, runtimetools, sasl, sha, snmp, ssh, ssl, stdlib, syntaxtools, testserver, toolbar, tools, tv, typer, webtool, wx
 
+%eide_cache:generate_file("D:/temp/erlang_cache", "eide_cache", "d:/Projects/noiseide/noiseidepython/data/erlang/modules/noiseide/src/eide_cache.erl", undefined, []).
+%eide_cache:generate_file("D:/temp/erlang_cache", "unit_building", "d:/Projects/GIJoe/server/apps/gamelib/src/units/unit_building.erl", undefined, []).
+%ololololo comment
 gen_file_cache(File) ->
     case eide_connect:prop(project_dir) of
         undefined -> create_cache(eide_connect:prop(cache_dir) ++ "/other", File);
         Dir ->  
             case lists:prefix(Dir, File) of 
                 false -> create_cache(eide_connect:prop(cache_dir) ++ "/other", File);
-                _ -> create_cache(eide_connect:prop(cache_dir) ++ "/" ++ eide_connect:prop(project_name), Dir, File)
+                _ -> create_cache(eide_connect:prop(cache_dir) ++ "/" ++ eide_connect:prop(project_name), File)
             end
     end. 
 
@@ -96,24 +98,18 @@ prepare_ignores(AppsPath, IgnoreApps) ->
 create_cache_for_erlang_libs(CacheDir, IgnoreApps) ->
     create_cache(CacheDir, code:root_dir(), undefined, IgnoreApps).
 
-create_cache(CacheDir, AppsPath, File) ->
-    Includes = eide_compiler:generate_includes(AppsPath),
-    generate_file(CacheDir, module_name(File), File, undefined, Includes),
-    ok.
-
 create_cache(CacheDir, File) ->
-    code:add_patha(filename:dirname(File)),
-    generate_file(CacheDir, module_name(File), File, undefined, []),
+    generate_file(CacheDir, module_name(File), File, undefined),
     ok.
 
 create_cache_file_fly(FlyFile, RealFile) ->
-    {CacheDir, Includes} =  
+    CacheDir =  
         case eide_connect:prop(project_dir) of
-            undefined -> {eide_connect:prop(cache_dir) ++ "/other", []};
+            undefined -> eide_connect:prop(cache_dir) ++ "/other";
             Dir -> 
                 case lists:prefix(Dir, RealFile) of 
-                    false -> {eide_connect:prop(cache_dir) ++ "/other", []};
-                    _ -> {eide_connect:prop(cache_dir) ++ "/" ++ eide_connect:prop(project_name), eide_compiler:generate_includes(Dir)}
+                    false -> eide_connect:prop(cache_dir) ++ "/other";
+                    _ -> eide_connect:prop(cache_dir) ++ "/" ++ eide_connect:prop(project_name)
                 end
                 
         end,
@@ -121,7 +117,7 @@ create_cache_file_fly(FlyFile, RealFile) ->
     ModuleName = module_name(FlyFile),    
     CacheFileName = get_cache_file_name(CacheDir, RealModuleName),
     try 
-       Data = generate(ModuleName, FlyFile, Includes, undefined),
+       Data = generate(ModuleName, FlyFile, undefined),
        dump_data_to_file(RealModuleName, CacheDir, RealFile, CacheFileName, Data, FlyFile)
     catch _:_ -> ok
     end,  
@@ -143,7 +139,6 @@ create_cache(CacheDir, AppsPath, App, IgnoreApps) ->
         end,
     add_paths(AppsPath),
     Ignores = prepare_ignores(AppsPath, IgnoreApps),
-    Includes = eide_compiler:generate_includes(AppsPath),
     Files = filelib:fold_files(LibDir, ".*\.(erl|hrl|html)$", true, 
                                fun(File, A) ->
                                    case lists:any(fun(IApp) -> 
@@ -175,7 +170,7 @@ create_cache(CacheDir, AppsPath, App, IgnoreApps) ->
                                            end
                                    end 
                                end, dict:new()),
-    [generate_file(CacheDir, Name, File, Docs, Includes) || {Name, {File, Docs}} <- dict:to_list(Files), File =/= undefined],
+    [generate_file(CacheDir, Name, File, Docs) || {Name, {File, Docs}} <- dict:to_list(Files), File =/= undefined],
     ok.
 
 module_name(File) ->
@@ -189,22 +184,20 @@ module_name(File) ->
 get_cache_file_name(CacheDir, Name) ->
     CacheDir ++ "/" ++ Name ++ ".cache".
 
-generate_file(CacheDir, ModuleName, FilePath, DocsFilePath, Includes) ->
+generate_file(CacheDir, ModuleName, FilePath, DocsFilePath) ->
     try
         CacheFileName = get_cache_file_name(CacheDir, ModuleName),
         case filelib:last_modified(FilePath) < filelib:last_modified(CacheFileName) of
             true -> 
                 ignore;
             _ -> 
-                 
-                    Data = generate(ModuleName, FilePath, Includes, DocsFilePath),
-                    dump_data_to_file(ModuleName, CacheDir, FilePath, CacheFileName, Data)
-               
+                Data = generate(ModuleName, FilePath, DocsFilePath),
+                dump_data_to_file(ModuleName, CacheDir, FilePath, CacheFileName, Data)
         end
-    catch _:_ ->  
-    %catch Error:Reason ->
-            ok
-            %io:format("File:~pError:~p, ~p~n~p~n", [FilePath, Error, Reason, erlang:get_stacktrace()])
+    %catch _:_ ->  
+    catch Error:Reason ->
+            %ok
+            io:format("File:~pError:~p, ~p~n~p~n", [FilePath, Error, Reason, erlang:get_stacktrace()])
             %file:write_file(CacheFileName ++ ".error", [Error, Reason])
     end,
     ok.
@@ -241,7 +234,7 @@ fun_to_json(ModuleName, CacheDir, Fun) ->
     {Name, Arity} = Fun#function.name,
     DocRef =  
         case Fun#function.doc of
-            undefined -> "";
+            undefined -> [];
             Text ->
                 FileName = ModuleName ++ "_" ++ Name ++ "-" ++ integer_to_list(Arity) ++ ".fun",
                 FullPath = CacheDir ++ "/" ++ FileName,
@@ -256,12 +249,21 @@ fun_to_json(ModuleName, CacheDir, Fun) ->
      {exported, Fun#function.exported},
      {params, lists:map(fun iolist_to_binary/1, Fun#function.params)},
      {types, lists:map(fun iolist_to_binary/1, Fun#function.types)},
-     {result, iolist_to_binary(Fun#function.result)},
-     {docref, iolist_to_binary(DocRef)}
+     {result, iolist_to_binary(Fun#function.result)}
     ],
+    Data1 = 
+        case Fun#function.comment of 
+            [] -> Data;
+            _ ->Data ++ [{comment, iolist_to_binary(Fun#function.comment)}]
+        end,
+    Data2 = 
+        case DocRef of 
+            [] -> Data1;
+            _ ->Data1 ++ [{docref, iolist_to_binary(DocRef)}]
+        end,
     case ModuleName == "erlang" of
-        true -> Data ++ [{bif, Fun#function.bif}];
-        _ -> Data
+        true -> Data2 ++ [{bif, Fun#function.bif}];
+        _ -> Data2
     end.
 
 recs_data_to_json(Recs, File) ->
@@ -286,75 +288,30 @@ rec_fields_to_json(Fields) ->
 includes_to_json(Incs) ->
     [iolist_to_binary(filename:basename(I)) || I <- Incs].
 
-generate(ModuleName, FilePath, Includes, DocsFilePath) -> 
+generate(ModuleName, FilePath, DocsFilePath) -> 
     {StartContent, SyntaxTree} = 
         case filename:extension(FilePath) of
             ".erl" ->
-                try_find_beam(ModuleName, FilePath, Includes);
+                generate_from_source(FilePath);
             ".hrl" -> 
-                generate_from_source(ModuleName, FilePath, Includes);
+                generate_from_source(FilePath);
             _ -> 
                 throw(unknown_type)
         end,
-    Content = parse_tree(SyntaxTree, StartContent),
+    Comments = erl_comment_scan:file(FilePath),
+    {SyntaxTree1, _} = erl_recomment:recomment_tree(SyntaxTree, Comments),
+    %io:format("~p~n", [SyntaxTree1]),
+    Content = parse_tree(SyntaxTree1, StartContent),
     Content1 = case DocsFilePath of
                    undefined -> Content;
                    _ -> merge_with_docs(Content, DocsFilePath)
                end,
-    Content2 = 
-        case {filename:extension(FilePath), Content1#content.macros} of
-            {".erl", []} -> 
-                {TC, ST} = generate_from_source_for_macros(FilePath),
-                C = parse_tree(ST, TC),
-                Content1#content{macros = C#content.macros};
-            _ -> Content1
-        end,
-    Incls = sets:to_list(sets:from_list(Content2#content.includes)),
-    Content2#content{includes = Incls, file = FilePath, module_name = ModuleName}.
+    Incls = sets:to_list(sets:from_list(Content1#content.includes)),
+    Content1#content{includes = Incls, file = FilePath, module_name = ModuleName}.
 
-try_find_beam(ModuleName, Path, Includes) ->
-    case code:where_is_file(ModuleName ++ ".beam") of
-        non_existing -> 
-            try_to_compile(ModuleName, Path, Includes);
-        BeamPath -> 
-            generate_from_beam(ModuleName, BeamPath, Includes)
-    end.
-    
-try_to_compile(ModuleName, Path, Includes) ->
-    case compile:file(Path, [debug_info, binary | Includes]) of
-        {ok, _ ,Binary} -> 
-            generate_from_beam(ModuleName, Binary, Includes);
-        _ -> 
-            generate_from_source(ModuleName, Path, Includes)
-    end.
-
-generate_from_beam(ModuleName, Beam, Includes) ->
-    case beam_lib:chunks(Beam, [abstract_code]) of
-        {ok, {_,[{abstract_code,{_, AbstractCode}}]}} -> 
-            {#content{beam = true}, erl_syntax:form_list(AbstractCode)};
-        _ -> 
-            SrcFileRegExp = ModuleName ++ "\.erl$",
-            Dir = filename:dirname(filename:dirname(Beam)),
-            [FilePath| _] = filelib:fold_files(Dir, SrcFileRegExp, true, 
-                                               fun(File, A) -> [File|A] end, [] ),
-            try_to_compile(ModuleName, FilePath, Includes)
-    end.
-
-generate_from_source(_ModuleName, Path, Includes) -> 
-    {ok, Source} = 
-        case filename:extension(Path) of
-            ".erl" ->
-                Incs = lists:map(fun({i, D}) -> D end, Includes),
-                epp:parse_file(Path, Incs, []);
-            ".hrl" -> 
-                epp_dodger:parse_file(Path)
-        end, 
-    {#content{file = Path, last_file_attr = Path}, erl_syntax:form_list(Source)}.
-
-generate_from_source_for_macros(Path) -> 
+generate_from_source(Path) -> 
     {ok, Source} = epp_dodger:parse_file(Path),
     {#content{file = Path, last_file_attr = Path}, erl_syntax:form_list(Source)}.
-
 
 parse_tree(Node, Content) ->
     case erl_syntax:type(Node) of
@@ -372,7 +329,7 @@ parse_tree(Node, Content) ->
             end;
         
         function ->
-            Function = parse_erlang_function(Node, Content),
+            Function = parse_erlang_function(Node, Content, erl_syntax:get_precomments(Node)),
             NameInfo = erl_syntax:function_name(Node),
             Name = erl_syntax:atom_value(NameInfo),
             Arity = erl_syntax:function_arity(Node),
@@ -465,7 +422,8 @@ parse_include(Node) ->
     [Arg] = erl_syntax:attribute_arguments(Node),
     erl_syntax:string_value(Arg).       
 
-parse_erlang_function(Node, Content) ->
+parse_erlang_function(Node, Content, Comments) ->
+    %io:format("fun:~p~n", [Node]),
     NameInfo = erl_syntax:function_name(Node),
     Name = erl_syntax:atom_literal(NameInfo),
     Line = erl_syntax:get_pos(NameInfo),
@@ -494,11 +452,20 @@ parse_erlang_function(Node, Content) ->
                 undefined -> [];
                 _ -> Spec#spec.types
             end,
+    Comment =
+        case Comments of
+            [] -> [];
+            _ ->
+                C = lists:last(Comments),
+                erl_prettypr:format(C)
+        end,
+    %io:format("~p > ~p~n", [Name, Comments]),
     #function{name = {Name, Arity},
               line = Line,
               params = Params1,
               types = Types,
-              result = Result}.
+              result = Result,
+              comment = Comment}.
 
 node_value(Node, variable) ->
     erl_syntax:variable_literal(Node);

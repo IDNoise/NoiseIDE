@@ -195,7 +195,7 @@ class Project(ProgressTaskManagerDialog):
     def GetEditorTypes(self): return []
 
 class ErlangProject(Project):
-    IDE_MODULES_DIR = os.path.join(os.getcwd(), 'data', 'erlang', 'modules')
+    IDE_MODULES_DIR = os.path.join(os.getcwd(), 'data', 'erlang', 'modules', 'noiseide', 'ebin')
     EXPLORER_TYPE = exp.ErlangProjectExplorer
 
     CONFIG_ERLANG_PATH = "erlang_path"
@@ -239,10 +239,18 @@ class ErlangProject(Project):
             ErlangCache.LoadCacheFromDir("erlang")
 
     def SetupMenu(self):
+        self.mEditProject = self.menu.AppendMenuItem('Edit Project', self.window, self.OnEditProject)
+        self.mEditProject.Enable(False)
+
+        self.menu.AppendSeparator()
+
         self.menu.AppendMenuItem("Generate erlang cache", self.window, lambda e: self.GenerateErlangCache())
         self.menu.AppendMenuItem("Rebuild project", self.window, lambda e: self.CompileProject())
 
-    def GetEditForm(self): return ErlangProjectFrom
+    def OnEditProject(self, event):
+        ErlangProjectFrom(self).ShowModal()
+
+    def GetEditForm(self): return
 
     def AppsPath(self):
         if not self.CONFIG_APPS_DIR in self.projectData or not self.projectData[self.CONFIG_APPS_DIR]:
@@ -358,10 +366,13 @@ class ErlangProject(Project):
             console.Stop()
 
     def OnProjectFileModified(self, event):
+        event.Skip()
         file = event.File
         editor = GetTabMgr().FindPageByPath(file)
         if editor:
             text = readFile(file)
+            if not text:
+                return
             if editor.savedText != text:
                 dial = wx.MessageDialog(None,
                     'File "{}" was modified.\nDo you want to reload document?'.format(file),
@@ -369,16 +380,15 @@ class ErlangProject(Project):
                     wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
                 if dial.ShowModal() == wx.ID_YES:
                    # print "changing", editor.GetText() == text
-                    wx.CallAfter(editor.SetText, text)
-                    wx.CallAfter(editor.OnSavePointReached, None)
-                    wx.CallAfter(editor.Changed, False)
+                    editor.SetText(text)
+                    editor.OnSavePointReached(None)
+                    editor.Changed(False)
                     #print "done"
                     #editor.OnSavePointReached(None)
                     #editor.Changed(False)
-        else:
             #print "modified", file
-            self.Compile(file)
-        event.Skip()
+        self.Compile(file)
+
 
     def FileSaved(self, file):
         #Log("saved", file)

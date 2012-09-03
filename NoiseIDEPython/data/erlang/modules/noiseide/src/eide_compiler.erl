@@ -68,14 +68,14 @@ compile_internal(FileName, Options, ToBinary, RealPath) ->
     Result = compile:file(FileName, Options2),
     {E, W} = case Result of 
                  {ok, _Module, Warnings} ->
-                     case FileName == RealPath of
-                         true -> eide_cache:gen_file_cache(FileName);
-                         _ -> eide_cache:create_cache_file_fly(FileName, RealPath)
-                     end,
                      {[], Warnings};
                  {error, Errors, Warnings} ->
                      {Errors, Warnings}
              end,
+    case FileName == RealPath of
+        true -> eide_cache:gen_file_cache(FileName);
+        _ -> eide_cache:create_cache_file_fly(FileName, RealPath)
+    end,
     Errs = 
         [[begin
             case Er of
