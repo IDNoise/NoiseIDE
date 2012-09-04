@@ -93,6 +93,10 @@ class EditorLineMarginMixin:
             return 0
 
 class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
+
+    ShowEOL = False
+    ShowWhiteSpace = False
+
     def __init__(self, parent, markerPanel, filePath = None):
         #style = wx.MAXIMIZE_BOX|wx.RESIZE_BORDER|wx.SYSTEM_MENU|wx.CAPTION|wx.CLOSE_BOX
         StyledTextCtrl.__init__(self, parent, style = wx.NO_BORDER)#, style = style)
@@ -148,7 +152,6 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         #self.SetYCaretPolicy(stc.STC_CARET_STRICT | stc.STC_CARET_EVEN, 0)
 
 
-
         self.font = wx.Font(ColorSchema.codeEditor["font_size"],
             wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, False,
             ColorSchema.codeEditor["font_name"])
@@ -182,12 +185,17 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
                              stc.STC_PERFORMED_USER | stc.STC_PERFORMED_UNDO |
                              stc.STC_PERFORMED_REDO)
 
+        self.UpdateOptions()
 
         if filePath:
             self.LoadFile(filePath)
             self.Bind(stc.EVT_STC_SAVEPOINTLEFT, self.OnSavePointLeft)
             self.Bind(stc.EVT_STC_SAVEPOINTREACHED, self.OnSavePointReached)
         self.OnInit()
+
+    def UpdateOptions(self):
+        self.SetViewWhiteSpace(stc.STC_WS_VISIBLEALWAYS if CustomSTC.ShowWhiteSpace else  stc.STC_WS_INVISIBLE)
+        self.SetViewEOL(CustomSTC.ShowEOL)
 
     def GetLastVisibleLine(self):
         """

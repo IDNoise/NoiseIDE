@@ -6,7 +6,7 @@ import os
 import wx
 from wx.lib.agw import aui
 from idn_colorschema import ColorSchema
-from idn_customstc import ConsoleSTC
+from idn_customstc import ConsoleSTC, CustomSTC
 from idn_winmanager import Manager
 from idn_notebook import  Notebook, EditorNotebook
 from idn_config import Config
@@ -59,8 +59,14 @@ class NoiseIDE(wx.Frame):
         self.WinMgr.Update()
 
         wx.CallAfter(self.TryLoadLastProject)
+
+        #self.TabMgr.Bind(aui.EVT_AUINOTEBOOK_PAGE_CHANGED, self.OnNotebookPageChanged)
         #self.OpenProject("D:\\Projects\\GIJoe\\server\\gijoe.noiseide.project")
         #self.OpenProject("D:\\Projects\\Joe\\server\\gijoe.noiseide.project")
+
+#    def OnNotebookPageChanged(self, event):
+#        for item in self.editorMenu.GetMenuItems():
+#            self.editorMenu.Enable(item.GetId(), self.TabMgr.GetSelection() != -1)
 
     def Log(self, text):
         self.log.Append(text)
@@ -87,10 +93,26 @@ class NoiseIDE(wx.Frame):
         self.fileMenu.AppendSeparator()
         self.fileMenu.AppendMenuItem('Quit', self, self.OnQuit)
         self.menubar.Append(self.fileMenu, '&File')
+
+        self.editorMenu = Menu()
+        self.editorMenu.AppendCheckMenuItem('Show white space', self, self.OnShowWhiteSpace)
+        self.editorMenu.AppendCheckMenuItem('Show EOL', self, self.OnShowEOL)
+        self.menubar.Append(self.editorMenu, '&Editor')
+
         helpMenu = Menu()
         helpMenu.AppendMenuItem("About", self, self.OnHelpAbout)
         self.menubar.Append(helpMenu, '&Help')
         self.SetMenuBar(self.menubar)
+
+    def OnShowWhiteSpace(self, event):
+        CustomSTC.ShowWhiteSpace = not CustomSTC.ShowWhiteSpace
+        for editor in self.TabMgr.Pages():
+            editor.UpdateOptions()
+
+    def OnShowEOL(self, event):
+        CustomSTC.ShowEOL = not CustomSTC.ShowEOL
+        for editor in self.TabMgr.Pages():
+            editor.UpdateOptions()
 
     def OnHelpAbout(self, event):
         wx.MessageBox("IDE with good functionality for Erlang programming language.\nMade by Yaroslav 'IDNoise' Nikityshev.", "Noise IDE v0.1")

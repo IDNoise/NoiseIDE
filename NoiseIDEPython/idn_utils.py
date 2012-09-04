@@ -76,3 +76,4 @@ class Menu(wx.Menu):
         item = self.Append(wx.NewId(), text, text, wx.ITEM_CHECK)
         self.Check(item.Id, check)
         handlerObject.Bind(wx.EVT_MENU, handler, item)
+        return item
