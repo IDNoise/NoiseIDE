@@ -322,7 +322,7 @@ class ProjectExplorer(CT.CustomTreeCtrl):
             menu.AppendMenuItem("Cut", self, self.OnMenuCut)
             menu.AppendMenuItem("Copy", self, self.OnMenuCopy)
 
-            if self.tempData and self.ItemHasChildren(self.eventItem):
+            if self.tempData:
                 menu.AppendMenuItem("Paste", self, self.OnMenuPaste)
             menu.AppendMenuItem("Delete", self, self.OnMenuDelete)
             menu.AppendCheckMenuItem("Hide", self, self.OnMenuHide,
@@ -367,6 +367,9 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         toPath = self.GetPyData(self.eventItem)
         #print self.cut, "to", toPath
 
+        if os.path.isfile(toPath):
+            toPath = os.path.dirname(toPath)
+
         if self.cut:
             for id in self.tempData:
                 what = self.GetPyData(id)
@@ -379,7 +382,8 @@ class ProjectExplorer(CT.CustomTreeCtrl):
             if self.cut and os.path.dirname(what) == toPath:
                 continue
             if not os.path.exists(what): continue
-            newName = self.GetNewIfExists(os.path.join(toPath, os.path.basename(what)))
+            name = os.path.join(toPath, os.path.basename(what))
+            newName = self.GetNewIfExists(name)
             #print  what, " -> ", newName
 
             if self.cut:
@@ -389,6 +393,10 @@ class ProjectExplorer(CT.CustomTreeCtrl):
                     shutil.copytree(what, newName)
                 else:
                     shutil.copy(what, newName)
+            if extension(newName) == ".erl" and newName != name:
+                oldModuleName = os.path.basename(name)[:-4]
+                newModuleName = os.path.basename(newName)[:-4]
+                self.ReplaceModuleName(newName, oldModuleName, newModuleName)
 
         self.tempData = []
 
@@ -518,12 +526,15 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         dlg.Destroy()
 
     def ReplaceOccurencesInProject(self, path, oldModuleName, newModuleName):
-        what = "-module\(" + oldModuleName + "\)"
-        on = "-module(" + newModuleName + ")"
-        ReplaceInFile(path, re.compile(what, re.MULTILINE | re.DOTALL), on)
+        self.ReplaceModuleName(path, oldModuleName, newModuleName)
         what = r"\b" + oldModuleName + ":"
         on = newModuleName + ":"
         ReplaceInProject(re.compile(what, re.MULTILINE | re.DOTALL), on, [".erl", ".hrl"])
+
+    def ReplaceModuleName(self, path, oldModuleName, newModuleName):
+        what = "-module\(" + oldModuleName + "\)"
+        on = "-module(" + newModuleName + ")"
+        ReplaceInFile(path, re.compile(what, re.MULTILINE | re.DOTALL), on)
 
     def DeleteItemByPath(self, path):
         id = self.FindItemByPath(path)
@@ -613,7 +624,7 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         if not self.eventItem or not self.selectedItems or rootInSelection:
             return
 
-        canPaste = self.tempData and self.ItemHasChildren(self.eventItem)
+        canPaste = self.tempData
 
         code = event.GetKeyCode()
         CTRL = event.ControlDown()
