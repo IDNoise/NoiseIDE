@@ -88,14 +88,14 @@ class ModuleData:
         records = self.records[:]
         for include in self.includes:
             if include in ErlangCache.moduleData:
-                records += ErlangCache.moduleData[include].records
+                records += ErlangCache.moduleData[include].AllRecords()
         return records
 
     def AllMacroses(self):
         macroses = self.macroses[:]
         for include in self.includes:
             if include in ErlangCache.moduleData:
-                macroses += ErlangCache.moduleData[include].macroses
+                macroses += ErlangCache.moduleData[include].AllMacroses()
         return macroses
 
     def Functions(self, exported = True):

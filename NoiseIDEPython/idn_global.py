@@ -14,6 +14,9 @@ def GetTabMgr():
 def GetToolMgr():
     return MainFrame.ToolMgr
 
+def GetWinMgr():
+    return MainFrame.WinMgr
+
 def Log(*text):
     text = " ".join([str(t) for t in text])
     MainFrame.Log(text)

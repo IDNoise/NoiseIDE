@@ -40,11 +40,11 @@ class NoiseIDE(wx.Frame):
 
         self.WinMgr.AddPane1(self.TabMgr, aui.AuiPaneInfo().Center()#.Caption("Code Editor")
             .MaximizeButton().MinimizeButton().CaptionVisible(False)
-            .CloseButton(False).Floatable(False))
+            .CloseButton(False).Floatable(False).MinSize(100, 100))
 
         self.ToolMgr = Notebook(self)
         self.WinMgr.AddPane1(self.ToolMgr, aui.AuiPaneInfo().Bottom()#.Caption("Tools")
-            .MaximizeButton().MinimizeButton().CloseButton(False).Floatable(False).BestSize(400, 300))
+            .MaximizeButton().MinimizeButton().CloseButton(False).Floatable(False).BestSize(400, 300).MinSize(100, 100))
 
         self.log = ConsoleSTC(self.ToolMgr)
         self.log.SetReadOnly(True)

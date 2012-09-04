@@ -14,7 +14,7 @@ from idn_findreplace import FindInProjectDialog
 from idn_utils import writeFile, CreateButton, CreateLabel, Menu
 import idn_projectexplorer as exp
 from idn_console import ErlangIDEConsole, ErlangProjectConsole
-from idn_global import GetTabMgr, GetToolMgr, GetMainFrame, Log
+from idn_global import GetTabMgr, GetToolMgr, GetMainFrame, Log, GetWinMgr
 from idn_customstc import ErlangHighlightedSTCBase
 from PyProgress import PyProgress
 
@@ -101,6 +101,9 @@ class Project(ProgressTaskManagerDialog):
     CONFIG_MASK = "mask"
     CONFIG_PROJECT_NAME = "project_name"
     CONFIG_PROJECT_TYPE = "project_type"
+    CONFIG_TAB_PERSP = "tab_perspective"
+    CONFIG_TOOL_PERSP = "tool_perspective"
+    CONFIG_GLOBAL_PERSP = "global_perspective"
 
 
     def __init__(self, window, filePath, projectData):
@@ -127,6 +130,8 @@ class Project(ProgressTaskManagerDialog):
         self.menu = Menu()
         self.SetupMenu()
         self.window.MenuBar().Insert(window.MenuBar().GetMenuCount() - 1, self.menu, "&Project")
+
+        self.SetupPerspective()
 
     def SetupMenu(self):
         pass
@@ -167,7 +172,7 @@ class Project(ProgressTaskManagerDialog):
         self.explorer.SetRoot(self.projectDir)
         self.explorer.SetHiddenList(self.HiddenPathsList())
         self.window.WinMgr.AddPane1(self.explorer, aui.AuiPaneInfo().Left().Caption("Project Explorer")
-            .MinimizeButton().CloseButton(False).BestSize2(300, 600))
+            .MinimizeButton().CloseButton(False).BestSize2(300, 600).MinSize(100, 100))
         self.window.WinMgr.Update()
 
     def GetMask(self):
@@ -188,11 +193,28 @@ class Project(ProgressTaskManagerDialog):
         self.userData[self.CONFIG_LAST_OPENED_FILES] = openedFiles
         self.userData[self.CONFIG_HIDDEN_PATHS] = self.explorer.hiddenPaths
         self.userData[self.CONFIG_MASK] = self.explorer.GetCustomMask()
+
+        self.userData[self.CONFIG_TAB_PERSP] = GetTabMgr().SavePerspective()
+        self.userData[self.CONFIG_TOOL_PERSP] = GetToolMgr().SavePerspective()
+        #self.userData[self.CONFIG_GLOBAL_PERSP] = GetWinMgr().SavePerspective()
+
         #print(self.userData[self.CONFIG_MASK])
         #print(self.userData[self.CONFIG_HIDDEN_PATHS])
         yaml.dump(self.userData, open(self.userDataFile, 'w'))
 
     def GetEditorTypes(self): return []
+
+    def SetupPerspective(self):
+        if self.CONFIG_TAB_PERSP in self.userData:
+            GetTabMgr().LoadPerspective(self.userData[self.CONFIG_TAB_PERSP])
+            GetTabMgr().Update()
+        if self.CONFIG_TOOL_PERSP in self.userData:
+            GetToolMgr().LoadPerspective(self.userData[self.CONFIG_TOOL_PERSP])
+            GetToolMgr().Update()
+#        if self.CONFIG_GLOBAL_PERSP in self.userData:
+#            GetWinMgr().LoadPerspective(self.userData[self.CONFIG_GLOBAL_PERSP])
+#            GetWinMgr().Update()
+
 
 class ErlangProject(Project):
     IDE_MODULES_DIR = os.path.join(os.getcwd(), 'data', 'erlang', 'modules', 'noiseide', 'ebin')
@@ -216,8 +238,8 @@ class ErlangProject(Project):
         ErlangCache.Init(self)
 
         self.SetupDirs()
-        self.AddConsoles()
         self.AddTabs()
+        self.AddConsoles()
         self.GenerateErlangCache() #test
 
         self.CompileProject() #test
@@ -373,16 +395,14 @@ class ErlangProject(Project):
             text = readFile(file)
             if not text:
                 return
-            if editor.savedText != text:
+            if unicode(editor.savedText) != unicode(text):
                 dial = wx.MessageDialog(None,
                     'File "{}" was modified.\nDo you want to reload document?'.format(file),
                     'File modified',
                     wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
                 if dial.ShowModal() == wx.ID_YES:
                    # print "changing", editor.GetText() == text
-                    editor.SetText(text)
-                    editor.OnSavePointReached(None)
-                    editor.Changed(False)
+                    wx.CallAfter(editor.LoadFile, file)
                     #print "done"
                     #editor.OnSavePointReached(None)
                     #editor.Changed(False)
