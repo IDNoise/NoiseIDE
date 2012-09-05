@@ -18,7 +18,7 @@
     ignores/0,
     gen_file_cache/1,
     gen_erlang_cache/0, 
-    gen_project_cache/0
+    gen_project_cache/0   
 ]).
 
 -record(function, {  
@@ -117,8 +117,9 @@ create_cache_file_fly(FlyFile, RealFile) ->
     ModuleName = module_name(FlyFile),    
     CacheFileName = get_cache_file_name(CacheDir, RealModuleName),
     try 
-       Data = generate(ModuleName, FlyFile, undefined),
-       dump_data_to_file(RealModuleName, CacheDir, RealFile, CacheFileName, Data, FlyFile)
+       Data = generate(ModuleName, FlyFile, undefined), 
+       dump_data_to_file(RealModuleName, CacheDir, RealFile, CacheFileName, Data, FlyFile),
+       send_answer(CacheDir, CacheFileName, RealFile)
     catch _:_ -> ok
     end,  
     ok.
@@ -193,7 +194,8 @@ generate_file(CacheDir, ModuleName, FilePath, DocsFilePath) ->
             _ -> 
                 Data = generate(ModuleName, FilePath, DocsFilePath),
                 dump_data_to_file(ModuleName, CacheDir, FilePath, CacheFileName, Data)
-        end
+        end,
+        send_answer(CacheDir, CacheFileName, FilePath)
     %catch _:_ ->  
     catch Error:Reason ->
             %ok
@@ -201,6 +203,19 @@ generate_file(CacheDir, ModuleName, FilePath, DocsFilePath) ->
             %file:write_file(CacheFileName ++ ".error", [Error, Reason])
     end,
     ok.
+
+send_answer(CacheDir, CacheFile, File) ->
+    case lists:suffix("erlang", CacheDir) of
+        false -> 
+            Response = mochijson2:encode({struct, [
+                {response, gen_file_cache},   
+                {path, iolist_to_binary(File)},     
+                {cache_path, iolist_to_binary(CacheFile)}]
+                }), 
+            eide_connect:send(Response);
+        _ ->
+            ok
+    end.
 
 dump_data_to_file(ModuleName, CacheDir, FilePath, CFile, Content) ->
     dump_data_to_file(ModuleName, CacheDir, FilePath, CFile, Content, FilePath).

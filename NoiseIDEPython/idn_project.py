@@ -80,7 +80,7 @@ class ProgressTaskManagerDialog(wx.EvtHandler):
             #if (time.time() - self.lastTaskTime > 10 and len(self.tasks) > 0):
                 #Log("####\n 10 seconds from last task done. Tasks left ", len(self.tasks))
                 #Log("\n\t".join([str(t) for t in self.tasks]))
-            if (time.time() - self.lastTaskTime > 30 and len(self.tasks) > 0):
+            if (time.time() - self.lastTaskTime > 15 and len(self.tasks) > 0):
                 #Log("####\n 15 seconds from last task done. Tasks left ", len(self.tasks))
                 #Log("\n\t".join([str(t) for t in self.tasks]))
                 Log("tasks left:", self.tasks)
@@ -182,7 +182,9 @@ class Project(ProgressTaskManagerDialog):
 
     def Close(self):
         self.explorer.StopTrackingProject()
+        self.window.WinMgr.DetachPane(self.explorer)
         self.SaveUserData()
+        GetTabMgr().CloseAll()
 
     def SaveUserData(self):
         #print "save user data"
@@ -252,13 +254,14 @@ class ErlangProject(Project):
 
         GetTabMgr().Parent.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
 
-        ErlangCache.LoadCacheFromDir(self.ProjectName())
-        ErlangCache.StartCheckingFolder(self.ProjectName())
+        #ErlangCache.LoadCacheFromDir(self.ProjectName())
+        #ErlangCache.StartCheckingFolder(self.ProjectName())
 
-    def TaskDone(self, description, task = None):
-        Project.TaskDone(self, description, task)
-        if task == ErlangIDEConnectAPI.TASK_GEN_ERLANG_CACHE:
-            ErlangCache.LoadCacheFromDir("erlang")
+    #def TaskDone(self, description, task = None):
+    #    Project.TaskDone(self, description, task)
+
+    def ErlangCacheChecked(self):
+        ErlangCache.LoadCacheFromDir("erlang")
 
     def SetupMenu(self):
         self.mEditProject = self.menu.AppendMenuItem('Edit Project', self.window, self.OnEditProject)
@@ -401,13 +404,9 @@ class ErlangProject(Project):
                     'File modified',
                     wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
                 if dial.ShowModal() == wx.ID_YES:
-                   # print "changing", editor.GetText() == text
                     wx.CallAfter(editor.LoadFile, file)
-                    #print "done"
-                    #editor.OnSavePointReached(None)
-                    #editor.Changed(False)
-            #print "modified", file
-        self.Compile(file)
+        else:
+            self.Compile(file)
 
 
     def FileSaved(self, file):

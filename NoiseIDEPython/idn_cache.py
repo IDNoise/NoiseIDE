@@ -4,6 +4,7 @@ from idn_config import Config
 from idn_directoryinfo import DirectoryChecker
 from idn_global import GetMainFrame, Log
 from idn_utils import readFile
+import wx
 
 FILE = "file"
 NAME = "name"
@@ -103,6 +104,8 @@ class ModuleData:
 
 class ErlangCache:
 
+    toLoad = []
+
     @classmethod
     def Init(cls, project):
         cls.project = project
@@ -121,17 +124,35 @@ class ErlangCache:
         cls.includes = set()
         cls.moduleData = {}
 
+        cls.loadTimer = wx.Timer(GetMainFrame(), wx.NewId())
+        cls.loadTimer.Start(100)
+        GetMainFrame().Bind(wx.EVT_TIMER, cls.OnProgressTimer, cls.loadTimer)
+
+    @classmethod
+    def OnProgressTimer(cls, event):
+        for i in range(15):
+            try:
+                file = cls.toLoad.pop()
+                cls.LoadFile_(file)
+            except IndexError, e:
+                pass
+
+    @classmethod
+    def AddToLoad(cls, file):
+        cls.toLoad.append(file)
+
     @classmethod
     def LoadCacheFromDir(cls, dir):
-        Log("loading cache from", dir)
+        #Log("loading cache from", dir)
         dir = os.path.join(cls.CACHE_DIR, dir)
         for file in os.listdir(dir):
             file = os.path.join(dir, file)
-            cls.LoadFile(file)
-        Log("end loading cache from", dir)
+            cls.AddToLoad(file)
+            #cls.LoadFile(file)
+        #Log("end loading cache from", dir)
 
     @classmethod
-    def LoadFile(cls, file):
+    def LoadFile_(cls, file):
         try:
             if not os.path.isfile(file): return
             if not file.endswith(".cache"): return
@@ -161,7 +182,8 @@ class ErlangCache:
                 cls.modules.add(name)
 
             cls.moduleData[name] = ModuleData(name, data)
-            cls.project.TaskDone("Cache for {} loaded".format(name))
+
+            #Log("Loaded cache for", file)
         except  Exception, e:
             Log("load cache file error", e)
         #Log("Cache:", file)

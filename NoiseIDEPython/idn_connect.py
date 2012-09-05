@@ -1,3 +1,5 @@
+from idn_cache import ErlangCache
+
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 import socket
@@ -161,8 +163,6 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
             self.GenerateFileCache(file)
 
     def GenerateErlangCache(self):
-        GetProject().AddTask(self.TASK_GEN_ERLANG_CACHE)
-        GetProject().CreateProgressDialog("Generating/Checking erlang cache")
         self._ExecRequest("gen_erlang_cache", '[]')
 
     def GenerateProjectCache(self):
@@ -202,11 +202,14 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
 
             elif res == "gen_file_cache":
                 path = pystr(js["path"])
+                cachePath = pystr(js["cache_path"])
+                ErlangCache.AddToLoad(cachePath)
                 GetProject().TaskDone("Generated cache for {}".format(path), (self.TASK_GEN_FILE_CACHE, path.lower()))
             elif res == "gen_erlang_cache":
-                GetProject().TaskDone("Generated cache for erlang libs", self.TASK_GEN_ERLANG_CACHE)
+                GetProject().ErlangCacheChecked()
             elif res == "connect":
                 Log("socket connected")
+
         except Exception, e:
             Log("===== connection exception ", e)
 

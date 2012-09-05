@@ -4,38 +4,44 @@
     compile/2, 
     compile_simple/1,
     compile_file_fly/2,
-    generate_includes/1
-]). 
+    generate_includes/0
+]).  
 
 
-generate_includes(undefined) -> [];
-generate_includes(AppsPath) ->
-    {ok, Apps} = file:list_dir(AppsPath),
-    [{i, "../include"}| [{i,Ai} || A <- Apps, End <- ["src", "include"],
-                         begin
-                             Ai = AppsPath ++ "/"++ A ++"/" ++ End,
-                             filelib:is_dir(Ai)
-                         end]]. 
-
-compile(FileName, App) -> 
+generate_includes() ->
+    case eide_connect:prop(project_dir) of
+        undefined -> 
+            eide_connect:set_prop(includes, []);
+        AppsPath ->
+            {ok, Apps} = file:list_dir(AppsPath),
+            Includes = 
+                [{i, "../include"}| [{i,Ai} || A <- Apps, End <- ["src", "include"],
+                 begin
+                     Ai = AppsPath ++ "/"++ A ++"/" ++ End,
+                     filelib:is_dir(Ai)
+                 end]],
+            eide_connect:set_prop(includes, Includes)
+    end. 
+ 
+compile(FileName, App) ->
     OutDir = eide_connect:prop(project_dir) ++ "/" ++ App ++ "/ebin",
     %OutputFileName = OutDir ++ "/" ++ filename:rootname(filename:basename(FileName)) ++ ".beam",
-    Includes = generate_includes(eide_connect:prop(project_dir)),
-    catch file:make_dir(OutDir),
+    Includes = eide_connect:prop(includes),
+    catch file:make_dir(OutDir),  
     create_response(FileName, compile_internal(FileName, [{outdir, OutDir} | Includes])).
 
-compile_simple(FileName) ->
+compile_simple(FileName) -> 
     create_response(FileName, compile_internal(FileName, [{outdir, filename:dirname(FileName)}])).
-
+    
 default_options() ->
-    [
+    [ 
      warn_obsolete_guard, 
      %warn_unused_import,
      warn_shadow_vars, 
      warn_export_vars, 
      debug_info,
      return_errors, 
-     return_warnings, 
+     return_warnings,   
      strong_validation
     ].
 
@@ -52,9 +58,8 @@ create_response_fly(FilePath, Errors) ->
                                 {path, iolist_to_binary(FilePath)}]}).
 
 compile_file_fly(RealPath, NewPath) -> 
-    Includes = generate_includes(eide_connect:prop(project_dir)),
     create_response_fly(RealPath, 
-                    compile_internal(NewPath, Includes, false, RealPath)).
+                    compile_internal(NewPath, eide_connect:prop(includes), false, RealPath)).
 
 compile_internal(FileName, Options) ->
     compile_internal(FileName, Options, true, FileName).
@@ -73,8 +78,8 @@ compile_internal(FileName, Options, ToBinary, RealPath) ->
                      {Errors, Warnings}
              end,
     case FileName == RealPath of
-        true -> eide_cache:gen_file_cache(FileName);
-        _ -> eide_cache:create_cache_file_fly(FileName, RealPath)
+        true -> spawn(eide_cache, gen_file_cache, [FileName]);
+        _ -> spawn(eide_cache, create_cache_file_fly, [FileName, RealPath])
     end,
     Errs = 
         [[begin

@@ -86,9 +86,7 @@ class EditorNotebook(aui.AuiNotebook):
                     i += 1
                 self.ClosePage(i)
 
-        def closeAll(event):
-            while self.GetPageCount() > 0:
-                self.ClosePage(0)
+
 
         def renameFile(event):
             GetProject().explorer.Rename(editor.filePath)
@@ -98,7 +96,7 @@ class EditorNotebook(aui.AuiNotebook):
         menu.AppendSeparator()
         menu.AppendMenuItem("Close this tab", self, closeCurrent)
         menu.AppendMenuItem("Close other tabs", self, closeOther)
-        menu.AppendMenuItem("Close all tabs", self, closeAll)
+        menu.AppendMenuItem("Close all tabs", self, self.CloseAll)
         self.PopupMenu(menu)
 
 
@@ -107,6 +105,10 @@ class EditorNotebook(aui.AuiNotebook):
             return self.GetPage(index).editor
         else:
             raise IndexError
+
+    def CloseAll(self, event = None):
+        while self.GetPageCount() > 0:
+            self.ClosePage(0)
 
     def Pages(self):
         return [self[index] for index in range(self.GetPageCount())]

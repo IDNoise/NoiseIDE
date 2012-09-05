@@ -438,7 +438,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         if self.ModuleType() == self.TYPE_MODULE:
             self.flyTimer = wx.Timer(self, wx.NewId())
             self.Bind(wx.EVT_TIMER, self.OnFlyTimer, self.flyTimer)
-            self.flyTimer.Start(300)
+            self.flyTimer.Start(500)
             self.flyCompileHash = None
 
         self.lastErrors = []
