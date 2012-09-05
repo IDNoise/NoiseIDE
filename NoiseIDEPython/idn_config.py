@@ -10,6 +10,7 @@ from idn_utils import CreateButton
 class Config:
     COLOR_SCHEMA = "color_schema"
     USER_NAME = "user_name"
+    LAST_PROJECT_LIST = "last_project_list"
 
     @classmethod
     def load(cls):
@@ -49,6 +50,13 @@ class Config:
     def ColorSchema(cls):
         return (cls.data[cls.COLOR_SCHEMA] if cls.COLOR_SCHEMA in cls.data else "dark")
 
+    @classmethod
+    def LastProjects(cls):
+        return (cls.data[cls.LAST_PROJECT_LIST] if cls.LAST_PROJECT_LIST in cls.data else [])
+
+    @classmethod
+    def SetLastProjects(cls, projects):
+        cls.data[cls.LAST_PROJECT_LIST] = projects
 
 class ConfigEditForm(wx.Dialog):
     def __init__(self):

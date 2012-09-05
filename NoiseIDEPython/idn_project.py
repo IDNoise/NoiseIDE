@@ -129,8 +129,8 @@ class Project(ProgressTaskManagerDialog):
 
         self.menu = Menu()
         self.SetupMenu()
-        self.window.MenuBar().Insert(window.MenuBar().GetMenuCount() - 1, self.menu, "&Project")
-
+        self.menuPos = window.MenuBar().GetMenuCount() - 1
+        self.window.MenuBar().Insert(self.menuPos, self.menu, "&Project")
         self.SetupPerspective()
 
     def SetupMenu(self):
@@ -185,6 +185,8 @@ class Project(ProgressTaskManagerDialog):
         self.window.WinMgr.DetachPane(self.explorer)
         self.window.WinMgr.Update()
         self.explorer.Destroy()
+        GetTabMgr().CloseAll()
+        self.window.MenuBar().Remove(self.menuPos)
 
     def SaveUserData(self):
         #print "save user data"

@@ -90,6 +90,16 @@ class NoiseIDE(wx.Frame):
         projectsMenu.AppendMenuItem('Erlang', self, self.OnNewErlangProject)
         self.fileMenu.AppendMenu(wx.NewId(), "New project", projectsMenu)
         self.fileMenu.AppendMenuItem('Open Project', self, self.OnOpenProject)
+
+        if Config.LastProjects():
+            lastProjects = Menu()
+            self.fileMenu.AppendMenu(wx.NewId(), "Last projects", lastProjects)
+            def handler(p):
+                print p
+                return lambda e: self.OpenProject(p)
+            for p in Config.LastProjects():
+                lastProjects.AppendMenuItem(os.path.basename(p), self, handler(p))
+
         self.fileMenu.AppendSeparator()
         self.fileMenu.AppendMenuItem('Quit', self, self.OnQuit)
         self.menubar.Append(self.fileMenu, '&File')
@@ -150,6 +160,13 @@ class NoiseIDE(wx.Frame):
         if self.project:
             self.project.Close()
         Config.SetProp("last_project", projectFile)
+
+        projects = Config.LastProjects()
+        if projectFile in projects:
+            projects.remove(projectFile)
+        projects.append(projectFile)
+        Config.SetLastProjects(projects)
+
         loadProject(self, projectFile)
         self.project.mEditProject.Enable(True)
 
@@ -159,7 +176,6 @@ class NoiseIDE(wx.Frame):
     def OnClose(self, event):
         if self.project:
             self.project.Close()
-            self.TabMgr.CloseAll()
         Config.save()
         event.Skip()
 
