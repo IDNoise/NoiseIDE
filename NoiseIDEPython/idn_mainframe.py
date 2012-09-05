@@ -159,6 +159,7 @@ class NoiseIDE(wx.Frame):
     def OnClose(self, event):
         if self.project:
             self.project.Close()
+            self.TabMgr.CloseAll()
         Config.save()
         event.Skip()
 

@@ -139,8 +139,6 @@ class Project(ProgressTaskManagerDialog):
     def ProjectName(self):
         return self.projectData[self.CONFIG_PROJECT_NAME]
 
-    def GetEditForm(self): pass
-
     def LastOpenedFiles(self):
         if self.CONFIG_LAST_OPENED_FILES in self.userData:
             return self.userData[self.CONFIG_LAST_OPENED_FILES]
@@ -174,6 +172,7 @@ class Project(ProgressTaskManagerDialog):
         self.window.WinMgr.AddPane1(self.explorer, aui.AuiPaneInfo().Left().Caption("Project Explorer")
             .MinimizeButton().CloseButton(False).BestSize2(300, 600).MinSize(100, 100))
         self.window.WinMgr.Update()
+        print "create explorer"
 
     def GetMask(self):
         if self.CONFIG_MASK in self.userData:
@@ -181,10 +180,11 @@ class Project(ProgressTaskManagerDialog):
         return None
 
     def Close(self):
+        self.SaveUserData()
         self.explorer.StopTrackingProject()
         self.window.WinMgr.DetachPane(self.explorer)
-        self.SaveUserData()
-        GetTabMgr().CloseAll()
+        self.window.WinMgr.Update()
+        self.explorer.Destroy()
 
     def SaveUserData(self):
         #print "save user data"
@@ -196,8 +196,8 @@ class Project(ProgressTaskManagerDialog):
         self.userData[self.CONFIG_HIDDEN_PATHS] = self.explorer.hiddenPaths
         self.userData[self.CONFIG_MASK] = self.explorer.GetCustomMask()
 
-        self.userData[self.CONFIG_TAB_PERSP] = GetTabMgr().SavePerspective()
-        self.userData[self.CONFIG_TOOL_PERSP] = GetToolMgr().SavePerspective()
+        #self.userData[self.CONFIG_TAB_PERSP] = GetTabMgr().SavePerspective()
+        #self.userData[self.CONFIG_TOOL_PERSP] = GetToolMgr().SavePerspective()
         #self.userData[self.CONFIG_GLOBAL_PERSP] = GetWinMgr().SavePerspective()
 
         #print(self.userData[self.CONFIG_MASK])
@@ -207,12 +207,13 @@ class Project(ProgressTaskManagerDialog):
     def GetEditorTypes(self): return []
 
     def SetupPerspective(self):
-        if self.CONFIG_TAB_PERSP in self.userData:
-            GetTabMgr().LoadPerspective(self.userData[self.CONFIG_TAB_PERSP])
-            GetTabMgr().Update()
-        if self.CONFIG_TOOL_PERSP in self.userData:
-            GetToolMgr().LoadPerspective(self.userData[self.CONFIG_TOOL_PERSP])
-            GetToolMgr().Update()
+        pass
+        #if self.CONFIG_TAB_PERSP in self.userData:
+         #   GetTabMgr().LoadPerspective(self.userData[self.CONFIG_TAB_PERSP])
+        #    GetTabMgr().Update()
+        #if self.CONFIG_TOOL_PERSP in self.userData:
+        #    GetToolMgr().LoadPerspective(self.userData[self.CONFIG_TOOL_PERSP])
+        #    GetToolMgr().Update()
 #        if self.CONFIG_GLOBAL_PERSP in self.userData:
 #            GetWinMgr().LoadPerspective(self.userData[self.CONFIG_GLOBAL_PERSP])
 #            GetWinMgr().Update()
@@ -274,8 +275,6 @@ class ErlangProject(Project):
 
     def OnEditProject(self, event):
         ErlangProjectFrom(self).ShowModal()
-
-    def GetEditForm(self): return
 
     def AppsPath(self):
         if not self.CONFIG_APPS_DIR in self.projectData or not self.projectData[self.CONFIG_APPS_DIR]:
@@ -389,6 +388,8 @@ class ErlangProject(Project):
         self.shellConsole.Stop()
         for title, console in self.consoles.items():
             console.Stop()
+        for w in self.consoleTabs.values() + [self.errorsTable, self.shellConsole]:
+            GetToolMgr().ClosePage(GetToolMgr().FindPageIndexByWindow(w))
 
     def OnProjectFileModified(self, event):
         event.Skip()

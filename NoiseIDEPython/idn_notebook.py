@@ -63,6 +63,19 @@ class Notebook(aui.AuiNotebook):
             return None
         return self[currentPage]
 
+    def ClosePage(self, page):
+        tabControl = None
+        for tabControl in self.GetChildren():
+            if isinstance(tabControl, aui.AuiTabCtrl):
+                break
+
+        event = wx.aui.AuiNotebookEvent(wx.aui.EVT_AUINOTEBOOK_PAGE_CLOSE.typeId, tabControl.Id)
+        event.SetOldSelection(-1)
+        event.SetSelection(page)
+        event.SetEventObject(tabControl)
+        event.SetInt(aui.AUI_BUTTON_CLOSE)
+        self.OnTabButton(event)
+
 class EditorNotebook(aui.AuiNotebook):
     def __init__(self, parent):
         agwStyle = aui.AUI_NB_DEFAULT_STYLE |\
@@ -85,8 +98,6 @@ class EditorNotebook(aui.AuiNotebook):
                 if self[i] == editor:
                     i += 1
                 self.ClosePage(i)
-
-
 
         def renameFile(event):
             GetProject().explorer.Rename(editor.filePath)

@@ -9,19 +9,20 @@
 
 
 generate_includes() ->
-    case eide_connect:prop(project_dir) of
-        undefined -> 
-            eide_connect:set_prop(includes, []);
-        AppsPath ->
-            {ok, Apps} = file:list_dir(AppsPath),
-            Includes = 
+    Includes = 
+        case eide_connect:prop(project_dir) of
+            undefined -> 
+                [];
+            AppsPath ->
+                {ok, Apps} = file:list_dir(AppsPath),
                 [{i, "../include"}| [{i,Ai} || A <- Apps, End <- ["src", "include"],
                  begin
                      Ai = AppsPath ++ "/"++ A ++"/" ++ End,
                      filelib:is_dir(Ai)
-                 end]],
-            eide_connect:set_prop(includes, Includes)
-    end. 
+                 end]]
+    end,
+    %io:format("includes:~p~n", [Includes]),
+    eide_connect:set_prop(includes, Includes). 
  
 compile(FileName, App) ->
     OutDir = eide_connect:prop(project_dir) ++ "/" ++ App ++ "/ebin",

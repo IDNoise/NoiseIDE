@@ -2,7 +2,7 @@
  
 -export([
     start/1,
-    loop/3,
+    loop/1,
     accept/1,
     prop/1, 
     worker/0,
@@ -10,6 +10,12 @@
     set_prop/2 
 ]). 
  
+-record(state, {
+    workers,
+    fly_compiler,
+    erlang_cache_generator,
+    socket
+}).
 
 -define(noreply, noreply).
 
@@ -25,37 +31,50 @@ accept(LS) ->
     %io:format("accepted"),
     AcceptResponce = mochijson2:encode({struct, [{response, connect}]}), 
     gen_tcp:send(Socket, AcceptResponce),
-    Workers = [spawn(fun worker/0) || _ <- lists:seq(1, 50)],
-    loop(Socket, Workers, spawn(fun worker/0)).
+    State = #state{
+        workers = [spawn(fun worker/0) || _ <- lists:seq(1, 30)],
+        fly_compiler = spawn(fun worker/0),
+        erlang_cache_generator = spawn(fun worker/0),
+        socket = Socket},
+    loop(State).
      
 send(Data) ->
     ?MODULE ! {send, Data}.
     
-loop(Socket, Workers, FlyCompiler) ->
+loop(State) ->
     %io:format("loop~n"),
-    inet:setopts(Socket, [{active,once}]),
+    inet:setopts(State#state.socket, [{active,once}]),
     receive
         {send, Data} ->
-            gen_tcp:send(Socket, Data),
-            loop(Socket, Workers, FlyCompiler);
+            gen_tcp:send(State#state.socket, Data),
+            loop(State);
         {tcp, Socket, Data} ->
             {Action, ActionData} = process(Data),
             case Action of
                 compile_file_fly -> 
-                    catch erlang:exit(FlyCompiler, kill),
-                    FlyCompiler1 = spawn(fun worker/0),
-                    FlyCompiler1 ! {{Action, ActionData}, Socket},
-                    loop(Socket, Workers, FlyCompiler1);
+                    catch erlang:exit(State#state.fly_compiler, kill),
+                    State1 = State#state{fly_compiler = spawn(fun worker/0)},
+                    State1#state.fly_compiler ! {{Action, ActionData}, Socket},
+                    loop(State1);
+                gen_erlang_cache -> 
+                    catch erlang:exit(State#state.erlang_cache_generator, kill),
+                    State1 = State#state{erlang_cache_generator = spawn(fun worker/0)},
+                    State1#state.erlang_cache_generator ! {{Action, ActionData}, Socket},
+                    loop(State1); 
+                Action when Action == add_path; Action == remove_path;
+                    Action == set_prop; Action == remove_prop ->
+                    execute_instant_action(Action, ActionData),
+                    loop(State);
                 _ ->
-                    [W|T] = Workers,
+                    [W|T] = State#state.workers,
                     W ! {{Action, ActionData}, Socket},
-                    loop(Socket, T ++ [W], FlyCompiler)
+                    loop(State#state{workers = T ++ [W]})
             end;
         {tcp_closed, Socket} ->
             io:format("Socket ~w closed [~w]~n",[Socket, self()]),
             ok
-    after 10 ->
-        loop(Socket, Workers, FlyCompiler)
+    after 5 ->
+        loop(State)
     end.
 
 worker() -> 
@@ -90,28 +109,26 @@ process(Data) ->
 done(Type) -> done(Type, []).
 done(Type, Params) -> iolist_to_binary(lists:flatten(mochijson2:encode({struct, [{response, Type}|Params]}))).
 
-execute_action(add_path, PathBinary) ->
+execute_instant_action(add_path, PathBinary) ->
     Path = binary_to_list(PathBinary),
     %io:format("add path~p~n", [Path]), 
     code:add_patha(Path),
-    eide_compiler:generate_includes(),
-    ?noreply; 
-execute_action(remove_path, PathBinary) ->
+    eide_compiler:generate_includes(); 
+execute_instant_action(remove_path, PathBinary) ->
     Path = binary_to_list(PathBinary),
-    code:del_path(Path),
-    ?noreply; 
-execute_action(set_prop, Binary) ->
+    code:del_path(Path); 
+execute_instant_action(set_prop, Binary) ->
     [Prop, Value] = Binary,
     Key = binary_to_atom(Prop, latin1),
     Val = binary_to_list(Value),
     set_prop(Key, Val),
     %io:format("set p~p~n", [{Key, Val}]), 
-    eide_compiler:generate_includes(),
-    ?noreply;
-execute_action(remove_prop, Binary) ->
+    eide_compiler:generate_includes();
+execute_instant_action(remove_prop, Binary) ->
     Key = binary_to_list(Binary),
-    ets:delete(props, Key),
-    ?noreply;
+    ets:delete(props, Key).
+
+
 execute_action(gen_erlang_cache, _Binary) -> 
     eide_cache:gen_erlang_cache(),
     done(gen_erlang_cache);
@@ -134,7 +151,7 @@ execute_action(gen_file_cache, Binary) ->
     ?noreply;
 execute_action(compile_file, PathBinary) ->
     Path = binary_to_list(PathBinary),
-    %io:format("compile_file~p~n", [Path]), 
+    %io:format("compile_file~p~n", [Path]),  
     eide_compiler:compile_simple(Path);
 execute_action(compile_project_file, PathBinary) ->
     [FileName, App] = PathBinary,

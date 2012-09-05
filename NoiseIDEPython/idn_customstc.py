@@ -175,7 +175,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
 
         self.highlightTimer = wx.Timer(self, wx.NewId())
         self.Bind(wx.EVT_TIMER, self.OnHighlightTimer, self.highlightTimer)
-        self.highlightTimer.Start(200)
+        self.highlightTimer.Start(400)
 
 
         self.EnableLineNumbers()

@@ -208,7 +208,8 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
             elif res == "gen_erlang_cache":
                 GetProject().ErlangCacheChecked()
             elif res == "connect":
-                Log("socket connected")
+                pass
+                #Log("socket connected")
 
         except Exception, e:
             Log("===== connection exception ", e)
