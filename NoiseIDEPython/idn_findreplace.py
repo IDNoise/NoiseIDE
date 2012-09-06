@@ -45,9 +45,8 @@ class FindInFilePanel(wx.Panel):
         self.SetSizer(self.sizer)
         self.Layout()
 
-        #self.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
 
-    def OnFind(self, event):
+    def OnFind(self, event = None):
         self.textToFind = self.findText.Value
         self.findSuccessful = False
         if self.textToFind and self.editor:
@@ -114,13 +113,6 @@ class FindInFilePanel(wx.Panel):
 
     def OnClose(self, event):
         self.Parent.HideFind()
-
-    def OnKeyDown(self, event):
-        keyCode = event.GetKeyCode()
-        if keyCode == wx.WXK_ESCAPE:
-            self.Parent.HideFind()
-        else:
-            event.Skip()
 
 class FindInProjectDialog(wx.Dialog):
     resultsTable = None

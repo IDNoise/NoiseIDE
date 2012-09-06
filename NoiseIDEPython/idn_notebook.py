@@ -193,12 +193,14 @@ class EditorPanel(wx.Panel):
         self.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
 
     def OnKeyDown(self, event):
-        keycode = event.GetKeyCode()
-        if keycode == ord('F') and event.ControlDown() and not event.ShiftDown() and not event.AltDown():
+        keyCode = event.GetKeyCode()
+        if keyCode == ord('F') and event.ControlDown() and not event.ShiftDown() and not event.AltDown():
             self.ShowFind()
-        elif keycode == wx.WXK_ESCAPE and self.helpVisible:
+        elif keyCode == wx.WXK_ESCAPE and self.helpVisible:
             self.HideFind()
             event.Skip()
+        elif keyCode in [wx.WXK_F3, wx.WXK_RETURN] and self.helpVisible:
+            self.findPanel.OnFind()
         else:
             event.Skip()
 

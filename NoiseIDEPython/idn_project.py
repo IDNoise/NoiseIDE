@@ -526,9 +526,7 @@ class ErlangProject(Project):
         elif event.GetKeyCode() == ord('F') and event.ControlDown() and event.ShiftDown():
             dialog = FindInProjectDialog.GetDialog(GetTabMgr())
             dialog.Show()
-#        elif event.GetKeyCode() == ord('F') and event.ControlDown():
-#            dialog = FindInFileDialog(GetTabMgr())
-#            dialog.Show()
+            dialog.findText.SetFocus()
         else:
             event.Skip()
 
