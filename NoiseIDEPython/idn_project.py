@@ -308,6 +308,7 @@ class ErlangProject(Project):
         #print path
         if path.endswith(".hrl"):
             self.GetShell().GenerateFileCache(path)
+            [self.Compile(module) for module in ErlangCache.GetDependentModules(path)]
         else:
             #print self.AppsPath()
             if not path.lower().startswith(self.AppsPath().lower()):
@@ -399,24 +400,22 @@ class ErlangProject(Project):
         editor = GetTabMgr().FindPageByPath(file)
         if editor:
             text = readFile(file)
-            if not text:
-                return
-            if unicode(editor.savedText) != unicode(text):
+            if not text: return
+            if editor.saved == False and unicode(editor.savedText) != unicode(text):
                 dial = wx.MessageDialog(None,
                     'File "{}" was modified.\nDo you want to reload document?'.format(file),
                     'File modified',
                     wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
                 if dial.ShowModal() == wx.ID_YES:
                     wx.CallAfter(editor.LoadFile, file)
-        else:
-            self.Compile(file)
+        #else:
+        self.Compile(file)
 
 
     def FileSaved(self, file):
         #Log("saved", file)
         self.Compile(file)
-        if file.endswith(".hrl"):
-            [self.Compile(module) for module in ErlangCache.GetDependentModules(file)]
+
 
     def OnProjectFileDeleted(self, event):
         file = event.File

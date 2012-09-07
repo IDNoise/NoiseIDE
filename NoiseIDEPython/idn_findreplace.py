@@ -45,6 +45,12 @@ class FindInFilePanel(wx.Panel):
         self.SetSizer(self.sizer)
         self.Layout()
 
+        self.findText.Bind(wx.EVT_KEY_DOWN, self.OnFindKeyDown)
+
+    def OnFindKeyDown(self, event):
+        keyCode = event.GetKeyCode()
+        if keyCode == wx.WXK_RETURN and self.IsShown:
+            self.OnFind()
 
     def OnFind(self, event = None):
         self.textToFind = self.findText.Value
