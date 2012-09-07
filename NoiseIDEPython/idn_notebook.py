@@ -6,7 +6,7 @@ from wx.aui import wxEVT_COMMAND_AUINOTEBOOK_TAB_MIDDLE_UP
 from idn_findreplace import FindInFilePanel
 from idn_global import GetProject
 from idn_utils import extension, Menu
-from idn_customstc import CustomSTC, ErlangSTC, YAMLSTC, PythonSTC, MarkerPanel
+from idn_customstc import CustomSTC, ErlangSTC, YAMLSTC, PythonSTC, MarkerPanel, ConsoleSTC
 
 EXT_STC_TYPE = {
     ".erl": ErlangSTC,
@@ -214,3 +214,22 @@ class EditorPanel(wx.Panel):
         self.sizer.Show(self.findPanel, False)
         self.Layout()
         self.helpVisible = False
+
+class ConsolePanel(EditorPanel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent, style = wx.TAB_TRAVERSAL | wx.NO_BORDER)
+        self.markPanel = MarkerPanel(self)
+        self.editor = ConsoleSTC(self, self.markPanel)
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.findPanel = FindInFilePanel(self, self.editor)
+        self.sizer.Add(self.findPanel)#, 1, wx.EXPAND)
+        self.HideFind()
+        hSizer = wx.BoxSizer(wx.HORIZONTAL)
+        hSizer.Add(self.editor, 1, wx.EXPAND)
+        hSizer.Add(self.markPanel, 0, wx.EXPAND)
+        self.sizer.AddSizer(hSizer, 1, wx.EXPAND)
+        self.SetSizer(self.sizer)
+        self.Layout()
+        self.Fit()
+
+        self.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)

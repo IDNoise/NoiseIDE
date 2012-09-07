@@ -8,7 +8,7 @@ from wx.lib.agw import aui
 from idn_colorschema import ColorSchema
 from idn_customstc import ConsoleSTC, CustomSTC
 from idn_winmanager import Manager
-from idn_notebook import  Notebook, EditorNotebook
+from idn_notebook import  Notebook, EditorNotebook, ConsolePanel
 from idn_config import Config
 import idn_global
 from idn_project import loadProject, ErlangProjectFrom
@@ -46,9 +46,10 @@ class NoiseIDE(wx.Frame):
         self.WinMgr.AddPane1(self.ToolMgr, aui.AuiPaneInfo().Bottom()#.Caption("Tools")
             .MaximizeButton().MinimizeButton().CloseButton(False).Floatable(False).BestSize(400, 300).MinSize(100, 100))
 
-        self.log = ConsoleSTC(self.ToolMgr)
+        self.logPanel = ConsolePanel(self.ToolMgr)
+        self.log = self.logPanel.editor
         self.log.SetReadOnly(True)
-        self.ToolMgr.AddPage(self.log, "Log")
+        self.ToolMgr.AddPage(self.logPanel, "Log")
 
         self.SetupMenu()
 

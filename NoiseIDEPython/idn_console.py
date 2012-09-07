@@ -1,5 +1,6 @@
 from idn_global import Log
 from idn_highlight import ErlangHighlighter
+from idn_notebook import ConsolePanel
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
@@ -30,9 +31,14 @@ class ErlangConsole(wx.Panel):
         self.buttonSizer.Add(self.clearButton)
         self.buttonSizer.AddStretchSpacer()
 
-        self.consoleOut = ConsoleSTC(self)
-        self.commandText = wx.TextCtrl(self, wx.NewId(), size = (500, 40), style = wx.TE_MULTILINE)# | wx.TE_RICH)
-        self.commandButton = CreateBitmapButton(self, 'exec_command.png', lambda e: self.Exec())
+        splitter = wx.SplitterWindow(self)
+        self.consolePanel = ConsolePanel(splitter)
+       # self.consolePanel.SetMinSize((400, 100))
+        self.consoleOut = self.consolePanel.editor
+
+        bottomPanel = wx.Panel(splitter)
+        self.commandText = wx.TextCtrl(bottomPanel, wx.NewId(), size = (500, 25), style = wx.TE_MULTILINE)# | wx.TE_RICH)
+        self.commandButton = CreateBitmapButton(bottomPanel, 'exec_command.png', lambda e: self.Exec())
         self.commandButton.SetToolTip( wx.ToolTip("Exec command") )
 
         commandSizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -40,15 +46,25 @@ class ErlangConsole(wx.Panel):
         commandSizer.AddSpacer(5)
         commandSizer.Add(self.commandButton, 0, wx.ALIGN_CENTER)
 
-        consoleSizer = wx.BoxSizer(wx.VERTICAL)
-        consoleSizer.Add(self.consoleOut, 1, wx.EXPAND | wx.BOTTOM)
-        consoleSizer.AddSpacer(5)
-        consoleSizer.Add(commandSizer, 0, wx.EXPAND | wx.RIGHT)
-        consoleSizer.AddSpacer(5)
+        # split the window
+
+        bottomPanel.SetSizer(commandSizer)
+        splitter.SplitHorizontally(self.consolePanel, bottomPanel, 300)
+        splitter.SetMinimumPaneSize(25)
+
+        #sizer = wx.BoxSizer(wx.VERTICAL)
+        #sizer.Add(splitter, 1, wx.EXPAND)
+
+#        consoleSizer = wx.BoxSizer(wx.VERTICAL)
+#        consoleSizer.Add(self.consolePanel, 1, wx.EXPAND | wx.BOTTOM)
+#        consoleSizer.AddSpacer(5)
+#        consoleSizer.Add(commandSizer, 0, wx.EXPAND | wx.RIGHT)
+#        consoleSizer.AddSpacer(5)
 
         mainSizer = wx.BoxSizer(wx.HORIZONTAL)
         mainSizer.Add(self.buttonSizer)
-        mainSizer.Add(consoleSizer, 1, wx.EXPAND)
+        #mainSizer.Add(consoleSizer, 1, wx.EXPAND)
+        mainSizer.Add(splitter, 1, wx.EXPAND)
         self.SetSizer(mainSizer)
         self.Layout()
 

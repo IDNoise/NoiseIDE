@@ -1053,8 +1053,8 @@ class ErlangCompleter(wx.Frame):
         #self.stc.Refresh()
 
 class ConsoleSTC(CustomSTC):
-    def __init__(self, parent):
-        CustomSTC.__init__(self, parent, None)
+    def __init__(self, parent, markerPanel = None):
+        CustomSTC.__init__(self, parent, markerPanel)
         self.EnableLineNumbers(False)
         self.SetMarginWidth(3, 0)
 
