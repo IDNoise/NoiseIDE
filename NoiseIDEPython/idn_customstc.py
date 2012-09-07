@@ -993,7 +993,8 @@ class ErlangCompleter(wx.Frame):
         sF = pos + 1 if pos + 1 < self.stc.GetLength() else self.stc.GetLength() - 1
         sT = pos + 6 if pos + 6 < self.stc.GetLength() else self.stc.GetLength() - 1
         #print pos, self.stc.GetLength(), sF, sT
-        if self.stc.GetCharAt(pos) == "(" and self.stc.GetText()[sF : sT].strip()[0] == ")":
+        postfix = self.stc.GetText()[sF : sT].strip()
+        if self.stc.GetCharAt(pos) == "(" and postfix and postfix[0] == ")":
             return 0
         else:
             arity = 1
