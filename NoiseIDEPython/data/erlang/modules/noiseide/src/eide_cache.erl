@@ -43,16 +43,35 @@
     records = [], 
     macros = [],          
     includes = [],
-    exports = [] 
+    exports = [],
+    exported_types = []
 }).  
 
--record(spec, {name, vars = [], types = [], result}).
+-record(spec, {
+    name, 
+    vars = [], 
+    types = [], 
+    result
+}).
 
--record(record, {name, line, fields = [], file}).
+-record(record, {
+    name, 
+    line, 
+    fields = [], 
+    file
+}).
 
--record(field, {name, type}).
+-record(field, {
+    name, 
+    type = "undefined"
+}).
 
--record(macro, {name, value, line, file}).
+-record(macro, {
+    name, 
+    value, 
+    line, 
+    file
+}).
 %erlang_cache:create_cache_for_erlang_libs("D:/temp/erlang_cache", erlang_cache:ignores()).
 %erlang_cache:create_cache("d:/temp/erlang_cache", "d:/projects/joe/server/apps", undefined, erlang_cache:ignores()).
 %erlang_cache:create_cache("d:/temp/erlang_cache", "d:/projects/gijoe/server/apps", undefined, erlang_cache:ignores()).
@@ -224,7 +243,8 @@ dump_data_to_file(ModuleName, CacheDir, FilePath, CFile, Content, FlyFileName) -
     #content{module_name = MN, 
              functions = Funs, 
              records = Recs, macros = Macs, 
-             includes = Incs} = Content, 
+             includes = Incs,
+             exported_types = ExpTypes} = Content, 
     %io:format("Data:~p~n", [{FlyFileName, Recs}]),
     JsonStruct = 
         {struct, [ 
@@ -233,7 +253,8 @@ dump_data_to_file(ModuleName, CacheDir, FilePath, CFile, Content, FlyFileName) -
                   {funs, funs_to_json(MN, CacheDir, Funs)},
                   {macros, {struct, macros_to_json(Macs, FlyFileName)}},
                   {includes, includes_to_json(Incs)},
-                  {records_data, {struct, recs_data_to_json(Recs, FlyFileName)}}
+                  {records_data, {struct, recs_data_to_json(Recs, FlyFileName)}},
+                  {exported_types, {struct, exp_types_to_json(ExpTypes)}}
                  ]
         },
     write_json(CFile, JsonStruct).
@@ -284,8 +305,12 @@ fun_to_json(ModuleName, CacheDir, Fun) ->
 recs_data_to_json(Recs, File) ->
     [rec_data_to_json(R) || R <- Recs, string:to_lower(R#record.file) == string:to_lower(File)].
 
+exp_types_to_json(Recs) ->
+    [{list_to_binary(TypeName), {struct, [{types, list_to_binary(Types)}, {line, Line}]}}|| {TypeName, Types, Line} <- Recs].
+ 
 rec_data_to_json(Rec) ->
     {Rec#record.name, {struct, [{fields, rec_fields_to_json(Rec#record.fields)}, 
+                                {types, rec_field_types_to_json(Rec#record.fields)},
                                 {line, Rec#record.line}]}
     }.
 
@@ -300,6 +325,9 @@ macros_data_to_json(Mac) ->
 rec_fields_to_json(Fields) ->
     [list_to_binary(F) || #field{name = F} <- Fields].
  
+rec_field_types_to_json(Fields) ->
+    [list_to_binary(T) || #field{type = T} <- Fields].
+ 
 includes_to_json(Incs) ->
     [iolist_to_binary(filename:basename(I)) || I <- Incs].
 
@@ -311,11 +339,14 @@ generate(ModuleName, FilePath, DocsFilePath) ->
             ".hrl" -> 
                 generate_from_source(FilePath);
             _ -> 
-                throw(unknown_type)
+                throw(unknown_type) 
         end,
     Comments = erl_comment_scan:file(FilePath),
     {SyntaxTree1, _} = erl_recomment:recomment_tree(SyntaxTree, Comments),
-    %io:format("~p~n", [SyntaxTree1]),
+    %io:format("SyntaxTree~p~n", [SyntaxTree1]),
+      
+    %io:format("types:~p~n", [catch dialyzer_utils:get_record_and_type_info(dialyzer_utils:get_abstract_code_from_src(FilePath))]),
+     
     Content = parse_tree(SyntaxTree1, StartContent),
     Content1 = case DocsFilePath of
                    undefined -> Content;
@@ -325,7 +356,9 @@ generate(ModuleName, FilePath, DocsFilePath) ->
     Content1#content{includes = Incls, file = FilePath, module_name = ModuleName}.
 
 generate_from_source(Path) -> 
-    {ok, Source} = epp_dodger:parse_file(Path),
+    %{ok, Source} = epp_dodger:parse_file(Path),
+    {ok, Source} = epp:parse_file(Path, [], []),
+    
     {#content{file = Path, last_file_attr = Path}, erl_syntax:form_list(Source)}.
 
 parse_tree(Node, Content) ->
@@ -426,6 +459,10 @@ parse_atom(Node, "spec", Content) ->
         _ ->
             Content#content{specs = Content#content.specs ++ Specs}
     end; 
+parse_atom(Node, "type", Content) -> 
+    parse_types(Node, Content);
+parse_atom(Node, "opaque", Content) -> 
+    parse_opaque(Node, Content);
 parse_atom(_Node, _Atom, Content) -> 
     Content.
 
@@ -701,6 +738,149 @@ parse_erlang_record_fields(Fields, Record) ->
                 end,
                 Record, 
                 Fields).
+
+parse_opaque(Node, Content) -> 
+    [Args|_] = erl_syntax:attribute_arguments(Node), 
+    [Name, Type | _] = erl_syntax:tuple_elements(Args),
+    ExportedTypes = {atom_to_list(element(4,Name)), parse_types(Type), erl_syntax:get_pos(Node)},
+    %io:format("data:~p~n", [ExportedTypes]),
+    Content#content{exported_types = [ExportedTypes | Content#content.exported_types]}.
+
+parse_types(Node, Content) ->
+    %io:format("parse type:~p~n", [Node]),
+    try
+        [Args|_] = erl_syntax:attribute_arguments(Node),
+        
+        TE = erl_syntax:tuple_elements(Args),
+        %io:format("data:~p~n", [TE]),
+        [TypeData, Data| _] = TE,
+        %io:format("type:~p~n", [TypeData]), 
+        case TypeData of 
+            TypeData when element(2, TypeData) == tuple ->
+                [_, RecordNameNode] = erl_syntax:tuple_elements(TypeData),
+                RecordName = erl_syntax:atom_name(RecordNameNode),
+                %io:format("record name:~p~n", [RecordName]),
+                %io:format("elements name:~p~n", [erl_syntax:list_elements(TypeData)]),
+                
+                FieldTypes = lists:foldl(fun(E, Acc) -> [get_field_type(E)| Acc] end, [], erl_syntax:list_elements(Data)),
+                Records = Content#content.records,
+                Record = lists:keyfind(RecordName, #record.name, Records),
+                Fields = Record#record.fields,
+                NewFields = lists:map(
+                    fun(Field) ->
+                        #field{name = Field#field.name, type = proplists:get_value(Field#field.name, FieldTypes, "undefined")}
+                    end, Fields),
+                Record1 = Record#record{fields = NewFields},
+                Content1 = Content#content{records = lists:keystore(RecordName, #record.name, Records, Record1)},
+                %io:format("new C:~p~n", [Content1]),
+                Content1;
+            TypeData when element(2, TypeData) == atom ->
+                ExportedTypes = {atom_to_list(element(4,TypeData)), parse_types(Data), erl_syntax:get_pos(Node)},
+                Content#content{exported_types = [ExportedTypes | Content#content.exported_types]};
+            _ ->
+                Content
+        end
+    catch Error:Reason ->
+        io:format("Types parse error:~p~nNode:~p~n", [{Error, Reason, erlang:get_stacktrace()}, Node]),
+        Content
+    end.
+
+get_field_type(TypeData) ->
+    {tree,tuple,
+        {attr,0,[],none},
+        [{tree,atom,{attr,0,[],none},TypeField}|Data]} = TypeData,
+    case TypeField of 
+        typed_record_field -> 
+            [RecordNameData, FieldData] = Data,
+            {get_record_field_name(RecordNameData), parse_types(FieldData)};
+        _ -> 
+            {get_record_field_name(TypeData), "undefined"}
+    end.
+
+get_record_field_name(Data) ->
+    {tree,tuple,
+       {attr,0,[],none},
+       [{tree,atom,{attr,0,[],none},record_field},
+        _,
+        {tree,tuple, 
+          {attr,0,[],none},
+          [{tree,atom,{attr,0,[],none},atom}, 
+           _, 
+           {tree,atom,{attr,0,[],none},FieldName}]}|_]} = Data,
+    atom_to_list(FieldName).
+
+parse_types(TData) ->
+    {tree,tuple,  
+       {attr,0,[],none}, 
+       [{tree,atom,{attr,0,[],none},TType},
+        {tree,integer,{attr,0,[],none},_}|Data]} = TData,
+    case TType of
+        remote_type ->
+            parse_remote_type(Data);
+        ann_type ->
+            parse_ann_type(Data);
+        integer ->
+            [{tree,integer,{attr,0,[],none},Int}] = Data,
+            integer_to_list(Int);
+        paren_type ->
+            [{tree,list,{attr,0,[],none},{list,TypeData,none}}] = Data,
+            Types = lists:foldl(fun(T, Acc) -> [parse_types(T) | Acc] end, [], TypeData),
+                "[ " ++ string_join(Types, " , ") ++ " ]"; 
+        _ ->
+            [{tree,atom,{attr,0,[],none},Type} | UnionData] = Data,
+            case Type of
+                record ->
+                    [{tree,list,{attr,0,[],none},{list,TypeData,none}}] = UnionData,
+                    T = parse_types(hd(TypeData)),
+                    "#" ++ (T -- "()") ++ "{}";
+                union -> 
+                    [{tree,list,{attr,0,[],none},{list,TypeData,none}}] = UnionData,
+                    Types = lists:foldl(fun(T, Acc) -> [parse_types(T) | Acc] end, [], TypeData),
+                    string_join(Types, " | "); 
+                tuple when element(2, hd(UnionData)) == list ->
+                    [{tree,list,{attr,0,[],none},{list,TypeData,none}}] = UnionData,
+                    Types = lists:foldl(fun(T, Acc) -> [parse_types(T) | Acc] end, [], TypeData),
+                    "{ " ++ string_join(Types, " , ") ++ " }"; 
+                _ when TType == var ->
+                    atom_to_list(Type);
+                _ ->
+                    case Type of 
+                        undefined -> "undefined";
+                        _ -> atom_to_list(Type) ++ "()"
+                    end
+            end
+    end.
+
+parse_ann_type(Data) ->
+    [{tree,list,
+      {attr,0,[],none},
+      {list,
+       [{tree,tuple,
+         {attr,0,[],none},
+         [{tree,atom,{attr,0,[],none},var},
+          _,
+          {tree,atom,{attr,0,[],none}, VarName}]},
+        TypeData],
+       _}}] = Data,
+    atom_to_list(VarName) ++ " :: " ++ parse_types(TypeData) ++ "()".
+
+parse_remote_type(Data) ->
+    [{tree,list,
+    {attr,0,[],none},
+    {list,
+     [{tree,tuple,
+       {attr,0,[],none},
+       [{tree,atom,{attr,0,[],none},atom},
+        _,
+        {tree,atom,{attr,0,[],none},Module}]},
+      {tree,tuple,
+       {attr,0,[],none},
+       [{tree,atom,{attr,0,[],none},atom},
+        _,
+        {tree,atom,{attr,0,[],none},Type}]},
+      _],
+     none}}] = Data,
+     atom_to_list(Module) ++ ":" ++ atom_to_list(Type) ++ "()".
 
 parse_erlang_macro(Node) -> 
     [Define | Definition] = erl_syntax:attribute_arguments(Node),

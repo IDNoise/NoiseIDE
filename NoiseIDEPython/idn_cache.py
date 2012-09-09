@@ -24,6 +24,7 @@ RECORDS_DATA = "records_data"
 VALUE = "value"
 MACROS = "macros"
 COMMENT = "comment"
+EXPORTED_TYPES = "exported_types"
 
 
 class Function:
@@ -42,12 +43,20 @@ class Function:
         self.comment = comment
 
 class Record:
-    def __init__(self, moduleData, module, name, fields, line):
+    def __init__(self, moduleData, module, name, fields, types, line):
         self.moduleData = moduleData
         self.module = module
         self.name = name
         self.fields = fields
+        self.types = types
         self.line = line
+
+        self.fieldTypes = {}
+        for i in range(len(self.fields)):
+            self.fieldTypes[self.fields[i]] = self.types[i]
+
+    def FieldsData(self):
+        return self.fieldTypes.items()
 
 class Macros:
     def __init__(self, moduleData, module, name, value, line):
@@ -55,6 +64,14 @@ class Macros:
         self.module = module
         self.name = name
         self.value = value
+        self.line = line
+
+class ExportedType:
+    def __init__(self, moduleData, module, name, types, line):
+        self.moduleData = moduleData
+        self.module = module
+        self.name = name
+        self.types = types
         self.line = line
 
 class ModuleData:
@@ -76,7 +93,7 @@ class ModuleData:
         self.records = []
         for record in data[RECORDS_DATA]:
             recordData = data[RECORDS_DATA][record]
-            self.records.append(Record(self, module, record, recordData[FIELDS], recordData[LINE]))
+            self.records.append(Record(self, module, record, recordData[FIELDS], recordData[TYPES], recordData[LINE]))
 
         self.macroses = []
         for macros in data[MACROS]:
@@ -85,10 +102,16 @@ class ModuleData:
 
         self.includes = set(data[INCLUDES])
 
+        self.exportedTypes = []
+        for expDype in data[EXPORTED_TYPES]:
+            expData = data[EXPORTED_TYPES][expDype]
+            self.exportedTypes.append(ExportedType(self, module, expDype, expData[TYPES], expData[LINE]))
+
+
     def AllRecords(self):
         records = self.records[:]
         for include in self.includes:
-            if include in ErlangCache.moduleData:
+            if include in ErlangCache.moduleData and self.module != include:
                 records += ErlangCache.moduleData[include].AllRecords()
         return records
 
@@ -100,7 +123,9 @@ class ModuleData:
         return macroses
 
     def Functions(self, exported = True):
-        return [fun for fun in self.functions if (exported and fun.exported == exported) or not exported]
+        funs = [fun for fun in self.functions if (exported and fun.exported == exported) or not exported]
+        return funs + self.exportedTypes
+
 
 class ErlangCache:
 
@@ -238,7 +263,7 @@ class ErlangCache:
     def RecordFields(cls, module, record):
         data = cls.RecordData(module, record)
         if not data: return []
-        return data.fields
+        return data.FieldsData()
 
     @classmethod
     def RecordData(cls, module, record):
@@ -268,6 +293,14 @@ class ErlangCache:
         return None
 
     @classmethod
+    def ModuleExportedData(cls, module, type):
+        if not module in cls.moduleData: return None
+        for typeData in cls.moduleData[module].exportedTypes:
+            if typeData.name == type:
+                return typeData
+        return None
+
+    @classmethod
     def ModuleRecords(cls, module):
         if not module in cls.moduleData: return []
         return cls.moduleData[module].AllRecords()
@@ -276,7 +309,7 @@ class ErlangCache:
     def Bifs(cls):
         module = "erlang"
         if not module in cls.moduleData: return []
-        return [fun for fun in cls.moduleData[module].Functions() if fun.bif == True]
+        return [fun for fun in cls.moduleData[module].Functions() if isinstance(fun, Function) and fun.bif == True]
 
     @classmethod
     def Macroses(cls, module):

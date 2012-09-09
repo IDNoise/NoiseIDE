@@ -1,3 +1,5 @@
+
+
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 import os
@@ -7,6 +9,7 @@ from wx import stc
 import wx.lib.agw.customtreectrl as CT
 from idn_global import GetTabMgr, GetProject, GetToolMgr, Log
 from idn_utils import CreateButton, extension, writeFile, readFile, CreateBitmapButton
+from wx.combo import ComboCtrl, ComboPopup
 
 class FindInFilePanel(wx.Panel):
     def __init__(self, parent, editor):
@@ -45,12 +48,20 @@ class FindInFilePanel(wx.Panel):
         self.SetSizer(self.sizer)
         self.Layout()
 
-        self.findText.Bind(wx.EVT_KEY_DOWN, self.OnFindKeyDown)
+        self.findText.Bind(wx.EVT_KEY_UP, self.OnFindKeyUp)
 
-    def OnFindKeyDown(self, event):
+    def OnFindKeyUp(self, event):
+        event.Skip()
         keyCode = event.GetKeyCode()
         if keyCode == wx.WXK_RETURN and self.IsShown:
             self.OnFind()
+
+        if self.TryFind() or not self.findText.Value:
+            self.findText.SetBackgroundColour(wx.WHITE)
+        else:
+            self.findText.SetBackgroundColour(wx.Colour(200, 80, 80))
+        self.findText.Refresh()
+        self.findText.ClearBackground()
 
     def OnFind(self, event = None):
         self.textToFind = self.findText.Value
@@ -99,6 +110,28 @@ class FindInFilePanel(wx.Panel):
                     else:
                         self.editor.SetCurrentPos(caretPosition)
                         break
+
+    def TryFind(self):
+        findOptions = 0
+        wholeWords = self.wholeWordsCb.Value
+        matchCase = self.matchCaseCb.Value
+        useRegexp = self.useRegextCb.Value
+        if useRegexp:
+            findOptions |= stc.STC_FIND_REGEXP
+        else:
+            if wholeWords:
+                findOptions |= stc.STC_FIND_WHOLEWORD
+            if matchCase:
+                findOptions |= stc.STC_FIND_MATCHCASE
+
+
+        oldFlags = self.editor.GetSearchFlags()
+        self.editor.SetSearchFlags(findOptions)
+        self.editor.SetTargetStart(0)
+        self.editor.SetTargetEnd(self.editor.Length)
+        pos = self.editor.SearchInTarget(self.findText.Value)
+        self.editor.SetSearchFlags(oldFlags)
+        return pos >= 0
 
     def OnReplace(self, event):
         replaceText = self.replaceText.Value

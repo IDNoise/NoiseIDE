@@ -36,7 +36,9 @@ class NoiseIDE(wx.Frame):
 
 
         self.TabMgr = EditorNotebook(self)
-        self.TabMgr.SetArtProvider(aui.ChromeTabArt())
+        self.TabMgr.SetArtProvider(aui.VC71TabArt())
+        #self.TabMgr.SetArtProvider(aui.ChromeTabArt())
+        #self.TabMgr.SetArtProvider(aui.FF2TabArt())
 
         self.WinMgr.AddPane1(self.TabMgr, aui.AuiPaneInfo().Center()#.Caption("Code Editor")
             .MaximizeButton().MinimizeButton().CaptionVisible(False)

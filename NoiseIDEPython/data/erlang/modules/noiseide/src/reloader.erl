@@ -9,9 +9,9 @@
 
 -include_lib("kernel/include/file.hrl").
 
--behaviour(gen_server).
+-behaviour(gen_server). 
 -export([start/0, start_link/0]).
--export([stop/0]).
+-export([stop/0]). 
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 -export([all_changed/0]).
 -export([is_changed/1]).
@@ -113,18 +113,18 @@ doit(From, To) ->
          {ok, #file_info{mtime = Mtime}} when Mtime >= From, Mtime < To ->
              reload(Module);
          {ok, _} ->
-             unmodified;
+             unmodified; 
          {error, enoent} ->
              %% The Erlang compiler deletes existing .beam files if
              %% recompiling fails.  Maybe it's worth spitting out a
              %% warning here, but I'd want to limit it to just once.
-             gone;
+             gone; 
          {error, Reason} ->
              io:format("Error reading ~s's file info: ~p~n",
                        [Filename, Reason]),
              error
      end || {Module, Filename} <- code:all_loaded(), is_list(Filename)].
-
+ 
 reload(Module) ->
     code:purge(Module),
     case code:load_file(Module) of

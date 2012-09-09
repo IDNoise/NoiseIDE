@@ -9,14 +9,13 @@ import re
 from wx import stc
 from wx import html
 from wx.stc import STC_FOLDLEVELHEADERFLAG, StyledTextCtrl
-from idn_cache import ErlangCache, Function, Record, Macros, readFile
+from idn_cache import ErlangCache, Function, Record, Macros, readFile, ExportedType
 from idn_connect import CompileErrorInfo
 from idn_token import ErlangTokenizer, ErlangTokenType
 from idn_colorschema import ColorSchema
 from idn_highlight import ErlangHighlightType
 from idn_lexer import ErlangLexer
 from idn_global import GetProject, GetTabMgr, GetMainFrame
-
 
 class EditorFoldMixin:
     def __init__(self):
@@ -91,6 +90,7 @@ class EditorLineMarginMixin:
             return 7 + len(str(self.GetLineCount())) * self.CalcFontWidth()
         else:
             return 0
+
 
 class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
 
@@ -333,6 +333,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         event.Skip()
         pos = self.GetCurrentPos()
         char = self.GetCharAt(pos)
+        self.BraceBadLight(-1)
         if not char in "()[]{}<>":
             self.BraceBadLight(-1) #clear
             return
@@ -839,9 +840,14 @@ class ErlangCompleter(wx.Frame):
             elif isinstance(d, Record):
                 text = d.name
                 help = self._RecordHelp(d)
+            elif isinstance(d, ExportedType):
+                text = d.name + "()"
+                help = self._ExportedTypeHelp(d)
             elif isinstance(d, Macros):
                 text = d.name
                 help = self._MacrosHelp(d)
+            elif isinstance(d, tuple):
+                (text, help) = d
             else:
                 text = d
             if text.startswith(self.prefix):
@@ -849,8 +855,13 @@ class ErlangCompleter(wx.Frame):
         self.ValidateCompleter()
 
     def _RecordHelp(self, record):
-        return "#{} [<br/>&nbsp;&nbsp;&nbsp;{}<br/>]<br/><br/>{}:{}".format(record.name, ",<br/>&nbsp;&nbsp;&nbsp;".join(record.fields),
+        fields = record.FieldsData()
+        fields = [f[0] + "&nbsp;&nbsp;::&nbsp;&nbsp;" + f[1]  for f in fields]
+        return "#{} [<br/>&nbsp;&nbsp;&nbsp;{}<br/>]<br/><br/>{}:{}".format(record.name, ",<br/>&nbsp;&nbsp;&nbsp;".join(fields),
             record.module, record.line)
+
+    def _ExportedTypeHelp(self, expType):
+        return "Types:{}<br/><br/>{}:{}".format(expType.types, expType.module, expType.line)
 
     def _MacrosHelp(self, macros):
         return "?{} -> {}<br/><br/>{}:{}".format(macros.name, macros.value, macros.module, macros.line)
@@ -969,11 +980,18 @@ class ErlangCompleter(wx.Frame):
         else:
             module = self.module
         #print "show fun help", module, fun, arity
-        funData = ErlangCache.ModuleFunction(module, fun, arity)
-        if not funData: return
-        help = self._FunctionHelp(funData)
+        data = ErlangCache.ModuleFunction(module, fun, arity)
+        if not data:
+            data = ErlangCache.ModuleExportedData(module, fun)
+            if not data:
+                data = ErlangCache.ModuleExportedData(module + ".hrl", fun)
+                if not data:
+                    return
+            help = self._ExportedTypeHelp(data)
+        else:
+            help = self._FunctionHelp(data)
         self.ShowHelp(help)
-        return (funData.moduleData.file, funData.line)
+        return (data.moduleData.file, data.line)
 
     def GetFunArity(self, pos):
         open = ['[', '(', '{']
@@ -1217,3 +1235,5 @@ class MarkerPanel(wx.Panel):
 
     def HideToolTip(self):
         self.tooltip.Enable(False)
+
+
