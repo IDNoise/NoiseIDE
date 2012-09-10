@@ -12,6 +12,7 @@
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_customstc.py" afterPath="$PROJECT_DIR$/idn_customstc.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_mainframe.py" afterPath="$PROJECT_DIR$/idn_mainframe.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_notebook.py" afterPath="$PROJECT_DIR$/idn_notebook.py" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/idn_outline.py" afterPath="$PROJECT_DIR$/idn_outline.py" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/noiseide.yaml" afterPath="$PROJECT_DIR$/noiseide.yaml" />
     </list>
     <ignored path="NoiseIDE.iws" />
@@ -48,12 +49,21 @@
       <file leaf-file-name="idn_customstc.py" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/idn_customstc.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="973" column="13" selection-start="36881" selection-end="36881" vertical-scroll-proportion="0.0">
+            <state line="511" column="26" selection-start="19227" selection-end="19227" vertical-scroll-proportion="0.0">
               <folding>
                 <element signature="e#603#2384#0" expanded="false" />
                 <element signature="e#2419#3544#0" expanded="false" />
                 <element signature="e#14216#15888#0" expanded="false" />
               </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="idn_outline.py" pinned="false" current="true" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/idn_outline.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="50" column="29" selection-start="1717" selection-end="1717" vertical-scroll-proportion="0.6666667">
+              <folding />
             </state>
           </provider>
         </entry>
@@ -103,10 +113,10 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="idn_mainframe.py" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="idn_mainframe.py" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/idn_mainframe.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="179" column="23" selection-start="6673" selection-end="6673" vertical-scroll-proportion="1.1904762">
+            <state line="155" column="9" selection-start="5892" selection-end="5892" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -135,7 +145,6 @@
   <component name="IdeDocumentHistory">
     <option name="changedFiles">
       <list>
-        <option value="$PROJECT_DIR$/idn_directoryinfo.py" />
         <option value="C:/Programming/Python27/Lib/site-packages/wx-2.9.3-msw/wx/lib/agw/pyprogress.py" />
         <option value="$PROJECT_DIR$/PyProgress.py" />
         <option value="$PROJECT_DIR$/idn_lexer.py" />
@@ -151,6 +160,7 @@
         <option value="$PROJECT_DIR$/idn_connect.py" />
         <option value="$PROJECT_DIR$/idn_customstc.py" />
         <option value="$PROJECT_DIR$/idn_mainframe.py" />
+        <option value="$PROJECT_DIR$/idn_outline.py" />
       </list>
     </option>
   </component>
@@ -458,13 +468,6 @@
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://C:/Programming/Python27/Lib/site-packages/wx-2.9.4-msw/wx/_core.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="10866" column="57" selection-start="408640" selection-end="408655" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://C:/Programming/Python27/Lib/site-packages/wx-2.9.3-msw/wx/stc.py">
       <provider selected="true" editor-type-id="text-editor">
         <state line="4478" column="8" selection-start="157126" selection-end="157126" vertical-scroll-proportion="0.33333334">
@@ -551,17 +554,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/idn_customstc.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="973" column="13" selection-start="36881" selection-end="36881" vertical-scroll-proportion="0.0">
-          <folding>
-            <element signature="e#603#2384#0" expanded="false" />
-            <element signature="e#2419#3544#0" expanded="false" />
-            <element signature="e#14216#15888#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/idn_project.py">
       <provider selected="true" editor-type-id="text-editor">
         <state line="1020" column="4" selection-start="38999" selection-end="38999" vertical-scroll-proportion="0.0">
@@ -571,7 +563,25 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/idn_mainframe.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="179" column="23" selection-start="6673" selection-end="6673" vertical-scroll-proportion="1.1904762">
+        <state line="155" column="9" selection-start="5892" selection-end="5892" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/idn_customstc.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="511" column="26" selection-start="19227" selection-end="19227" vertical-scroll-proportion="0.0">
+          <folding>
+            <element signature="e#603#2384#0" expanded="false" />
+            <element signature="e#2419#3544#0" expanded="false" />
+            <element signature="e#14216#15888#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/idn_outline.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="50" column="29" selection-start="1717" selection-end="1717" vertical-scroll-proportion="0.6666667">
           <folding />
         </state>
       </provider>

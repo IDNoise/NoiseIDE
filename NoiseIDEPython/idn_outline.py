@@ -46,6 +46,12 @@ class ErlangOutline(wx.Dialog):
 
         self.list.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnActivate)
 
+        self.Bind(wx.EVT_CHAR_HOOK, self.OnClose)
+
+    def OnClose(self, event):
+        if event.GetKeyCode() == wx.WXK_ESCAPE:
+            self.Close()
+
     def OnActivate(self, event):
         line = self.navigation[event.GetIndex()]
         self.Parent.GotoLine(line - 1)
