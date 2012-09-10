@@ -1,4 +1,4 @@
-from idn_utils import Menu
+from idn_utils import Menu, GetImage
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
@@ -33,6 +33,7 @@ class NoiseIDE(wx.Frame):
         agwFlags = aui.AUI_MGR_DEFAULT | aui.AUI_MGR_AUTONB_NO_CAPTION
         self.WinMgr = Manager(self, agwFlags = agwFlags )
 
+        self.SetupMenu()
 
 
         self.TabMgr = EditorNotebook(self)
@@ -53,7 +54,7 @@ class NoiseIDE(wx.Frame):
         self.log.SetReadOnly(True)
         self.ToolMgr.AddPage(self.logPanel, "Log")
 
-        self.SetupMenu()
+
 
         self.WinMgr.Update()
 
@@ -117,6 +118,15 @@ class NoiseIDE(wx.Frame):
         helpMenu.AppendMenuItem("About", self, self.OnHelpAbout)
         self.menubar.Append(helpMenu, '&Help')
         self.SetMenuBar(self.menubar)
+
+        self.toolbar = self.CreateToolBar()
+        self.navBackT = self.toolbar.AddLabelTool(wx.NewId(), 'Navigate Back', GetImage('navigateBack.png'))
+        self.navForwardT = self.toolbar.AddLabelTool(wx.NewId(), 'Navigate Forward', GetImage('navigateForward.png'))
+
+        self.Bind(wx.EVT_TOOL, lambda e: self.TabMgr.NavigateBack(), self.navBackT)
+        self.Bind(wx.EVT_TOOL, lambda e: self.TabMgr.NavigateForward(), self.navForwardT)
+
+        self.toolbar.Realize()
 
     def OnShowWhiteSpace(self, event):
         CustomSTC.ShowWhiteSpace = not CustomSTC.ShowWhiteSpace

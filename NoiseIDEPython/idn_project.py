@@ -692,7 +692,7 @@ class ErrorsTableGrid(wx.grid.Grid):
 
 class ErlangProjectFrom(wx.Dialog):
     def __init__(self, project = None):
-        wx.Dialog.__init__(self, GetMainFrame(), size = (340, 500), title = "Create\Edit project",
+        wx.Dialog.__init__(self, GetMainFrame(), size = (390, 510), title = "Create\Edit project",
             style = wx.DEFAULT_DIALOG_STYLE | wx.WS_EX_VALIDATE_RECURSIVELY)
 
         self.consoles = {}
@@ -704,14 +704,17 @@ class ErlangProjectFrom(wx.Dialog):
             self.SetCurrentValues()
 
     def CreateForm(self):
-        self.projectNameTB = wx.TextCtrl(self, value = "Project_name", size = (250, 20), validator = NotEmptyTextValidator("Title"))
+        self.projectNameTB = wx.TextCtrl(self, value = "Project_name", size = (270, 20), validator = NotEmptyTextValidator("Title"))
         self.projectNameTB.SetToolTipString("Project name")
 
-        self.projectPathTB = wx.TextCtrl(self, value = "C:\\YourProjectFolder", size = (250, 20), validator = NotEmptyTextValidator("Project dir"))
+        self.projectPathTB = wx.TextCtrl(self, value = "C:\\YourProjectFolder", size = (270, 20), validator = NotEmptyTextValidator("Project dir"))
         self.projectPathTB.SetToolTipString("Path to folder")
         self.projectPathTB.Bind(wx.EVT_TEXT, self.OnPathChanged)
 
-        self.appsDirTB = wx.TextCtrl(self, value = "apps", size = (250, 20))
+        self.projectPathButton = CreateButton(self, "...", self.OnSelectProjectPath)
+        self.projectPathButton.MinSize = (25, 25)
+
+        self.appsDirTB = wx.TextCtrl(self, value = "apps", size = (270, 20))
         self.appsDirTB.SetToolTipString("Apps folder name")
         self.appsDirTB.Bind(wx.EVT_TEXT, self.OnPathChanged)
 
@@ -722,9 +725,11 @@ class ErlangProjectFrom(wx.Dialog):
         self.excludedDirList = wx.CheckListBox(self, choices = [], size = (220, 150))
         self.excludedDirList.SetToolTipString("Directories to exclude from compilation")
 
-        self.erlangPathTB = wx.TextCtrl(self, value = "C:\\Programming\\erl5.9\\bin\\erl.exe", size = (250, 20), validator = PathExistsValidator("Erlang path"))
+        self.erlangPathTB = wx.TextCtrl(self, value = "C:\\Programming\\erl5.9\\bin\\erl.exe", size = (270, 20), validator = PathExistsValidator("Erlang path"))
         self.erlangPathTB.SetToolTipString("Path to erlang executeable. Example: 'C:\\Programming\\erl5.9\\bin\\erl.exe'")
 
+        self.erlangPathButton = CreateButton(self, "...", self.OnSelectErlangPath)
+        self.erlangPathButton.MinSize = (25, 25)
 
         self.consolesList = wx.ListBox(self, size = (200, 70))
         self.consolesList.SetToolTipString("Consoles list for project. Each console has own params and can be started independent")
@@ -744,12 +749,14 @@ class ErlangProjectFrom(wx.Dialog):
 
         gSizer.Add(CreateLabel(self, "Project dir:"), (1, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
         gSizer.Add(self.projectPathTB, (1, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
+        gSizer.Add(self.projectPathButton, (1, 2), flag = wx.ALIGN_CENTER)
 
         gSizer.Add(CreateLabel(self, "Apps dir:"), (2, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
         gSizer.Add(self.appsDirTB, (2, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
 
         gSizer.Add(CreateLabel(self, "Erlang path:"), (3, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
         gSizer.Add(self.erlangPathTB, (3, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
+        gSizer.Add(self.erlangPathButton, (3, 2), flag = wx.ALIGN_CENTER)
 
         gSizer.Add(self.flyCB, (4, 1), flag = wx.ALL | wx.ALIGN_LEFT, border = 4)
 
@@ -787,6 +794,7 @@ class ErlangProjectFrom(wx.Dialog):
         self.projectNameTB.Disable()
         self.projectPathTB.Value = self.project.projectDir
         self.projectPathTB.Disable()
+        self.projectPathButton.Disable()
         self.appsDirTB.Value = self.project.projectData[ErlangProject.CONFIG_APPS_DIR]
         self.erlangPathTB.Value = self.project.projectData[ErlangProject.CONFIG_ERLANG_PATH]
         self.flyCB.Value = self.project.projectData[ErlangProject.CONFIG_FLY_COMPILE]
@@ -809,6 +817,16 @@ class ErlangProjectFrom(wx.Dialog):
             allDirs = [d for d in os.listdir(dir) if os.path.isdir(os.path.join(dir, d))]
             self.excludedDirList.SetItems(allDirs)
 
+
+    def OnSelectErlangPath(self, event):
+        dlg = wx.FileDialog(self, defaultFile = self.erlangPathTB.Value)
+        if dlg.ShowModal() == wx.ID_OK:
+            self.erlangPathTB.Value = dlg.GetPath()
+
+    def OnSelectProjectPath(self, event):
+        dlg = wx.DirDialog(self, defaultPath = self.projectPathTB.Value)
+        if dlg.ShowModal() == wx.ID_OK:
+            self.projectPathTB.Value = dlg.GetPath()
 
     def UpdateConsoles(self):
         self.consolesList.Clear()

@@ -1093,6 +1093,7 @@ class ConsoleSTC(CustomSTC):
         pass
 
     def Append(self, text):
+        text = text.rstrip()
         text += "\n"
         wx.CallAfter(self._AppendText, text)
 

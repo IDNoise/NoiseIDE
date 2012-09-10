@@ -26,7 +26,7 @@
     field_2 :: atom() | boolean() | ololoxxx,
     field_3 :: dialyzer_plt:plt_info()
 }).       
-    
+     
 -opaque ololo() :: #ololo{}. 
 %%%===================================================================
 %%% Internal f unction s

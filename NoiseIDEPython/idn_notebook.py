@@ -88,9 +88,9 @@ class EditorNotebook(aui.AuiNotebook):
 
         self.navigationHistory = []
         self.navigationHistoryIndex = 0
+        self.UpdateNavToolbar()
 
         self.Bind(aui.EVT_AUINOTEBOOK_TAB_RIGHT_UP, self.OnTabRightUp)
-
 
     def OnTabRightUp(self, event):
         page = event.GetSelection()
@@ -146,12 +146,15 @@ class EditorNotebook(aui.AuiNotebook):
             editorPanel.editor.SetFocus()
             return  editorPanel.editor
 
-    def LoadFileLine(self, file, line = 0):
+    def LoadFileLine(self, file, line = 0, addToHistory = True):
         editor = self.LoadFile(file)
         editor.GotoLine(line)
-        self.navigationHistory = self.navigationHistory[:self.navigationHistoryIndex]
-        self.navigationHistory.append((file, line))
-        self.navigationHistoryIndex = len(self.navigationHistory) - 1
+        if addToHistory:
+            self.navigationHistory = self.navigationHistory[:self.navigationHistoryIndex + 1]
+            self.navigationHistory.append((file, line))
+            self.navigationHistoryIndex = len(self.navigationHistory) - 1
+            print self.navigationHistoryIndex, "history",  self.navigationHistory
+        self.UpdateNavToolbar()
         editor.EnsureVisibleEnforcePolicy(line)
         return editor
 
@@ -190,14 +193,20 @@ class EditorNotebook(aui.AuiNotebook):
         if self.navigationHistoryIndex > 0 and self.navigationHistory:
             self.navigationHistoryIndex -= 1
             data = self.navigationHistory[self.navigationHistoryIndex]
-            self.LoadFileLine(data[0], data[1])
+            self.LoadFileLine(data[0], data[1], False)
+        self.UpdateNavToolbar()
 
     def NavigateForward(self):
         if self.navigationHistoryIndex < len(self.navigationHistory) - 1 and self.navigationHistory:
             self.navigationHistoryIndex += 1
             data = self.navigationHistory[self.navigationHistoryIndex]
-            self.LoadFileLine(data[0], data[1])
+            self.LoadFileLine(data[0], data[1], False)
+        self.UpdateNavToolbar()
 
+    def UpdateNavToolbar(self):
+        print self.navigationHistoryIndex
+        self.Parent.toolbar.EnableTool(self.Parent.navBackT.GetId(), (self.navigationHistory != [] and self.navigationHistoryIndex > 0))
+        self.Parent.toolbar.EnableTool(self.Parent.navForwardT.GetId(),  (self.navigationHistory != [] and self.navigationHistoryIndex < (len(self.navigationHistory) - 1)))
 
 class EditorPanel(wx.Panel):
     def __init__(self, parent, file):
