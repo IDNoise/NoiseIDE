@@ -2,7 +2,7 @@ import os
 import json
 from idn_config import Config
 from idn_directoryinfo import DirectoryChecker
-from idn_global import GetMainFrame, Log
+from idn_global import GetMainFrame, Log, GetProject
 from idn_utils import readFile
 import wx
 
@@ -214,6 +214,18 @@ class ErlangCache:
         #Log("Cache:", file)
 
     @classmethod
+    def TryLoad(cls, module):
+        if module in cls.moduleData:
+            return True
+        for dir in ["erlang", GetProject().ProjectName()]:
+            file = os.path.join(cls.CACHE_DIR, dir, module + ".cache")
+            #print file
+            if os.path.isfile(file):
+                cls.LoadFile_(file)
+                return True
+        return False
+
+    @classmethod
     def UnloadFile(cls, file):
         if not os.path.isfile(file): return
         if not fileName.endswith(".cache"): return
@@ -226,8 +238,8 @@ class ErlangCache:
         if folder in cls.checkers:
             cls.checkers[folder].Stop()
         checker = DirectoryChecker(1, os.path.join(cls.CACHE_DIR, folder), False, [".cache"])
-        checker.AddHandler(DirectoryChecker.HANDLER_FILE_CREATED, cls.LoadCacheForFile)
-        checker.AddHandler(DirectoryChecker.HANDLER_FILE_MODIFIED, cls.LoadCacheForFile)
+        checker.AddHandler(DirectoryChecker.HANDLER_FILE_CREATED, cls.LoadFile_)
+        checker.AddHandler(DirectoryChecker.HANDLER_FILE_MODIFIED, cls.LoadFile_)
         checker.AddHandler(DirectoryChecker.HANDLER_FILE_DELETED, cls.UnloadCacheForFile)
         checker.Start()
         cls.checkers[folder] = checker
@@ -237,10 +249,6 @@ class ErlangCache:
         if folder in cls.checkers:
             cls.checkers[folder].Stop()
             del cls.checkers[folder]
-
-    @classmethod
-    def LoadCacheForFile(cls, file):
-        cls.LoadFile(file)
 
     @classmethod
     def UnloadCacheForFile(cls, file):
@@ -253,7 +261,7 @@ class ErlangCache:
     @classmethod
     def GetDependentModules(cls, include):
         result = []
-        if not include in cls.moduleData: return result
+        if not cls.TryLoad(include): return result
         for module in cls.moduleData:
             data = cls.moduleData[module]
             if include in data.includes and data.file.endswith(".erl"):
@@ -267,7 +275,7 @@ class ErlangCache:
 
     @classmethod
     def RecordData(cls, module, record):
-        if not module in cls.moduleData: return None
+        if not cls.TryLoad(module): return None
         for rec in cls.moduleData[module].AllRecords():
             if rec.name == record:
                 return rec
@@ -275,12 +283,12 @@ class ErlangCache:
 
     @classmethod
     def ModuleFunctions(cls, module, exported = True):
-        if not module in cls.moduleData: return []
+        if not cls.TryLoad(module):return []
         return cls.moduleData[module].Functions(exported)
 
     @classmethod
     def ModuleFunction(cls, module, funName, arity):
-        if not module in cls.moduleData: return None
+        if not cls.TryLoad(module): return None
         funs = []
         for fun in cls.moduleData[module].functions:
             if fun.name == funName:
@@ -294,7 +302,7 @@ class ErlangCache:
 
     @classmethod
     def ModuleExportedData(cls, module, type):
-        if not module in cls.moduleData: return None
+        if not cls.TryLoad(module): return None
         for typeData in cls.moduleData[module].exportedTypes:
             if typeData.name == type:
                 return typeData
@@ -302,23 +310,23 @@ class ErlangCache:
 
     @classmethod
     def ModuleRecords(cls, module):
-        if not module in cls.moduleData: return []
+        if not cls.TryLoad(module): return []
         return cls.moduleData[module].AllRecords()
 
     @classmethod
     def Bifs(cls):
         module = "erlang"
-        if not module in cls.moduleData: return []
+        if not cls.TryLoad(module): return []
         return [fun for fun in cls.moduleData[module].Functions() if isinstance(fun, Function) and fun.bif == True]
 
     @classmethod
     def Macroses(cls, module):
-        if not module in cls.moduleData: return []
+        if not cls.TryLoad(module): return []
         return cls.moduleData[module].AllMacroses()
 
     @classmethod
     def MacrosData(cls, module, macros):
-        if not module in cls.moduleData: return None
+        if not cls.TryLoad(module): return None
         for mac in cls.moduleData[module].AllMacroses():
             if mac.name == macros or mac.name.startswith(macros + "("):
                 return mac

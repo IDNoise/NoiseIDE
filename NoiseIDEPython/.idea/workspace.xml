@@ -59,7 +59,16 @@
       <file leaf-file-name="idn_cache.py" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/idn_cache.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="130" column="0" selection-start="4006" selection-end="4006" vertical-scroll-proportion="0.6666667">
+            <state line="221" column="13" selection-start="7150" selection-end="7150" vertical-scroll-proportion="0.35714287">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="idn_project.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/idn_project.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="259" column="21" selection-start="9671" selection-end="9671" vertical-scroll-proportion="0.0">
               <folding />
             </state>
           </provider>
@@ -428,13 +437,6 @@
     </breakpoint-manager>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/idn_utils.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="56" column="4" selection-start="1246" selection-end="1246" vertical-scroll-proportion="0.0">
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/idn_notebook.py">
       <provider selected="true" editor-type-id="text-editor">
         <state line="199" column="27" selection-start="6528" selection-end="6528" vertical-scroll-proportion="0.0">
@@ -545,9 +547,16 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/idn_project.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="259" column="21" selection-start="9671" selection-end="9671" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/idn_cache.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="130" column="0" selection-start="4006" selection-end="4006" vertical-scroll-proportion="0.6666667">
+        <state line="221" column="13" selection-start="7150" selection-end="7150" vertical-scroll-proportion="0.35714287">
           <folding />
         </state>
       </provider>
