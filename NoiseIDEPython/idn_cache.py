@@ -117,8 +117,9 @@ class ModuleData:
 
     def AllMacroses(self):
         macroses = self.macroses[:]
+        #print "module", self.module, "inc", self.includes
         for include in self.includes:
-            if include in ErlangCache.moduleData:
+            if include in ErlangCache.moduleData and self.module != include:
                 macroses += ErlangCache.moduleData[include].AllMacroses()
         return macroses
 

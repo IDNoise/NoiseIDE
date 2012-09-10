@@ -212,13 +212,14 @@ generate_file(CacheDir, ModuleName, FilePath, DocsFilePath) ->
                 ignore;
             _ -> 
                 Data = generate(ModuleName, FilePath, DocsFilePath),
+                %io:format("~p~n", [Data]),
                 dump_data_to_file(ModuleName, CacheDir, FilePath, CacheFileName, Data)
         end,
         send_answer(CacheDir, CacheFileName, FilePath)
-    %catch _:_ ->  
-    catch Error:Reason ->
-            %ok
-            io:format("File:~pError:~p, ~p~n~p~n", [FilePath, Error, Reason, erlang:get_stacktrace()])
+    catch _:_ ->  
+    %catch Error:Reason ->
+            ok
+            %io:format("File:~pError:~p, ~p~n~p~n", [FilePath, Error, Reason, erlang:get_stacktrace()])
             %file:write_file(CacheFileName ++ ".error", [Error, Reason])
     end,
     ok.
@@ -252,7 +253,7 @@ dump_data_to_file(ModuleName, CacheDir, FilePath, CFile, Content, FlyFileName) -
                   {file, list_to_binary(FilePath)},
                   {funs, funs_to_json(MN, CacheDir, Funs)},
                   {macros, {struct, macros_to_json(Macs, FlyFileName)}},
-                  {includes, includes_to_json(Incs)},
+                  {includes, includes_to_json(Incs, FlyFileName)},
                   {records_data, {struct, recs_data_to_json(Recs, FlyFileName)}},
                   {exported_types, {struct, exp_types_to_json(ExpTypes)}}
                  ]
@@ -328,8 +329,8 @@ rec_fields_to_json(Fields) ->
 rec_field_types_to_json(Fields) ->
     [list_to_binary(T) || #field{type = T} <- Fields].
  
-includes_to_json(Incs) ->
-    [iolist_to_binary(filename:basename(I)) || I <- Incs].
+includes_to_json(Incs, File) ->
+    [iolist_to_binary(filename:basename(I)) || I <- Incs, string:to_lower(I) =/= string:to_lower(File)].
 
 generate(ModuleName, FilePath, DocsFilePath) -> 
     {StartContent, SyntaxTree} = 
@@ -358,8 +359,9 @@ generate(ModuleName, FilePath, DocsFilePath) ->
 generate_from_source(Path) -> 
     %{ok, Source} = epp_dodger:parse_file(Path),
     {ok, Source} = epp:parse_file(Path, [], []),
-    
-    {#content{file = Path, last_file_attr = Path}, erl_syntax:form_list(Source)}.
+    {ok, SourceMacros}  = epp_dodger:parse_file(Path),
+    Content = parse_tree(erl_syntax:form_list(SourceMacros), #content{file = Path, last_file_attr = Path}),
+    {#content{file = Path, last_file_attr = Path, macros = Content#content.macros}, erl_syntax:form_list(Source)}.
 
 parse_tree(Node, Content) ->
     case erl_syntax:type(Node) of
@@ -781,7 +783,7 @@ parse_types(Node, Content) ->
                 Content
         end
     catch Error:Reason ->
-        io:format("Types parse error:~p~nNode:~p~n", [{Error, Reason, erlang:get_stacktrace()}, Node]),
+        %io:format("Types parse error:~p~nNode:~p~n", [{Error, Reason, erlang:get_stacktrace()}, Node]),
         Content
     end.
 
@@ -810,6 +812,7 @@ get_record_field_name(Data) ->
     atom_to_list(FieldName).
 
 parse_types(TData) ->
+    %io:format("~p~n", [TData]),
     {tree,tuple,  
        {attr,0,[],none}, 
        [{tree,atom,{attr,0,[],none},TType},
@@ -825,7 +828,7 @@ parse_types(TData) ->
         paren_type ->
             [{tree,list,{attr,0,[],none},{list,TypeData,none}}] = Data,
             Types = lists:foldl(fun(T, Acc) -> [parse_types(T) | Acc] end, [], TypeData),
-                "[ " ++ string_join(Types, " , ") ++ " ]"; 
+                "[ " ++ string_join(lists:reverse(Types), " , ") ++ " ]"; 
         _ ->
             [{tree,atom,{attr,0,[],none},Type} | UnionData] = Data,
             case Type of
@@ -836,11 +839,13 @@ parse_types(TData) ->
                 union -> 
                     [{tree,list,{attr,0,[],none},{list,TypeData,none}}] = UnionData,
                     Types = lists:foldl(fun(T, Acc) -> [parse_types(T) | Acc] end, [], TypeData),
-                    string_join(Types, " | "); 
+                    string_join(lists:reverse(Types), " | "); 
                 tuple when element(2, hd(UnionData)) == list ->
                     [{tree,list,{attr,0,[],none},{list,TypeData,none}}] = UnionData,
                     Types = lists:foldl(fun(T, Acc) -> [parse_types(T) | Acc] end, [], TypeData),
-                    "{ " ++ string_join(Types, " , ") ++ " }"; 
+                    "{ " ++ string_join(lists:reverse(Types), " , ") ++ " }"; 
+                _ when TType == atom ->
+                    "'" ++ atom_to_list(Type) ++ "'";
                 _ when TType == var ->
                     atom_to_list(Type);
                 _ ->

@@ -101,7 +101,8 @@ class NoiseIDE(wx.Frame):
                 print p
                 return lambda e: self.OpenProject(p)
             for p in Config.LastProjects():
-                lastProjects.AppendMenuItem(os.path.basename(p), self, handler(p))
+                if os.path.isfile(p):
+                    lastProjects.AppendMenuItem(os.path.basename(p), self, handler(p))
 
         self.fileMenu.AppendSeparator()
         self.fileMenu.AppendMenuItem('Quit', self, self.OnQuit)
@@ -163,6 +164,7 @@ class NoiseIDE(wx.Frame):
     def OpenProject(self, projectFile):
         if self.project:
             self.project.Close()
+        projectFile = os.path.normcase(projectFile)
         Config.SetProp("last_project", projectFile)
 
         projects = Config.LastProjects()

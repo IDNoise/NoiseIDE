@@ -52,7 +52,11 @@ class Config:
 
     @classmethod
     def LastProjects(cls):
-        return (cls.data[cls.LAST_PROJECT_LIST] if cls.LAST_PROJECT_LIST in cls.data else [])
+        projects = set((cls.data[cls.LAST_PROJECT_LIST] if cls.LAST_PROJECT_LIST in cls.data else []))
+        projects = [p for p in projects if os.path.isfile(p)]
+
+        cls.data[cls.LAST_PROJECT_LIST] = projects
+        return projects[:]
 
     @classmethod
     def SetLastProjects(cls, projects):

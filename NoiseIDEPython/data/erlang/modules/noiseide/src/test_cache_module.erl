@@ -10,7 +10,8 @@
 -export([
      
 ]).  
-   
+-define(XX, ololo).   
+-define(XssssX, ololasdasdado).   
 -type beam_instr() :: 'bs_init_writable' | 'fclearerror' | 'if_end'
                     | 'remove_message' | 'return' | 'send' | 'timeout'
                     | tuple().  %% XXX: Very underspecified - FIX THIS 
@@ -18,11 +19,11 @@
 
 %%%========================== ==== ======= ==============================
 %%% API  
-%%%=================================== ================================
+%%%============================  ======= ================================
      
 -record(ololo, {     
-    field_1 :: beam_instr(), 
-    field_2 :: atom() | boolean(),
+    field_1 :: beam_instr(),  
+    field_2 :: atom() | boolean() | ololoxxx,
     field_3 :: dialyzer_plt:plt_info()
 }).       
     
@@ -30,6 +31,7 @@
 %%%===================================================================
 %%% Internal f unction s
 %%%====================================== =============================
-  
-      
-       
+
+xxx() ->
+    ?XX + ?XssssX.   
+          
