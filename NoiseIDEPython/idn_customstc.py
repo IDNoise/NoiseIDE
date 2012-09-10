@@ -93,7 +93,6 @@ class EditorLineMarginMixin:
 
 
 class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
-
     ShowEOL = False
     ShowWhiteSpace = False
 
@@ -615,10 +614,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
     def OnMouseClick(self, event):
         if event.ControlDown():
             if self.navigateTo:
-                editor = GetTabMgr().LoadFile(self.navigateTo[0])
-                line = self.navigateTo[1] - 1
-                editor.GotoLine(line)
-                editor.EnsureVisibleEnforcePolicy(line)
+                editor = GetTabMgr().LoadFileLine(self.navigateTo[0], self.navigateTo[1] - 1)
                 self.completer.HideHelp()
                 return
         event.Skip()

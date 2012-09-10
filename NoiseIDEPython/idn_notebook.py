@@ -77,6 +77,7 @@ class Notebook(aui.AuiNotebook):
         self.OnTabButton(event)
 
 class EditorNotebook(aui.AuiNotebook):
+
     def __init__(self, parent):
         agwStyle = aui.AUI_NB_DEFAULT_STYLE |\
                    aui.AUI_NB_CLOSE_ON_ALL_TABS |\
@@ -84,7 +85,12 @@ class EditorNotebook(aui.AuiNotebook):
                    aui.AUI_NB_TAB_FLOAT |\
                    aui.AUI_NB_WINDOWLIST_BUTTON
         aui.AuiNotebook.__init__(self, parent, agwStyle = agwStyle)
+
+        self.navigationHistory = []
+        self.navigationHistoryIndex = 0
+
         self.Bind(aui.EVT_AUINOTEBOOK_TAB_RIGHT_UP, self.OnTabRightUp)
+
 
     def OnTabRightUp(self, event):
         page = event.GetSelection()
@@ -140,6 +146,15 @@ class EditorNotebook(aui.AuiNotebook):
             editorPanel.editor.SetFocus()
             return  editorPanel.editor
 
+    def LoadFileLine(self, file, line = 0):
+        editor = self.LoadFile(file)
+        editor.GotoLine(line)
+        self.navigationHistory = self.navigationHistory[:self.navigationHistoryIndex]
+        self.navigationHistory.append((file, line))
+        self.navigationHistoryIndex = len(self.navigationHistory) - 1
+        editor.EnsureVisibleEnforcePolicy(line)
+        return editor
+
     def FindPageIndexByPath(self, path):
         for index in range(self.GetPageCount()):
             if self[index].filePath.lower() == path.lower():
@@ -170,6 +185,18 @@ class EditorNotebook(aui.AuiNotebook):
         event.SetEventObject(tabControl)
         event.SetInt(aui.AUI_BUTTON_CLOSE)
         self.OnTabButton(event)
+
+    def NavigateBack(self):
+        if self.navigationHistoryIndex > 0 and self.navigationHistory:
+            self.navigationHistoryIndex -= 1
+            data = self.navigationHistory[self.navigationHistoryIndex]
+            self.LoadFileLine(data[0], data[1])
+
+    def NavigateForward(self):
+        if self.navigationHistoryIndex < len(self.navigationHistory) - 1 and self.navigationHistory:
+            self.navigationHistoryIndex += 1
+            data = self.navigationHistory[self.navigationHistoryIndex]
+            self.LoadFileLine(data[0], data[1])
 
 
 class EditorPanel(wx.Panel):

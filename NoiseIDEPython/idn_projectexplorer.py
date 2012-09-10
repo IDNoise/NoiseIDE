@@ -555,7 +555,7 @@ class ProjectExplorer(CT.CustomTreeCtrl):
 
     def OpenFile(self, path):
         if os.path.isfile(path):
-            GetTabMgr().LoadFile(path)
+            GetTabMgr().LoadFileLine(path)
             return True
         return False
 
@@ -689,7 +689,7 @@ class ErlangProjectExplorer(ProjectExplorer):
         path = path + ".hrl"
         if path and not os.path.isfile(path):
             writeFile(path, "")
-            GetTabMgr().LoadFile(path)
+            GetTabMgr().LoadFileLine(path)
 
     def OnMenuNewApplication(self, event):
         (name, path) = self.RequestName("New Application", "Enter application name", "new_application")
@@ -721,9 +721,9 @@ class ErlangProjectExplorer(ProjectExplorer):
         writeFile(appModulePath, app)
         writeFile(supModulePath, sup)
         writeFile(appSrcPath, appSrc)
-        GetTabMgr().LoadFile(appModulePath)
-        GetTabMgr().LoadFile(supModulePath)
-        GetTabMgr().LoadFile(appSrcPath)
+        GetTabMgr().LoadFileLine(appModulePath)
+        GetTabMgr().LoadFileLine(supModulePath)
+        GetTabMgr().LoadFileLine(appSrcPath)
 
 
     def DefaultExcludeDirs(self):
@@ -743,7 +743,7 @@ class ErlangProjectExplorer(ProjectExplorer):
             data = self._GetTemplate(template)
             data = data.replace("[module_name]", module)
             writeFile(path, data)
-            GetTabMgr().LoadFile(path)
+            GetTabMgr().LoadFileLine(path)
 
 class MaskEditor(wx.Dialog):
     def __init__(self, parent):

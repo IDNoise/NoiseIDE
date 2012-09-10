@@ -332,7 +332,7 @@ class ErrorsTree(CT.CustomTreeCtrl):
     def OnActivateItem(self, event):
         data = self.GetPyData(event.GetItem())
         if not data.file: return
-        editor = GetTabMgr().LoadFile(data.file)
+        editor = GetTabMgr().LoadFileLine(data.file, data.lineNumber)
         if data.lineNumber:
             editor.GotoLine(data.lineNumber)
             pos = editor.PositionFromLine(data.lineNumber)
@@ -341,7 +341,7 @@ class ErrorsTree(CT.CustomTreeCtrl):
             editor.SetSelection(pos + data.start, pos + data.end)
 
 class ErrorsTreeItemPyData:
-    def __init__(self, file = None, lineNumber = None, start = None, end = None):
+    def __init__(self, file = None, lineNumber = 0, start = None, end = None):
         self.file = file
         self.lineNumber = lineNumber
         self.start = start

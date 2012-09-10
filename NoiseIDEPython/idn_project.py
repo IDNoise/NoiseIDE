@@ -157,7 +157,7 @@ class Project(ProgressTaskManagerDialog):
             if not os.path.isfile(file):
                 removedFiles.append(file)
             else:
-                GetTabMgr().LoadFile(file)
+                GetTabMgr().LoadFileLine(file)
         if removedFiles:
             self.userData[self.CONFIG_LAST_OPENED_FILES] = \
                 [file for file in self.userData[self.CONFIG_LAST_OPENED_FILES] if file not in removedFiles]
@@ -572,7 +572,7 @@ class FastProjectFileOpenDialog(wx.Dialog):
             value = self.cb.GetValue()
             if os.path.isfile(value):
                 self.Close()
-                GetTabMgr().LoadFile(value)
+                GetTabMgr().LoadFileLine(value)
             else:
                 event.Skip()
         else:
@@ -580,7 +580,7 @@ class FastProjectFileOpenDialog(wx.Dialog):
 
     def OnSelectCallback(self, values):
         self.Close()
-        GetTabMgr().LoadFile(values[1])
+        GetTabMgr().LoadFileLine(values[1])
 
 
 class ErrorsTable(PyGridTableBase):
@@ -678,8 +678,7 @@ class ErrorsTableGrid(wx.grid.Grid):
         rowData = self.table.data[row]
         file = rowData[0]
         line = rowData[1]
-        editor = GetTabMgr().LoadFile(file)
-        editor.GotoLine(line - 1)
+        GetTabMgr().LoadFileLine(file, line)
 
     def AddErrors(self, path, errors):
         currentRows = len(self.table.data)

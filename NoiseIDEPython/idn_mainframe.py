@@ -144,7 +144,8 @@ class NoiseIDE(wx.Frame):
             files = dialog.GetFilenames()
             dirname = dialog.GetDirectory()
             for file in files:
-                self.TabMgr.LoadFile(os.path.join(dirname, file))
+                file =os.path.join(dirname, file)
+                self.TabMgr.LoadFileLine(file)
         dialog.Destroy()
 
     def OnOpenProject(self, event):
