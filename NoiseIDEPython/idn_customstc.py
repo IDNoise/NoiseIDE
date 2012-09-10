@@ -967,10 +967,11 @@ class ErlangCompleter(wx.Frame):
         module = ""
         if prefix and prefix[-1] == ":" and prefix[-2].isalpha():
             i = -2
-            while prefix[i].isalpha() or prefix[i] == "_":
+            while abs(i) <= len(prefix) and (prefix[i].isalpha() or prefix[i] == "_"):
                 module += prefix[i]
-                i -=1
+                i -= 1
             module = module[::-1]
+            #print module
             if not module.islower():
                 module = self.module
         else:

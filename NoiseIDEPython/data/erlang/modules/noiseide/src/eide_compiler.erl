@@ -82,16 +82,19 @@ compile_internal(FileName, Options, ToBinary, RealPath) ->
         true -> spawn(eide_cache, gen_file_cache, [FileName]);
         _ -> spawn(eide_cache, create_cache_file_fly, [FileName, RealPath])
     end,
+    [[io:format("Error on compile ~p: ~p~n", [FileName, Er])|| Er <- Err, element(1, Er) == none]|| {_File, Err} <- E],
+
     Errs = 
         [[begin
             case Er of
                 {compile,{module_name, MName, FName}} ->
-                    [{type, error}, {line, 2}, {msg, iolist_to_binary("Module in file '" ++ FName ++ "' has wrong name: '" ++ atom_to_list(MName) ++ "'.")}];
+                    [{type, error}, {line, 2}, {msg, iolist_to_binary("Module in file '" ++ FName ++ 
+                        "' has wrong name: '" ++ atom_to_list(MName) ++ "'.")}];
                 {Line, M, Error}  ->
                   Msg = iolist_to_binary(M:format_error(Error)),
                   [{type, error}, {line, Line}, {msg, Msg}]
-            end
-          end || Er <- Err] 
+            end 
+          end || Er <- Err, element(1, Er) =/= none] 
          || {_File, Err} <- E], 
     Warns = 
         [[begin

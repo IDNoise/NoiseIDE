@@ -46,6 +46,7 @@ loop(State) ->
     inet:setopts(State#state.socket, [{active,once}]),
     receive
         {send, Data} ->
+            %io:format("Send:~p~n", [Data]),
             gen_tcp:send(State#state.socket, Data),
             loop(State);
         {tcp, Socket, Data} ->

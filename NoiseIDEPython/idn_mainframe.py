@@ -75,6 +75,9 @@ class NoiseIDE(wx.Frame):
     def Log(self, text):
         self.log.Append(text)
 
+    def ClearLog(self):
+        self.log.Clear()
+
     def TryLoadLastProject(self):
         lastProject = Config.GetProp("last_project")
         if lastProject and os.path.isfile(lastProject):
@@ -174,6 +177,7 @@ class NoiseIDE(wx.Frame):
     def OpenProject(self, projectFile):
         if self.project:
             self.project.Close()
+        self.ClearLog()
         projectFile = os.path.normcase(projectFile)
         Config.SetProp("last_project", projectFile)
 

@@ -153,7 +153,7 @@ class EditorNotebook(aui.AuiNotebook):
             self.navigationHistory = self.navigationHistory[:self.navigationHistoryIndex + 1]
             self.navigationHistory.append((file, line))
             self.navigationHistoryIndex = len(self.navigationHistory) - 1
-            print self.navigationHistoryIndex, "history",  self.navigationHistory
+            #print self.navigationHistoryIndex, "history",  self.navigationHistory
         self.UpdateNavToolbar()
         editor.EnsureVisibleEnforcePolicy(line)
         return editor
@@ -204,7 +204,7 @@ class EditorNotebook(aui.AuiNotebook):
         self.UpdateNavToolbar()
 
     def UpdateNavToolbar(self):
-        print self.navigationHistoryIndex
+        #print self.navigationHistoryIndex
         self.Parent.toolbar.EnableTool(self.Parent.navBackT.GetId(), (self.navigationHistory != [] and self.navigationHistoryIndex > 0))
         self.Parent.toolbar.EnableTool(self.Parent.navForwardT.GetId(),  (self.navigationHistory != [] and self.navigationHistoryIndex < (len(self.navigationHistory) - 1)))
 

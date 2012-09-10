@@ -208,11 +208,11 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
             elif res == "gen_erlang_cache":
                 GetProject().ErlangCacheChecked()
             elif res == "connect":
-                pass
-                #Log("socket connected")
+                Log("socket connected")
 
         except Exception, e:
-            Log("===== connection exception ", e)
+
+            Log("===== connection exception ", text, e)
 
 class ErlangProcess(Process):
     def __init__(self, cwd = os.getcwd(), params = []):
