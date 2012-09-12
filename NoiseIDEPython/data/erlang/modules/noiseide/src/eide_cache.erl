@@ -495,7 +495,14 @@ parse_erlang_function(Node, Content, Comments) ->
     
     Params1 = case Spec of
                   undefined -> Params;
-                  Spec -> Spec#spec.vars
+                  Spec -> 
+                      [begin
+                          V = lists:nth(I, Spec#spec.vars),
+                          case V of
+                              ?VAR -> lists:nth(I, Params);
+                              _ -> V
+                          end
+                      end|| I <- lists:seq(1, length(Spec#spec.vars))]
               end,
     Result = 
         case Spec of

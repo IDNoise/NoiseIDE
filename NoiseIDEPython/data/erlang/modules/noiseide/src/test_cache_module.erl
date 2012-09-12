@@ -35,3 +35,11 @@
 xxx() ->
     ?XX + ?XssssX.   
           
+          
+-spec round(XX, integer()) -> integer()
+  when XX :: atom().
+
+round(Price, buy) ->
+    [ {Key, apmath:ceil(Count)} || {Key, Count} <- Price ];
+round(Price, sell) ->
+    [ {Key, trunc(Count)} || {Key, Count} <- Price ].
