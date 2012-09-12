@@ -309,6 +309,8 @@ class ErlangProject(Project):
         if path.endswith(".hrl"):
             self.GetShell().GenerateFileCache(path)
             [self.Compile(module) for module in ErlangCache.GetDependentModules(path)]
+        elif path.endswith(".yrl"):
+            self.GetShell().CompileYrls([path])
         else:
             #print self.AppsPath()
             if not path.lower().startswith(self.AppsPath().lower()):
@@ -459,6 +461,7 @@ class ErlangProject(Project):
         print "compile project"
         filesToCompile = set()
         filesToCache = set()
+        yrlToCompile = set()
         for app in self.GetApps():
             srcPath = os.path.join(os.path.join(self.AppsPath(), app), "src")
             includePath = os.path.join(os.path.join(self.AppsPath(), app), "include")
@@ -469,12 +472,15 @@ class ErlangProject(Project):
                         file = os.path.join(root, file)
                         if file.endswith(".erl"):
                             filesToCompile.add((file, app))
+                        if file.endswith(".yrl"):
+                            yrlToCompile.add(file)
                         elif file.endswith(".hrl"):
                             filesToCache.add(file)
         filesToCompile = sorted(list(filesToCompile))
         filesToCache = sorted(list(filesToCache))
         self.GetShell().CompileProjectFiles(filesToCompile)
         self.GetShell().GenerateFileCaches(filesToCache)
+        self.GetShell().CompileYrls(yrlToCompile)
         self.RemoveUnusedBeams()
 
     def RemoveUnusedBeams(self):

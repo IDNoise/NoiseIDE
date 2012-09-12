@@ -162,6 +162,11 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
         for file in files:
             self.GenerateFileCache(file)
 
+    def CompileYrls(self, files):
+        for file in files:
+            self.CompileFile(file)
+
+
     def GenerateErlangCache(self):
         self._ExecRequest("gen_erlang_cache", '[]')
 
