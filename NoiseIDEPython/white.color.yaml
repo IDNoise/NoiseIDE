@@ -1,0 +1,38 @@
+code_editor:
+  background: '#ffffff'
+  foreground: '#000000'
+  font_name:  'courier new'
+  font_size:  10
+  current_line_background:     '#eeeeff'
+  line_number_area_background: '#bbbbbb'
+  marker_panel_background:     '#bbbbbb'
+  fold_area_background:        '#cccccc'
+  fold_area_foreground:        '#ffffff'
+  brace_background:            '#55bb77'
+  brace_bad_background:        '#cc6644'
+  brace_foreground:            '#000000'
+  brace_bad_foreground:        '#000000'
+  highlighted_word:            '#2266bb'
+  error_line_color:            '#FFA2A2'
+  warning_line_color:          '#FFF59F'
+  selected_word_marker_color:  '#6699bb'
+  languages:
+    erlang:
+      default:    fore:#000000
+      string:     fore:#bb7777
+      arrow:      fore:#000000
+      keyword:    fore:#a611bb, bold
+      atom:       fore:#000000
+      variable:   fore:#B8860B
+      comment:    fore:#999999
+      module:     fore:#000000
+      function:   fore:#000000
+      preproc:    fore:#007777
+      moduleattr: fore:#000000
+      macros:     fore:#00aabb
+      record:     fore:#780EA6
+      number:     fore:#0033cc
+      bracket:    fore:#000000
+      fundec:     fore:#000000
+      bif:        fore:#000000, true
+      fullstop:   fore:#000000, true
