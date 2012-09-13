@@ -102,7 +102,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         EditorFoldMixin.__init__(self)
         EditorLineMarginMixin.__init__(self)
 
-        self.tooltip = wx.ToolTip("a" * 500)
+        self.tooltip = wx.ToolTip(" " * 500)
         self.tooltip.Enable(False)
         self.tooltip.SetDelay(300)
         self.SetToolTip(self.tooltip)
@@ -359,7 +359,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
             return
         markers = []
         #print text
-        if (text and True not in [c in text for c in [" ", "\n", "\r", ",", ".", ":"]]):
+        if (text and True not in [c in text for c in [" ", "\n", "\r", ","]]):
             self.SetIndicatorCurrent(0)
             self.SetSearchFlags(stc.STC_FIND_MATCHCASE | stc.STC_FIND_WHOLEWORD)
             self.SetTargetStart(0)
