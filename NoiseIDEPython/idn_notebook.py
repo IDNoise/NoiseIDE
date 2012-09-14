@@ -4,7 +4,7 @@ import wx
 from wx.lib.agw import aui
 from wx.aui import wxEVT_COMMAND_AUINOTEBOOK_TAB_MIDDLE_UP
 from idn_findreplace import FindInFilePanel
-from idn_global import GetProject
+from idn_global import GetProject, GetWinMgr, GetMainFrame
 from idn_utils import extension, Menu
 from idn_customstc import CustomSTC, ErlangSTC, YAMLSTC, PythonSTC, MarkerPanel, ConsoleSTC
 
@@ -29,6 +29,15 @@ class Notebook(aui.AuiNotebook):
     def __init__(self, parent):
         agwStyle = aui.AUI_NB_DEFAULT_STYLE ^ aui.AUI_NB_CLOSE_ON_ACTIVE_TAB
         aui.AuiNotebook.__init__(self, parent, agwStyle = agwStyle)
+
+        self.Bind(aui.EVT_AUINOTEBOOK_TAB_DCLICK, self.OnTabDClick)
+
+    def OnTabDClick(self, event):
+        if GetMainFrame().ToolMgrPaneInfo.IsMaximized():
+            GetWinMgr().RestorePane(GetMainFrame().ToolMgrPaneInfo)
+        else:
+            GetWinMgr().MaximizePane(GetMainFrame().ToolMgrPaneInfo)
+        GetWinMgr().Update()
 
     def __getitem__(self, index):
         if index < self.GetPageCount():
@@ -91,6 +100,14 @@ class EditorNotebook(aui.AuiNotebook):
         self.UpdateNavToolbar()
 
         self.Bind(aui.EVT_AUINOTEBOOK_TAB_RIGHT_UP, self.OnTabRightUp)
+        self.Bind(aui.EVT_AUINOTEBOOK_TAB_DCLICK, self.OnTabDClick)
+
+    def OnTabDClick(self, event):
+        if GetMainFrame().TabMgrPaneInfo.IsMaximized():
+            GetWinMgr().RestorePane(GetMainFrame().TabMgrPaneInfo)
+        else:
+            GetWinMgr().MaximizePane(GetMainFrame().TabMgrPaneInfo)
+        GetWinMgr().Update()
 
     def OnTabRightUp(self, event):
         page = event.GetSelection()

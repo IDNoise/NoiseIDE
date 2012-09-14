@@ -50,7 +50,7 @@ class ErlangConsole(wx.Panel):
 
         bottomPanel.SetSizer(commandSizer)
         splitter.SplitHorizontally(self.consolePanel, bottomPanel, 300)
-        splitter.SetSashGravity(0.9)
+        splitter.SetSashGravity(1)
         splitter.SetMinimumPaneSize(25)
 
         #sizer = wx.BoxSizer(wx.VERTICAL)

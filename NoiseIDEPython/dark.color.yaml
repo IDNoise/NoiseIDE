@@ -2,7 +2,7 @@ code_editor:
   background: '#333333'
   foreground: '#ffffff'
   font_name:  consolas
-  font_size:  12
+  font_size:  11
   current_line_background:     '#545451'
   line_number_area_background: '#6d6d70'
   marker_panel_background:     '#6d6d70'

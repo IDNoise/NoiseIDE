@@ -40,21 +40,24 @@ class NoiseIDE(wx.Frame):
         self.TabMgr.SetArtProvider(aui.VC71TabArt())
         #self.TabMgr.SetArtProvider(aui.ChromeTabArt())
         #self.TabMgr.SetArtProvider(aui.FF2TabArt())
-
-        self.WinMgr.AddPane1(self.TabMgr, aui.AuiPaneInfo().Center()#.Caption("Code Editor")
-            .MaximizeButton().MinimizeButton().CaptionVisible(False)
-            .CloseButton(False).Floatable(False).MinSize(100, 100))
+        self.TabMgrPaneInfo = aui.AuiPaneInfo().Center()\
+            .MaximizeButton().MinimizeButton().CaptionVisible(False)\
+            .CloseButton(False).Floatable(False).MinSize(100, 100)
+        self.WinMgr.AddPane1(self.TabMgr, self.TabMgrPaneInfo )
 
         self.ToolMgr = Notebook(self)
-        self.WinMgr.AddPane1(self.ToolMgr, aui.AuiPaneInfo().Bottom()#.Caption("Tools")
-            .MaximizeButton().MinimizeButton().CloseButton(False).Floatable(False).BestSize(400, 300).MinSize(100, 100))
+        self.ToolMgrPaneInfo = aui.AuiPaneInfo().Bottom()\
+            .MaximizeButton().MinimizeButton().CloseButton(False).Floatable(False)\
+            .BestSize(400, 300).MinSize(100, 100).Name("Tools").CaptionVisible(True).Caption("Tools")\
+            .MinimizeMode(aui.AUI_MINIMIZE_POS_LEFT | aui.AUI_MINIMIZE_CAPT_SMART)
+        self.WinMgr.AddPane1(self.ToolMgr, self.ToolMgrPaneInfo)
 
         self.logPanel = ConsolePanel(self.ToolMgr)
         self.log = self.logPanel.editor
         self.log.SetReadOnly(True)
         self.ToolMgr.AddPage(self.logPanel, "Log")
 
-
+        #self.WinMgr.MaximizePane()
 
         self.WinMgr.Update()
 
