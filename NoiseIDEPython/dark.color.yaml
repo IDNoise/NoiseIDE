@@ -21,18 +21,18 @@ code_editor:
       default:    fore:#DDDDDD
       string:     fore:#65B042
       arrow:      fore:#CF6A4C
-      keyword:    fore:#CF6A4C, bold
+      keyword:    fore:#CF6A4C,bold
       atom:       fore:#C3AF75
       variable:   fore:#3387CC
-      comment:    fore:#266755, italic
-      module:     fore:#99CF50, italic
-      function:   fore:#E9C062, italic
+      comment:    fore:#266755,italic
+      module:     fore:#99CF50
+      function:   fore:#E9C062
       preproc:    fore:#758bc5
       moduleattr: fore:#758bc5
-      macros:     fore:#BF62E8, bold
+      macros:     fore:#BF62E8,bold
       record:     fore:#CF4B6F
       number:     fore:#99CF50
       bracket:    fore:#DDDDDD
       fundec:     fore:#E9C062
-      bif:        fore:#E9C062, true
-      fullstop:   fore:#DDDDDD, true
+      bif:        fore:#E9C062
+      fullstop:   fore:#DDDDDD

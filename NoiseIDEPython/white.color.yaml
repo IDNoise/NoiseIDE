@@ -21,7 +21,7 @@ code_editor:
       default:    fore:#000000
       string:     fore:#bb7777
       arrow:      fore:#000000
-      keyword:    fore:#a611bb, bold
+      keyword:    fore:#a611bb,bold
       atom:       fore:#000000
       variable:   fore:#B8860B
       comment:    fore:#999999
@@ -34,5 +34,5 @@ code_editor:
       number:     fore:#0033cc
       bracket:    fore:#000000
       fundec:     fore:#000000
-      bif:        fore:#000000, true
-      fullstop:   fore:#000000, true
+      bif:        fore:#000000
+      fullstop:   fore:#000000
