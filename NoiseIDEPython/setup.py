@@ -7,6 +7,7 @@ if sys.platform == "win32":
     base = "Win32GUI"
 
 includefiles = ['dark.color.yaml', 
+                'white.color.yaml', 
                 'noiseide.template.yaml', 
                 'data']
     

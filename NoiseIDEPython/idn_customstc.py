@@ -119,7 +119,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.changed = False
         self.saved = True
 
-        self.SetCaretWidth(3)
+        self.SetCaretWidth(2)
         self.SetCaretLineBackground(ColorSchema.codeEditor["current_line_background"])
         self.SetCaretLineVisible(True)
 
@@ -140,9 +140,9 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
 
         self.SetMargins(5, 5)
 
-        self.SetMarginType(2, stc.STC_MARGIN_SYMBOL)
-        self.SetMarginSensitive(2, True)
-        self.SetMarginWidth(2, 10)
+        #self.SetMarginType(2, stc.STC_MARGIN_SYMBOL)
+        #self.SetMarginSensitive(2, True)
+       # self.SetMarginWidth(2, 10)
 
         self.IndicatorSetStyle(0, stc.STC_INDIC_ROUNDBOX)
         self.IndicatorSetForeground(0, ColorSchema.codeEditor["highlighted_word"])

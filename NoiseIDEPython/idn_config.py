@@ -1,3 +1,5 @@
+from idn_colorschema import ColorSchema
+
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 import os
@@ -30,6 +32,7 @@ class Config:
         path = os.path.join(GetMainFrame().cwd, "noiseide.yaml")
         stream = file(path, 'w')
         yaml.dump(cls.data, stream)
+        ColorSchema.load(cls.ColorSchema())
 
     @classmethod
     def GetProp(cls, prop):

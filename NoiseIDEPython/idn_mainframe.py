@@ -9,7 +9,7 @@ from idn_colorschema import ColorSchema
 from idn_customstc import ConsoleSTC, CustomSTC
 from idn_winmanager import Manager
 from idn_notebook import  Notebook, EditorNotebook, ConsolePanel
-from idn_config import Config
+from idn_config import Config, ConfigEditForm
 import idn_global
 from idn_project import loadProject, ErlangProjectFrom
 
@@ -40,21 +40,24 @@ class NoiseIDE(wx.Frame):
         self.TabMgr.SetArtProvider(aui.VC71TabArt())
         #self.TabMgr.SetArtProvider(aui.ChromeTabArt())
         #self.TabMgr.SetArtProvider(aui.FF2TabArt())
-
-        self.WinMgr.AddPane1(self.TabMgr, aui.AuiPaneInfo().Center()#.Caption("Code Editor")
-            .MaximizeButton().MinimizeButton().CaptionVisible(False)
-            .CloseButton(False).Floatable(False).MinSize(100, 100))
+        self.TabMgrPaneInfo = aui.AuiPaneInfo().Center()\
+            .MaximizeButton().MinimizeButton().CaptionVisible(False)\
+            .CloseButton(False).Floatable(False).MinSize(100, 100)
+        self.WinMgr.AddPane1(self.TabMgr, self.TabMgrPaneInfo )
 
         self.ToolMgr = Notebook(self)
-        self.WinMgr.AddPane1(self.ToolMgr, aui.AuiPaneInfo().Bottom()#.Caption("Tools")
-            .MaximizeButton().MinimizeButton().CloseButton(False).Floatable(False).BestSize(400, 300).MinSize(100, 100))
+        self.ToolMgrPaneInfo = aui.AuiPaneInfo().Bottom()\
+            .MaximizeButton().MinimizeButton().CloseButton(False).Floatable(False)\
+            .BestSize(400, 300).MinSize(100, 100).Name("Tools").CaptionVisible(True).Caption("Tools")\
+            .MinimizeMode(aui.AUI_MINIMIZE_POS_LEFT | aui.AUI_MINIMIZE_CAPT_SMART)
+        self.WinMgr.AddPane1(self.ToolMgr, self.ToolMgrPaneInfo)
 
         self.logPanel = ConsolePanel(self.ToolMgr)
         self.log = self.logPanel.editor
         self.log.SetReadOnly(True)
         self.ToolMgr.AddPage(self.logPanel, "Log")
 
-
+        #self.WinMgr.MaximizePane()
 
         self.WinMgr.Update()
 
@@ -109,6 +112,8 @@ class NoiseIDE(wx.Frame):
                     lastProjects.AppendMenuItem(os.path.basename(p), self, handler(p))
 
         self.fileMenu.AppendSeparator()
+        self.fileMenu.AppendMenuItem('Edit options', self, self.OnEditOptions)
+        self.fileMenu.AppendSeparator()
         self.fileMenu.AppendMenuItem('Quit', self, self.OnQuit)
         self.menubar.Append(self.fileMenu, '&File')
 
@@ -130,6 +135,10 @@ class NoiseIDE(wx.Frame):
         self.Bind(wx.EVT_TOOL, lambda e: self.TabMgr.NavigateForward(), self.navForwardT)
 
         self.toolbar.Realize()
+
+    def OnEditOptions(self, event):
+        form = ConfigEditForm()
+        form.ShowModal()
 
     def OnShowWhiteSpace(self, event):
         CustomSTC.ShowWhiteSpace = not CustomSTC.ShowWhiteSpace

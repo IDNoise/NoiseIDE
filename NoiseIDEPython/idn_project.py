@@ -170,7 +170,8 @@ class Project(ProgressTaskManagerDialog):
         self.explorer.SetRoot(self.projectDir)
         self.explorer.SetHiddenList(self.HiddenPathsList())
         self.window.WinMgr.AddPane1(self.explorer, aui.AuiPaneInfo().Left().Caption("Project Explorer")
-            .MinimizeButton().CloseButton(False).BestSize2(300, 600).MinSize(100, 100))
+            .MinimizeButton().CloseButton(False).BestSize2(300, 600).MinSize(100, 100)
+            .MinimizeMode(aui.AUI_MINIMIZE_POS_LEFT | aui.AUI_MINIMIZE_CAPT_SMART))
         self.window.WinMgr.Update()
         print "create explorer"
 
