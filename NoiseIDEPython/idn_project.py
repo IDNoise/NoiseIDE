@@ -220,6 +220,10 @@ class Project(ProgressTaskManagerDialog):
 #            GetWinMgr().LoadPerspective(self.userData[self.CONFIG_GLOBAL_PERSP])
 #            GetWinMgr().Update()
 
+    def SaveData(self):
+        stream = file(self.projectFilePath, 'w')
+        yaml.dump(self.projectData, stream)
+
 
 class ErlangProject(Project):
     IDE_MODULES_DIR = os.path.join(os.getcwd(), 'data', 'erlang', 'modules', 'noiseide', 'ebin')
@@ -237,6 +241,13 @@ class ErlangProject(Project):
     CONFIG_CONSOLE_COMMAND = "command"
 
     def OnLoadProject(self):
+        path = self.GetErlangPath()
+        if not os.path.isfile(path):
+            dlg = wx.FileDialog(self.window, "Please select valid Erlang path.")
+            if dlg.ShowModal() == wx.ID_OK:
+                self.projectData[self.CONFIG_ERLANG_PATH] = dlg.GetPath()
+                self.SaveData()
+
         self.errors = {}
         self.consoleTabs = {}
 

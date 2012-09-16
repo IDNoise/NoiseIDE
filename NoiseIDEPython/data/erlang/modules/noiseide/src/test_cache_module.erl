@@ -4,13 +4,12 @@
 -module(test_cache_module).
 
 %% Include files
-
+-include("sample.hrl").
 %% Exported Functions
 
 -export([
      
-]).  
--define(XX, ololo).   
+]).    
 -define(XssssX, ololasdasdado).   
 -type beam_instr() :: 'bs_init_writable' | 'fclearerror' | 'if_end'
                     | 'remove_message' | 'return' | 'send' | 'timeout'
