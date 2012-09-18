@@ -288,7 +288,7 @@ class ErlangProject(Project):
 
         self.menu.AppendSeparator()
 
-        self.menu.AppendMenuItem("Generate erlang cache", self.window, lambda e: self.GenerateErlangCache())
+        self.menu.AppendMenuItem("Regenerate erlang cache", self.window, lambda e: self.RegenerateErlangCache())
         self.menu.AppendMenuItem("Rebuild project", self.window, lambda e: self.CompileProject())
 
     def OnEditProject(self, event):
@@ -312,6 +312,10 @@ class ErlangProject(Project):
         for file in os.listdir(self.flyDir):
             if file.endswith(".erl"):
                 os.remove(os.path.join(self.flyDir, file))
+
+    def RegenerateErlangCache(self):
+        ErlangCache.CleanDir("erlang")
+        self.GenerateErlangCache()
 
     def GenerateErlangCache(self):
         print "generate erlang cache"

@@ -180,9 +180,12 @@ class ErlangCache:
 
     @classmethod
     def CleanDir(cls, dir):
-        dir = os.path.join(cls.CACHE_DIR, dir)
-        shutil.rmtree(dir)
-        os.mkdir(dir)
+        try:
+            dir = os.path.join(cls.CACHE_DIR, dir)
+            shutil.rmtree(dir, ignore_errors=True)
+            os.mkdir(dir)
+        except Exception, e:
+            pass
 
     @classmethod
     def LoadFile_(cls, file):
