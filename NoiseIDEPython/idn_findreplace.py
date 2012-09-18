@@ -191,7 +191,7 @@ class FindInProjectDialog(wx.Dialog):
 
         self.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
 
-    def OnFind(self, event):
+    def OnFind(self, event = None):
         self.textToFind = self.findText.Value
         if not self.textToFind:
             return
@@ -272,8 +272,11 @@ class FindInProjectDialog(wx.Dialog):
         if keyCode == wx.WXK_ESCAPE:
             self.Parent.sizer.Show(self.Parent.findPanel, False)
             self.Parent.Layout()
+        elif keyCode == wx.WXK_RETURN:
+            self.OnFind()
         else:
             event.Skip()
+
 
 def ReplaceInProject(regexp, replacement, mask = None):
     files = GetProject().explorer.GetAllFiles()

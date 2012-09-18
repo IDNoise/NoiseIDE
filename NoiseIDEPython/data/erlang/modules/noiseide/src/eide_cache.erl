@@ -140,7 +140,7 @@ create_cache_file_fly(FlyFile, RealFile) ->
        dump_data_to_file(RealModuleName, CacheDir, RealFile, CacheFileName, Data, FlyFile),
        send_answer(CacheDir, CacheFileName, RealFile)
     catch _:_ -> ok
-    end,  
+    end,   
     ok.
 
 add_paths(AppsPath) ->
@@ -159,11 +159,12 @@ create_cache(CacheDir, AppsPath, App, IgnoreApps) ->
         end,
     add_paths(AppsPath),
     Ignores = prepare_ignores(AppsPath, IgnoreApps),
+    {ok, Re} = re:compile("(^.*?/(src|include)/.*\.(erl|hrl)$|^.*?/html/.*\.html$)"),
+    IsInIgnoreFun = fun(File) -> lists:any(fun(IApp) -> lists:prefix(IApp, File) end, Ignores) end,
+    IsInWrongFolder = fun(File) -> re:run(File, Re) == nomatch end,
     Files = filelib:fold_files(LibDir, ".*\.(erl|hrl|html)$", true, 
                                fun(File, A) ->
-                                   case lists:any(fun(IApp) -> 
-                                                      lists:prefix(IApp, File) 
-                                                  end, Ignores) of
+                                   case IsInIgnoreFun(File) orelse IsInWrongFolder(File) of
                                        true -> 
                                            A;
                                        _ -> 
@@ -236,14 +237,14 @@ send_answer(CacheDir, CacheFile, File) ->
         _ ->
             ok
     end.
-
 dump_data_to_file(ModuleName, CacheDir, FilePath, CFile, Content) ->
     dump_data_to_file(ModuleName, CacheDir, FilePath, CFile, Content, FilePath).
 
 dump_data_to_file(ModuleName, CacheDir, FilePath, CFile, Content, FlyFileName) ->
     #content{module_name = MN, 
              functions = Funs, 
-             records = Recs, macros = Macs, 
+             records = Recs, 
+             macros = Macs, 
              includes = Incs,
              exported_types = ExpTypes} = Content, 
     %io:format("Data:~p~n", [{FlyFileName, Recs}]),
@@ -353,6 +354,7 @@ generate(ModuleName, FilePath, DocsFilePath) ->
                    undefined -> Content;
                    _ -> merge_with_docs(Content, DocsFilePath)
                end,
+    %io:format("~p~n", [Content]),
     Incls = sets:to_list(sets:from_list(Content1#content.includes)),
     Content1#content{includes = Incls, file = FilePath, module_name = ModuleName}.
 
@@ -360,8 +362,16 @@ generate_from_source(Path) ->
     %{ok, Source} = epp_dodger:parse_file(Path),
     {ok, Source} = epp:parse_file(Path, [], []),
     {ok, SourceMacros}  = epp_dodger:parse_file(Path),
+    %io:format("epp:~p~n~n~n~n", [Source]),
+    %io:format("epp_dodger:~p~n", [SourceMacros]),
     Content = parse_tree(erl_syntax:form_list(SourceMacros), #content{file = Path, last_file_attr = Path}),
-    {#content{file = Path, last_file_attr = Path, macros = Content#content.macros}, erl_syntax:form_list(Source)}.
+    {#content{
+        file = Path, 
+        last_file_attr = Path, 
+        macros = Content#content.macros, 
+        includes = Content#content.includes
+        }, 
+        erl_syntax:form_list(Source)}.
 
 parse_tree(Node, Content) ->
     case erl_syntax:type(Node) of
@@ -612,7 +622,7 @@ parse_t_type_var(#t_name{name = Name}) ->
     end;
 parse_t_type_var(#t_var{name = Names}) ->
     atom_to_list(case Names of
-                      Names when is_list(Names) -> lists:first(Names);
+                      Names when is_list(Names) -> hd(Names);
                       _ -> Names
                  end);
 parse_t_type_var(#t_type{name = Name, a = Args}) when is_atom(Name) ->
@@ -648,7 +658,7 @@ parse_t_type_res(#t_name{name = Name}, _) ->
     end; 
 parse_t_type_res(#t_var{name = Names}, Defs) ->
     Name = case Names of
-               Names when is_list(Names) -> lists:first(Names);
+               Names when is_list(Names) -> hd(Names);
                _ -> Names
            end,
     Type = 
@@ -683,7 +693,7 @@ parse_t_type(#t_list{type = Type}, Defs, Depth) ->
     "[" ++ parse_t_type(Type, Defs, Depth - 1) ++ "]";
 parse_t_type(#t_var{name = Names}, Defs, Depth) ->
     Name = case Names of
-               Names when is_list(Names) -> lists:first(Names);
+               Names when is_list(Names) -> hd(Names);
                _ -> Names
            end,
     case lists:keyfind(#t_var{name = Name}, #t_def.name, Defs) of

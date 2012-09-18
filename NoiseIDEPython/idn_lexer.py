@@ -105,9 +105,8 @@ class ErlangLexer(BaseLexer):
             text = self.stc.GetLine(startLine)
             tokens = self.highlighter.GetHighlightingTokens(text)
             for token in tokens:
-                if (token.type in {ErlangHighlightType.FUNDEC,
-                                   ErlangHighlightType.RECORDDEF,
-                                   ErlangHighlightType.SPEC}):
+                if (token.type in {ErlangHighlightType.FUNDEC, ErlangHighlightType.RECORDDEF}
+                    or token.value == "-spec"):
                     currentLineFoldLevel = STC_FOLDLEVELBASE
                     nextLineFoldLevel = STC_FOLDLEVELBASE  + 1
                 elif token.type == ErlangHighlightType.FULLSTOP:
