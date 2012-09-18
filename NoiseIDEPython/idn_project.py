@@ -1,4 +1,5 @@
 import time
+import operator
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
@@ -14,7 +15,7 @@ from idn_findreplace import FindInProjectDialog
 from idn_utils import writeFile, CreateButton, CreateLabel, Menu
 import idn_projectexplorer as exp
 from idn_console import ErlangIDEConsole, ErlangProjectConsole
-from idn_global import GetTabMgr, GetToolMgr, GetMainFrame, Log, GetWinMgr
+from idn_global import GetTabMgr, GetToolMgr, GetMainFrame, Log
 from idn_customstc import ErlangHighlightedSTCBase
 from PyProgress import PyProgress
 
@@ -396,7 +397,7 @@ class ErlangProject(Project):
         return apps
 
     def AddTabs(self):
-        self.errorsTable = ErrorsTableGrid(GetToolMgr())
+        self.errorsTable = ErrorsTableGrid(GetToolMgr(), self)
         GetToolMgr().AddPage(self.errorsTable, 'Errors: 0, Warnings: 0')
 
     def Close(self):
@@ -471,6 +472,7 @@ class ErlangProject(Project):
 
     def CompileProject(self):
         print "compile project"
+        ErlangCache.CleanDir(self.ProjectName())
         filesToCompile = set()
         filesToCache = set()
         yrlToCompile = set()
@@ -670,8 +672,9 @@ class ErrorsTable(PyGridTableBase):
         grid.ProcessTableMessage(msg)
 
 class ErrorsTableGrid(wx.grid.Grid):
-    def __init__(self, parent):
+    def __init__(self, parent, project):
         wx.grid.Grid.__init__(self, parent, -1)
+        self.project = project
         self.table = ErrorsTable([])
         self.SetTable(self.table, True)
         self.AutoSizeColumns(False)
@@ -694,16 +697,17 @@ class ErrorsTableGrid(wx.grid.Grid):
     def OnLeftDClick(self, event):
         row = event.GetRow()
         rowData = self.table.data[row]
-        file = rowData[0]
+        file = os.path.join(self.project.AppsPath(), rowData[0])
         line = rowData[1]
         GetTabMgr().LoadFileLine(file, line)
 
     def AddErrors(self, path, errors):
         currentRows = len(self.table.data)
-
-        data = list(filter(lambda x: x[0] != path, self.table.data))
+        newPath = path.replace(self.project.AppsPath() + os.sep, "")
+        data = list(filter(lambda x: x[0] != newPath, self.table.data))
         for e in errors:
-            data.append((e.path, e.line + 1, e.TypeToStr(), e.msg))
+            data.append((newPath, e.line + 1, e.TypeToStr(), e.msg))
+        data = sorted(data, key = operator.itemgetter(2, 0))
         self.table.data = data
         self.table.ResetView(self, currentRows)
 

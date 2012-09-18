@@ -410,11 +410,9 @@ class ErlangHighlightedSTCBase(CustomSTC):
         self.StyleSetSpec(ErlangHighlightType.MACROS, formats["macros"])
         self.StyleSetSpec(ErlangHighlightType.ATOM, formats["atom"])
         self.StyleSetSpec(ErlangHighlightType.MODULE, formats["module"])
-        self.StyleSetSpec(ErlangHighlightType.SPEC, formats["preproc"])
         self.StyleSetSpec(ErlangHighlightType.FUNCTION, formats["function"])
         self.StyleSetSpec(ErlangHighlightType.KEYWORD, formats["keyword"])
         self.StyleSetSpec(ErlangHighlightType.MODULEATTR, formats["moduleattr"])
-        self.StyleSetSpec(ErlangHighlightType.PREPROC, formats["preproc"])
         self.StyleSetSpec(ErlangHighlightType.RECORD, formats["record"])
         self.StyleSetSpec(ErlangHighlightType.RECORDDEF, formats["record"])
         self.StyleSetSpec(ErlangHighlightType.NUMBER, formats["number"])
@@ -580,7 +578,9 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                          #ErlangHighlightType.FUNDEC,
                          ErlangHighlightType.MACROS,
                          ErlangHighlightType.MODULE,
-                         ErlangHighlightType.RECORD]:
+                         ErlangHighlightType.RECORD,
+                         ErlangHighlightType.MODULEATTR,
+                         ErlangHighlightType.STRING]:
             #print "wrong style", style
             return False
         start = self.WordStartPosition(pos, True)
@@ -591,19 +591,36 @@ class ErlangSTC(ErlangHighlightedSTCBase):
 
 
         line = self.LineFromPosition(pos)
+        lineText = self.GetLine(line).strip()
         lineStart = self.PositionFromLine(line)
+        lineEnd = self.GetLineEndPosition(line)
         prefix = self.GetTextRange(lineStart, start)
         value = self.GetTextRange(start, end)
+        postfix = self.GetTextRange(end, lineEnd)
         #print value, prefix
         if style == ErlangHighlightType.FUNCTION:
             self.navigateTo = self.completer.ShowFunctionHelp(value, prefix, end)
-        if style == ErlangHighlightType.RECORD:
+        elif style == ErlangHighlightType.RECORD:
             self.navigateTo = self.completer.ShowRecordHelp(value)
-        if style == ErlangHighlightType.MACROS:
+        elif style == ErlangHighlightType.MACROS:
             self.navigateTo = self.completer.ShowMacrosHelp(value)
-        if style in [ErlangHighlightType.ATOM, ErlangHighlightType.MODULE]:
+        elif style in [ErlangHighlightType.ATOM, ErlangHighlightType.MODULE]:
             if value in ErlangCache.AllModules():
                 self.navigateTo = (ErlangCache.moduleData[value].file, 0)
+
+        elif style == ErlangHighlightType.MODULEATTR or ErlangHighlightType.STRING:
+            path = None
+            if (style == ErlangHighlightType.MODULEATTR and value in ["include", "include_lib"]):
+                path = postfix[2:len(postfix)-3]
+            elif style == ErlangHighlightType.STRING and lineText.startswith("-include"):
+                s = 14 if lineText.startswith("-include_lib") else 10
+                path = lineText[s:len(lineText)-3]
+            if path:
+                include = os.path.basename(path)
+                if include in ErlangCache.includes:
+                    self.navigateTo = (ErlangCache.moduleData[include].file, 0)
+                    start = lineStart
+                    end = lineEnd
 
         if self.navigateTo:
             self.SetCursor(wx.StockCursor(wx.CURSOR_HAND))

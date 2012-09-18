@@ -27,8 +27,7 @@ code_editor:
       comment:    fore:#999999
       module:     fore:#000000
       function:   fore:#000000
-      preproc:    fore:#007777
-      moduleattr: fore:#000000
+      moduleattr: fore:#007777
       macros:     fore:#00aabb
       record:     fore:#780EA6
       number:     fore:#0033cc

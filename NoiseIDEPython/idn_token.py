@@ -22,7 +22,7 @@ class ErlangTokenType:
     STRING = "string"
     FUNDEC = "fundec"
     VAR = "var"
-    PREPROC = "preproc"
+    MODULEATTR = "moduleattr"
     RECORD = "record"
     NUMBER = "number"
     MACROS = "macros"
@@ -43,7 +43,7 @@ class ErlangTokenizer:
             |(?P<string>"([^"\\]|\\.)*")
             |(?P<fundec>^(?!fun\()[a-z][a-zA-Z_0-9]*\()
             |(?P<var>[A-Z_][a-zA-Z_0-9]*)
-            |(?P<preproc>^-[a-z][a-z_]*)
+            |(?P<moduleattr>^-[a-z][a-z_]*)
             |(?P<record>\#[a-z][a-z_]*)
             |(?P<number>[0-9]*\.?[0-9]+)
             |(?P<macros>\?[a-zA-Z][a-zA-Z_0-9]*)
@@ -59,13 +59,19 @@ class ErlangTokenizer:
 
     def GetTokens(self, text):
         tokens = []
+        lastValue = None
         pos = 0
         while True:
             m = self.tokenRegexp.search(text, pos)
             if not m: break
-            pos = m.end()
             type = m.lastgroup
             value = m.group(type)
+            pos = m.end()
+            if type == ErlangTokenType.RECORD:
+                if lastValue and lastValue.replace(".", "").isdigit():
+                    lastValue = value
+                    continue
             tokens.append(Token(type, value, m.start(), m.end()))
+            lastValue = value
         return tokens
 

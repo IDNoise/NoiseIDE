@@ -27,7 +27,6 @@ code_editor:
       comment:    fore:#266755,italic
       module:     fore:#99CF50
       function:   fore:#E9C062
-      preproc:    fore:#758bc5
       moduleattr: fore:#758bc5
       macros:     fore:#BF62E8,bold
       record:     fore:#CF4B6F

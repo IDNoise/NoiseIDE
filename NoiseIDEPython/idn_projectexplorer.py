@@ -332,10 +332,10 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         self.PopupMenu(menu)
 
     def IsExecutable(self, item):
-        return extension(self.GetPyData(item)) in [".bat", ".exe", ".cmd"]
+        return extension(self.GetPyData(item)) in [".bat", ".exe", ".cmd", ".html", ".xhtml"]
 
     def IsEditable(self, item):
-        return extension(self.GetPyData(item)) in [".bat", ".cmd"]
+        return extension(self.GetPyData(item)) in [".bat", ".cmd", ".html", ".xhtml"]
 
     def FillNewSubMenu(self, newMenu):
         pass
@@ -427,11 +427,12 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         if not self.OpenFile(path):
             event.Skip()
 
-    def OnMenuExecute(self, event):
-        path = self.GetPyData(self.eventItem)
+    def ExecuteFile(self, path):
+        os.chdir(os.path.dirname(path))
         path = path.replace("\\", "/")
         import webbrowser
         webbrowser.open(path)
+        os.chdir(GetMainFrame().cwd)
 
     def OnMenuHide(self, event):
         if self.GetPyData(self.selectedItems[0]) in self.hiddenPaths:
@@ -547,8 +548,7 @@ class ProjectExplorer(CT.CustomTreeCtrl):
         item = event.GetItem()
         path = self.GetPyData(item)
         if self.IsExecutable(item):
-            import webbrowser
-            webbrowser.open(path)
+            self.ExecuteFile(path)
         else:
             if not self.OpenFile(path):
                 event.Skip()

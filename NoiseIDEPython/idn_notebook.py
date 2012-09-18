@@ -183,7 +183,7 @@ class EditorNotebook(aui.AuiNotebook):
 
     def FindPageIndexByEditor(self, editor):
         for index in range(self.GetPageCount()):
-            if self[index] == editor.Parent:
+            if self[index] == editor:
                 return index
         return None
 
@@ -242,6 +242,7 @@ class EditorPanel(wx.Panel):
         self.SetSizer(self.sizer)
         self.Layout()
         self.Fit()
+        self.findVisible = False
 
         self.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
 
@@ -249,11 +250,14 @@ class EditorPanel(wx.Panel):
         keyCode = event.GetKeyCode()
         if keyCode == ord('F') and event.ControlDown() and not event.ShiftDown() and not event.AltDown():
             self.ShowFind()
-        elif keyCode == wx.WXK_ESCAPE and self.helpVisible:
+        elif keyCode == wx.WXK_ESCAPE and self.findVisible:
             self.HideFind()
             event.Skip()
-        elif keyCode == wx.WXK_F3 and self.helpVisible:
+        elif keyCode == wx.WXK_F3 and self.findVisible:
             self.findPanel.OnFind()
+        elif keyCode == ord('W') and event.ControlDown():
+            index = self.Parent.FindPageIndexByEditor(self.editor)
+            self.Parent.ClosePage(index)
         else:
             event.Skip()
 
@@ -261,12 +265,13 @@ class EditorPanel(wx.Panel):
         self.sizer.Show(self.findPanel, True)
         self.Layout()
         self.findPanel.findText.SetFocus()
-        self.helpVisible = True
+        self.findVisible = True
 
     def HideFind(self):
         self.sizer.Show(self.findPanel, False)
         self.Layout()
-        self.helpVisible = False
+        self.findVisible = False
+        self.editor.SetFocus()
 
 class ConsolePanel(EditorPanel):
     def __init__(self, parent):

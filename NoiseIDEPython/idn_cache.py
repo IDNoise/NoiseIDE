@@ -1,5 +1,6 @@
 import os
 import json
+import shutil
 from idn_config import Config
 from idn_directoryinfo import DirectoryChecker
 from idn_global import GetMainFrame, Log, GetProject
@@ -176,6 +177,12 @@ class ErlangCache:
             cls.AddToLoad(file)
             #cls.LoadFile(file)
         #Log("end loading cache from", dir)
+
+    @classmethod
+    def CleanDir(cls, dir):
+        dir = os.path.join(cls.CACHE_DIR, dir)
+        shutil.rmtree(dir)
+        os.mkdir(dir)
 
     @classmethod
     def LoadFile_(cls, file):
