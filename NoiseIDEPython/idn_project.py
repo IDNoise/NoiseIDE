@@ -247,7 +247,8 @@ class ErlangProject(Project):
     def OnLoadProject(self):
         path = self.GetErlangPath()
         if not path or not os.path.isfile(path):
-            dlg = wx.FileDialog(self.window, "Please select valid Erlang path.")
+            wx.MessageBox("Erlang path not specified or no valid")
+            dlg = wx.FileDialog(self.window, "Please select valid Erlang path to executable (erl.exe)")
             if dlg.ShowModal() == wx.ID_OK:
                 self.userData[self.CONFIG_ERLANG_PATH] = dlg.GetPath()
                 self.SaveData()
