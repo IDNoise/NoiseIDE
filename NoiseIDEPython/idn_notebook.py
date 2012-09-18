@@ -252,7 +252,7 @@ class EditorPanel(wx.Panel):
             self.ShowFind()
         elif keyCode == wx.WXK_ESCAPE and self.findVisible:
             self.HideFind()
-            event.Skip()
+            #event.Skip()
         elif keyCode == wx.WXK_F3 and self.findVisible:
             self.findPanel.OnFind()
         elif keyCode == ord('W') and event.ControlDown():

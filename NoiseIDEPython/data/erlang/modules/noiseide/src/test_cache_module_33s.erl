@@ -1,7 +1,7 @@
 %% @author: Yaroslav 'IDNoise' Nikityshev
 %% @date: 09.09.2012
 
--module(test_cache_module).
+-module(test_cache_module_33s).
 
 %% Include files
 -include("sample.hrl").

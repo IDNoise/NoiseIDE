@@ -198,6 +198,7 @@ class NoiseIDE(wx.Frame):
 
         loadProject(self, projectFile)
         self.project.mEditProject.Enable(True)
+        self.SetTitle(self.project.ProjectName() + " - " + "Noise IDE")
 
     def OnNewErlangProject(self, event):
         ErlangProjectFrom().ShowModal()
@@ -230,5 +231,7 @@ if __name__ == '__main__':
     #import pstats
     #p = pstats.Stats('ideprof')
     #p.strip_dirs().sort_stats(-1).print_stats()
-
-    main()
+    try:
+        main()
+    except Exception, e:
+        print "app error", e

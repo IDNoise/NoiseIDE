@@ -4,9 +4,9 @@
     compile/2, 
     compile_simple/1,
     compile_file_fly/2,
-    generate_includes/0
+    generate_includes/0,
+    compile_yecc/1
 ]).  
-
 
 generate_includes() ->
     Includes = 
@@ -32,7 +32,18 @@ compile(FileName, App) ->
     create_response(FileName, compile_internal(FileName, [{outdir, OutDir} | Includes])).
 
 compile_simple(FileName) -> 
-    create_response(FileName, compile_internal(FileName, [{outdir, filename:dirname(FileName)}])).
+    erlang:display(FileName),
+    case filename:extension(FileName) of
+        ".erl" -> 
+            create_response(FileName, compile_internal(FileName, [{outdir, filename:dirname(FileName)}]));
+        ".yrl" -> 
+            compile_yecc(FileName),
+            create_response(FileName, [])
+    end.
+    
+compile_yecc(FileName) ->
+    ModuleName = filename:rootname(FileName) ++ ".erl",
+    yecc:yecc(FileName, ModuleName).
     
 default_options() ->
     [ 
@@ -62,15 +73,29 @@ compile_file_fly(RealPath, NewPath) ->
     create_response_fly(RealPath, 
                     compile_internal(NewPath, eide_connect:prop(includes), false, RealPath)).
 
+parse_term(String) when is_binary(String) ->
+    parse_term(binary_to_list(String));
+parse_term(String) when is_list(String) ->
+    {ok, Tokens, _} = erl_scan:string(String),
+    {ok, Term} = erl_parse:parse_term(Tokens),
+    Term.
+
+
+
 compile_internal(FileName, Options) ->
     compile_internal(FileName, Options, true, FileName).
 compile_internal(FileName, Options, ToBinary, RealPath) ->
-    Options1 = default_options() ++ Options,
+    Options0 = default_options() ++ Options,
+    Options1 = 
+        case eide_connect:prop(compiler_options) of
+            undefined -> Options0;
+            Str -> Options0 ++ parse_term("[" ++ Str ++ "].")
+        end, 
     Options2 = case ToBinary of 
                    true -> 
                        [debug_info | Options1] -- [strong_validation];
                    _ -> Options1
-               end,
+               end, 
     Result = compile:file(FileName, Options2),
     {E, W} = case Result of 
                  {ok, _Module, Warnings} ->

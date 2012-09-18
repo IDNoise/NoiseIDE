@@ -3,7 +3,7 @@ code_editor:
   foreground: '#ffffff'
   font_name:  consolas
   font_size:  11
-  current_line_background:     '#545451'
+  current_line_background:     '#404040'
   line_number_area_background: '#6d6d70'
   marker_panel_background:     '#6d6d70'
   fold_area_background:        '#6d6d70'
@@ -16,6 +16,12 @@ code_editor:
   error_line_color:            '#7f0000'
   warning_line_color:          '#1a4f50'
   selected_word_marker_color:  '#111111'
+  completer_list_fore:         '#000000'
+  completer_list_back:         '#F4F1BF'
+  completer_help_fore:         '#000000'
+  completer_help_back:         '#F4F1BF'
+  command_text_font_name:  consolas
+  command_text_font_size:  11
   languages:
     erlang:
       default:    fore:#DDDDDD
@@ -24,7 +30,7 @@ code_editor:
       keyword:    fore:#CF6A4C,bold
       atom:       fore:#C3AF75
       variable:   fore:#3387CC
-      comment:    fore:#266755,italic
+      comment:    fore:#518576,italic
       module:     fore:#99CF50
       function:   fore:#E9C062
       moduleattr: fore:#758bc5

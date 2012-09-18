@@ -721,6 +721,11 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         if insertPos:
             self.InsertText(insertPos, fun)
 
+class HtmlWin(wx.html.HtmlWindow):
+    def SetPage(self, text):
+        wx.html.HtmlWindow.SetPage(self, '<body bgcolor="' + ColorSchema.codeEditor["completer_help_back"] +
+                                         '"><font color="' + ColorSchema.codeEditor["completer_help_fore"] + '">' + text + '</font></body>')
+
 class ErlangCompleter(wx.Frame):
     SIZE = (740, 270)
     LIST_SIZE = (320, 150)
@@ -743,7 +748,10 @@ class ErlangCompleter(wx.Frame):
 
         self.list = wx.ListBox(self, size = self.LIST_SIZE,
             style = wx.LB_SORT | wx.LB_SINGLE | wx.WANTS_CHARS)
-        self.helpWindow = wx.html.HtmlWindow(self)
+        self.list.SetBackgroundColour(ColorSchema.codeEditor["completer_list_back"])
+        self.list.SetForegroundColour(ColorSchema.codeEditor["completer_list_fore"])
+
+        self.helpWindow = HtmlWin(self)
 
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.sizer.Add(self.list)
@@ -756,6 +764,11 @@ class ErlangCompleter(wx.Frame):
         self.list.Bind(wx.EVT_LISTBOX, self.OnMouseItemSelected)
         self.list.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
         self.stc.Bind(wx.EVT_MOUSE_EVENTS, self.OnSTCMouseDown)
+        wx.GetApp().Bind(wx.EVT_ACTIVATE_APP, self.OnAppFocusLost)
+
+    def OnAppFocusLost(self, event):
+        self.HideCompleter()
+        event.Skip()
 
     def OnSTCMouseDown(self, event):
         event.Skip()

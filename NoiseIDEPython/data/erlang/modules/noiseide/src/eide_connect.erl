@@ -9,7 +9,7 @@
     send/1,
     set_prop/2 
 ]). 
- 
+
 -record(state, {
     workers,
     fly_compiler,
@@ -20,7 +20,7 @@
 -define(noreply, noreply).
 
 start(Port) ->
-    {ok, LS} = gen_tcp:listen(Port, [binary, {active, false}, {reuseaddr, true}, {packet, 2}]),
+    {ok, LS} = gen_tcp:listen(Port, [binary, {active, false}, {packet, 2}]), %{reuseaddr, true}, 
     ets:new(props, [named_table, public]),
     Pid = spawn(fun() -> accept(LS) end),
     register(?MODULE, Pid).  
@@ -122,7 +122,7 @@ execute_instant_action(set_prop, Binary) ->
     [Prop, Value] = Binary,
     Key = binary_to_atom(Prop, latin1),
     Val = binary_to_list(Value),
-    set_prop(Key, Val),
+    set_prop(Key, Val), 
     %io:format("set p~p~n", [{Key, Val}]), 
     eide_compiler:generate_includes();
 execute_instant_action(remove_prop, Binary) ->

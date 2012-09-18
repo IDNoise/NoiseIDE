@@ -81,7 +81,7 @@ class ProgressTaskManagerDialog(wx.EvtHandler):
             #if (time.time() - self.lastTaskTime > 10 and len(self.tasks) > 0):
                 #Log("####\n 10 seconds from last task done. Tasks left ", len(self.tasks))
                 #Log("\n\t".join([str(t) for t in self.tasks]))
-            if (time.time() - self.lastTaskTime > 15 and len(self.tasks) > 0):
+            if (time.time() - self.lastTaskTime > 10 and len(self.tasks) > 0):
                 #Log("####\n 15 seconds from last task done. Tasks left ", len(self.tasks))
                 #Log("\n\t".join([str(t) for t in self.tasks]))
                 Log("tasks left:", self.tasks)
@@ -114,6 +114,7 @@ class Project(ProgressTaskManagerDialog):
         self.projectFilePath = filePath
         self.projectDir = os.path.dirname(filePath)
         self.projectData = projectData
+        self.oldProjectData = None
 
         if not os.path.isdir(self.USER_DATA_FOLDER):
             os.makedirs(self.USER_DATA_FOLDER)
@@ -233,6 +234,7 @@ class ErlangProject(Project):
 
     CONFIG_ERLANG_PATH = "erlang_path"
     CONFIG_EXCLUDED_DIRS = "excluded_dirs"
+    CONFIG_COMPILER_OPTIONS = "compiler_options"
     CONFIG_FLY_COMPILE = "fly_compile"
     CONFIG_APPS_DIR = "apps_dir"
 
@@ -258,6 +260,7 @@ class ErlangProject(Project):
         self.SetupDirs()
         self.AddTabs()
         self.AddConsoles()
+        self.SetCompilerOptions()
         self.GenerateErlangCache() #test
 
         self.CompileProject() #test
@@ -554,9 +557,22 @@ class ErlangProject(Project):
         writeFile(flyPath, data)
         self.GetShell().CompileFileFly(realPath, flyPath)
 
+    def CompilerOptions(self, projectData = None):
+        if not projectData:
+            projectData = self.projectData
+        return "" if not self.CONFIG_COMPILER_OPTIONS in projectData else projectData[self.CONFIG_COMPILER_OPTIONS]
+
     def UpdateProject(self):
         self.UpdatePaths()
         self.UpdateProjectConsoles()
+        self.SetCompilerOptions()
+
+    def SetCompilerOptions(self):
+        options = self.CompilerOptions().replace("\n", ", ")
+        self.shellConsole.shell.SetProp("compiler_options", options)
+        if self.CompilerOptions() != self.CompilerOptions(self.oldProjectData):
+            self.CompileProject()
+
 
 class FastProjectFileOpenDialog(wx.Dialog):
     def __init__(self, parent, project):
@@ -601,7 +617,6 @@ class FastProjectFileOpenDialog(wx.Dialog):
     def OnSelectCallback(self, values):
         self.Close()
         GetTabMgr().LoadFileLine(values[1])
-
 
 class ErrorsTable(PyGridTableBase):
     def __init__(self, data):
@@ -711,10 +726,9 @@ class ErrorsTableGrid(wx.grid.Grid):
         self.table.data = data
         self.table.ResetView(self, currentRows)
 
-
 class ErlangProjectFrom(wx.Dialog):
     def __init__(self, project = None):
-        wx.Dialog.__init__(self, GetMainFrame(), size = (390, 510), title = "Create\Edit project",
+        wx.Dialog.__init__(self, GetMainFrame(), size = (390, 570), title = "Create\Edit project",
             style = wx.DEFAULT_DIALOG_STYLE | wx.WS_EX_VALIDATE_RECURSIVELY)
 
         self.consoles = {}
@@ -724,6 +738,7 @@ class ErlangProjectFrom(wx.Dialog):
         self.project = project
         if self.project:
             self.SetCurrentValues()
+            self.project.oldProjectData = self.project.projectData.copy()
 
     def CreateForm(self):
         self.projectNameTB = wx.TextCtrl(self, value = "Project_name", size = (270, 20), validator = NotEmptyTextValidator("Title"))
@@ -739,6 +754,9 @@ class ErlangProjectFrom(wx.Dialog):
         self.appsDirTB = wx.TextCtrl(self, value = "apps", size = (270, 20))
         self.appsDirTB.SetToolTipString("Apps folder name")
         self.appsDirTB.Bind(wx.EVT_TEXT, self.OnPathChanged)
+
+        self.compilerOptionsTB = wx.TextCtrl(self, value = "", size = (270, 60), style = wx.TE_MULTILINE)
+        self.compilerOptionsTB.SetToolTipString("Compiler options in form: \n{d, Macro} or {d, Macro, Value}")
 
         self.flyCB = wx.CheckBox(self, label = "Fly compilation")
         self.flyCB.SetValue(True)
@@ -780,7 +798,10 @@ class ErlangProjectFrom(wx.Dialog):
         gSizer.Add(self.erlangPathTB, (3, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
         gSizer.Add(self.erlangPathButton, (3, 2), flag = wx.ALIGN_CENTER)
 
-        gSizer.Add(self.flyCB, (4, 1), flag = wx.ALL | wx.ALIGN_LEFT, border = 4)
+        gSizer.Add(CreateLabel(self, "Compiler options:"), (4, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
+        gSizer.Add(self.compilerOptionsTB, (4, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
+
+        gSizer.Add(self.flyCB, (5, 1), flag = wx.ALL | wx.ALIGN_LEFT, border = 4)
 
         sizer.AddSizer(gSizer)
 
@@ -820,6 +841,7 @@ class ErlangProjectFrom(wx.Dialog):
         self.appsDirTB.Value = self.project.projectData[ErlangProject.CONFIG_APPS_DIR]
         self.erlangPathTB.Value = self.project.projectData[ErlangProject.CONFIG_ERLANG_PATH]
         self.flyCB.Value = self.project.projectData[ErlangProject.CONFIG_FLY_COMPILE]
+        self.compilerOptionsTB.Value = self.project.CompilerOptions()
 
         self.excludedDirList.SetItems(self.project.projectData[ErlangProject.CONFIG_EXCLUDED_DIRS] + self.project.GetApps())
         self.excludedDirList.SetCheckedStrings(self.project.projectData[ErlangProject.CONFIG_EXCLUDED_DIRS])
@@ -878,6 +900,7 @@ class ErlangProjectFrom(wx.Dialog):
         apps = self.appsDirTB.Value
         erlang = self.erlangPathTB.Value
         flyCB = self.flyCB.Value
+        compilerOptions = self.compilerOptionsTB.Value
         excludedDirs = list(self.excludedDirList.GetCheckedStrings())
 
         data = {}
@@ -887,6 +910,7 @@ class ErlangProjectFrom(wx.Dialog):
         data[ErlangProject.CONFIG_ERLANG_PATH] = erlang
         data[ErlangProject.CONFIG_FLY_COMPILE] = flyCB
         data[ErlangProject.CONFIG_EXCLUDED_DIRS] = excludedDirs
+        data[ErlangProject.CONFIG_COMPILER_OPTIONS] = compilerOptions
 
         data[ErlangProject.CONFIG_CONSOLES] = self.consoles
 

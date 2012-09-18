@@ -1,4 +1,7 @@
 apps_dir: !!python/unicode ''
+compiler_options: !!python/unicode '{d, debug}
+
+  {d, mm, 11}'
 consoles:
   !!python/unicode 'Default': {command: !!python/unicode '', cookie: !!python/unicode '123',
     params: !!python/unicode '', sname: !!python/unicode 'cache'}

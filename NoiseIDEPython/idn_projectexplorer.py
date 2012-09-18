@@ -393,7 +393,7 @@ class ProjectExplorer(CT.CustomTreeCtrl):
                     shutil.copytree(what, newName)
                 else:
                     shutil.copy(what, newName)
-            if extension(newName) == ".erl" and newName != name:
+            if extension(newName) == ".erl" and os.path.basename(newName) != os.path.basename(name):
                 oldModuleName = os.path.basename(name)[:-4]
                 newModuleName = os.path.basename(newName)[:-4]
                 self.ReplaceModuleName(newName, oldModuleName, newModuleName)
@@ -523,6 +523,10 @@ class ProjectExplorer(CT.CustomTreeCtrl):
                         updateEditor(oPath, oNewPath)
 
             os.rename(path, newPath)
+            if extension(newName) == ".erl" and os.path.basename(path) != os.path.basename(newPath):
+                oldModuleName = os.path.basename(path)[:-4]
+                newModuleName = os.path.basename(newPath)[:-4]
+                self.ReplaceModuleName(newPath, oldModuleName, newModuleName)
 
         dlg.Destroy()
 

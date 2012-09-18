@@ -16,6 +16,12 @@ code_editor:
   error_line_color:            '#FFA2A2'
   warning_line_color:          '#FFF59F'
   selected_word_marker_color:  '#6699bb'
+  completer_list_fore:         '#000000'
+  completer_list_back:         '#F4F1BF'
+  completer_help_fore:         '#000000'
+  completer_help_back:         '#F4F1BF'
+  command_text_font_name:  'courier new'
+  command_text_font_size:  10
   languages:
     erlang:
       default:    fore:#000000

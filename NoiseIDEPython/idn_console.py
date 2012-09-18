@@ -1,3 +1,4 @@
+from idn_colorschema import ColorSchema
 from idn_global import Log
 from idn_highlight import ErlangHighlighter
 from idn_notebook import ConsolePanel
@@ -37,7 +38,7 @@ class ErlangConsole(wx.Panel):
         self.consoleOut = self.consolePanel.editor
 
         bottomPanel = wx.Panel(splitter)
-        self.commandText = wx.TextCtrl(bottomPanel, wx.NewId(), size = (500, 25), style = wx.TE_MULTILINE)# | wx.TE_RICH)
+        self.commandText = wx.TextCtrl(bottomPanel, wx.NewId(), size = (500, 25), style = wx.TE_MULTILINE | wx.TE_RICH)
         self.commandButton = CreateBitmapButton(bottomPanel, 'exec_command.png', lambda e: self.Exec())
         self.commandButton.SetToolTip( wx.ToolTip("Exec command") )
 
@@ -70,6 +71,10 @@ class ErlangConsole(wx.Panel):
         self.Layout()
 
         self.commandText.Bind(wx.EVT_KEY_DOWN, self.OnCommandTextKeyDown)
+        self.SetDefaultStyleForCommandText()
+        #font_name:  'courier new'
+#font_size:  10
+        #int pointSize, int family, int style, int weight, face
         #self.commandText.Bind(wx.EVT_TEXT, self.OnTextChanged)
 
         self.CreateShell(cwd, params)
@@ -78,6 +83,29 @@ class ErlangConsole(wx.Panel):
         self.lastCommands = []
 
         self.highlighter = ErlangHighlighter()
+
+        self.consolePanel.editor.Bind(wx.EVT_KEY_DOWN, self.OnEditorKeyDown)
+
+    def SetDefaultStyleForCommandText(self):
+        font = wx.Font(pointSize = int(ColorSchema.codeEditor["command_text_font_size"]),
+            family = wx.FONTFAMILY_DEFAULT,
+            style = wx.FONTSTYLE_NORMAL,
+            weight = wx.FONTWEIGHT_NORMAL,
+            face = ColorSchema.codeEditor["command_text_font_name"])
+        consoleCommandStyle = wx.TextAttr(font = font)
+        self.commandText.SetDefaultStyle(consoleCommandStyle)
+
+
+    def OnEditorKeyDown(self, event):
+        event.Skip()
+        if event.GetKeyCode() in [wx.WXK_SHIFT, wx.WXK_CONTROL]:
+            return
+        ch = chr(event.GetKeyCode())
+        if ch.isalpha() or ch.isdigit() or ch.isspace():
+            if event.ShiftDown(): ch = ch.upper()
+            else: ch = ch.lower()
+            self.commandText.AppendText(ch)
+        self.commandText.SetFocus()
 
     def Start(self):
         self.Clear()
@@ -107,8 +135,8 @@ class ErlangConsole(wx.Panel):
             lastCommands.append(cmd)
             self.lastCommands = lastCommands
             self.shell.SendCommandToProcess(cmd)
-        self.commandText.SetValue("")
-        self.commandText.SetInsertionPoint(0)
+        self.commandText.Clear()
+        self.SetDefaultStyleForCommandText()
         self.WriteToConsoleOut(cmd + '\n')
 
     def OnCommandTextKeyDown(self, event):
@@ -119,15 +147,17 @@ class ErlangConsole(wx.Panel):
             else:
                 self.Exec()
         elif keyCode == wx.WXK_ESCAPE:
-            self.commandText.SetValue("")
+            self.commandText.Clear()
         elif event.ControlDown() and self.lastCommands and keyCode == wx.WXK_UP:
             newText = self.lastCommands[-1]
-            self.commandText.SetValue(newText)
+            self.commandText.Clear()
+            self.commandText.WriteText(newText)
             self.lastCommands = self.lastCommands[:-1]
             self.lastCommands.insert(0, newText)
         elif event.ControlDown() and self.lastCommands and keyCode == wx.WXK_DOWN:
             newText = self.lastCommands[0]
-            self.commandText.SetValue(newText)
+            self.commandText.Clear()
+            self.commandText.WriteText(newText)
             self.lastCommands = self.lastCommands[1:]
             self.lastCommands.append(newText)
         else:

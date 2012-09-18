@@ -35,24 +35,30 @@ class ErlangSocketConnection(asyncore.dispatcher):
     def __init__(self):
         asyncore.dispatcher.__init__(self)
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        #self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         #self.socket.setsockopt( socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
         self.socketQueue = Queue()
         self.socketHandler = None
-        self.port = random.randrange(55555, 55600)
+        #self.port = random.randrange(55555, 55600)
+        self.port = self.PickUnusedPort()
 
     def Host(self):
         return "127.0.0.1"
 
-    def Port(self):
-        pass
+    def PickUnusedPort(self):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.bind(('localhost', 0))
+        addr, port = s.getsockname()
+        s.close()
+        return port
 
     def Start(self):
         while True:
             try:
                 self.connect((self.Host(), self.port))
                 break
-            except Exception, e:
+            except Exception ,e:
+                print "connect",  e
                 pass
         self.asyncoreThread = AsyncoreThread()
         self.asyncoreThread.Start()
@@ -129,8 +135,8 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
         self.SetSocketHandler(self._HandleSocketResponse)
 
     def CompileFile(self, file):
-        GetProject().AddTask((self.TASK_COMPILE, file))
-        self._ExecRequest("compile_file", '"{}"'.format(file))
+        GetProject().AddTask((self.TASK_COMPILE, file.lower()))
+        self._ExecRequest("compile_file", '"{}"'.format(erlstr(file)))
 
     def CompileFileFly(self, realPath, flyPath):
         GetProject().AddTask((self.TASK_COMPILE_FLY, realPath.lower()))
@@ -213,7 +219,7 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
             elif res == "gen_erlang_cache":
                 GetProject().ErlangCacheChecked()
             elif res == "connect":
-                Log("socket connected")
+                Log("socket connected. port:", self.port)
 
         except Exception, e:
 
