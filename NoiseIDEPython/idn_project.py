@@ -246,10 +246,10 @@ class ErlangProject(Project):
 
     def OnLoadProject(self):
         path = self.GetErlangPath()
-        if not os.path.isfile(path):
+        if not path or not os.path.isfile(path):
             dlg = wx.FileDialog(self.window, "Please select valid Erlang path.")
             if dlg.ShowModal() == wx.ID_OK:
-                self.projectData[self.CONFIG_ERLANG_PATH] = dlg.GetPath()
+                self.userData[self.CONFIG_ERLANG_PATH] = dlg.GetPath()
                 self.SaveData()
 
         self.errors = {}
@@ -300,7 +300,7 @@ class ErlangProject(Project):
         return os.path.join(self.projectDir, self.projectData[self.CONFIG_APPS_DIR])
 
     def GetErlangPath(self):
-        return self.projectData[self.CONFIG_ERLANG_PATH]
+        return "" if not self.CONFIG_ERLANG_PATH in self.userData else self.userData[self.CONFIG_ERLANG_PATH]
 
     def SetupDirs(self):
         projectCacheDir = os.path.join(ErlangCache.CACHE_DIR, self.ProjectName())
@@ -732,7 +732,7 @@ class ErrorsTableGrid(wx.grid.Grid):
 
 class ErlangProjectFrom(wx.Dialog):
     def __init__(self, project = None):
-        wx.Dialog.__init__(self, GetMainFrame(), size = (390, 570), title = "Create\Edit project",
+        wx.Dialog.__init__(self, GetMainFrame(), size = (450, 600), title = "Create\Edit project",
             style = wx.DEFAULT_DIALOG_STYLE | wx.WS_EX_VALIDATE_RECURSIVELY)
 
         self.consoles = {}
@@ -745,21 +745,21 @@ class ErlangProjectFrom(wx.Dialog):
             self.project.oldProjectData = self.project.projectData.copy()
 
     def CreateForm(self):
-        self.projectNameTB = wx.TextCtrl(self, value = "Project_name", size = (270, 20), validator = NotEmptyTextValidator("Title"))
+        self.projectNameTB = wx.TextCtrl(self, value = "Project_name", size = (300, 20), validator = NotEmptyTextValidator("Title"))
         self.projectNameTB.SetToolTipString("Project name")
 
-        self.projectPathTB = wx.TextCtrl(self, value = "C:\\YourProjectFolder", size = (270, 20), validator = NotEmptyTextValidator("Project dir"))
+        self.projectPathTB = wx.TextCtrl(self, value = "C:\\YourProjectFolder", size = (300, 20), validator = NotEmptyTextValidator("Project dir"))
         self.projectPathTB.SetToolTipString("Path to folder")
         self.projectPathTB.Bind(wx.EVT_TEXT, self.OnPathChanged)
 
         self.projectPathButton = CreateButton(self, "...", self.OnSelectProjectPath)
         self.projectPathButton.MinSize = (25, 25)
 
-        self.appsDirTB = wx.TextCtrl(self, value = "apps", size = (270, 20))
+        self.appsDirTB = wx.TextCtrl(self, value = "apps", size = (300, 20))
         self.appsDirTB.SetToolTipString("Apps folder name")
         self.appsDirTB.Bind(wx.EVT_TEXT, self.OnPathChanged)
 
-        self.compilerOptionsTB = wx.TextCtrl(self, value = "", size = (270, 60), style = wx.TE_MULTILINE)
+        self.compilerOptionsTB = wx.TextCtrl(self, value = "", size = (300, 60), style = wx.TE_MULTILINE)
         self.compilerOptionsTB.SetToolTipString("Compiler options in form: \n{d, Macro} or {d, Macro, Value}")
 
         self.flyCB = wx.CheckBox(self, label = "Fly compilation")
@@ -769,7 +769,7 @@ class ErlangProjectFrom(wx.Dialog):
         self.excludedDirList = wx.CheckListBox(self, choices = [], size = (220, 150))
         self.excludedDirList.SetToolTipString("Directories to exclude from compilation")
 
-        self.erlangPathTB = wx.TextCtrl(self, value = "C:\\Programming\\erl5.9\\bin\\erl.exe", size = (270, 20), validator = PathExistsValidator("Erlang path"))
+        self.erlangPathTB = wx.TextCtrl(self, value = "C:\\Programming\\erl5.9\\bin\\erl.exe", size = (300, 20), validator = PathExistsValidator("Erlang path"))
         self.erlangPathTB.SetToolTipString("Path to erlang executeable. Example: 'C:\\Programming\\erl5.9\\bin\\erl.exe'")
 
         self.erlangPathButton = CreateButton(self, "...", self.OnSelectErlangPath)
@@ -843,7 +843,7 @@ class ErlangProjectFrom(wx.Dialog):
         self.projectPathTB.Disable()
         self.projectPathButton.Disable()
         self.appsDirTB.Value = self.project.projectData[ErlangProject.CONFIG_APPS_DIR]
-        self.erlangPathTB.Value = self.project.projectData[ErlangProject.CONFIG_ERLANG_PATH]
+        self.erlangPathTB.Value = self.project.userData[ErlangProject.CONFIG_ERLANG_PATH]
         self.flyCB.Value = self.project.projectData[ErlangProject.CONFIG_FLY_COMPILE]
         self.compilerOptionsTB.Value = self.project.CompilerOptions()
 
@@ -911,12 +911,14 @@ class ErlangProjectFrom(wx.Dialog):
         data[Project.CONFIG_PROJECT_NAME] = title
         data[Project.CONFIG_PROJECT_TYPE] = "erlang"
         data[ErlangProject.CONFIG_APPS_DIR] = apps
-        data[ErlangProject.CONFIG_ERLANG_PATH] = erlang
         data[ErlangProject.CONFIG_FLY_COMPILE] = flyCB
         data[ErlangProject.CONFIG_EXCLUDED_DIRS] = excludedDirs
         data[ErlangProject.CONFIG_COMPILER_OPTIONS] = compilerOptions
 
         data[ErlangProject.CONFIG_CONSOLES] = self.consoles
+
+        userData = {}
+        userData[ErlangProject.CONFIG_ERLANG_PATH] = erlang
 
         pFile = os.path.join(path, title + ".noiseide.project")
         if not os.path.isdir(path):
@@ -929,8 +931,11 @@ class ErlangProjectFrom(wx.Dialog):
         stream = file(pFile, 'w')
         yaml.dump(data, stream)
 
+        yaml.dump(userData, open(self.project.userDataFile, 'w'))
+
         if self.project:
             self.project.projectData = data
+            self.project.userData[ErlangProject.CONFIG_ERLANG_PATH] = erlang
             wx.CallAfter(self.project.UpdateProject)
         else:
             wx.CallAfter(GetMainFrame().OpenProject, pFile)
