@@ -101,6 +101,11 @@ class EditorNotebook(aui.AuiNotebook):
 
         self.Bind(aui.EVT_AUINOTEBOOK_TAB_RIGHT_UP, self.OnTabRightUp)
         self.Bind(aui.EVT_AUINOTEBOOK_TAB_DCLICK, self.OnTabDClick)
+        self.Bind(aui.EVT_AUINOTEBOOK_PAGE_CHANGED, self.OnPageChanged)
+
+    def OnPageChanged(self, event):
+        if self.GetActiveEditor():
+            self.GetActiveEditor().SetupEditorMenu()
 
     def OnTabDClick(self, event):
         if GetMainFrame().TabMgrPaneInfo.IsMaximized():
@@ -205,6 +210,11 @@ class EditorNotebook(aui.AuiNotebook):
         event.SetEventObject(tabControl)
         event.SetInt(aui.AUI_BUTTON_CLOSE)
         self.OnTabButton(event)
+
+    def GetActiveEditor(self):
+        if self.GetSelection() >= 0:
+            return self[self.GetSelection()]
+        return None
 
     def NavigateBack(self):
         if self.navigationHistoryIndex > 0 and self.navigationHistory:

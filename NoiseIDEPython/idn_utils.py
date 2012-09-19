@@ -67,9 +67,13 @@ def CreateLabel(parent, text):
     return wx.StaticText(parent, label = text)
 
 class Menu(wx.Menu):
-    def AppendMenuItem(self, text, handlerObject, handler):
-        item = self.Append(wx.NewId(), text, text)
+    def AppendMenuItem(self, text, handlerObject, handler, shortcut = None):
+        title = text
+        if shortcut:
+            title += "\t" + shortcut
+        item = self.Append(wx.NewId(), title, text)
         handlerObject.Connect(item.GetId(), -1, wx.wxEVT_COMMAND_MENU_SELECTED, handler)
+
         return item
 
     def AppendCheckMenuItem(self, text, handlerObject, handler, check = False):

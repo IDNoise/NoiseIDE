@@ -135,7 +135,14 @@ class Project(ProgressTaskManagerDialog):
         self.window.MenuBar().Insert(self.menuPos, self.menu, "&Project")
         self.SetupPerspective()
 
+        GetTabMgr().Parent.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
+
     def SetupMenu(self):
+        self.menu.AppendMenuItem('Edit Project', self.window, self.OnEditProject)
+        self.menu.AppendMenuItem('Find in project', self.window, lambda e: self.ShowFindInProject(), "Ctrl-Shift-F")
+        self.menu.AppendMenuItem('Go to file', self.window, lambda e: self.ShowFastOpen(), "Ctrl-O")
+
+    def OnEditProject(self, event):
         pass
 
     def ProjectName(self):
@@ -227,6 +234,22 @@ class Project(ProgressTaskManagerDialog):
         stream = file(self.projectFilePath, 'w')
         yaml.dump(self.projectData, stream)
 
+    def OnKeyDown(self, event):
+        if event.GetKeyCode() == ord('O') and event.ControlDown():
+            self.ShowFastOpen()
+        elif event.GetKeyCode() == ord('F') and event.ControlDown() and event.ShiftDown():
+            self.ShowFindInProject()
+        else:
+            event.Skip()
+
+    def ShowFastOpen(self):
+        dialog = FastProjectFileOpenDialog(GetTabMgr(), self)
+        dialog.ShowModal()
+
+    def ShowFindInProject(self):
+        dialog = FindInProjectDialog.GetDialog(GetTabMgr())
+        dialog.Show()
+        dialog.findText.SetFocus()
 
 class ErlangProject(Project):
     IDE_MODULES_DIR = os.path.join(os.getcwd(), 'data', 'erlang', 'modules', 'noiseide', 'ebin')
@@ -272,7 +295,7 @@ class ErlangProject(Project):
         self.explorer.Bind(exp.EVT_PROJECT_DIR_CREATED, self.OnProjectDirCreated)
 
 
-        GetTabMgr().Parent.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
+
 
         #ErlangCache.LoadCacheFromDir(self.ProjectName())
         #ErlangCache.StartCheckingFolder(self.ProjectName())
@@ -284,11 +307,9 @@ class ErlangProject(Project):
         ErlangCache.LoadCacheFromDir("erlang")
 
     def SetupMenu(self):
-        self.mEditProject = self.menu.AppendMenuItem('Edit Project', self.window, self.OnEditProject)
-        self.mEditProject.Enable(False)
+        Project.SetupMenu(self)
 
         self.menu.AppendSeparator()
-
         self.menu.AppendMenuItem("Regenerate erlang cache", self.window, lambda e: self.RegenerateErlangCache())
         self.menu.AppendMenuItem("Rebuild project", self.window, lambda e: self.CompileProject())
 
@@ -545,17 +566,6 @@ class ErlangProject(Project):
     def GetErrors(self, path):
         if path not in self.errors: return []
         else: return self.errors[path]
-
-    def OnKeyDown(self, event):
-        if event.GetKeyCode() == ord('O') and event.ControlDown():
-            dialog = FastProjectFileOpenDialog(GetTabMgr(), self)
-            dialog.ShowModal()
-        elif event.GetKeyCode() == ord('F') and event.ControlDown() and event.ShiftDown():
-            dialog = FindInProjectDialog.GetDialog(GetTabMgr())
-            dialog.Show()
-            dialog.findText.SetFocus()
-        else:
-            event.Skip()
 
     def CompileFileFly(self, file, realPath, data):
         flyPath = os.path.join(self.flyDir, "fly_" + file)

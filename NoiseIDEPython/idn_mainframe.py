@@ -118,8 +118,6 @@ class NoiseIDE(wx.Frame):
         self.menubar.Append(self.fileMenu, '&File')
 
         self.editorMenu = Menu()
-        self.editorMenu.AppendCheckMenuItem('Show white space', self, self.OnShowWhiteSpace)
-        self.editorMenu.AppendCheckMenuItem('Show EOL', self, self.OnShowEOL)
         self.menubar.Append(self.editorMenu, '&Editor')
 
         helpMenu = Menu()
@@ -140,15 +138,6 @@ class NoiseIDE(wx.Frame):
         form = ConfigEditForm()
         form.ShowModal()
 
-    def OnShowWhiteSpace(self, event):
-        CustomSTC.ShowWhiteSpace = not CustomSTC.ShowWhiteSpace
-        for editor in self.TabMgr.Pages():
-            editor.UpdateOptions()
-
-    def OnShowEOL(self, event):
-        CustomSTC.ShowEOL = not CustomSTC.ShowEOL
-        for editor in self.TabMgr.Pages():
-            editor.UpdateOptions()
 
     def OnHelpAbout(self, event):
         wx.MessageBox("IDE with good functionality for Erlang programming language.\nMade by Yaroslav 'IDNoise' Nikityshev.", "Noise IDE v0.1")
@@ -197,7 +186,7 @@ class NoiseIDE(wx.Frame):
         Config.SetLastProjects(projects)
 
         loadProject(self, projectFile)
-        self.project.mEditProject.Enable(True)
+        #self.project.mEditProject.Enable(True)
         self.SetTitle(self.project.ProjectName() + " - " + "Noise IDE")
 
     def OnNewErlangProject(self, event):

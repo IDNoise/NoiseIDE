@@ -192,6 +192,35 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
             self.Bind(stc.EVT_STC_SAVEPOINTREACHED, self.OnSavePointReached)
         self.OnInit()
 
+        self.editorMenu = GetMainFrame().editorMenu
+        self.SetupEditorMenu()
+
+
+    def SetupEditorMenu(self):
+        for item in self.editorMenu.GetMenuItems():
+            self.editorMenu.RemoveItem(item)
+
+        self.editorMenu.AppendMenuItem('Find in file', GetMainFrame(), self.OnMenuFindInFile, "Ctrl-F")
+        self.editorMenu.AppendMenuItem('Go to line', GetMainFrame(), lambda e: self.ShowGoToLineDialog(), "Ctrl-G")
+        self.editorMenu.AppendSeparator()
+        self.editorMenu.AppendCheckMenuItem('Show white space', GetMainFrame(), self.OnMenuShowWhiteSpace, CustomSTC.ShowWhiteSpace)
+        self.editorMenu.AppendCheckMenuItem('Show EOL', GetMainFrame(), self.OnMenuShowEOL, CustomSTC.ShowEOL)
+       # self.editorMenu.AppendSeparator()
+
+    def OnMenuShowWhiteSpace(self, event):
+        CustomSTC.ShowWhiteSpace = not CustomSTC.ShowWhiteSpace
+        for editor in GetTabMgr().Pages():
+            editor.UpdateOptions()
+
+    def OnMenuShowEOL(self, event):
+        CustomSTC.ShowEOL = not CustomSTC.ShowEOL
+        for editor in GetTabMgr().Pages():
+            editor.UpdateOptions()
+
+    def OnMenuFindInFile(self, event):
+        self.Parent.ShowFind()
+
+
     def UpdateOptions(self):
         self.SetViewWhiteSpace(stc.STC_WS_VISIBLEALWAYS if CustomSTC.ShowWhiteSpace else  stc.STC_WS_INVISIBLE)
         self.SetViewEOL(CustomSTC.ShowEOL)
@@ -269,14 +298,17 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         elif keyCode == wx.WXK_SPACE and event.ControlDown():
             self.OnAutoComplete()
         elif keyCode == ord('G') and event.ControlDown():
-            dlg = wx.TextEntryDialog(self, 'Line:', 'Goto Line', style = wx.OK | wx.CANCEL)
-            dlg.SetValue("")
-            if dlg.ShowModal() == wx.ID_OK:
-                self.GotoLine(int(dlg.Value) - 1)
-            dlg.Destroy()
+            self.ShowGoToLineDialog()
         else:
             return False
         return True
+
+    def ShowGoToLineDialog(self):
+        dlg = wx.TextEntryDialog(self, 'Line:', 'Goto Line', style = wx.OK | wx.CANCEL)
+        dlg.SetValue("")
+        if dlg.ShowModal() == wx.ID_OK:
+            self.GotoLine(int(dlg.Value) - 1)
+        dlg.Destroy()
 
     def Save(self):
         self.savedText = self.GetText()
@@ -451,6 +483,14 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         self.Bind(wx.EVT_LEFT_DOWN, self.OnMouseClick)
         self.Bind(wx.EVT_MIDDLE_DOWN, self.OnMiddleMouseClick)
 
+    def SetupEditorMenu(self):
+        ErlangHighlightedSTCBase.SetupEditorMenu(self)
+        self.editorMenu.AppendSeparator()
+        self.editorMenu.AppendMenuItem('Outline', GetMainFrame(), lambda e: self.ShowOutline(), "Ctrl-H")
+        self.editorMenu.AppendMenuItem('Comment lines', GetMainFrame(), lambda e: self.CommentLines(), "Ctrl-/")
+        if self.ModuleType() == self.TYPE_MODULE:
+            self.editorMenu.AppendMenuItem('Add to export', GetMainFrame(), lambda e: self.AddToExport(), "Ctrl-E")
+
     def SetupLanguageStyles(self):
         ErlangHighlightedSTCBase.SetupLanguageStyles(self)
 
@@ -507,8 +547,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
             self.completer.OnKeyDown(event)
             return True
         elif keyCode == ord('H') and event.ControlDown():
-            dlg = ErlangOutline(self, self.ModuleName())
-            dlg.ShowModal()
+            self.ShowOutline()
             return True
         elif keyCode == ord('/') and event.ControlDown():
             self.CommentLines()
@@ -518,6 +557,10 @@ class ErlangSTC(ErlangHighlightedSTCBase):
             return True
         else:
             return False
+
+    def ShowOutline(self):
+        dlg = ErlangOutline(self, self.ModuleName())
+        dlg.ShowModal()
 
     def CommentLines(self):
         start = self.GetSelectionStart()
@@ -714,12 +757,15 @@ class ErlangSTC(ErlangHighlightedSTCBase):
 
         fun = self.GetTextRange(pos + tokens[0].start, pos + tokens[0].end)
         arity = self.completer.GetFunArity(pos + tokens[0].end)
-        fun = ",\n    {}/{}".format(fun, arity)
+        funStr = "{}/{}".format(fun, arity)
         (exports, insertPos) = self.lexer.GetAllExports()
-        if fun in exports:
+        if funStr in exports:
             return
+        if exports:
+            funStr = ",\n    {}/{}".format(fun, arity)
+
         if insertPos:
-            self.InsertText(insertPos, fun)
+            self.InsertText(insertPos, funStr)
 
 class HtmlWin(wx.html.HtmlWindow):
     def SetPage(self, text):
@@ -767,7 +813,10 @@ class ErlangCompleter(wx.Frame):
         wx.GetApp().Bind(wx.EVT_ACTIVATE_APP, self.OnAppFocusLost)
 
     def OnAppFocusLost(self, event):
-        self.HideCompleter()
+        try:
+            self.HideCompleter()
+        except:
+            pass
         event.Skip()
 
     def OnSTCMouseDown(self, event):

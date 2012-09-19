@@ -75,12 +75,20 @@ class ErlangLexer(BaseLexer):
                 if token.type == ErlangHighlightType.FUNDEC:
                     lineData.functionName = token.value
                     lineData.functionStart = token.start + lineStart
+                    line = startLine - 1
+                    while line > 0:
+                        if self.linesData[line].functionName == token.value:
+                            self.linesData[line].functionEnd = self.stc.GetLineEndPosition(startLine - 1)
+                            #print "dec", line, self.linesData[line].functionName, self.linesData[line].functionStart, self.linesData[line].functionEnd
+                            break
+                        line -= 1
                 if token.type == ErlangHighlightType.FULLSTOP:
                     lineData.functionEnd = token.end + lineStart
                     line = startLine
                     while line > 0:
                         if self.linesData[line].functionName != None:
                             self.linesData[line].functionEnd = token.end + lineStart
+                            #print "stop", line, self.linesData[line].functionName, self.linesData[line].functionStart, self.linesData[line].functionEnd
                             break
                         line -= 1
 
@@ -143,12 +151,15 @@ class ErlangLexer(BaseLexer):
             data = self.linesData[line]
             if data.functionEnd and caretPos > data.functionEnd:
                 break
-            if self.linesData[line].functionName:
-                if data.functionEnd >= caretPos:
+            if data.functionName:
+                end =  data.functionEnd
+                if not end:
+                    end = caretPos
+                if end >= caretPos:
                     return (data.functionName,
                             data.functionStart,
-                            data.functionEnd,
-                            self.stc.GetTextRange(data.functionStart, data.functionEnd))
+                            end,
+                            self.stc.GetTextRange(data.functionStart, end))
                 else:
                     break
             line -= 1
@@ -243,7 +254,7 @@ class ErlangLexer(BaseLexer):
             pos = match.end(0)
             lastInsertPosition = match.end(1)
             result += match.group(1)
-        return (result, lastInsertPosition)
+        return (result.strip(), lastInsertPosition)
 
 #    def UpdateLineData(self, line, tokens):
 #        data = LineData()

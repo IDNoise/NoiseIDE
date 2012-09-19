@@ -56,3 +56,4 @@ class ErlangOutline(wx.Dialog):
         line = self.navigation[event.GetIndex()]
         self.Parent.GotoLine(line - 1)
         self.Close()
+        self.Parent.SetFocus()
