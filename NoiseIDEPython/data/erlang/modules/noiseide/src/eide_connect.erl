@@ -5,6 +5,7 @@
     loop/1,
     accept/1,
     prop/1, 
+    prop/2, 
     worker/0,
     send/1,
     set_prop/2 
@@ -20,7 +21,8 @@
 -define(noreply, noreply).
 
 start(Port) ->
-    {ok, LS} = gen_tcp:listen(Port, [binary, {active, false}, {packet, 2}]), %{reuseaddr, true}, 
+    {ok, LS} = gen_tcp:listen(Port, [binary, {active, false}, {packet, 4}]), %{reuseaddr, true},
+    io:format("started on:~p~n", [Port]),
     ets:new(props, [named_table, public]),
     Pid = spawn(fun() -> accept(LS) end),
     register(?MODULE, Pid).  
@@ -28,7 +30,7 @@ start(Port) ->
 accept(LS) ->
     gen_tcp:controlling_process(LS, self()),
     {ok, Socket} = gen_tcp:accept(LS),
-    %io:format("accepted"),
+    io:format("accepted~n"),
     AcceptResponce = mochijson2:encode({struct, [{response, connect}]}), 
     gen_tcp:send(Socket, AcceptResponce),
     State = #state{
@@ -167,8 +169,12 @@ set_prop(Prop, Value) ->
 
 prop(Prop) ->
     case ets:lookup(props, Prop) of
-        [] -> 
-            %io:format("Prop is not set: ~p~n", [Prop]), 
-            undefined;
+        [] -> undefined;
+        [{Prop, Value}] -> Value
+    end.
+
+prop(Prop, Default) ->
+    case ets:lookup(props, Prop) of
+        [] -> Default;
         [{Prop, Value}] -> Value
     end.
