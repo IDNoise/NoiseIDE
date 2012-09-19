@@ -270,8 +270,7 @@ class FindInProjectDialog(wx.Dialog):
     def OnKeyDown(self, event):
         keyCode = event.GetKeyCode()
         if keyCode == wx.WXK_ESCAPE:
-            self.Parent.sizer.Show(self.Parent.findPanel, False)
-            self.Parent.Layout()
+            self.Hide()
         elif keyCode == wx.WXK_RETURN:
             self.OnFind()
         else:
