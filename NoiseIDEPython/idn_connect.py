@@ -92,13 +92,17 @@ class ErlangSocketConnection(asyncore.dispatcher):
         if recv:
             #print "unpack", struct.unpack('>L', recv)
             msgLen = struct.unpack('>L', recv)[0]
+           # print "len", msgLen
             toReceive = msgLen
-            data = self.socket.recv(msgLen)
-            toReceive -= len(data)
-
+            receved = self.socket.recv(msgLen)
+            data = receved
+            toReceive -= len(receved)
+            #print "to recv", toReceive, "recved", len(data)
             while len(data) != msgLen:
-                data += self.socket.recv(msgLen)
-                toReceive -= len(data)
+                receved = self.socket.recv(toReceive)
+                data += receved
+                toReceive -= len(receved)
+               # print "to recv", toReceive, "recved", len(data)
             #print msgLen, len(data)
             #print data
             if self.socketHandler:
@@ -112,6 +116,9 @@ class ErlangSocketConnection(asyncore.dispatcher):
         request = '{' + '"action": "{}", "data": {}'.format(action, data) + '}'
         #Log("request", request)
         self.socketQueue.put(request)
+
+    def OnClosed(self):
+        pass
 
     def OnConnect(self):
         pass
@@ -287,11 +294,12 @@ class ErlangProcess(Process):
         self.handler = handler
 
     def Stop(self):
+        self.stopped = True
         if self.timer:
             self.timer.Stop()
-        if not self.pid or self.stopped: return
+        if not self.pid or self.stopped:
+            return
         wx.Kill(self.pid, wx.SIGKILL, wx.KILL_CHILDREN)
-        self.stopped = True
 
     def OnTerminate(self, *args, **kwargs):
         if self.timer:
@@ -311,6 +319,11 @@ class ErlangProcessWithConnection(ErlangProcess, ErlangIDEConnectAPI):
     def Stop(self):
         ErlangSocketConnection.Stop(self)
         ErlangProcess.Stop(self)
+
+    def OnClosed(self):
+        print "closed"
+        if not self.stopped:
+            GetProject().OnIDEConnectionClosed()
 
 
 def erlstr(str):

@@ -138,15 +138,23 @@ class ErlangProject(Project):
     def AddConsoles(self):
         #self.shellConsole = ErlangIDEConsole(GetMainFrame(), self.IDE_MODULES_DIR)
         #self.shellConsole.Hide()
+        self.SetupShellConsole()
+
+        self.UpdatePaths()
+
+        self.UpdateProjectConsoles()
+
+    def OnIDEConnectionClosed(self):
+        if self.shellConsole:
+            GetToolMgr().ClosePage(GetToolMgr().FindPageIndexByWindow(self.shellConsole))
+        self.SetupShellConsole()
+
+    def SetupShellConsole(self):
         self.shellConsole = ErlangIDEConsole(GetToolMgr(), self.IDE_MODULES_DIR)
         self.shellConsole.shell.SetProp("cache_dir", os.path.normcase(ErlangCache.CACHE_DIR))
         self.shellConsole.shell.SetProp("project_dir", os.path.normcase(self.AppsPath()))
         self.shellConsole.shell.SetProp("project_name", self.ProjectName())
         GetToolMgr().AddPage(self.shellConsole, "IDE Console")
-
-        self.UpdatePaths()
-
-        self.UpdateProjectConsoles()
 
     def UpdatePaths(self):
         dirs = ""
