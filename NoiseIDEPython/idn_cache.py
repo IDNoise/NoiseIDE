@@ -300,7 +300,8 @@ class ErlangCache:
         for module in cls.moduleData:
             data = cls.moduleData[module]
             if include in data.includes and data.file.endswith(".erl"):
-                result.append(module)
+                result.append(data.file)
+        return result
 
     @classmethod
     def RecordFields(cls, module, record):
