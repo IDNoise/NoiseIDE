@@ -22,7 +22,9 @@ generate_includes() ->
                  end]]
     end,
     %io:format("includes:~p~n", [Includes]),
-    eide_connect:set_prop(includes, Includes). 
+    eide_connect:set_prop(includes, Includes),
+    FlatIncludes = lists:map(fun({i, F}) -> F end, Includes),
+    eide_connect:set_prop(flat_includes, FlatIncludes). 
  
 compile(FileName, App) ->
     OutDir = eide_connect:prop(project_dir) ++ "/" ++ App ++ "/ebin",

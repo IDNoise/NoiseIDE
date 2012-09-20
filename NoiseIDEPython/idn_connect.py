@@ -39,7 +39,6 @@ class ErlangSocketConnection(asyncore.dispatcher):
         #self.socket.setsockopt( socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
         self.socketQueue = Queue()
         self.socketHandler = None
-        #self.port = random.randrange(55555, 55600)
         self.port = self.PickUnusedPort()
 
     def Host(self):
@@ -59,7 +58,6 @@ class ErlangSocketConnection(asyncore.dispatcher):
                 break
             except Exception ,e:
                 print "connect",  e
-                pass
         self.asyncoreThread = AsyncoreThread()
         self.asyncoreThread.Start()
 
@@ -82,16 +80,16 @@ class ErlangSocketConnection(asyncore.dispatcher):
         #print 'handle_write'
         cmd = self.socketQueue.get()
         if cmd:
-            msgLen = struct.pack('>H', len(cmd))
+            msgLen = struct.pack('>L', len(cmd))
             msg = msgLen + cmd
             #print msg
             self.send(msg)
 
     def handle_read(self):
         #print 'handle_read'
-        recv = self.socket.recv(2)
+        recv = self.socket.recv(4)
         if recv:
-            msgLen = struct.unpack('>H', recv)[0]
+            msgLen = struct.unpack('>L', recv)[0]
             data = self.socket.recv(msgLen)
             #print data
             if self.socketHandler:

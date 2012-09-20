@@ -45,10 +45,10 @@ class NoiseIDE(wx.Frame):
             .CloseButton(False).Floatable(False).MinSize(100, 100)
         self.WinMgr.AddPane1(self.TabMgr, self.TabMgrPaneInfo )
 
-        self.ToolMgr = Notebook(self)
+        self.ToolMgr = Notebook(self)#.CaptionVisible(True)
         self.ToolMgrPaneInfo = aui.AuiPaneInfo().Bottom()\
             .MaximizeButton().MinimizeButton().CloseButton(False).Floatable(False)\
-            .BestSize(400, 300).MinSize(100, 100).Name("Tools").CaptionVisible(True).Caption("Tools")\
+            .BestSize(400, 300).MinSize(100, 100).Name("Tools").Caption("Tools").CaptionVisible(False)\
             .MinimizeMode(aui.AUI_MINIMIZE_POS_LEFT | aui.AUI_MINIMIZE_CAPT_SMART)
         self.WinMgr.AddPane1(self.ToolMgr, self.ToolMgrPaneInfo)
 

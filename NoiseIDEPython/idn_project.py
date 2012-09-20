@@ -178,7 +178,7 @@ class Project(ProgressTaskManagerDialog):
         self.explorer = self.EXPLORER_TYPE(self.window, self)
         self.explorer.SetRoot(self.projectDir)
         self.explorer.SetHiddenList(self.HiddenPathsList())
-        self.window.WinMgr.AddPane1(self.explorer, aui.AuiPaneInfo().Left().Caption("Project Explorer")
+        self.window.WinMgr.AddPane1(self.explorer, aui.AuiPaneInfo().Left().Layer(1).Caption("Project Explorer")
             .MinimizeButton().CloseButton(False).BestSize2(300, 600).MinSize(100, 100)
             .MinimizeMode(aui.AUI_MINIMIZE_POS_LEFT | aui.AUI_MINIMIZE_CAPT_SMART))
         self.window.WinMgr.Update()
@@ -457,7 +457,7 @@ class ErlangProject(Project):
 
 
     def FileSaved(self, file):
-        #Log("saved", file)
+        Log("saved", file)
         self.Compile(file)
 
 
@@ -591,7 +591,7 @@ class ErlangProject(Project):
 
 class FastProjectFileOpenDialog(wx.Dialog):
     def __init__(self, parent, project):
-        wx.Dialog.__init__(self, parent, size = (600, 55))
+        wx.Dialog.__init__(self, parent, title = "Open file", size = (600, 55))
         choices = self.PrepareChoices(project)
         self.cb = TextCtrlAutoComplete(
             self,

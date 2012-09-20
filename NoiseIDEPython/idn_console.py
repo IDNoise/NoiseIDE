@@ -71,7 +71,7 @@ class ErlangConsole(wx.Panel):
         self.Layout()
 
         self.commandText.Bind(wx.EVT_KEY_DOWN, self.OnCommandTextKeyDown)
-        self.SetDefaultStyleForCommandText()
+        self.SetDefaultFontForCommandText()
         #font_name:  'courier new'
 #font_size:  10
         #int pointSize, int family, int style, int weight, face
@@ -86,19 +86,18 @@ class ErlangConsole(wx.Panel):
 
         self.consolePanel.editor.Bind(wx.EVT_KEY_DOWN, self.OnEditorKeyDown)
 
-    def SetDefaultStyleForCommandText(self):
+    def SetDefaultFontForCommandText(self):
         font = wx.Font(pointSize = int(ColorSchema.codeEditor["command_text_font_size"]),
             family = wx.FONTFAMILY_DEFAULT,
             style = wx.FONTSTYLE_NORMAL,
             weight = wx.FONTWEIGHT_NORMAL,
             face = ColorSchema.codeEditor["command_text_font_name"])
-        consoleCommandStyle = wx.TextAttr(font = font)
-        self.commandText.SetDefaultStyle(consoleCommandStyle)
+        self.commandText.SetFont(font)
 
 
     def OnEditorKeyDown(self, event):
         event.Skip()
-        if event.GetKeyCode() in [wx.WXK_SHIFT, wx.WXK_CONTROL]:
+        if event.GetKeyCode() in [wx.WXK_SHIFT, wx.WXK_CONTROL] or event.ControlDown():
             return
         ch = chr(event.GetKeyCode())
         if ch.isalpha() or ch.isdigit() or ch.isspace():
@@ -136,7 +135,6 @@ class ErlangConsole(wx.Panel):
             self.lastCommands = lastCommands
             self.shell.SendCommandToProcess(cmd)
         self.commandText.Clear()
-        self.SetDefaultStyleForCommandText()
         self.WriteToConsoleOut(cmd + '\n')
 
     def OnCommandTextKeyDown(self, event):

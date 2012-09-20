@@ -195,6 +195,16 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.editorMenu = GetMainFrame().editorMenu
         self.SetupEditorMenu()
 
+    def OnClose(self):
+        if self.saved == False and os.path.exists(self.filePath):
+            dial = wx.MessageDialog(None,
+                'You have unsaved changes in this document. Do you want to save it?'.format(file),
+                'File has unsaved changed',
+                wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
+            if dial.ShowModal() == wx.ID_YES:
+                self.Save()
+            else:
+                self.OnFileSaved()
 
     def SetupEditorMenu(self):
         for item in self.editorMenu.GetMenuItems():
@@ -913,7 +923,7 @@ class ErlangCompleter(wx.Frame):
 
     def _PrepareData(self, data):
         self.list.Clear()
-        for d in data:
+        for d in set(data):
             help = None
             if isinstance(d, Function):
                 if True:

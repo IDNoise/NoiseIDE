@@ -354,16 +354,19 @@ generate(ModuleName, FilePath, DocsFilePath) ->
                    undefined -> Content;
                    _ -> merge_with_docs(Content, DocsFilePath)
                end,
-    %io:format("~p~n", [Content]),
+    io:format("~p~n", [Content]),
     Incls = sets:to_list(sets:from_list(Content1#content.includes)),
     Content1#content{includes = Incls, file = FilePath, module_name = ModuleName}.
 
 generate_from_source(Path) -> 
     %{ok, Source} = epp_dodger:parse_file(Path),
-    {ok, Source} = epp:parse_file(Path, [], []),
+    {ok, Source} = epp:parse_file(Path, eide_connect:prop(flat_includes, []), []),
     {ok, SourceMacros}  = epp_dodger:parse_file(Path),
-    %io:format("epp:~p~n~n~n~n", [Source]),
+    io:format("props:~p~n", [eide_connect:prop(flat_includes, [])]),
+    io:format("props:~p~n", [eide_connect:prop(includes, [])]),
     %io:format("epp_dodger:~p~n", [SourceMacros]),
+    io:format("SyntaxTree~p~n~n~n", [erl_syntax:form_list(Source)]),
+    %io:format("SyntaxTree Macros~p~n", [erl_syntax:form_list(SourceMacros)]),
     Content = parse_tree(erl_syntax:form_list(SourceMacros), #content{file = Path, last_file_attr = Path}),
     {#content{
         file = Path, 

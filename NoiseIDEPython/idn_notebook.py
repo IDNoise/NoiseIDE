@@ -104,6 +104,12 @@ class EditorNotebook(aui.AuiNotebook):
         self.Bind(aui.EVT_AUINOTEBOOK_TAB_RIGHT_UP, self.OnTabRightUp)
         self.Bind(aui.EVT_AUINOTEBOOK_TAB_DCLICK, self.OnTabDClick)
         self.Bind(aui.EVT_AUINOTEBOOK_PAGE_CHANGED, self.OnPageChanged)
+        self.Bind(aui.EVT_AUINOTEBOOK_PAGE_CLOSE, self.OnPageClose)
+
+    def OnPageClose(self, event):
+        page = event.GetSelection()
+        self[page].OnClose()
+
 
     def OnNavigationKeyNotebook(self, event):
         def OnKeyUp(self, event):
