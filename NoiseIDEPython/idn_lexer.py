@@ -72,7 +72,7 @@ class ErlangLexer(BaseLexer):
                 self.stc.SetStyling(len(token.value), token.type)
                 lastEnd  = lineStart + token.end
 #            self.UpdateLineData(startLine, tokens)
-                if token.type == ErlangHighlightType.FUNDEC:
+                if token.type == ErlangHighlightType.FUNDEC and tokens[0].value != "-spec":
                     lineData.functionName = token.value
                     lineData.functionStart = token.start + lineStart
                     line = startLine - 1
@@ -86,7 +86,7 @@ class ErlangLexer(BaseLexer):
                     lineData.functionEnd = token.end + lineStart
                     line = startLine
                     while line > 0:
-                        if self.linesData[line].functionName != None:
+                        if self.linesData[line].functionName != None and self.linesData[line].functionEnd == None:
                             self.linesData[line].functionEnd = token.end + lineStart
                             #print "stop", line, self.linesData[line].functionName, self.linesData[line].functionStart, self.linesData[line].functionEnd
                             break

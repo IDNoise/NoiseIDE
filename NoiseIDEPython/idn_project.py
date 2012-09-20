@@ -457,7 +457,7 @@ class ErlangProject(Project):
 
 
     def FileSaved(self, file):
-        Log("saved", file)
+        #Log("saved", file)
         self.Compile(file)
 
 

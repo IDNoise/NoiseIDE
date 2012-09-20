@@ -133,6 +133,28 @@ class ModuleData:
 
 class ErlangCache:
 
+    ERLANG_TYPES = {
+        ExportedType(None, None, "integer", "..-1 0 1 ..", 0),
+        ExportedType(None, None, "term", "any()", 0),
+        ExportedType(None, None, "boolean", "'false' | 'true'", 0),
+        ExportedType(None, None, "byte", "0..255", 0),
+        ExportedType(None, None, "char", "0..16#10ffff", 0),
+        ExportedType(None, None, "non_neg_integer", "0..", 0),
+        ExportedType(None, None, "pos_integer", "1..", 0),
+        ExportedType(None, None, "neg_integer", "..-1", 0),
+        ExportedType(None, None, "number", "integer() | float()", 0),
+        ExportedType(None, None, "list", "[any()]", 0),
+        ExportedType(None, None, "maybe_improper_list", "maybe_improper_list(any(), any())", 0),
+        ExportedType(None, None, "string", "[char()]", 0),
+        ExportedType(None, None, "nonempty_string", "[char(),...]", 0),
+        ExportedType(None, None, "iolist", "maybe_improper_list(char() | binary() | iolist(), binary() | [])", 0),
+        ExportedType(None, None, "module", "atom()", 0),
+        ExportedType(None, None, "mfa", "{atom(),atom(),byte()}", 0),
+        ExportedType(None, None, "node", "atom()", 0),
+        ExportedType(None, None, "timeout", "'infinity' | non_neg_integer()", 0),
+        ExportedType(None, None, "no_return", "none()", 0),
+    }
+
     toLoad = []
 
     @classmethod
@@ -319,8 +341,12 @@ class ErlangCache:
         for typeData in cls.moduleData[module].exportedTypes:
             if typeData.name == type:
                 return typeData
+        for typeData in cls.ERLANG_TYPES:
+            if typeData.name == type:
+                return typeData
         return None
 
+    @classmethod
     def ModuleExportedTypes(cls, module):
         if not cls.TryLoad(module): return None
         return cls.moduleData[module].exportedTypes
@@ -335,6 +361,19 @@ class ErlangCache:
         module = "erlang"
         if not cls.TryLoad(module): return []
         return [fun for fun in cls.moduleData[module].Functions() if isinstance(fun, Function) and fun.bif == True]
+
+    @classmethod
+    def Bif(cls, name, arity):
+        funs = []
+        for fun in cls.Bifs():
+            if fun.name == name:
+                funs.append(fun)
+        for fun in funs:
+            if fun.arity == arity:
+                return fun
+        if funs:
+            return funs[0]
+        return None
 
     @classmethod
     def Macroses(cls, module):

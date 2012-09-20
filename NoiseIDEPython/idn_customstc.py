@@ -675,7 +675,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                     start = lineStart
                     end = lineEnd
 
-        if self.navigateTo:
+        if self.navigateTo and self.navigateTo[0]:
             self.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
             self.SetIndicatorCurrent(1)
             self.IndicatorFillRange(start, end - start)
@@ -882,12 +882,12 @@ class ErlangCompleter(wx.Frame):
                 else:
                     self.prefix = fValue.strip()
                 if self.moduleType == ErlangSTC.TYPE_MODULE:
-                    print self.stc.lexer.IsInFunction()
                     if self.stc.lexer.IsInFunction():
                         data += ErlangCache.ModuleFunctions(self.module, False)
                         data += ErlangCache.Bifs()
                     else:
                         data += ErlangCache.ModuleExportedTypes(self.module)
+                        data += ErlangCache.ERLANG_TYPES
 
                 data += ErlangCache.AllModules()
 
@@ -896,7 +896,6 @@ class ErlangCompleter(wx.Frame):
                 i = 1 if fValue == ":" else 2
                 moduleName = tokens[i].value
                 self.prefix = "" if fValue == ":" else fValue
-                print self.stc.lexer.IsInFunction()
                 if self.stc.lexer.IsInFunction():
                     data = ErlangCache.ModuleFunctions(moduleName)
                 else:
@@ -1081,12 +1080,17 @@ class ErlangCompleter(wx.Frame):
             if not data:
                 data = ErlangCache.ModuleExportedData(module + ".hrl", fun)
                 if not data:
-                    return
-            help = self._ExportedTypeHelp(data)
+                    data = ErlangCache.Bif(fun, arity)
+                    if not data:
+                        return
+                    help = self._FunctionHelp(data)
+                else:
+                    help = self._ExportedTypeHelp(data)
         else:
             help = self._FunctionHelp(data)
         self.ShowHelp(help)
-        return (data.moduleData.file, data.line)
+        file = data.moduleData.file if data.moduleData else None
+        return (file, data.line)
 
     def GetFunArity(self, pos):
         open = ['[', '(', '{']
