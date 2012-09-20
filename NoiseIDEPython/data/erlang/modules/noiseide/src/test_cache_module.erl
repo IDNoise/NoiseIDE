@@ -10,7 +10,7 @@
 -export([
      x/0
 ]).    
--define(XssssX, ololasdasdado).   
+-define(XssssX, ololasdasdado).  
 -type beam_instr() :: 'bs_init_writable' | 'fclearerror' | 'if_end'
                     | 'remove_message' | 'return' | 'send' | 'timeout'
                     | tuple().  %% XXX: Very underspecified - FIX THIS 
@@ -21,7 +21,7 @@
 
 
 %%%============================  ======= ================================
-     
+      
 -record(ololo, {       
     field_1 :: beam_instr(),  
     field_2 :: atom() | boolean() | ololoxxx,
@@ -42,7 +42,9 @@ xxx() ->
 -define(X, yy).
 -endif.  
   
-x() -> io:format("~p~n", [?X]).
+x() -> 
+    xxx(),
+    io:format("~p~n", [?X]).
    
  
           

@@ -5,7 +5,8 @@
     compile_simple/1,
     compile_file_fly/2,
     generate_includes/0,
-    compile_yecc/1
+    compile_yecc/1,
+    compile_with_option/3
 ]).  
 
 generate_includes() ->
@@ -18,9 +19,9 @@ generate_includes() ->
                 [{i, "../include"}| [{i,Ai} || A <- Apps, End <- ["src", "include"],
                  begin
                      Ai = AppsPath ++ "/"++ A ++"/" ++ End,
-                     filelib:is_dir(Ai)
+                     filelib:is_dir(Ai) 
                  end]]
-    end,
+    end, 
     %io:format("includes:~p~n", [Includes]),
     eide_connect:set_prop(includes, Includes),
     FlatIncludes = lists:map(fun({i, F}) -> F end, Includes),
@@ -43,6 +44,21 @@ compile_simple(FileName) ->
             create_response(FileName, [])
     end.
     
+%d:/projects/noiseide/noiseidepython/data/erlang/modules/noiseide/src/eide_compiler.erl
+%eide_compiler:compile_with_option("d:/projects/noiseide/noiseidepython/data/erlang/modules/noiseide/src/eide_compiler.erl", "noiseide", 'S').
+    
+    
+compile_with_option(FileName, App, Option) -> 
+    OutDir = eide_connect:prop(project_dir) ++ "/" ++ App ++ "/ebin",
+    Includes = eide_connect:prop(includes),
+    compile:file(FileName, [{outdir, OutDir}, Option | Includes]),
+    File = OutDir ++ "/" ++ filename:rootname(filename:basename(FileName)) ++ "." ++ atom_to_list(Option),
+    {ok, Data} = file:read_file(File),
+    mochijson2:encode({struct, [{response, compile_option},
+                                {option, Option},
+                                {path, iolist_to_binary(FileName)},
+                                {result, iolist_to_binary(Data)}]}).
+
 compile_yecc(FileName) ->
     ModuleName = filename:rootname(FileName) ++ ".erl",
     yecc:yecc(FileName, ModuleName).

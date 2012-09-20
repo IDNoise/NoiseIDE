@@ -13,6 +13,7 @@ class Config:
     COLOR_SCHEMA = "color_schema"
     USER_NAME = "user_name"
     LAST_PROJECT_LIST = "last_project_list"
+    RUNTIMES = "runtimes"
 
     @classmethod
     def load(cls):
@@ -35,10 +36,10 @@ class Config:
         ColorSchema.load(cls.ColorSchema())
 
     @classmethod
-    def GetProp(cls, prop):
+    def GetProp(cls, prop, default = None):
         if prop in cls.data:
             return cls.data[prop]
-        return None
+        return default
 
     @classmethod
     def SetProp(cls, prop, value):
@@ -47,11 +48,15 @@ class Config:
 
     @classmethod
     def UserName(cls):
-        return (cls.data[cls.USER_NAME] if cls.USER_NAME in cls.data else "NoiseIDE User")
+        return cls.data[cls.USER_NAME] if cls.USER_NAME in cls.data else "NoiseIDE User"
 
     @classmethod
     def ColorSchema(cls):
-        return (cls.data[cls.COLOR_SCHEMA] if cls.COLOR_SCHEMA in cls.data else "dark")
+        return cls.data[cls.COLOR_SCHEMA] if cls.COLOR_SCHEMA in cls.data else "dark"
+
+    @classmethod
+    def Runtimes(cls):
+        return cls.data[cls.RUNTIMES] if cls.RUNTIMES in cls.data else {}
 
     @classmethod
     def LastProjects(cls):

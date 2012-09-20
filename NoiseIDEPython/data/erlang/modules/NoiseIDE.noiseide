@@ -1,11 +1,8 @@
 apps_dir: !!python/unicode ''
-compiler_options: !!python/unicode '{d, debug}
-
-  {d, mm, 11}'
+compiler_options: !!python/unicode ''
 consoles:
   !!python/unicode 'Default': {command: !!python/unicode '', cookie: !!python/unicode '123',
     params: !!python/unicode '', sname: !!python/unicode 'cache'}
 excluded_dirs: []
-fly_compile: true
 project_name: !!python/unicode 'NoiseIDE'
 project_type: erlang

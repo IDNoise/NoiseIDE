@@ -1,4 +1,6 @@
 from wx.lib.agw.aui.auibook import TabNavigatorWindow
+from idn_erlangstc import ErlangSTC
+from idn_marker_panel import MarkerPanel
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
@@ -8,7 +10,7 @@ from wx.aui import wxEVT_COMMAND_AUINOTEBOOK_TAB_MIDDLE_UP
 from idn_findreplace import FindInFilePanel
 from idn_global import GetProject, GetWinMgr, GetMainFrame
 from idn_utils import extension, Menu
-from idn_customstc import CustomSTC, ErlangSTC, YAMLSTC, PythonSTC, MarkerPanel, ConsoleSTC
+from idn_customstc import CustomSTC, YAMLSTC, PythonSTC, ConsoleSTC
 
 EXT_STC_TYPE = {
     ".erl": ErlangSTC,
@@ -110,7 +112,6 @@ class EditorNotebook(aui.AuiNotebook):
         page = event.GetSelection()
         self[page].OnClose()
 
-
     def OnNavigationKeyNotebook(self, event):
         def OnKeyUp(self, event):
             if event.GetKeyCode() == wx.WXK_CONTROL:
@@ -133,6 +134,10 @@ class EditorNotebook(aui.AuiNotebook):
     def OnPageChanged(self, event):
         if self.GetActiveEditor():
             self.GetActiveEditor().SetupEditorMenu()
+        oldEditor = None
+        if event.GetOldSelection() >= 0:
+            oldEditor = self[event.GetOldSelection()]
+        self._AddToHistory(self.GetActiveEditor(), oldEditor)
 
     def OnTabDClick(self, event):
         if GetMainFrame().TabMgrPaneInfo.IsMaximized():
@@ -195,17 +200,26 @@ class EditorNotebook(aui.AuiNotebook):
             editorPanel.editor.SetFocus()
             return  editorPanel.editor
 
-    def LoadFileLine(self, file, line = 0, addToHistory = True):
+    def LoadFileLine(self, file, line = 0, addToHistory = True, fromLine = None):
+        prevEditor = self.GetActiveEditor()
         editor = self.LoadFile(file)
         editor.GotoLine(line)
         if addToHistory:
-            self.navigationHistory = self.navigationHistory[:self.navigationHistoryIndex + 1]
-            self.navigationHistory.append((file, line))
-            self.navigationHistoryIndex = len(self.navigationHistory) - 1
-            #print self.navigationHistoryIndex, "history",  self.navigationHistory
+            self._AddToHistory(editor, prevEditor, fromLine)
         self.UpdateNavToolbar()
         editor.EnsureVisibleEnforcePolicy(line)
         return editor
+
+    def _AddToHistory(self, new, prev = None, prevLine = 0):
+        self.navigationHistory = self.navigationHistory[:self.navigationHistoryIndex + 1]
+        if prev:
+            prevFile = prev.filePath
+            if not self.navigationHistory or self.navigationHistory[-1] != (prevFile, prevLine):
+                self.navigationHistory.append((prevFile, prevLine))
+        file = new.filePath
+        line = new.CurrentLine
+        self.navigationHistory.append((file, line))
+        self.navigationHistoryIndex = len(self.navigationHistory) - 1
 
     def FindPageIndexByPath(self, path):
         for index in range(self.GetPageCount()):

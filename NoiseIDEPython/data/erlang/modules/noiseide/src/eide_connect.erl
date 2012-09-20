@@ -14,7 +14,7 @@
 -record(state, {
     workers,
     fly_compiler,
-    erlang_cache_generator,
+    erlang_cache_generator, 
     socket
 }).
 
@@ -88,7 +88,7 @@ worker() ->
                 case Answer of
                     ?noreply -> ignore;
                     _ ->
-                        %io:format("Answer:~p~n", [Answer]),
+                        %io:format("Answer:~p~n", [byte_size(term_to_binary(Answer))]),
                         gen_tcp:send(Socket, Answer)
                 end
             catch Error:Reason -> 
@@ -132,8 +132,8 @@ execute_instant_action(remove_prop, Binary) ->
     ets:delete(props, Key).
 
 
-execute_action(gen_erlang_cache, _Binary) -> 
-    eide_cache:gen_erlang_cache(),
+execute_action(gen_erlang_cache, RuntimeBinary) ->
+    eide_cache:gen_erlang_cache(binary_to_list(RuntimeBinary)),
     done(gen_erlang_cache);
 execute_action(rpc, Binary) -> 
     [ModuleB, FunB] = Binary,
@@ -156,13 +156,16 @@ execute_action(compile_file, PathBinary) ->
     Path = binary_to_list(PathBinary),
     %io:format("compile_file~p~n", [Path]),  
     eide_compiler:compile_simple(Path);
+execute_action(compile_option, Data) ->
+    [FileName, App, Option] = Data,
+    eide_compiler:compile_with_option(binary_to_list(FileName), binary_to_list(App), binary_to_atom(Option, latin1));
 execute_action(compile_project_file, PathBinary) ->
     [FileName, App] = PathBinary,
     %io:format("compile_project_file~p~n", [{FileName, App}]), 
     eide_compiler:compile(binary_to_list(FileName), binary_to_list(App));
 execute_action(Action, Data) ->
     io:format("Unknown action ~p with data ~p~n", [Action, Data]),
-    undefined.
+    ?noreply.
 
 set_prop(Prop, Value) ->
     ets:insert(props, {Prop, Value}).

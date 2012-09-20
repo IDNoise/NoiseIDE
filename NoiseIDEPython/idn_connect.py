@@ -13,7 +13,7 @@ import asyncore
 import json
 import random
 import wx
-from idn_global import GetProject, Log
+from idn_global import GetProject, Log, GetMainFrame
 
 class AsyncoreThread(Thread):
     def __init__(self):
@@ -88,12 +88,22 @@ class ErlangSocketConnection(asyncore.dispatcher):
     def handle_read(self):
         #print 'handle_read'
         recv = self.socket.recv(4)
+        #print recv
         if recv:
+            #print "unpack", struct.unpack('>L', recv)
             msgLen = struct.unpack('>L', recv)[0]
+            toReceive = msgLen
             data = self.socket.recv(msgLen)
+            toReceive -= len(data)
+
+            while len(data) != msgLen:
+                data += self.socket.recv(msgLen)
+                toReceive -= len(data)
+            #print msgLen, len(data)
             #print data
             if self.socketHandler:
                 self.socketHandler(data)
+            #print msgLen, "to handler"
 
     def SetSocketHandler(self, handler):
         self.socketHandler = handler
@@ -172,13 +182,16 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
 
 
     def GenerateErlangCache(self):
-        self._ExecRequest("gen_erlang_cache", '[]')
+        self._ExecRequest("gen_erlang_cache", '"{}"'.format( GetProject().GetErlangRuntime()))
 
     def GenerateProjectCache(self):
         self._ExecRequest("gen_project_cache", '[]')
 
     def AddPath(self, path):
         self._ExecRequest("add_path", '"{}"'.format(erlstr(path)))
+
+    def CompileOption(self, file, app, option):
+        self._ExecRequest("compile_option", '["{0}", "{1}", "{2}"]'.format(erlstr(file), app, option))
 
     def RemovePath(self, path):
         self._ExecRequest("add_path", '"{}"'.format(erlstr(path)))
@@ -216,12 +229,19 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
                 GetProject().TaskDone("Generated cache for {}".format(path), (self.TASK_GEN_FILE_CACHE, path.lower()))
             elif res == "gen_erlang_cache":
                 GetProject().ErlangCacheChecked()
+            elif res == "compile_option":
+                path = pystr(js["path"])
+                option = js["option"]
+                data = js["result"]
+                wx.CallAfter(GetProject().OnCompileOptionResult, path, option, data)
+
             elif res == "connect":
                 Log("socket connected. port:", self.port)
 
         except Exception, e:
 
             Log("===== connection exception ", text, e)
+
 
 class ErlangProcess(Process):
     def __init__(self, cwd = os.getcwd(), params = []):
@@ -285,6 +305,7 @@ class ErlangProcessWithConnection(ErlangProcess, ErlangIDEConnectAPI):
     def Start(self):
         ErlangProcess.Start(self)
         self.SendCommandToProcess("eide_connect:start({}).".format(self.port))
+        time.sleep(1)
         ErlangSocketConnection.Start(self)
 
     def Stop(self):

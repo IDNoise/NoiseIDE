@@ -1,5 +1,5 @@
 from idn_colorschema import ColorSchema
-from idn_global import Log
+from idn_global import Log, GetTabMgr, GetMainFrame
 from idn_highlight import ErlangHighlighter
 from idn_notebook import ConsolePanel
 
@@ -139,12 +139,7 @@ class ErlangConsole(wx.Panel):
 
     def OnCommandTextKeyDown(self, event):
         keyCode = event.GetKeyCode()
-        if keyCode == wx.WXK_RETURN:
-            if event.ControlDown():
-                self.commandText.AppendText("\n")
-            else:
-                self.Exec()
-        elif keyCode == wx.WXK_ESCAPE:
+        if keyCode == wx.WXK_ESCAPE:
             self.commandText.Clear()
         elif event.ControlDown() and self.lastCommands and keyCode == wx.WXK_UP:
             newText = self.lastCommands[-1]
@@ -158,6 +153,14 @@ class ErlangConsole(wx.Panel):
             self.commandText.WriteText(newText)
             self.lastCommands = self.lastCommands[1:]
             self.lastCommands.append(newText)
+        elif keyCode in [wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER] and event.AltDown():
+            editor = GetTabMgr().GetActiveEditor()
+            if editor: editor.SetFocus()
+        elif keyCode == wx.WXK_RETURN:
+            if event.ControlDown():
+                self.commandText.AppendText("\n")
+            else:
+                self.Exec()
         else:
             event.Skip()
 
@@ -208,6 +211,12 @@ class ErlangIDEConsole(ErlangConsole):
 
     def CreateShell(self, cwd, params):
         self.shell = connect.ErlangProcessWithConnection(cwd)
-        self.shell.SetOutputHandler(self.WriteToConsoleOut)
+        self.shell.SetOutputHandler(self.WriteToConsoleAndLog)
 
 
+    def WriteToConsoleAndLog(self, text):
+        text = "\n".join([re.sub(self.promptRegexp, "", line) for line in text.split("\n")])
+        self.consoleOut.Append(text)
+
+        GetMainFrame().logFile.write(text)
+        GetMainFrame().logFile.flush()

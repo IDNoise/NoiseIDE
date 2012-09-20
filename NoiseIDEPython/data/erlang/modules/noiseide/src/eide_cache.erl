@@ -17,7 +17,7 @@
     %generate_html_file/3, 
     ignores/0,
     gen_file_cache/1,
-    gen_erlang_cache/0, 
+    gen_erlang_cache/1, 
     gen_project_cache/0   
 ]).
 
@@ -91,10 +91,13 @@ gen_file_cache(File) ->
             end
     end. 
 
-gen_erlang_cache() ->
-    io:format("Checking cache for erlang libs..."),
-    create_cache_for_erlang_libs(eide_connect:prop(cache_dir) ++ "/erlang", ignores()),
-    io:format("...Done").
+gen_erlang_cache(Runtime) ->
+    Dir = eide_connect:prop(cache_dir) ++ "/erlang/" ++ Runtime,
+    io:format("Checking cache for erlang libs ~p~n", [Dir]),
+    file:make_dir(Dir),
+    %io:format("Create cache dir:~p~n", [filelib:ensure_dir(Dir)]),
+    create_cache_for_erlang_libs(Dir, ignores()),
+    io:format("Checking cache for erlang libs......Done~n").
 
 gen_project_cache() ->
     io:format("Checking cache for project..."),
@@ -354,7 +357,7 @@ generate(ModuleName, FilePath, DocsFilePath) ->
                    undefined -> Content;
                    _ -> merge_with_docs(Content, DocsFilePath)
                end,
-    io:format("~p~n", [Content]),
+    %io:format("~p~n", [Content]), 
     Incls = sets:to_list(sets:from_list(Content1#content.includes)),
     Content1#content{includes = Incls, file = FilePath, module_name = ModuleName}.
 
@@ -362,13 +365,13 @@ generate_from_source(Path) ->
     %{ok, Source} = epp_dodger:parse_file(Path),
     {ok, Source} = epp:parse_file(Path, eide_connect:prop(flat_includes, []), []),
     {ok, SourceMacros}  = epp_dodger:parse_file(Path),
-    io:format("props:~p~n", [eide_connect:prop(flat_includes, [])]),
-    io:format("props:~p~n", [eide_connect:prop(includes, [])]),
+    %io:format("props:~p~n", [eide_connect:prop(flat_includes, [])]),
+    %io:format("props:~p~n", [eide_connect:prop(includes, [])]),
     %io:format("epp_dodger:~p~n", [SourceMacros]),
-    io:format("SyntaxTree~p~n~n~n", [erl_syntax:form_list(Source)]),
+    %io:format("SyntaxTree~p~n~n~n", [erl_syntax:form_list(Source)]),
     %io:format("SyntaxTree Macros~p~n", [erl_syntax:form_list(SourceMacros)]),
     Content = parse_tree(erl_syntax:form_list(SourceMacros), #content{file = Path, last_file_attr = Path}),
-    {#content{
+    {#content{ 
         file = Path, 
         last_file_attr = Path, 
         macros = Content#content.macros, 

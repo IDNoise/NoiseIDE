@@ -162,7 +162,7 @@ class ErlangCache:
         cls.project = project
         cls.CACHE_DIR = os.path.join(GetMainFrame().cwd, "cache", "erlang")
 
-        cls.ERLANG_LIBS_CACHE_DIR =  os.path.join(cls.CACHE_DIR, "erlang")
+        cls.ERLANG_LIBS_CACHE_DIR =  os.path.join(cls.CACHE_DIR, "erlang", project.GetErlangRuntime())
         otherCacheDir =  os.path.join(cls.CACHE_DIR, "other")
         for dir in [cls.CACHE_DIR, cls.ERLANG_LIBS_CACHE_DIR, otherCacheDir]:
             if not os.path.isdir(dir):

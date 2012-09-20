@@ -1,3 +1,7 @@
+import sys
+from idn_erlang_dialogs import ErlangOptionsDialog
+from idn_erlang_project import ErlangProject
+from idn_erlang_project_form import ErlangProjectFrom
 from idn_utils import Menu, GetImage
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
@@ -11,7 +15,7 @@ from idn_winmanager import Manager
 from idn_notebook import  Notebook, EditorNotebook, ConsolePanel
 from idn_config import Config, ConfigEditForm
 import idn_global
-from idn_project import loadProject, ErlangProjectFrom
+from idn_project import loadProject, Project
 
 class NoiseIDE(wx.Frame):
     def __init__(self, *args, **kwargs):
@@ -35,6 +39,8 @@ class NoiseIDE(wx.Frame):
 
         self.SetupMenu()
 
+        Project.TYPE_PROJECT_DICT["erlang"] = ErlangProject
+
 
         self.TabMgr = EditorNotebook(self)
         self.TabMgr.SetArtProvider(aui.VC71TabArt())
@@ -52,10 +58,11 @@ class NoiseIDE(wx.Frame):
             .MinimizeMode(aui.AUI_MINIMIZE_POS_LEFT | aui.AUI_MINIMIZE_CAPT_SMART)
         self.WinMgr.AddPane1(self.ToolMgr, self.ToolMgrPaneInfo)
 
-        self.logPanel = ConsolePanel(self.ToolMgr)
-        self.log = self.logPanel.editor
-        self.log.SetReadOnly(True)
-        self.ToolMgr.AddPage(self.logPanel, "Log")
+        #self.logPanel = ConsolePanel(self.ToolMgr)
+        #self.log = self.logPanel.editor
+        #self.log.SetReadOnly(True)
+        #self.ToolMgr.AddPage(self.logPanel, "Log")
+        #self.ToolMgr.
 
         #self.WinMgr.MaximizePane()
 
@@ -65,7 +72,17 @@ class NoiseIDE(wx.Frame):
 
         self.WinMgr.Update()
 
-        wx.CallAfter(self.TryLoadLastProject)
+        args = sys.argv[1:]
+        if args:
+            path = args[0]
+            if os.path.isfile(path) and path.endswith("noiseide"):
+                wx.CallAfter(self.OpenProject, path)
+            else:
+                wx.CallAfter(self.TryLoadLastProject)
+        else:
+            wx.CallAfter(self.TryLoadLastProject)
+
+        self.logFile = open(os.path.join(self.cwd, "ide.log"), 'w')
 
         #self.TabMgr.Bind(aui.EVT_AUINOTEBOOK_PAGE_CHANGED, self.OnNotebookPageChanged)
         #self.OpenProject("D:\\Projects\\GIJoe\\server\\gijoe.noiseide.project")
@@ -76,10 +93,12 @@ class NoiseIDE(wx.Frame):
 #            self.editorMenu.Enable(item.GetId(), self.TabMgr.GetSelection() != -1)
 
     def Log(self, text):
-        self.log.Append(text)
+        self.logFile.write(text)
+        self.logFile.flush()
+        #self.log.Append(text)
 
-    def ClearLog(self):
-        self.log.Clear()
+#    def ClearLog(self):
+#        self.log.Clear()
 
     def TryLoadLastProject(self):
         lastProject = Config.GetProp("last_project")
@@ -98,6 +117,7 @@ class NoiseIDE(wx.Frame):
        # self.fileMenu.AppendSeparator()
         projectsMenu = Menu()
         projectsMenu.AppendMenuItem('Erlang', self, self.OnNewErlangProject)
+
         self.fileMenu.AppendMenu(wx.NewId(), "New project", projectsMenu)
         self.fileMenu.AppendMenuItem('Open Project', self, self.OnOpenProject)
 
@@ -120,6 +140,13 @@ class NoiseIDE(wx.Frame):
         self.editorMenu = Menu()
         self.menubar.Append(self.editorMenu, '&Editor')
 
+        languagesMenu = Menu()
+        self.menubar.Append(languagesMenu, "Languages")
+        erlangMenu = Menu()
+        languagesMenu.AppendMenu(wx.NewId(), 'Erlang', erlangMenu)
+        erlangMenu.AppendMenuItem("Edit Options", self, lambda e: self.SetupRuntimes())
+        erlangMenu.AppendCheckMenuItem("Fly Compilation", self, self.OnCheckErlangFlyCompilation, Config.GetProp("erlang_fly_compilation", True))
+
         helpMenu = Menu()
         helpMenu.AppendMenuItem("About", self, self.OnHelpAbout)
         self.menubar.Append(helpMenu, '&Help')
@@ -133,6 +160,10 @@ class NoiseIDE(wx.Frame):
         self.Bind(wx.EVT_TOOL, lambda e: self.TabMgr.NavigateForward(), self.navForwardT)
 
         self.toolbar.Realize()
+
+    def OnCheckErlangFlyCompilation(self, event):
+        currentValue = Config.GetProp("erlang_fly_compilation")
+        Config.SetProp("erlang_fly_compilation", not currentValue)
 
     def OnEditOptions(self, event):
         form = ConfigEditForm()
@@ -164,7 +195,7 @@ class NoiseIDE(wx.Frame):
         dialog = wx.FileDialog(
             self,
             message = "Select project",
-            wildcard = "*.noiseide.project",
+            wildcard = "*.noiseide",
             style = wx.FD_OPEN | wx.FD_FILE_MUST_EXIST
         )
         if dialog.ShowModal() == wx.ID_OK:
@@ -175,7 +206,7 @@ class NoiseIDE(wx.Frame):
     def OpenProject(self, projectFile):
         if self.project:
             self.project.Close()
-        self.ClearLog()
+        #self.ClearLog()
         projectFile = os.path.normcase(projectFile)
         Config.SetProp("last_project", projectFile)
 
@@ -190,6 +221,7 @@ class NoiseIDE(wx.Frame):
         self.SetTitle(self.project.ProjectName() + " - " + "Noise IDE")
 
     def OnNewErlangProject(self, event):
+        self.CheckRuntimes()
         ErlangProjectFrom().ShowModal()
 
     def OnClose(self, event):
@@ -201,6 +233,22 @@ class NoiseIDE(wx.Frame):
     def OnQuit(self, event):
         self.Close()
 
+    def CheckRuntimes(self):
+        availableRuntimes = {}
+        if Config.Runtimes():
+            for r in Config.Runtimes():
+                if  os.path.isfile(Config.Runtimes()[r]):
+                    availableRuntimes[r] = Config.Runtimes()[r]
+
+        Config.SetProp(Config.RUNTIMES, availableRuntimes)
+
+        while not Config.Runtimes():
+            wx.MessageBox("Add at least one erlang runtime!", "Error")
+            self.SetupRuntimes()
+
+    def SetupRuntimes(self):
+        dlg = ErlangOptionsDialog(self)
+        dlg.ShowModal()
 #    def OnEvent(self, event):
 #        event.Skip()
 
