@@ -137,6 +137,7 @@ class EditorNotebook(aui.AuiNotebook):
         oldEditor = None
         if event.GetOldSelection() >= 0:
             oldEditor = self[event.GetOldSelection()]
+            oldEditor.completer.HideCompleter()
         self._AddToHistory(self.GetActiveEditor(), oldEditor)
 
     def OnTabDClick(self, event):

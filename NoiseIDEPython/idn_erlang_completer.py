@@ -322,7 +322,7 @@ class ErlangCompleter(wx.Frame):
                 help = self._ExportedTypeHelp(data)
         else:
             help = self._FunctionHelp(data)
-
+        #print "fun help", fun, prefix, pos,  help
         self.ShowHelp(help)
         file = data.moduleData.file if data.moduleData else None
         return (file, data.line)
@@ -376,6 +376,7 @@ class ErlangCompleter(wx.Frame):
         macrosData = ErlangCache.MacrosData(self.module, macros)
         if not macrosData: return
         help = self._MacrosHelp(macrosData)
+        #print "macros help", macros,  help
         self.ShowHelp(help)
         return (macrosData.moduleData.file, macrosData.line)
 

@@ -3,3 +3,11 @@
 /NoiseIDEPython/build
 /NoiseIDEPython/noiseide.yaml
 /NoiseIDEPython/.idea/workspace.xml
+/NoiseIDEPython/data/erlang/modules/noiseide/ebin/eide_cache.S
+/NoiseIDEPython/data/erlang/modules/noiseide/ebin/eide_compiler.E
+/NoiseIDEPython/data/erlang/modules/noiseide/ebin/eide_compiler.P
+/NoiseIDEPython/data/erlang/modules/noiseide/ebin/eide_compiler.S
+/NoiseIDEPython/data/erlang/modules/noiseide/ebin/eide_connect.E
+/NoiseIDEPython/data/erlang/modules/noiseide/ebin/eide_connect.P
+/NoiseIDEPython/data/erlang/modules/noiseide/ebin/eide_connect.S
+/NoiseIDEPython/ide.log

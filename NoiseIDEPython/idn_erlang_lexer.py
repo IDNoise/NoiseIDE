@@ -109,7 +109,7 @@ class ErlangLexer(BaseLexer):
         caretPos = self.stc.GetCurrentPos()
         while line > 0:
             data = self.linesData[line]
-            print line, data.functionName, data.functionEnd
+            #print line, data.functionName, data.functionEnd
             if data.functionEnd and caretPos > data.functionEnd: return False
             if data.functionName: return not data.functionEnd or data.functionEnd >= caretPos
             line -= 1
