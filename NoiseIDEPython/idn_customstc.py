@@ -210,7 +210,8 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         for item in self.editorMenu.GetMenuItems():
             self.editorMenu.RemoveItem(item)
 
-        self.editorMenu.AppendMenuItem('Find in file', GetMainFrame(), self.OnMenuFindInFile, "Ctrl-F")
+        self.editorMenu.AppendMenuItem('Find in file', GetMainFrame(), lambda e: self.Parent.ShowFind(), "Ctrl-F")
+        self.editorMenu.AppendMenuItem('Incremental find in file', GetMainFrame(), lambda e: self.Parent.ShowFind(True), "Alt-F")
         self.editorMenu.AppendMenuItem('Go to line', GetMainFrame(), lambda e: self.ShowGoToLineDialog(), "Ctrl-G")
         self.editorMenu.AppendSeparator()
         self.editorMenu.AppendCheckMenuItem('Show white space', GetMainFrame(), self.OnMenuShowWhiteSpace, Config.GetProp("show_white_space", False))
@@ -231,8 +232,6 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         for editor in GetTabMgr().Pages():
             editor.UpdateOptions()
 
-    def OnMenuFindInFile(self, event):
-        self.Parent.ShowFind()
 
 
     def UpdateOptions(self):
@@ -292,6 +291,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
 
     def HandleKeyDownEvent(self, event):
         keyCode = event.GetKeyCode()
+        #print keyCode
         if keyCode in [wx.WXK_DOWN, wx.WXK_UP] and event.ControlDown() and event.ShiftDown():
             offset = -1 if keyCode == wx.WXK_UP else 1
             startLine = self.LineFromPosition(self.GetSelectionStart())
@@ -311,11 +311,55 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
             self.Save()
         elif keyCode == wx.WXK_SPACE and event.ControlDown():
             self.OnAutoComplete()
+        elif ((keyCode == ord('K') and event.ControlDown() and event.ShiftDown()) or
+            (keyCode == ord(',') and event.ControlDown())):
+            self.GoToPrevOccurence()
+        elif ((keyCode == ord('K') and event.ControlDown()) or
+              (keyCode == ord('.') and event.ControlDown())):
+            self.GoToNextOccurence()
         #elif keyCode == ord('G') and event.ControlDown():
         #    self.ShowGoToLineDialog()
         else:
             return False
         return True
+
+    def GetWordUnderCursor(self):
+        start = self.WordStartPosition(self.CurrentPos, True)
+        end = self.WordEndPosition(self.CurrentPos, True)
+        if start == end:
+            return None
+        return self.GetTextRange(start, end)
+
+    def GoToPrevOccurence(self):
+        self.GoToOccurence(False)
+
+    def GoToNextOccurence(self):
+        self.GoToOccurence()
+
+    def GoToOccurence(self, down = True):
+        word = self.GetWordUnderCursor()
+        fun = self.SearchNext if down else self.SearchPrev
+        if not word: return
+        startPos = self.CurrentPos
+        for i in range(2):
+            self.SetAnchor(self.CurrentPos)
+            self.SearchAnchor()
+            pos = fun(0, word)
+            if pos >= 0:
+                self.GotoPos(pos + int(len(word) / 2))
+#                if down:
+#                    self.GotoPos(pos + int(len(word) / 2))
+#                    self.SetAnchor(pos)
+#                else:
+#                    self.GotoPos(pos + int(len(word) / 2))
+#                    self.SetAnchor(pos + int(len(word) / 2))
+                return
+            else:
+                if i == 0:
+                    if down:  self.SetCurrentPos(0)
+                    else: self.SetCurrentPos(self.Length)
+                else:
+                    self.SetCurrentPos(startPos)
 
     def ShowGoToLineDialog(self):
         dlg = wx.TextEntryDialog(self, 'Line:', 'Goto Line', style = wx.OK | wx.CANCEL)

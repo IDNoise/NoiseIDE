@@ -1,4 +1,4 @@
-
+from idn_window_utils import IDNCustomTreeCtrl
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
@@ -10,6 +10,7 @@ import wx.lib.agw.customtreectrl as CT
 from idn_global import GetTabMgr, GetProject, GetToolMgr, Log
 from idn_utils import CreateButton, extension, writeFile, readFile, CreateBitmapButton
 from wx.combo import ComboCtrl, ComboPopup
+import idn_projectexplorer as exp
 
 class FindInFilePanel(wx.Panel):
     def __init__(self, parent, editor):
@@ -50,13 +51,15 @@ class FindInFilePanel(wx.Panel):
 
         self.findText.Bind(wx.EVT_KEY_UP, self.OnFindKeyUp)
 
+        self.incremental = False
+
     def OnFindKeyUp(self, event):
         event.Skip()
         keyCode = event.GetKeyCode()
         if keyCode == wx.WXK_RETURN and self.IsShown:
             self.OnFind()
 
-        if self.findText.Value:
+        if self.incremental and self.findText.Value:
             self.OnFind()
             if self.findSuccessful:
                 anchor = self.editor.GetAnchor()
@@ -170,7 +173,7 @@ class FindInProjectDialog(wx.Dialog):
     dialog = None
 
     @classmethod
-    def GetDialog(cls, parent):
+    def GetDialog(cls, parent = None):
         if not FindInProjectDialog.dialog:
             FindInProjectDialog.dialog = FindInProjectDialog(parent)
         return FindInProjectDialog.dialog
@@ -211,32 +214,35 @@ class FindInProjectDialog(wx.Dialog):
         if not self.textToFind in self.findText.Items:
             self.findText.Append(self.textToFind)
 
-        results = []
+        results = {}
         regexp = self.PrepareRegexp()
         files = GetProject().explorer.GetAllFiles()
         for file in sorted(files):
-            try:
-                result = []
-                lineNumber = 0
-                if file in GetTabMgr().OpenedFiles():
-                    fileText = GetTabMgr().FindPageByPath(file).GetText().split("\n")
-                else:
-                    fileText = open(file, "r")
-                for lineText in fileText:
-                    end = 0
-                    while True:
-                        m = regexp.search(lineText, end)
-                        if not m: break
-                        start = m.start()
-                        end = m.end()
-                        result.append(SearchResult(file, lineNumber, lineText, start, end))
-                    lineNumber += 1
-                if result:
-                    results.append((file, result))
-            except Exception, e:
-                Log("find in project error", e)
-                continue
-        self.FillFindResultsTable(results, len(files))
+            result = self.SearchInFile(file, regexp)
+            if result:
+                results[file] = result
+        self.FillFindResultsTable(results, len(files), regexp)
+
+    def SearchInFile(self, file, regexp):
+        try:
+            result = []
+            lineNumber = 0
+            if file in GetTabMgr().OpenedFiles():
+                fileText = GetTabMgr().FindPageByPath(file).GetText().split("\n")
+            else:
+                fileText = open(file, "r")
+            for lineText in fileText:
+                end = 0
+                while True:
+                    m = regexp.search(lineText, end)
+                    if not m: break
+                    start = m.start()
+                    end = m.end()
+                    result.append(SearchResult(file, lineNumber, lineText, start, end))
+                lineNumber += 1
+            return result
+        except Exception, e:
+            Log("find in project error", e)
 
     def OnReplace(self, event):
         self.textToFind = self.findText.Value
@@ -272,12 +278,12 @@ class FindInProjectDialog(wx.Dialog):
         #print "search", pattern
         return re.compile(pattern, flags)
 
-    def FillFindResultsTable(self, results, filesCount):
+    def FillFindResultsTable(self, results, filesCount, regexp):
         if not FindInProjectDialog.resultsTable:
             FindInProjectDialog.resultsTable = ErrorsTree(GetToolMgr())
             GetToolMgr().AddPage(self.resultsTable, "Find Results")
         GetToolMgr().SetSelection(GetToolMgr().GetPageIndex(FindInProjectDialog.resultsTable))
-        FindInProjectDialog.resultsTable.SetResults(results, filesCount)
+        FindInProjectDialog.resultsTable.SetResults(results, filesCount, regexp)
 
     def OnKeyDown(self, event):
         keyCode = event.GetKeyCode()
@@ -313,12 +319,50 @@ def ReplaceInFile(file, regexp, replacement):
     except Exception, e:
         Log("replace in project error: '", file, e)
 
-class ErrorsTree(CT.CustomTreeCtrl):
+class ErrorsTree(IDNCustomTreeCtrl):
     def __init__(self, parent):
-        CT.CustomTreeCtrl.__init__(self, parent)
+        IDNCustomTreeCtrl.__init__(self, parent)
+        self.results = []
+        self.filesCount = 0
+        self.regexp = None
         self.Bind(CT.EVT_TREE_ITEM_ACTIVATED, self.OnActivateItem)
+        GetProject().explorer.Bind(exp.EVT_PROJECT_FILE_CREATED, self.OnProjectFileCreated)
+        GetProject().explorer.Bind(exp.EVT_PROJECT_FILE_MODIFIED, self.OnProjectFileModified)
+        GetProject().explorer.Bind(exp.EVT_PROJECT_FILE_DELETED, self.OnProjectFileDeleted)
 
-    def SetResults(self, results, filesCount):
+    def OnProjectFileCreated(self, event):
+        if self.regexp:
+            result = FindInProjectDialog.GetDialog().SearchInFile(event.File, self.regexp)
+            self.results[event.File] = result
+            self.UpdateResults()
+
+    def OnProjectFileModified(self, event):
+        if self.regexp and event.File in self.results:
+            result = FindInProjectDialog.GetDialog().SearchInFile(event.File, self.regexp)
+            self.results[event.File] = result
+            self.UpdateResults()
+
+    def OnProjectFileDeleted(self, event):
+        if self.regexp and event.File in self.results:
+            result = FindInProjectDialog.GetDialog().SearchInFile(event.File, self.regexp)
+            self.results[event.File] = result
+            self.UpdateResults()
+
+    def UpdateResults(self):
+        expanded = []
+        for node in self.GetItemChildren(self.GetRootItem()):
+            if self.IsExpanded(node):
+                expanded.append(self.GetPyData(node).file)
+        print expanded
+        self.SetResults(self.results, self.filesCount, self.regexp)
+        for node in self.GetItemChildren(self.GetRootItem()):
+            if self.GetPyData(node).file in expanded:
+                self.Expand(node)
+
+    def SetResults(self, results, filesCount, regexp):
+        self.results = results
+        self.filesCount = filesCount
+        self.regexp = regexp
         self.DeleteAllItems()
         rootNode = self.AddRoot("0 results in {0} files".format(filesCount))
         self.SetPyData(rootNode, ErrorsTreeItemPyData())
@@ -327,10 +371,13 @@ class ErrorsTree(CT.CustomTreeCtrl):
 
         self.SetItemHasChildren(rootNode, True)
         resultsCount = 0
-        for (file, res) in results:
+        for (file, res) in results.items():
+            if len(res) == 0:
+                continue
             resultsCount += len(res)
             fileLabel = file.replace(GetProject().projectDir + os.sep, "")
             fileNode = self.AppendItem(rootNode, "{0}: {1} results".format(fileLabel, len(res)))
+
             self.SetPyData(fileNode, ErrorsTreeItemPyData(file))
             self.SetItemHasChildren(fileNode, True)
             for result in res:

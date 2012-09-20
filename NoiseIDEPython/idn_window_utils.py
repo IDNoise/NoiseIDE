@@ -1,5 +1,8 @@
+from exceptions import Exception
 import os
 import wx
+import wx.lib.agw.customtreectrl as CT
+from idn_global import Log
 
 __author__ = 'Yaroslav'
 
@@ -63,3 +66,17 @@ class NotEmptyTextValidator(BasicValidator):
             return self.Error()
         else:
             return self.Ok()
+
+
+class IDNCustomTreeCtrl(CT.CustomTreeCtrl):
+    def GetItemChildren(self, item):
+        try:
+            children = []
+            child, cookie = self.GetFirstChild(item)
+            while child:
+                children.append(child)
+                child, cookie = self.GetNextChild(item, cookie)
+            return children
+        except Exception, e:
+            Log("Get item children error", e)
+            return []

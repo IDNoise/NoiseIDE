@@ -1,18 +1,14 @@
+from idn_window_utils import IDNCustomTreeCtrl
+
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
-import re
 import os
 import wx
-import time
-import subprocess
 import shutil
 import wx.lib.agw.customtreectrl as CT
-from idn_utils import extension, Menu, writeFile, CreateButton
-from idn_findreplace import ReplaceInProject, ReplaceInFile
+from idn_utils import extension, Menu, CreateButton
 from idn_directoryinfo import DirectoryChecker
 from idn_global import GetTabMgr, GetMainFrame, Log
-from idn_cache import readFile
-from idn_config import Config
 
 
 ICON_SIZE = 16
@@ -42,13 +38,13 @@ class ProjectExplorerFileEvent(wx.PyCommandEvent):
         wx.PyCommandEvent.__init__(self, evtType, evtId, **kwargs)
         self.File = file
 
-class ProjectExplorer(CT.CustomTreeCtrl):
+class ProjectExplorer(IDNCustomTreeCtrl):
     FILE, DIRECTORY_OPEN, DIRECTORY_CLOSED = range(3)
     INTERVAL = 1
 
     def __init__(self, parent, project):
         style = wx.TR_MULTIPLE | wx.DIRCTRL_3D_INTERNAL | wx.TR_HAS_BUTTONS
-        CT.CustomTreeCtrl.__init__(self, parent, agwStyle = style)
+        IDNCustomTreeCtrl.__init__(self, parent, agwStyle = style)
 
         self.project = project
         self.root = None
@@ -268,18 +264,6 @@ class ProjectExplorer(CT.CustomTreeCtrl):
             return id
         print "not found"
         return None
-
-    def GetItemChildren(self, item):
-        try:
-            children = []
-            child, cookie = self.GetFirstChild(item)
-            while child:
-                children.append(child)
-                child, cookie = self.GetNextChild(item, cookie)
-            return children
-        except Exception, e:
-            Log("Get item children error", e)
-            return []
 
     def SplitOnItemsFromRoot(self, path):
         #print "split", path, self.root
@@ -509,11 +493,6 @@ class ProjectExplorer(CT.CustomTreeCtrl):
 
             if os.path.isfile(path):
                 if path in GetTabMgr().OpenedFiles():
-                    if path.endswith(".erl"):
-                        (oldModuleName, ext) = os.path.splitext(os.path.basename(path))
-                        (newModuleName, ext) = os.path.splitext(os.path.basename(newPath))
-                        self.ReplaceOccurencesInProject(path, oldModuleName, newModuleName)
-
                     updateEditor(path, newPath)
 
             if os.path.isdir(path):
@@ -523,23 +502,9 @@ class ProjectExplorer(CT.CustomTreeCtrl):
                         updateEditor(oPath, oNewPath)
 
             os.rename(path, newPath)
-            if extension(newName) == ".erl" and os.path.basename(path) != os.path.basename(newPath):
-                oldModuleName = os.path.basename(path)[:-4]
-                newModuleName = os.path.basename(newPath)[:-4]
-                self.ReplaceModuleName(newPath, oldModuleName, newModuleName)
 
         dlg.Destroy()
 
-    def ReplaceOccurencesInProject(self, path, oldModuleName, newModuleName):
-        self.ReplaceModuleName(path, oldModuleName, newModuleName)
-        what = r"\b" + oldModuleName + ":"
-        on = newModuleName + ":"
-        ReplaceInProject(re.compile(what, re.MULTILINE | re.DOTALL), on, [".erl", ".hrl"])
-
-    def ReplaceModuleName(self, path, oldModuleName, newModuleName):
-        what = "-module\(" + oldModuleName + "\)"
-        on = "-module(" + newModuleName + ")"
-        ReplaceInFile(path, re.compile(what, re.MULTILINE | re.DOTALL), on)
 
     def DeleteItemByPath(self, path):
         id = self.FindItemByPath(path)
@@ -664,90 +629,6 @@ class PythonProjectExplorer(ProjectExplorer):
     def OnMenuNewFile(self, event):
         print "on menu new file", self.GetPyData(self.eventItem)
 
-class ErlangProjectExplorer(ProjectExplorer):
-    def FillNewSubMenu(self, newMenu):
-        newMenu.AppendMenuItem("New Module", self, lambda e:
-            self.CreateFromTemplate("module.erl", "New Module", "module_1"))
-        newMenu.AppendMenuItem("New Header", self, self.OnMenuNewHeader)
-        newMenu.AppendMenuItem("New Application", self, self.OnMenuNewApplication)
-        menu = Menu()
-        menu.AppendMenuItem("Gen Server", self, lambda e:
-            self.CreateFromTemplate("gen_server.erl", "Gen server", "gen_server_1"))
-        menu.AppendMenuItem("Gen Event", self, lambda e:
-            self.CreateFromTemplate("gen_event.erl", "Gen event", "gen_event_1"))
-        menu.AppendMenuItem("Gen FSM", self, lambda e:
-            self.CreateFromTemplate("gen_fsm.erl", "Gen fsm", "gen_fsm_1"))
-        menu.AppendMenuItem("Supervisor", self, lambda e:
-            self.CreateFromTemplate("supervisor.erl", "Supervisor", "supervisor_1"))
-        menu.AppendMenuItem("Application", self, lambda e:
-            self.CreateFromTemplate("application.erl", "Application", "application_1"))
-        menu.AppendMenuItem("App Src", self, lambda e:
-            self.CreateFromTemplate("app.src", "App Src", "application_1", ".app.src", "Enter application name:"))
-        newMenu.AppendMenu(wx.NewId(), "Template", menu)
-
-    def DefaultMask(self):
-        return [".erl", ".hrl", ".config", ".c", ".cpp", ".bat", ".igor", ".src", ".app"]
-
-    def OnMenuNewHeader(self, event):
-        (_, path) = self.RequestName("New Header", "Enter header name", "new_header")
-        path = path + ".hrl"
-        if path and not os.path.isfile(path):
-            writeFile(path, "")
-            GetTabMgr().LoadFileLine(path)
-
-    def OnMenuNewApplication(self, event):
-        (name, path) = self.RequestName("New Application", "Enter application name", "new_application")
-        if not path or os.path.exists(path):
-            wx.MessageBox("Folder {} exists.".format(path), "Error")
-            return
-        os.mkdir(path)
-        srcPath = os.path.join(path, "src")
-        os.mkdir(srcPath)
-        os.mkdir(os.path.join(path, "include"))
-        os.mkdir(os.path.join(path, "priv"))
-
-        appName = name + "_app"
-        supName = name + "_sup"
-        appModulePath = os.path.join(srcPath, appName + ".erl")
-        supModulePath = os.path.join(srcPath, supName + ".erl")
-        appSrcPath = os.path.join(srcPath, name + ".app.src")
-
-        app = self._GetTemplate("application.erl")
-        app = app.replace("[module_name]", appName)
-        app = app.replace("'TopSupervisor'", supName)
-
-        sup = self._GetTemplate("supervisor.erl")
-        sup = sup.replace("[module_name]", supName)
-
-        appSrc = self._GetTemplate("app.src")
-        appSrc = appSrc.replace("[module_name]", name)
-
-        writeFile(appModulePath, app)
-        writeFile(supModulePath, sup)
-        writeFile(appSrcPath, appSrc)
-        GetTabMgr().LoadFileLine(appModulePath)
-        GetTabMgr().LoadFileLine(supModulePath)
-        GetTabMgr().LoadFileLine(appSrcPath)
-
-
-    def DefaultExcludeDirs(self):
-        return ProjectExplorer.DefaultExcludeDirs(self) + ["ebin", ".settings"]
-
-    def _GetTemplate(self, template):
-        path = os.path.join(GetMainFrame().cwd, "data", "erlang", "templates", template)
-        data = readFile(path)
-        data = data.replace("[username]", Config.UserName())
-        data = data.replace("[date]", time.strftime("%d.%m.%Y"))
-        return data
-
-    def CreateFromTemplate(self, template, title, defaultValue = "new_module_name", ext = ".erl", prompt = "Enter module name:"):
-        (module, path) = self.RequestName(title, prompt, defaultValue)
-        path = path + ext
-        if path and not os.path.isfile(path):
-            data = self._GetTemplate(template)
-            data = data.replace("[module_name]", module)
-            writeFile(path, data)
-            GetTabMgr().LoadFileLine(path)
 
 class MaskEditor(wx.Dialog):
     def __init__(self, parent):

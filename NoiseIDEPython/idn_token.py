@@ -44,8 +44,8 @@ class ErlangTokenizer:
             |(?P<fundec>^(?!fun\()[a-z][a-zA-Z_0-9]*\()
             |(?P<var>[A-Z_][a-zA-Z_0-9]*)
             |(?P<moduleattr>^-[a-z][a-z_]*)
+            |(?P<number>[0-9]{1,2}\#[0-9a-z]*|[0-9]*\.?[0-9]+)
             |(?P<record>\#[a-z][a-z_]*)
-            |(?P<number>[0-9]*\.?[0-9]+)
             |(?P<macros>\?[a-zA-Z][a-zA-Z_0-9]*)
             |(?P<atom>'.+?'|[a-z][a-zA-Z_0-9]*)
             |(?P<ob>\(|\[|{)
@@ -67,11 +67,6 @@ class ErlangTokenizer:
             type = m.lastgroup
             value = m.group(type)
             pos = m.end()
-            if type == ErlangTokenType.RECORD:
-                if lastValue and lastValue.replace(".", "").isdigit():
-                    lastValue = value
-                    continue
             tokens.append(Token(type, value, m.start(), m.end()))
-            lastValue = value
         return tokens
 

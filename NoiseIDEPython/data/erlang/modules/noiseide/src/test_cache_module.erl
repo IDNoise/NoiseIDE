@@ -28,6 +28,10 @@
     field_3 :: dialyzer_plt:plt_info()
 }).       
       
+%asdasdasd  \
+%asdasdasd
+%asdasdasd
+      
 -opaque ololo() :: #ololo{}. 
 %%%===================================================================
 %%% Internal f unction s

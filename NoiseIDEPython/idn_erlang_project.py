@@ -5,6 +5,7 @@ from idn_config import Config
 from idn_connect import CompileErrorInfo
 from idn_console import ErlangIDEConsole, ErlangProjectConsole
 from idn_erlang_constats import *
+from idn_erlang_explorer import ErlangProjectExplorer
 from idn_erlang_project_form import ErlangProjectFrom
 from idn_erlangstc import ErlangHighlightedSTCBase, ErlangHighlightedSTCBaseReadOnly
 from idn_errors_table import ErrorsTableGrid
@@ -17,7 +18,7 @@ __author__ = 'Yaroslav'
 
 class ErlangProject(Project):
     IDE_MODULES_DIR = os.path.join(os.getcwd(), 'data', 'erlang', 'modules', 'noiseide', 'ebin')
-    EXPLORER_TYPE = exp.ErlangProjectExplorer
+    EXPLORER_TYPE = ErlangProjectExplorer
 
     def OnLoadProject(self):
         GetMainFrame().CheckRuntimes()
@@ -326,7 +327,7 @@ class ErlangProject(Project):
                             os.remove(os.path.join(root, fileName))
 
     def IsFlyCompileEnabled(self):
-        return Config.GetProp("erlang_fly_compilation")
+        return Config.GetProp("erlang_fly_compilation", True)
 
     def AddErrors(self, path, errors):
         self.errors[path] = errors

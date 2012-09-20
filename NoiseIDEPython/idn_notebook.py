@@ -111,6 +111,8 @@ class EditorNotebook(aui.AuiNotebook):
     def OnPageClose(self, event):
         page = event.GetSelection()
         self[page].OnClose()
+        self.NavigateBack()
+
 
     def OnNavigationKeyNotebook(self, event):
         def OnKeyUp(self, event):
@@ -128,8 +130,6 @@ class EditorNotebook(aui.AuiNotebook):
                 self._listBox.SetSelection(itemToSelect)
         TabNavigatorWindow.OnKeyUp = OnKeyUp
         aui.AuiNotebook.OnNavigationKeyNotebook(self, event)
-
-
 
     def OnPageChanged(self, event):
         if self.GetActiveEditor():
@@ -215,6 +215,8 @@ class EditorNotebook(aui.AuiNotebook):
         self.navigationHistory = self.navigationHistory[:self.navigationHistoryIndex + 1]
         if prev:
             prevFile = prev.filePath
+            if not prevLine:
+                prevLine = prev.CurrentLine
             if not self.navigationHistory or self.navigationHistory[-1] != (prevFile, prevLine):
                 self.navigationHistory.append((prevFile, prevLine))
         file = new.filePath
@@ -313,8 +315,9 @@ class EditorPanel(wx.Panel):
         else:
             event.Skip()
 
-    def ShowFind(self):
+    def ShowFind(self, incremental = False):
         self.sizer.Show(self.findPanel, True)
+        self.findPanel.incremental = incremental
         self.Layout()
         self.findPanel.findText.SetFocus()
         self.findVisible = True

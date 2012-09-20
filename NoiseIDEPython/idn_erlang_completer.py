@@ -154,6 +154,7 @@ class ErlangCompleter(wx.Frame):
 
     def _PrepareData(self, data):
         self.list.Clear()
+        self.lastData = []
         for d in set(data):
             help = None
             if isinstance(d, Function):
@@ -176,6 +177,7 @@ class ErlangCompleter(wx.Frame):
             else:
                 text = d
             if text.startswith(self.prefix):
+                self.lastData.append(d)
                 self.list.Append(text, help)
         self.ValidateCompleter()
 

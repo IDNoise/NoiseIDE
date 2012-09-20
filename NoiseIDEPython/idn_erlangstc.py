@@ -130,7 +130,10 @@ class ErlangSTC(ErlangHighlightedSTCBase):
 
     def OnAutoComplete(self):
         self.UpdateCompleter()
-        if len(self.completer.list.Items) == 1:
+        #print len(self.completer.list.Items) == 1
+        #print isinstance(self.completer.lastData[0], unicode)
+        #print self.completer.lastData[0], type(self.completer.lastData[0])
+        if len(self.completer.list.Items) == 1 and isinstance(self.completer.lastData[0], unicode):
             self.completer.AutoComplete(self.completer.list.Items[0])
         else:
             self.completer.Show()
