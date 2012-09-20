@@ -299,8 +299,11 @@ class ErlangCache:
         if not cls.TryLoad(include): return result
         for module in cls.moduleData:
             data = cls.moduleData[module]
-            if include in data.includes and data.file.endswith(".erl"):
-                result.append(data.file)
+            if include in data.includes:
+                if data.file.endswith(".erl"):
+                    result.append(data.file)
+                if data.file.endswith(".hrl"):
+                    result += cls.GetDependentModules(data.module)
         return result
 
     @classmethod
