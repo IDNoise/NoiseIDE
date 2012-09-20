@@ -94,8 +94,8 @@ class NoiseIDE(wx.Frame):
     def SetupMenu(self):
         self.menubar = wx.MenuBar()
         self.fileMenu = Menu()
-        self.fileMenu.AppendMenuItem('Open File', self, self.OnOpen)
-        self.fileMenu.AppendSeparator()
+        #self.fileMenu.AppendMenuItem('Open File', self, self.OnOpen)
+       # self.fileMenu.AppendSeparator()
         projectsMenu = Menu()
         projectsMenu.AppendMenuItem('Erlang', self, self.OnNewErlangProject)
         self.fileMenu.AppendMenu(wx.NewId(), "New project", projectsMenu)

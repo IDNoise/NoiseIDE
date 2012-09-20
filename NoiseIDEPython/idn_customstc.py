@@ -297,8 +297,8 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
             self.Save()
         elif keyCode == wx.WXK_SPACE and event.ControlDown():
             self.OnAutoComplete()
-        elif keyCode == ord('G') and event.ControlDown():
-            self.ShowGoToLineDialog()
+        #elif keyCode == ord('G') and event.ControlDown():
+        #    self.ShowGoToLineDialog()
         else:
             return False
         return True
@@ -546,15 +546,15 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                         wx.WXK_DOWN, wx.WXK_UP, wx.WXK_ESCAPE]):
             self.completer.OnKeyDown(event)
             return True
-        elif keyCode == ord('H') and event.ControlDown():
-            self.ShowOutline()
-            return True
-        elif keyCode == ord('/') and event.ControlDown():
-            self.CommentLines()
-            return True
-        elif keyCode == ord('E') and event.ControlDown():
-            self.AddToExport()
-            return True
+#        elif keyCode == ord('H') and event.ControlDown():
+#            self.ShowOutline()
+#            return True
+#        elif keyCode == ord('/') and event.ControlDown():
+#            self.CommentLines()
+#            return True
+#        elif keyCode == ord('E') and event.ControlDown():
+#            self.AddToExport()
+#            return True
         else:
             return False
 
@@ -872,16 +872,25 @@ class ErlangCompleter(wx.Frame):
                 else:
                     self.prefix = fValue.strip()
                 if self.moduleType == ErlangSTC.TYPE_MODULE:
-                    data += ErlangCache.ModuleFunctions(self.module, False)
-                    if True:
+                    print self.stc.lexer.IsInFunction()
+                    if self.stc.lexer.IsInFunction():
+                        data += ErlangCache.ModuleFunctions(self.module, False)
                         data += ErlangCache.Bifs()
-                        data += ErlangCache.AllModules()
+                    else:
+                        data += ErlangCache.ModuleExportedTypes(self.module)
+
+                data += ErlangCache.AllModules()
+
             elif (len(tokens) > 1 and
                   ((fIsAtom and tokens[1].value == ":") or fValue == ":")):
                 i = 1 if fValue == ":" else 2
                 moduleName = tokens[i].value
                 self.prefix = "" if fValue == ":" else fValue
-                data = ErlangCache.ModuleFunctions(moduleName)
+                print self.stc.lexer.IsInFunction()
+                if self.stc.lexer.IsInFunction():
+                    data = ErlangCache.ModuleFunctions(moduleName)
+                else:
+                    data += ErlangCache.ModuleExportedTypes(moduleName)
             elif (fValue == "?" or fType == ErlangTokenType.MACROS):
                 self.prefix = "" if fValue == "?" else fValue[1:]
                 data = ErlangCache.Macroses(self.module)

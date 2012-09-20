@@ -235,12 +235,12 @@ class Project(ProgressTaskManagerDialog):
         yaml.dump(self.projectData, stream)
 
     def OnKeyDown(self, event):
-        if event.GetKeyCode() == ord('O') and event.ControlDown():
-            self.ShowFastOpen()
-        elif event.GetKeyCode() == ord('F') and event.ControlDown() and event.ShiftDown():
-            self.ShowFindInProject()
-        else:
-            event.Skip()
+#        if event.GetKeyCode() == ord('O') and event.ControlDown():
+#            self.ShowFastOpen()
+#        elif event.GetKeyCode() == ord('F') and event.ControlDown() and event.ShiftDown():
+#            self.ShowFindInProject()
+#        else:
+        event.Skip()
 
     def ShowFastOpen(self):
         dialog = FastProjectFileOpenDialog(GetTabMgr(), self)

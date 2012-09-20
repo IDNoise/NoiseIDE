@@ -1,3 +1,5 @@
+from wx.lib.agw.aui.auibook import TabNavigatorWindow
+
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 import wx
@@ -102,6 +104,25 @@ class EditorNotebook(aui.AuiNotebook):
         self.Bind(aui.EVT_AUINOTEBOOK_TAB_RIGHT_UP, self.OnTabRightUp)
         self.Bind(aui.EVT_AUINOTEBOOK_TAB_DCLICK, self.OnTabDClick)
         self.Bind(aui.EVT_AUINOTEBOOK_PAGE_CHANGED, self.OnPageChanged)
+
+    def OnNavigationKeyNotebook(self, event):
+        def OnKeyUp(self, event):
+            if event.GetKeyCode() == wx.WXK_CONTROL:
+                self.CloseDialog()
+            elif event.GetKeyCode() == wx.WXK_TAB:
+                selected = self._listBox.GetSelection()
+                maxItems = self.Parent.GetPageCount()
+
+                if selected == maxItems - 1:
+                    itemToSelect = 0
+                else:
+                    itemToSelect = selected + 1
+
+                self._listBox.SetSelection(itemToSelect)
+        TabNavigatorWindow.OnKeyUp = OnKeyUp
+        aui.AuiNotebook.OnNavigationKeyNotebook(self, event)
+
+
 
     def OnPageChanged(self, event):
         if self.GetActiveEditor():
@@ -258,9 +279,9 @@ class EditorPanel(wx.Panel):
 
     def OnKeyDown(self, event):
         keyCode = event.GetKeyCode()
-        if keyCode == ord('F') and event.ControlDown() and not event.ShiftDown() and not event.AltDown():
-            self.ShowFind()
-        elif keyCode == wx.WXK_ESCAPE and self.findVisible:
+#        if keyCode == ord('F') and event.ControlDown() and not event.ShiftDown() and not event.AltDown():
+#            self.ShowFind()
+        if keyCode == wx.WXK_ESCAPE and self.findVisible:
             self.HideFind()
             #event.Skip()
         elif keyCode == wx.WXK_F3 and self.findVisible:

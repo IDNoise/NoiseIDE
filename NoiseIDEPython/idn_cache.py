@@ -126,8 +126,10 @@ class ModuleData:
 
     def Functions(self, exported = True):
         funs = [fun for fun in self.functions if (exported and fun.exported == exported) or not exported]
-        return funs + self.exportedTypes
+        return funs
 
+    def Types(self):
+        return self.exportedTypes
 
 class ErlangCache:
 
@@ -318,6 +320,10 @@ class ErlangCache:
             if typeData.name == type:
                 return typeData
         return None
+
+    def ModuleExportedTypes(cls, module):
+        if not cls.TryLoad(module): return None
+        return cls.moduleData[module].exportedTypes
 
     @classmethod
     def ModuleRecords(cls, module):
