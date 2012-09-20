@@ -895,9 +895,13 @@ class ErlangCompleter(wx.Frame):
                   ((fIsAtom and tokens[1].value == ":") or fValue == ":")):
                 i = 1 if fValue == ":" else 2
                 moduleName = tokens[i].value
+                onlyExported = True
+                if moduleName == "?MODULE":
+                    moduleName = self.module
+                    #onlyExported = False mb make it show all funs
                 self.prefix = "" if fValue == ":" else fValue
                 if self.stc.lexer.IsInFunction():
-                    data = ErlangCache.ModuleFunctions(moduleName)
+                    data = ErlangCache.ModuleFunctions(moduleName, onlyExported)
                 else:
                     data += ErlangCache.ModuleExportedTypes(moduleName)
             elif (fValue == "?" or fType == ErlangTokenType.MACROS):

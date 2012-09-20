@@ -257,7 +257,7 @@ class ErlangCache:
             #print file
             if os.path.isfile(file):
                 cls.LoadFile_(file)
-                return True
+                return module in cls.moduleData
         return False
 
     @classmethod
