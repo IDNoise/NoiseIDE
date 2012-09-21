@@ -97,7 +97,10 @@ class ErlangCompleter(wx.Frame):
             fType = fToken.type
             fValue = fToken.value
             fIsAtom = fType == ErlangTokenType.ATOM
-
+            #print len(tokens)
+            #print tokens[0].value
+            #print tokens[1].value
+            #print tokens[2].value
             if (fType == ErlangTokenType.SPACE or
                 (len(tokens) == 1 and fIsAtom) or
                 (fIsAtom and tokens[1].type == ErlangTokenType.SPACE) or
@@ -127,7 +130,7 @@ class ErlangCompleter(wx.Frame):
                     moduleName = self.module
                     #onlyExported = False mb make it show all funs
                 self.prefix = "" if fValue == ":" else fValue
-                print self.stc.lexer.IsInFunction()
+                #print self.stc.lexer.IsInFunction()
                 if self.stc.lexer.IsInFunction():
                     data = ErlangCache.ModuleFunctions(moduleName, onlyExported)
                 else:
@@ -150,6 +153,17 @@ class ErlangCompleter(wx.Frame):
             elif fType == ErlangTokenType.VAR:
                 self.prefix = fValue
                 data = self.GetVars()
+            elif fType == ErlangTokenType.MODULEATTR and fValue.startswith("-inc"):
+                self.prefix = fValue
+                data = ["-include(\"", "-include_lib(\""]
+            elif (len(tokens) == 3 and fType == ErlangTokenType.STRING and tokens[2].value == "-include" and
+                  tokens[2].type == ErlangTokenType.MODULEATTR):
+                self.prefix = fValue[1:]
+                data = ErlangCache.ApplicationIncludes(self.module)
+            elif (len(tokens) == 3 and fType == ErlangTokenType.STRING and tokens[2].value == "-include_lib" and
+                  tokens[2].type == ErlangTokenType.MODULEATTR):
+                self.prefix = fValue[1:]
+                data = ErlangCache.GlobalIncludes()
         self._PrepareData(data)
 
     def _PrepareData(self, data):

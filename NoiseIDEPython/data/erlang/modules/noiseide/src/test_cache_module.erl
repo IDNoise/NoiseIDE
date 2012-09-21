@@ -4,7 +4,7 @@
 -module(test_cache_module).
 
 %% Include files
--include("sample.hrl").
+-include_lib("noiseide/include/sample.hrl").
 %% Exported Functions
 
 -export([
@@ -19,7 +19,7 @@
 %%%========================== ==== ======= ==============================
 %%% API  
 
-
+%-include("sample.hrl
 %%%============================  ======= ================================
       
 -record(ololo, {       

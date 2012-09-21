@@ -129,7 +129,7 @@ class ErlangProjectExplorer(ProjectExplorer):
                         updateEditor(oPath, oNewPath)
 
             os.rename(path, newPath)
-            if extension(newName) == ".erl" and os.path.basename(path) != os.path.basename(newPath):
+            if extension(newPath) == ".erl" and os.path.basename(path) != os.path.basename(newPath):
                 oldModuleName = os.path.basename(path)[:-4]
                 newModuleName = os.path.basename(newPath)[:-4]
                 self.ReplaceModuleName(newPath, oldModuleName, newModuleName)

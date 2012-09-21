@@ -18,7 +18,8 @@
     ignores/0,
     gen_file_cache/1,
     gen_erlang_cache/1, 
-    gen_project_cache/0   
+    gen_project_cache/0,
+    get_app_name_from_path/1   
 ]).
 
 -record(function, {  
@@ -251,18 +252,41 @@ dump_data_to_file(ModuleName, CacheDir, FilePath, CFile, Content, FlyFileName) -
              includes = Incs,
              exported_types = ExpTypes} = Content, 
     %io:format("Data:~p~n", [{FlyFileName, Recs}]),
-    JsonStruct = 
-        {struct, [ 
-                  {name,list_to_binary(ModuleName)},
-                  {file, list_to_binary(FilePath)},
-                  {funs, funs_to_json(MN, CacheDir, Funs)},
-                  {macros, {struct, macros_to_json(Macs, FlyFileName)}},
-                  {includes, includes_to_json(Incs, FlyFileName)},
-                  {records_data, {struct, recs_data_to_json(Recs, FlyFileName)}},
-                  {exported_types, {struct, exp_types_to_json(ExpTypes)}}
-                 ]
-        },
+    Props = [ 
+        {name,list_to_binary(ModuleName)},
+        {file, list_to_binary(FilePath)},
+        {funs, funs_to_json(MN, CacheDir, Funs)},
+        {macros, {struct, macros_to_json(Macs, FlyFileName)}},
+        {includes, includes_to_json(Incs, FlyFileName)},
+        {records_data, {struct, recs_data_to_json(Recs, FlyFileName)}},
+        {exported_types, {struct, exp_types_to_json(ExpTypes)}},
+        {application, list_to_binary(get_app_name_from_path(FilePath))}
+    ],
+    Dirname = filename:basename(filename:dirname(FilePath)),
+    Extension = filename:extension(FilePath),
+    Props1 =  
+        case {Extension, Dirname} of
+            {".hrl", Dirname} ->
+                [{is_global_include, Dirname == "include" }|Props]; 
+             _ ->
+                Props
+        end,
+    JsonStruct =  {struct, Props1},
     write_json(CFile, JsonStruct).
+
+get_app_name_from_path(File) ->
+    ProjectDir = eide_connect:prop(project_dir) ++ "/",
+    ErlangLibsDir = code:lib_dir() ++ "/",
+    case lists:prefix(ProjectDir, File) of
+        true -> lists:takewhile(fun(E) -> E =/= $/ end, File -- ProjectDir);
+        _ ->
+            case lists:prefix(ErlangLibsDir, File) of
+                true -> lists:takewhile(
+                    fun(E) -> E =/= $/ andalso E =/= $- end,
+                    File -- ErlangLibsDir);
+                _ -> ""
+            end
+    end.
 
 write_json(File, Json) ->
     StringData = iolist_to_binary(lists:flatten(mochijson2:encode(Json))),

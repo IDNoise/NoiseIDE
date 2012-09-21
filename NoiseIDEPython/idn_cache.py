@@ -80,6 +80,8 @@ class ModuleData:
         self.file = data[FILE]
         self.module = module
 
+        self.data = data
+
         self.functions = []
         for funData in data[FUNS]:
             isBif = funData[BIF] if BIF in funData else False
@@ -130,6 +132,12 @@ class ModuleData:
 
     def Types(self):
         return self.exportedTypes
+
+    def Application(self):
+        return self.data["application"] if "application" in self.data else "123123123"
+
+    def IsGlobalInclude(self):
+        return "is_global_include" in self.data and self.data["is_global_include"]
 
 class ErlangCache:
 
@@ -391,3 +399,21 @@ class ErlangCache:
             if mac.name == macros or mac.name.startswith(macros + "("):
                 return mac
         return None
+
+    @classmethod
+    def ApplicationIncludes(cls, module):
+        if not cls.TryLoad(module): return []
+        app = cls.moduleData[module].Application()
+        result = []
+        for inc in cls.includes:
+            if cls.moduleData[inc].Application() == app:
+                result.append(inc + "\").")
+        return result
+
+    @classmethod
+    def GlobalIncludes(cls):
+        result = []
+        for inc in cls.includes:
+            if cls.moduleData[inc].IsGlobalInclude():
+                result.append(cls.moduleData[inc].Application() + "/include/" + inc + "\").")
+        return result
