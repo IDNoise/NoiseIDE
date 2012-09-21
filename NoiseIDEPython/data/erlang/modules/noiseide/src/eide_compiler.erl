@@ -1,5 +1,7 @@
 -module(eide_compiler).
 
+-include_lib("kernel/include/file.hrl").
+
 -export([
     compile/2, 
     compile_simple/1,
@@ -35,7 +37,6 @@ compile(FileName, App) ->
     create_response(FileName, compile_internal(FileName, [{outdir, OutDir} | Includes])).
 
 compile_simple(FileName) -> 
-    erlang:display(FileName),
     case filename:extension(FileName) of
         ".erl" -> 
             create_response(FileName, compile_internal(FileName, [{outdir, filename:dirname(FileName)}]));
@@ -46,8 +47,6 @@ compile_simple(FileName) ->
     
 %d:/projects/noiseide/noiseidepython/data/erlang/modules/noiseide/src/eide_compiler.erl
 %eide_compiler:compile_with_option("d:/projects/noiseide/noiseidepython/data/erlang/modules/noiseide/src/eide_compiler.erl", "noiseide", 'S').
-    
-    
 compile_with_option(FileName, App, Option) -> 
     OutDir = eide_connect:prop(project_dir) ++ "/" ++ App ++ "/ebin",
     Includes = eide_connect:prop(includes),
@@ -125,12 +124,13 @@ compile_internal(FileName, Options, ToBinary, RealPath) ->
         true -> spawn(eide_cache, gen_file_cache, [FileName]);
         _ -> spawn(eide_cache, create_cache_file_fly, [FileName, RealPath])
     end,
-    [[io:format("Error on compile ~p: ~p~n", [FileName, Er])|| Er <- Err, element(1, Er) == none]|| {_File, Err} <- E],
+%    [[io:format("Error on compile ~p: ~p~n", [FileName, Er])|| Er <- Err, element(1, Er) == none]|| {_File, Err} <- E],
 
     Errs = 
         [[begin
             case Er of
                 {compile,{module_name, MName, FName}} ->
+%                    io:format("mn~p~n", [{MName, FName, FileName, file:read_file(FileName)}]),
                     [{type, error}, {line, 2}, {msg, iolist_to_binary("Module in file '" ++ FName ++ 
                         "' has wrong name: '" ++ atom_to_list(MName) ++ "'.")}];
                 {Line, M, Error}  ->
@@ -138,7 +138,7 @@ compile_internal(FileName, Options, ToBinary, RealPath) ->
                   [{type, error}, {line, Line}, {msg, Msg}]
             end 
           end || Er <- Err, element(1, Er) =/= none] 
-         || {_File, Err} <- E], 
+         || {_File, Err} <- E],  
     Warns = 
         [[begin
               {Line, M, Error} = Wa,
@@ -146,5 +146,10 @@ compile_internal(FileName, Options, ToBinary, RealPath) ->
               [{type, warning}, {line, Line}, {msg, Msg}]
           end || Wa <- War] 
          || {_File, War} <- W],
+%    case Errs of
+%        [] -> ok;
+%        _ ->
+%            io:format("Errs~p~n~p~n", [Errs, {FileName, FileInfo#file_info.size, file:read_file(FileName)}])
+%    end,
     %io:format("~p~n",[lists:append(Errs) ++ lists:append(Warns)]),
     lists:append(Errs) ++ lists:append(Warns).

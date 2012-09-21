@@ -344,11 +344,10 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                 indic_margin = self.MARKER_ERROR_CIRCLE
                 self.MarkerDelete(e.line, self.MARKER_WARNING)
                 self.MarkerDelete(e.line, self.MARKER_WARNING_CIRCLE)
-            print highlightLine, e.line, indic_line, indic_margin
+            #print highlightLine, e.line, indic_line, indic_margin
             if highlightLine:
                 self.MarkerAdd(e.line, indic_line)
-            else:
-                self.MarkerAdd(e.line, indic_margin)
+            self.MarkerAdd(e.line, indic_margin)
         self.markerPanel.SetMarkers("warning", wMarkers)
         self.markerPanel.SetMarkers("error", eMarkers)
         self.Refresh()
@@ -432,6 +431,9 @@ class ErlangSTCReadOnly(ErlangSTC):
 
     def SetupEditorMenu(self):
         ErlangHighlightedSTCBase.SetupEditorMenu(self)
+
+    def CreatePopupMenu(self, event):
+        pass
 
     def Changed(self, changed = True):
         pass

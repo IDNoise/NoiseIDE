@@ -88,22 +88,26 @@ class ErlangSocketConnection(asyncore.dispatcher):
     def handle_read(self):
         #print 'handle_read'
         recv = self.socket.recv(4)
-        #print recv
         if recv:
             #print "unpack", struct.unpack('>L', recv)
             msgLen = struct.unpack('>L', recv)[0]
-           # print "len", msgLen
-            toReceive = msgLen
-            receved = self.socket.recv(msgLen)
-            data = receved
-            toReceive -= len(receved)
-            #print "to recv", toReceive, "recved", len(data)
+            #print "len", msgLen
+            #toReceive = msgLen
+            data = self.socket.recv(msgLen)
+           # d#ata = receved
+            #toReceive -= len(receved)
+            #print "recv", msgLen, len(data)
             while len(data) != msgLen:
-                receved = self.socket.recv(toReceive)
-                data += receved
-                toReceive -= len(receved)
-               # print "to recv", toReceive, "recved", len(data)
-            #print msgLen, len(data)
+                try:
+                #print "to recv f", toReceive, "recved", len(data)
+                    data += self.socket.recv(msgLen - len(data))
+                    #print "continue", len(data)
+                except Exception, e:
+                    print "recv error", e
+                #data += receved
+               # toReceive -= len(receved)
+                #print "to recv e", toReceive, "recved", len(data)
+           # print msgLen, len(data)
             #print data
             if self.socketHandler:
                 self.socketHandler(data)
@@ -256,7 +260,7 @@ class ErlangProcess(Process):
         self.Redirect()
         self.cwd = cwd
         erlang = GetProject().GetErlangPath()
-        self.cmd = "{} {}".format(erlang, ' '.join(params + ["-s reloader"]))
+        self.cmd = "{} {}".format(erlang, ' '.join(params + ["-s reloader +S 4:4"]))
         self.pid = None
         self.handler = None
         self.processQueue = Queue()
@@ -267,7 +271,7 @@ class ErlangProcess(Process):
 
     def SetParams(self, params):
         erlang = GetProject().GetErlangPath()
-        self.cmd = "{} {}".format(erlang, ' '.join(params + ["-s reloader"]))
+        self.cmd = "{} {}".format(erlang, ' '.join(params + ["-s reloader +S 4:4"]))
 
     def SendCommandToProcess(self, cmd):
         cmd += '\n'

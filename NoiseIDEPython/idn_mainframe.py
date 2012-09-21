@@ -1,4 +1,5 @@
 import sys
+import yaml
 from idn_erlang_dialogs import ErlangOptionsDialog
 from idn_erlang_project import ErlangProject
 from idn_erlang_project_form import ErlangProjectFrom
@@ -10,12 +11,11 @@ import os
 import wx
 from wx.lib.agw import aui
 from idn_colorschema import ColorSchema
-from idn_customstc import ConsoleSTC, CustomSTC
 from idn_winmanager import Manager
 from idn_notebook import  Notebook, EditorNotebook, ConsolePanel
 from idn_config import Config, ConfigEditForm
 import idn_global
-from idn_project import loadProject, Project
+from idn_project import Project
 
 class NoiseIDE(wx.Frame):
     def __init__(self, *args, **kwargs):
@@ -221,9 +221,14 @@ class NoiseIDE(wx.Frame):
         projects.append(projectFile)
         Config.SetLastProjects(projects)
 
-        loadProject(self, projectFile)
+        self.LoadProject(projectFile)
         #self.project.mEditProject.Enable(True)
         self.SetTitle(self.project.ProjectName() + " - " + "Noise IDE")
+
+    def LoadProject(self, filePath):
+        projectData = yaml.load(file(filePath, 'r'))
+        type = projectData[Project.CONFIG_PROJECT_TYPE]
+        return Project.TYPE_PROJECT_DICT[type](self, filePath, projectData)
 
     def OnNewErlangProject(self, event):
         self.CheckRuntimes()

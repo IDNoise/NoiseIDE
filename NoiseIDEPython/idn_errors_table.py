@@ -20,6 +20,7 @@ class ErrorsTableGrid(wx.grid.Grid):
         self.SetColSize(1, 50)
         self.SetColSize(2, 100)
         self.SetColSize(3, 750)
+        self.EnableEditing(False)
         self.SetColMinimalAcceptableWidth(50)
 
         self.DisableCellEditControl()
@@ -52,6 +53,7 @@ class ErrorsTable(PyGridTableBase):
     def __init__(self, data):
         PyGridTableBase.__init__(self)
         self.data = data
+
         self.colLabels = ["File", "Line", "Type", "Message"]
 
     def GetNumberRows(self):

@@ -37,9 +37,11 @@ class ErlangProject(Project):
         self.AddTabs()
         self.AddConsoles()
         self.SetCompilerOptions()
-        self.GenerateErlangCache() #test
 
         self.CompileProject() #test
+
+        self.GenerateErlangCache() #test
+
 
         self.explorer.Bind(exp.EVT_PROJECT_FILE_CREATED, self.OnProjectFileCreated)
         self.explorer.Bind(exp.EVT_PROJECT_FILE_MODIFIED, self.OnProjectFileModified)
@@ -137,7 +139,7 @@ class ErlangProject(Project):
                     page.SetNewText(data)
                     return
         title = "'{}' {}".format(option, os.path.basename(path))
-        Log(title)
+       # Log(title)
         panel = ErlangCompileOptionPanel(GetTabMgr(), path, option, data)
         GetTabMgr().AddCustomPage(panel, title)
 #            dlg = CompileWithOptionResult(title, data)

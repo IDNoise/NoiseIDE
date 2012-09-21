@@ -21,11 +21,15 @@
 -define(noreply, noreply).
 
 start(Port) ->
-    {ok, LS} = gen_tcp:listen(Port, [binary, {active, false}, {packet, 4}]), %{reuseaddr, true},
+    {ok, LS} = gen_tcp:listen(Port, [binary, {active, false}, {packet, 4}, {sndbuf, 1000*1000}]), %{reuseaddr, true},
     io:format("started on:~p~n", [Port]),
     ets:new(props, [named_table, public]),
-    Pid = spawn(fun() -> accept(LS) end),
-    register(?MODULE, Pid).  
+    Pid = spawn(fun() -> accept(LS) end), 
+    register(?MODULE, Pid),
+    eide_connect:set_prop(simple_param_re, re:compile(<<"[A-Za-z_0-9,\s]*">>)),
+    eide_connect:set_prop(doc_re, re:compile(<<"(<p><a name=.*?</div>\\s*(?=<p><a name=|<div class=\"footer\">))">>, [multiline, dotall])),
+    eide_connect:set_prop(part_doc_re, re:compile(<<"<a name=\"([A-Za-z_:]*?)-([0-9]?)\">(?:</a>)?<span.*?>(.*?)\\((.*?)\\)\\s*-&gt;\\s*(.*?)</span>">>,
+        [multiline, dotall])).  
 
 accept(LS) ->
     gen_tcp:controlling_process(LS, self()),

@@ -385,23 +385,42 @@ generate(ModuleName, FilePath, DocsFilePath) ->
     Incls = sets:to_list(sets:from_list(Content1#content.includes)),
     Content1#content{includes = Incls, file = FilePath, module_name = ModuleName}.
 
-generate_from_source(Path) -> 
-    %{ok, Source} = epp_dodger:parse_file(Path),
-    {ok, Source} = epp:parse_file(Path, eide_connect:prop(flat_includes, []), []),
-    {ok, SourceMacros}  = epp_dodger:parse_file(Path),
+
     %io:format("props:~p~n", [eide_connect:prop(flat_includes, [])]),
     %io:format("props:~p~n", [eide_connect:prop(includes, [])]),
     %io:format("epp_dodger:~p~n", [SourceMacros]),
     %io:format("SyntaxTree~p~n~n~n", [erl_syntax:form_list(Source)]),
     %io:format("SyntaxTree Macros~p~n", [erl_syntax:form_list(SourceMacros)]),
-    Content = parse_tree(erl_syntax:form_list(SourceMacros), #content{file = Path, last_file_attr = Path}),
+generate_from_source(Path) -> 
+    %{ok, Source} = epp_dodger:parse_file(Path),
+    {ok, Source} = epp:parse_file(Path, eide_connect:prop(flat_includes, []), []),
+    {ok, SourceMacros}  = epp_dodger:parse_file(Path),
+    Content = parse_tree_simple(erl_syntax:form_list(SourceMacros), #content{file = Path, last_file_attr = Path}),
     {#content{ 
-        file = Path, 
-        last_file_attr = Path, 
-        macros = Content#content.macros, 
-        includes = Content#content.includes
+            file = Path, 
+            last_file_attr = Path, 
+            macros = Content#content.macros, 
+            includes = Content#content.includes
         }, 
         erl_syntax:form_list(Source)}.
+
+parse_tree_simple(Node, Content) ->
+    case erl_syntax:type(Node) of
+        form_list -> 
+            lists:foldl(fun parse_tree/2, Content,
+                        erl_syntax:form_list_elements(Node));
+        
+        attribute ->
+            Name = erl_syntax:attribute_name(Node),
+            case erl_syntax:type(Name) of
+                atom ->
+                    parse_atom_simple(Node, erl_syntax:atom_literal(Name), Content);
+                _ ->
+                    Content
+            end;
+        _ ->
+            Content
+    end.
 
 parse_tree(Node, Content) ->
     case erl_syntax:type(Node) of
@@ -446,7 +465,7 @@ parse_atom(Node, "file", Content) ->
     Content1 =     
         case lists:suffix("hrl", File) of
             true -> 
-                Content#content{includes = Content#content.includes ++ [File]};
+                Content#content{includes = [File | Content#content.includes]};
             false -> Content
         end,
     Content1#content{last_file_attr = File}; 
@@ -479,27 +498,15 @@ parse_atom(Node, "compile", Content) ->
         _ ->
             Content
     end; 
-parse_atom(Node, "include", Content) -> 
-    Includes = Content#content.includes ++ [parse_include(Node)],
-    Content#content{includes = Includes};
-parse_atom(Node, "include_lib", Content) -> 
-    Includes = Content#content.includes ++ [parse_include(Node)],
-    Content#content{includes = Includes};
 parse_atom(Node, "record", Content) -> 
     Record = parse_erlang_record(Node, Content),
-    Records = Content#content.records ++ [Record#record{file = Content#content.last_file_attr}],
+    Records = [Record#record{file = Content#content.last_file_attr} | Content#content.records],
     Content#content{records = Records};
-parse_atom(Node, "define", Content) -> 
-    Macro = parse_erlang_macro(Node),
-    Macros = Content#content.macros ++ [Macro#macro{file = Content#content.last_file_attr}],
-    Content#content{macros = Macros};
 parse_atom(Node, "spec", Content) -> 
-    Specs = parse_spec(Node),
-    case Specs of 
-        [] -> 
-            Content;
-        _ ->
-            Content#content{specs = Content#content.specs ++ Specs}
+    Spec = parse_spec(Node),
+    case Spec of 
+        none -> Content;
+        _ -> Content#content{specs = [Spec | Content#content.specs]}
     end; 
 parse_atom(Node, "type", Content) -> 
     parse_types(Node, Content);
@@ -508,6 +515,17 @@ parse_atom(Node, "opaque", Content) ->
 parse_atom(_Node, _Atom, Content) -> 
     Content.
 
+parse_atom_simple(Node, "define", Content) -> 
+    Macro = parse_erlang_macro(Node),
+    Macros = [Macro#macro{file = Content#content.last_file_attr} | Content#content.macros],
+    Content#content{macros = Macros};
+parse_atom_simple(Node, "include", Content) -> 
+    Includes = [parse_include(Node) | Content#content.includes],
+    Content#content{includes = Includes};
+parse_atom_simple(Node, "include_lib", Content) -> 
+    Includes = [parse_include(Node) | Content#content.includes],
+    Content#content{includes = Includes}.
+    
 parse_export(Export) ->
     {erl_syntax:atom_value(erl_syntax:arity_qualifier_body(Export)),
      erl_syntax:integer_value(erl_syntax:arity_qualifier_argument(Export))}.
@@ -596,12 +614,10 @@ node_value(_Node, _) ->
 
 parse_spec(Node) ->
     try
-        [parse_spec_internal(Node, 1)]
+        parse_spec_internal(Node, 1)
     catch 
         %Error:Reason -> io:format("Error:~p~n. Reason:~p~n parsing spec for:~p~n", [Error, Reason, erlang:get_stacktrace()]),
-        _Error:_Reason -> 
-            ok,
-            []
+        _Error:_Reason -> none
     end.
 
 parse_spec_internal(Node, Clause) ->
@@ -621,7 +637,7 @@ get_var_types(Args, Defs) ->
         lists:foldl(fun(A, {Vars, Types}) ->
                         Var = parse_t_type_var(A),
                         case Var of
-                            {T, V} -> {Vars ++ [V], Types ++ [T]};
+                            {T, V} -> {[V| Vars], [T | Types]};
                             _ -> 
                                 #t_var{name = Name} = A,
                                 Type = 
@@ -630,12 +646,12 @@ get_var_types(Args, Defs) ->
                                             parse_t_type(T, Defs);
                                         _ -> ?TERM 
                                     end, 
-                                {Vars ++ [Var], Types ++ [Type]}
+                                {[Var | Vars], [Type | Types]}
                         end
                     end, 
                     {[], []}, 
                     Args),  
-    {Vars, Types}.  
+    {lists:reverse(Vars), lists:reverse(Types)}.  
 
 parse_t_type_var(#t_nil{}) -> 
     {"nil()", "[]"};
@@ -761,10 +777,8 @@ parse_erlang_record(Node, Content) ->
                                                            Content#content.macros),
                                      Name = 
                                          case Result of 
-                                             [] -> 
-                                                 "name_cannot_be_resolved"; 
-                                             [Macro] -> 
-                                                 Macro#macro.value 
+                                             [] -> "name_cannot_be_resolved"; 
+                                             [Macro] -> Macro#macro.value 
                                          end,
                                      InnerRecord#record{name = Name}
                              end
@@ -783,7 +797,7 @@ parse_erlang_record_fields(Fields, Record) ->
                                    erl_syntax:atom_name(FieldName);
                                _ -> throw(unknown_record_field_name)
                            end,
-                    InnerRecord#record{fields = InnerRecord#record.fields ++ [#field{name = Name}]}
+                    InnerRecord#record{fields = [#field{name = Name} | InnerRecord#record.fields]}
                 end,
                 Record, 
                 Fields).
@@ -947,14 +961,13 @@ merge_with_docs(Content, DocsFilePath) ->
 
 get_functions_data_from_html(File) ->
     {ok, Data} = file:read_file(File),
-    Result = re:run(Data, <<"(<p><a name=.*?</div>\\s*(?=<p><a name=|<div class=\"footer\">))">>,
-                    [multiline, dotall, global, {capture, [1], list}]),
+    Result = re:run(Data, eide_connect:prop(doc_re, [global, {capture, [1], list}])),
+    PartDocRe = eide_connect:prop(part_doc_re),
     case Result of
         {match, Captured} ->
             FunsData = 
                 [begin
-                     FunsResult = re:run(Text, <<"<a name=\"([A-Za-z_:]*?)-([0-9]?)\">(?:</a>)?<span.*?>(.*?)\\((.*?)\\)\\s*-&gt;\\s*(.*?)</span>">>,
-                                         [multiline, dotall, global, {capture, [1, 2, 3, 4, 5], list}]),
+                     FunsResult = re:run(Text, PartDocRe, [global, {capture, [1, 2, 3, 4, 5], list}]),
                      case FunsResult of
                          {match, Funs} ->
                              [{F, Text} || F <- Funs];
@@ -967,7 +980,7 @@ get_functions_data_from_html(File) ->
 
 add_data_from_html_fun({[FunName, Arity, SpecName, Params, _Result], Text}, Content) ->
     Arity1 = list_to_integer(Arity),
-    SimpleParams = re:run(Params, <<"[A-Za-z_0-9,\s]*">>),
+    SimpleParams = re:run(Params, eide_connect:prop(simple_param_re)),
     case lists:keyfind({FunName, Arity1}, #function.name, Content#content.functions) of
         Fun when is_record(Fun, function) -> 
             NewFun = 

@@ -227,10 +227,10 @@ class ConsoleCreateEditDialog(wx.Dialog):
         if console:
             data = self.Parent.consoles[console]
             self.titleTB.SetValue(console)
-            self.snameTB.SetValue(data[ErlangProject.CONFIG_CONSOLE_SNAME])
-            self.cookieTB.SetValue(data[ErlangProject.CONFIG_CONSOLE_COOKIE])
-            self.paramsTB.SetValue(data[ErlangProject.CONFIG_CONSOLE_PARAMS])
-            self.commandTB.SetValue(data[ErlangProject.CONFIG_CONSOLE_COMMAND])
+            self.snameTB.SetValue(data[CONFIG_CONSOLE_SNAME])
+            self.cookieTB.SetValue(data[CONFIG_CONSOLE_COOKIE])
+            self.paramsTB.SetValue(data[CONFIG_CONSOLE_PARAMS])
+            self.commandTB.SetValue(data[CONFIG_CONSOLE_COMMAND])
 
         gSizer = wx.GridBagSizer(2, 2)
 

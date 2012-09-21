@@ -23,25 +23,17 @@ class ProgressTaskManagerDialog(wx.EvtHandler):
         self.tasks = set()
         self.lastTaskTime = time.time()
 
-        self.taskDoneHistory = []
-        self.taskDoneHistoryString = ""
 
     def AddTask(self, task):
         #print "add task", task
         self.tasks.add(task)
 
-    def AddTaskDescToHistory(self, description):
-        self.taskDoneHistory.append(description)
-        self.taskDoneHistory = self.taskDoneHistory[-2:]
-        self.taskDoneHistoryString = "\n".join(self.taskDoneHistory)
-
     def UpdatePulse(self, description):
         if self.progressDialog:
-            self.AddTaskDescToHistory(description)
-            self.progressDialog.UpdatePulse(self.taskDoneHistoryString)
+            self.progressDialog.UpdatePulse(description)
 
     def TaskDone(self, description, task = None):
-        self.UpdatePulse(description)
+        #self.UpdatePulse(description)
         self.lastTaskTime = time.time()
         if task:
             if task in self.tasks:
@@ -51,6 +43,7 @@ class ProgressTaskManagerDialog(wx.EvtHandler):
             #    print "task not in tasks", task
         if len(self.tasks) == 0:
             self.DestroyDialog()
+            GetTabMgr().SetFocus()
 
     def CreateProgressDialog(self, text = "IDE Activities"):
         if self.progressDialog:
@@ -60,22 +53,20 @@ class ProgressTaskManagerDialog(wx.EvtHandler):
                 agwStyle = wx.PD_APP_MODAL | wx.PD_ELAPSED_TIME, style = wx.BORDER_NONE)
             self.progressDialog.SetGaugeProportion(0.1)
             self.progressDialog.SetGaugeSteps(70)
-            self.progressDialog.SetGaugeBackground(wx.BLACK)
-            self.progressDialog.SetFirstGradientColour(wx.RED)
-            self.progressDialog.SetSecondGradientColour(wx.GREEN)
+            #self.progressDialog.SetGaugeBackground(wx.BLACK)
+            #self.progressDialog.SetFirstGradientColour(wx.RED)
+            #self.progressDialog.SetSecondGradientColour(wx.GREEN)
             self.progressDialog.SetSize((600, 110))
             self.lastTaskTime = time.time()
             self.progressDialog.ShowDialog()
 
     def OnProgressTimer(self, event):
         if self.progressDialog:
-            if (time.time() - self.lastTaskTime) > 0.5:
-                self.UpdatePulse("Tasks left: {}".format(len(self.tasks)))
-
+            self.UpdatePulse("Tasks left: {}".format(len(self.tasks)))
             #if (time.time() - self.lastTaskTime > 10 and len(self.tasks) > 0):
                 #Log("####\n 10 seconds from last task done. Tasks left ", len(self.tasks))
                 #Log("\n\t".join([str(t) for t in self.tasks]))
-            if (time.time() - self.lastTaskTime > 10 and len(self.tasks) > 0):
+            if (time.time() - self.lastTaskTime > 8 and len(self.tasks) > 0):
                 #Log("####\n 15 seconds from last task done. Tasks left ", len(self.tasks))
                 #Log("\n\t".join([str(t) for t in self.tasks]))
                 Log("tasks left:", self.tasks)
@@ -247,9 +238,3 @@ class Project(ProgressTaskManagerDialog):
         dialog = FindInProjectDialog.GetDialog(GetTabMgr())
         dialog.Show()
         dialog.findText.SetFocus()
-
-
-def loadProject(window, filePath):
-    projectData = yaml.load(file(filePath, 'r'))
-    type = projectData[Project.CONFIG_PROJECT_TYPE]
-    return Project.TYPE_PROJECT_DICT[type](window, filePath, projectData)
