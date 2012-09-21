@@ -7,9 +7,10 @@ from idn_console import ErlangIDEConsole, ErlangProjectConsole
 from idn_erlang_constats import *
 from idn_erlang_explorer import ErlangProjectExplorer
 from idn_erlang_project_form import ErlangProjectFrom
-from idn_erlangstc import ErlangHighlightedSTCBase, ErlangHighlightedSTCBaseReadOnly
+from idn_erlangstc import ErlangHighlightedSTCBase, ErlangSTCReadOnly
 from idn_errors_table import ErrorsTableGrid
 from idn_global import GetMainFrame, GetToolMgr, GetTabMgr, Log
+from idn_notebook import ErlangCompileOptionPanel
 from idn_project import Project
 import idn_projectexplorer as exp
 from idn_utils import readFile, writeFile
@@ -130,10 +131,17 @@ class ErlangProject(Project):
         self.GetShell().CompileOption(path, app, option)
 
     def OnCompileOptionResult(self, path, option, data):
-        title = "Compile {} with option:{}".format(os.path.basename(path), option)
+        for page in GetTabMgr().Pages():
+            if isinstance(page, ErlangSTCReadOnly):
+                if page.filePath == path and page.option == option:
+                    page.SetNewText(data)
+                    return
+        title = "'{}' {}".format(option, os.path.basename(path))
         Log(title)
-        dlg = CompileWithOptionResult(title, data)
-        dlg.Show()
+        panel = ErlangCompileOptionPanel(GetTabMgr(), path, option, data)
+        GetTabMgr().AddCustomPage(panel, title)
+#            dlg = CompileWithOptionResult(title, data)
+#            dlg.Show()
         #dlg.Show(True)
 
     def AddConsoles(self):

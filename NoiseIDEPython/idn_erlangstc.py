@@ -1,3 +1,8 @@
+from idn_config import Config
+
+__author__ = 'Yaroslav'
+
+
 import os
 import wx
 from wx import stc
@@ -13,8 +18,8 @@ from idn_highlight import ErlangHighlightType
 from idn_marker_panel import Marker
 from idn_outline import ErlangOutline
 from idn_utils import Menu
+import idn_projectexplorer as exp
 
-__author__ = 'Yaroslav'
 
 class ErlangHighlightedSTCBase(CustomSTC):
     def SetupLexer(self):
@@ -42,23 +47,9 @@ class ErlangHighlightedSTCBase(CustomSTC):
         self.StyleSetSpec(ErlangHighlightType.BIF, formats["bif"])
         self.StyleSetSpec(ErlangHighlightType.FULLSTOP, formats["fullstop"])
 
-class ErlangHighlightedSTCBaseReadOnly(ErlangHighlightedSTCBase):
-    def __init__(self, parent, text):
-        ErlangHighlightedSTCBase.__init__(self, parent, None)
-
-        self.AppendText(text)
-        self.SetReadOnly(True)
-        self.SetToolTip(None)
-
-    def Changed(self, changed = True):
-        pass
-
-    def Save(self):
-        pass
-
 
 class ErlangSTC(ErlangHighlightedSTCBase):
-    MARKER_ERROR, MARKER_WARNING = (20, 21)
+    MARKER_ERROR_CIRCLE, MARKER_WARNING_CIRCLE, MARKER_ERROR, MARKER_WARNING = (18, 19, 20, 21)
 
     def OnInit(self):
         self.completer = ErlangCompleter(self)
@@ -103,6 +94,16 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         self.MarkerDefine(self.MARKER_WARNING, stc.STC_MARK_BACKGROUND,
             foreground = ColorSchema.codeEditor["warning_line_color"],
             background = ColorSchema.codeEditor["warning_line_color"])
+
+        self.MarkerDefine(self.MARKER_ERROR_CIRCLE, stc.STC_MARK_CIRCLE,
+            foreground = ColorSchema.codeEditor["error_line_color"],
+            background = ColorSchema.codeEditor["error_line_color"])
+
+        self.MarkerDefine(self.MARKER_WARNING_CIRCLE, stc.STC_MARK_CIRCLE,
+            foreground = ColorSchema.codeEditor["warning_line_color"],
+            background = ColorSchema.codeEditor["warning_line_color"])
+
+        self.SetMarginMask(2, ~stc.STC_MASK_FOLDERS)#self.MARKER_ERROR_CIRCLE | self.MARKER_WARNING_CIRCLE)
 
     def CreatePopupMenu(self, event):
         menu = Menu()
@@ -322,24 +323,35 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         GetProject().CompileFileFly(os.path.basename(self.filePath), self.filePath, self.GetText())
 
     def HighlightErrors(self, errors):
-        self.MarkerDeleteAll(20)
-        self.MarkerDeleteAll(21)
+        self.MarkerDeleteAll(self.MARKER_WARNING)
+        self.MarkerDeleteAll(self.MARKER_ERROR)
+        self.MarkerDeleteAll(self.MARKER_WARNING_CIRCLE)
+        self.MarkerDeleteAll(self.MARKER_ERROR_CIRCLE)
         self.lastErrors = errors
         self.errorsLines = map(lambda x: x.line, errors)
         wMarkers = []
         eMarkers = []
         errors = sorted(errors, key = lambda e: e.type)
+        highlightLine = Config.GetProp("highlight_error_background", False)
         for e in errors:
             if e.type == CompileErrorInfo.WARNING:
                 wMarkers.append(Marker(e.line, e.msg))
-                indic = self.MARKER_WARNING
+                indic_line = self.MARKER_WARNING
+                indic_margin = self.MARKER_WARNING_CIRCLE
             else:
                 eMarkers.append(Marker(e.line, e.msg))
-                indic = self.MARKER_ERROR
+                indic_line = self.MARKER_ERROR
+                indic_margin = self.MARKER_ERROR_CIRCLE
                 self.MarkerDelete(e.line, self.MARKER_WARNING)
-            self.MarkerAdd(e.line, indic)
+                self.MarkerDelete(e.line, self.MARKER_WARNING_CIRCLE)
+            print highlightLine, e.line, indic_line, indic_margin
+            if highlightLine:
+                self.MarkerAdd(e.line, indic_line)
+            else:
+                self.MarkerAdd(e.line, indic_margin)
         self.markerPanel.SetMarkers("warning", wMarkers)
         self.markerPanel.SetMarkers("error", eMarkers)
+        self.Refresh()
 
     def OnFileSaved(self):
         GetProject().FileSaved(self.filePath)
@@ -391,3 +403,50 @@ class ErlangSTC(ErlangHighlightedSTCBase):
 
         if insertPos:
             self.InsertText(insertPos, funStr)
+
+class ErlangSTCReadOnly(ErlangSTC):
+    def __init__(self, parent, panel, filePath, option, text):
+        ErlangSTC.__init__(self, parent, panel)
+
+        self.AppendText(text)
+        self.SetReadOnly(True)
+        self.SetToolTip(None)
+        self.filePath = filePath
+        self.option = option
+
+        GetProject().explorer.Bind(exp.EVT_PROJECT_FILE_MODIFIED, self.OnProjectFileModified)
+
+        self.completer = ErlangCompleter(self)
+
+        self.overlay = wx.Overlay()
+        self.lastErrors = []
+        self.errorsLines = []
+        self.navigateTo = None
+
+        self.Bind(wx.EVT_MOTION, self.OnMouseMove)
+        self.Bind(wx.EVT_LEFT_DOWN, self.OnMouseClick)
+        self.Bind(wx.EVT_MIDDLE_DOWN, self.OnMiddleMouseClick)
+
+    def OnInit(self):
+        pass
+
+    def SetupEditorMenu(self):
+        ErlangHighlightedSTCBase.SetupEditorMenu(self)
+
+    def Changed(self, changed = True):
+        pass
+
+    def Save(self):
+        pass
+
+    def OnProjectFileModified(self, event):
+        file = event.File
+        if file == self.filePath:
+            GetProject().CompileOption(self.filePath, self.option)
+        event.Skip()
+
+    def SetNewText(self, text):
+        self.SetReadOnly(False)
+        self.ClearAll()
+        self.AppendText(text)
+        self.SetReadOnly(True)

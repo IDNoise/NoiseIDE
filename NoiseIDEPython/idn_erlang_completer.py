@@ -310,9 +310,9 @@ class ErlangCompleter(wx.Frame):
     def ShowFunctionHelp(self, fun, prefix, pos):
         arity = self.GetFunArity(pos)
         module = ""
-        if prefix and prefix[-1] == ":" and prefix[-2].isalpha():
+        if prefix and prefix[-1] == ":" and prefix[-2] != ")":
             i = -2
-            while abs(i) <= len(prefix) and (prefix[i].isalpha() or prefix[i] == "_"):
+            while abs(i) <= len(prefix) and (prefix[i].isalpha() or prefix[i].isdigit() or prefix[i] == "_"):
                 module += prefix[i]
                 i -= 1
             module = module[::-1]
@@ -321,7 +321,7 @@ class ErlangCompleter(wx.Frame):
                 module = self.module
         else:
             module = self.module
-        #print "show fun help", module, fun, arity
+       # print "show fun help", module, fun, arity
         data = ErlangCache.ModuleFunction(module, fun, arity)
         if not data:
             data = ErlangCache.ModuleExportedData(module, fun)

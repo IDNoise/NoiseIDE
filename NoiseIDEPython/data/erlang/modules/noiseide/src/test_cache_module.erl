@@ -32,13 +32,13 @@
 %asdasdasd
 %asdasdasd
       
--opaque ololo() :: #ololo{}. 
+-opaque ololo() :: #ololo{}.
 %%%===================================================================
 %%% Internal f unction s
 %%%====================================== =============================
 
 xxx() ->
-    ?XX + ?XssssX.   
+    ?XX + ?XssssX.  
 
 -ifdef(debug).
 -define(X, xx).

@@ -146,6 +146,7 @@ class NoiseIDE(wx.Frame):
         languagesMenu.AppendMenu(wx.NewId(), 'Erlang', erlangMenu)
         erlangMenu.AppendMenuItem("Edit Options", self, lambda e: self.SetupRuntimes())
         erlangMenu.AppendCheckMenuItem("Fly Compilation", self, self.OnCheckErlangFlyCompilation, Config.GetProp("erlang_fly_compilation", True))
+        erlangMenu.AppendCheckMenuItem("Highlight whole line on error", self, self.OnCheckErlangHighlightErrorBackground, Config.GetProp("highlight_error_background", False))
 
         helpMenu = Menu()
         helpMenu.AppendMenuItem("About", self, self.OnHelpAbout)
@@ -164,6 +165,10 @@ class NoiseIDE(wx.Frame):
     def OnCheckErlangFlyCompilation(self, event):
         currentValue = Config.GetProp("erlang_fly_compilation")
         Config.SetProp("erlang_fly_compilation", not currentValue)
+
+    def OnCheckErlangHighlightErrorBackground(self, event):
+        currentValue = Config.GetProp("highlight_error_background")
+        Config.SetProp("highlight_error_background", not currentValue)
 
     def OnEditOptions(self, event):
         form = ConfigEditForm()

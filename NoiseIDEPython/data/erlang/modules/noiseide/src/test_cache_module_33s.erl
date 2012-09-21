@@ -40,7 +40,7 @@ xxx() ->
 -define(X, yy).
 -endif.  
   
-x() -> io:format("~p~n", [?X]).
+x() -> io:format("~p99999~n", [?X]).
    
  
 %asdasdas    

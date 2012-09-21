@@ -1,5 +1,5 @@
 from wx.lib.agw.aui.auibook import TabNavigatorWindow
-from idn_erlangstc import ErlangSTC
+from idn_erlangstc import ErlangSTC, ErlangSTCReadOnly
 from idn_marker_panel import MarkerPanel
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
@@ -211,6 +211,10 @@ class EditorNotebook(aui.AuiNotebook):
         editor.EnsureVisibleEnforcePolicy(line)
         return editor
 
+    def AddCustomPage(self, page, title):
+        self.AddPage(page, title, True)
+        #self._AddToHistory(editor, prevEditor, fromLine)
+
     def _AddToHistory(self, new, prev = None, prevLine = 0):
         self.navigationHistory = self.navigationHistory[:self.navigationHistoryIndex + 1]
         if prev:
@@ -333,6 +337,25 @@ class ConsolePanel(EditorPanel):
         wx.Panel.__init__(self, parent, style = wx.TAB_TRAVERSAL | wx.NO_BORDER)
         self.markPanel = MarkerPanel(self)
         self.editor = ConsoleSTC(self, self.markPanel)
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.findPanel = FindInFilePanel(self, self.editor)
+        self.sizer.Add(self.findPanel)#, 1, wx.EXPAND)
+        self.HideFind()
+        hSizer = wx.BoxSizer(wx.HORIZONTAL)
+        hSizer.Add(self.editor, 1, wx.EXPAND)
+        hSizer.Add(self.markPanel, 0, wx.EXPAND)
+        self.sizer.AddSizer(hSizer, 1, wx.EXPAND)
+        self.SetSizer(self.sizer)
+        self.Layout()
+        self.Fit()
+
+        self.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
+
+class ErlangCompileOptionPanel(EditorPanel):
+    def __init__(self, parent, filePath, option, text):
+        wx.Panel.__init__(self, parent, style = wx.TAB_TRAVERSAL | wx.NO_BORDER)
+        self.markPanel = MarkerPanel(self)
+        self.editor = ErlangSTCReadOnly(self, self.markPanel, filePath, option, text)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.findPanel = FindInFilePanel(self, self.editor)
         self.sizer.Add(self.findPanel)#, 1, wx.EXPAND)

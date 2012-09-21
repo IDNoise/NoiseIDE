@@ -9,7 +9,6 @@ from wx import stc
 import wx.lib.agw.customtreectrl as CT
 from idn_global import GetTabMgr, GetProject, GetToolMgr, Log
 from idn_utils import CreateButton, extension, writeFile, readFile, CreateBitmapButton
-from wx.combo import ComboCtrl, ComboPopup
 import idn_projectexplorer as exp
 
 class FindInFilePanel(wx.Panel):

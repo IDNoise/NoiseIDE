@@ -1,0 +1,1 @@
+-define(XX, ololo).
