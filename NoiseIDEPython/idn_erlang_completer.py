@@ -218,10 +218,12 @@ class ErlangCompleter(wx.Frame):
             if " :: " in fun.result:
                 res = fun.result.split(" :: ")
                 t.append(fun.result)
-            comment = fun.comment.replace("\n", "<br/>")
+            comment = fun.comment.replace("\n", "<br/>").replace("%", "")
+            help = "{}({}) -> {}. <br/>".format(fun.name, ", ".join(p), res[0])
+            if t:
+                help += "Types:<br/>&nbsp;&nbsp;{}".format(",<br/>&nbsp;&nbsp;".join(t))
             if comment:
-                comment += "<br/>"
-            help = "{}{}({}) -> {}. <br/>Types:<br/>&nbsp;&nbsp;{}".format(comment, fun.name, ", ".join(p), res[0], ",<br/>&nbsp;&nbsp;".join(t))
+                help += "<br/>{}".format(comment)
         else:
             path = os.path.join(ErlangCache.ERLANG_LIBS_CACHE_DIR, fun.docref)
             help = readFile(path)

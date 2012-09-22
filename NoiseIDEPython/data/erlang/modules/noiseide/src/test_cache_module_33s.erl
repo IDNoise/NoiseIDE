@@ -8,7 +8,8 @@
 %% Exported Functions
 
 -export([
-     x/0
+     x/0,
+    xxx/0
 ]).    
 -define(XssssX, ololasdasdado).   
 -type beam_instr() :: 'bs_init_writable' | 'fclearerror' | 'if_end'
@@ -30,7 +31,6 @@
 %%%===================================================================
 %%% Internal f unction s
 %%%====================================== =============================
-
 xxx() ->
     ?XX + ?XssssX.   
 
@@ -39,7 +39,8 @@ xxx() ->
 -else.
 -define(X, yy).
 -endif.  
-  
+ 
+%%asdasdasd
 x() -> io:format("~p99999~n", [?X]).
    
  

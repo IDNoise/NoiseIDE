@@ -9,7 +9,10 @@ if sys.platform == "win32":
 includefiles = ['dark.color.yaml', 
                 'white.color.yaml', 
                 'noiseide.template.yaml', 
-                'data']
+                'data/images',
+                'data/erlang/modules/noiseide/ebin',
+                'data/erlang/modules/noiseide/ebin',
+                'data/erlang/templates']
     
 build_exe_options = {'include_files':includefiles}
     
