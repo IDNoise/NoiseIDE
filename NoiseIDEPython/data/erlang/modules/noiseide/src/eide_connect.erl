@@ -26,10 +26,12 @@ start(Port) ->
     ets:new(props, [named_table, public]),
     Pid = spawn(fun() -> accept(LS) end), 
     register(?MODULE, Pid),
-    eide_connect:set_prop(simple_param_re, re:compile(<<"[A-Za-z_0-9,\s]*">>)),
-    eide_connect:set_prop(doc_re, re:compile(<<"(<p><a name=.*?</div>\\s*(?=<p><a name=|<div class=\"footer\">))">>, [multiline, dotall])),
-    eide_connect:set_prop(part_doc_re, re:compile(<<"<a name=\"([A-Za-z_:]*?)-([0-9]?)\">(?:</a>)?<span.*?>(.*?)\\((.*?)\\)\\s*-&gt;\\s*(.*?)</span>">>,
-        [multiline, dotall])).  
+    {ok, SimpleParamRe} = re:compile(<<"[A-Za-z_0-9,\s]*">>),
+    eide_connect:set_prop(simple_param_re, SimpleParamRe),
+    {ok, DocRe} = re:compile(<<"(<p><a name=.*?</div>\\s*(?=<p><a name=|<div class=\"footer\">))">>, [multiline, dotall]),
+    eide_connect:set_prop(doc_re, DocRe),
+    {ok, PartDocRe} = re:compile(<<"<a name=\"([A-Za-z_:]*?)-([0-9]?)\">(?:</a>)?<span.*?>(.*?)\\((.*?)\\)\\s*-&gt;\\s*(.*?)</span>">>),
+    eide_connect:set_prop(part_doc_re, PartDocRe).  
 
 accept(LS) ->
     gen_tcp:controlling_process(LS, self()),

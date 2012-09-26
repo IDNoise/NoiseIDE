@@ -221,8 +221,8 @@ generate_file(CacheDir, ModuleName, FilePath, DocsFilePath) ->
                 dump_data_to_file(ModuleName, CacheDir, FilePath, CacheFileName, Data)
         end,
         send_answer(CacheDir, CacheFileName, FilePath)
-    catch _:_ ->  
-    %catch Error:Reason ->
+    %catch _:_ ->  
+    catch Error:Reason ->
             ok
             %io:format("File:~pError:~p, ~p~n~p~n", [FilePath, Error, Reason, erlang:get_stacktrace()])
             %file:write_file(CacheFileName ++ ".error", [Error, Reason])
@@ -961,7 +961,7 @@ merge_with_docs(Content, DocsFilePath) ->
 
 get_functions_data_from_html(File) ->
     {ok, Data} = file:read_file(File),
-    Result = re:run(Data, eide_connect:prop(doc_re, [global, {capture, [1], list}])),
+    Result = re:run(Data, eide_connect:prop(doc_re), [global, {capture, [1], list}]),
     PartDocRe = eide_connect:prop(part_doc_re),
     case Result of
         {match, Captured} ->
