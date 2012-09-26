@@ -452,3 +452,15 @@ class ErlangSTCReadOnly(ErlangSTC):
         self.ClearAll()
         self.AppendText(text)
         self.SetReadOnly(True)
+
+    def HandleKeyDownEvent(self, event):
+        result = ErlangSTC.HandleKeyDownEvent(self, event)
+        if result:
+            return result
+        keyCode = event.GetKeyCode()
+
+        if keyCode == ord('R') and event.ControlDown():
+            GetProject().CompileOption(self.filePath, self.option)
+            return True
+        else:
+            return False

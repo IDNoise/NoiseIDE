@@ -1,6 +1,8 @@
 import os
+import operator
 import wx
 from idn_cache import ErlangCache
+from idn_colorschema import ColorSchema
 from idn_config import Config
 from idn_connect import CompileErrorInfo
 from idn_console import ErlangIDEConsole, ErlangProjectConsole
@@ -223,10 +225,10 @@ class ErlangProject(Project):
 
     def Close(self):
         ErlangCache.StopCheckingFolder(self.ProjectName())
-        Project.Close(self)
         self.shellConsole.Stop()
         for title, console in self.consoles.items():
             console.Stop()
+        Project.Close(self)
         for w in self.consoleTabs.values() + [self.errorsTable, self.shellConsole]:
             GetToolMgr().ClosePage(GetToolMgr().FindPageIndexByWindow(w))
 
@@ -344,15 +346,22 @@ class ErlangProject(Project):
         editor = GetTabMgr().FindPageByPath(path)
         if editor:
             editor.HighlightErrors(errors)
+
         self.errorsTable.AddErrors(path, errors)
         errorCount = 0
         warningCount = 0
-        for (_, err) in self.errors.items():
+        pathErrors = {}
+        pathErrors[path] = False
+        for (path, err) in self.errors.items():
             for e in err:
                 if e.type == CompileErrorInfo.WARNING:
                     warningCount += 1
                 else:
                     errorCount += 1
+                    pathErrors[path] = True
+        pathErrors = sorted(pathErrors.iteritems(), key = operator.itemgetter(1))
+        self.explorer.HighlightErrorPaths(pathErrors)
+        GetTabMgr().HighlightErrorPaths(pathErrors)
         index = GetToolMgr().FindPageIndexByWindow(self.errorsTable)
         GetToolMgr().SetPageText(index, "Errors: {}, Warnings: {}".format(errorCount, warningCount))
 

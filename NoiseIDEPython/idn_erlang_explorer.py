@@ -2,6 +2,7 @@ import os
 import re
 import time
 import wx
+from idn_colorschema import ColorSchema
 from idn_config import Config
 from idn_findreplace import ReplaceInProject, ReplaceInFile
 from idn_global import GetTabMgr, GetMainFrame
@@ -146,3 +147,18 @@ class ErlangProjectExplorer(ProjectExplorer):
         what = "-module\(" + oldModuleName + "\)"
         on = "-module(" + newModuleName + ")"
         ReplaceInFile(path, re.compile(what, re.MULTILINE | re.DOTALL), on)
+
+    def AfterPasteMove(self, oldName, newName):
+        if extension(newName) == ".erl" and os.path.basename(newName) != os.path.basename(oldName):
+            oldModuleName = os.path.basename(oldName)[:-4]
+            newModuleName = os.path.basename(newName)[:-4]
+            self.ReplaceModuleName(newName, oldModuleName, newModuleName)
+
+    def HighlightErrorPaths(self, pathErrors):
+        for (path, hasErrors) in pathErrors:
+            item = self.FindItemByPath(path)
+            if not item: continue
+            color = ColorSchema.codeEditor["error_line_color"] if hasErrors else wx.NullColour
+            while item:
+                self.SetItemTextColour(item, color)
+                item = self.GetItemParent(item)

@@ -64,6 +64,7 @@ class ErlangSocketConnection(asyncore.dispatcher):
     def Stop(self):
         self.asyncoreThread.Stop()
         self.close()
+        #print "stop connection"
 
     def handle_connect(self):
         #print "connect"
@@ -89,29 +90,15 @@ class ErlangSocketConnection(asyncore.dispatcher):
         #print 'handle_read'
         recv = self.socket.recv(4)
         if recv:
-            #print "unpack", struct.unpack('>L', recv)
             msgLen = struct.unpack('>L', recv)[0]
-            #print "len", msgLen
-            #toReceive = msgLen
             data = self.socket.recv(msgLen)
-           # d#ata = receved
-            #toReceive -= len(receved)
-            #print "recv", msgLen, len(data)
             while len(data) != msgLen:
                 try:
-                #print "to recv f", toReceive, "recved", len(data)
                     data += self.socket.recv(msgLen - len(data))
-                    #print "continue", len(data)
                 except Exception, e:
                     print "recv error", e
-                #data += receved
-               # toReceive -= len(receved)
-                #print "to recv e", toReceive, "recved", len(data)
-           # print msgLen, len(data)
-            #print data
             if self.socketHandler:
                 self.socketHandler(data)
-            #print msgLen, "to handler"
 
     def SetSocketHandler(self, handler):
         self.socketHandler = handler

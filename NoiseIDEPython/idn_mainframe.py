@@ -93,6 +93,7 @@ class NoiseIDE(wx.Frame):
 #            self.editorMenu.Enable(item.GetId(), self.TabMgr.GetSelection() != -1)
 
     def Log(self, text):
+        print text
         self.logFile.write(text)
         self.logFile.flush()
         #self.log.Append(text)

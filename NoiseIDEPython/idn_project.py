@@ -10,7 +10,7 @@ from wx.lib.agw import aui
 from idn_findreplace import FindInProjectDialog
 from idn_utils import  Menu
 import idn_projectexplorer as exp
-from idn_global import GetTabMgr, Log
+from idn_global import GetTabMgr, Log, GetMainFrame
 from PyProgress import PyProgress
 
 class ProgressTaskManagerDialog(wx.EvtHandler):
@@ -43,7 +43,6 @@ class ProgressTaskManagerDialog(wx.EvtHandler):
             #    print "task not in tasks", task
         if len(self.tasks) == 0:
             self.DestroyDialog()
-            GetTabMgr().SetFocus()
 
     def CreateProgressDialog(self, text = "IDE Activities"):
         if self.progressDialog:
@@ -76,6 +75,7 @@ class ProgressTaskManagerDialog(wx.EvtHandler):
         if self.progressDialog:
             self.progressDialog.Destroy()
             self.progressDialog = None
+        self.window.SetFocus()
 
 class Project(ProgressTaskManagerDialog):
 

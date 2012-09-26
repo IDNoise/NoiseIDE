@@ -262,7 +262,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         #print path
         if self.GetPyData(id) == path:
             return id
-        print "not found"
+        print "not found", path
         return None
 
     def SplitOnItemsFromRoot(self, path):
@@ -377,12 +377,12 @@ class ProjectExplorer(IDNCustomTreeCtrl):
                     shutil.copytree(what, newName)
                 else:
                     shutil.copy(what, newName)
-            if extension(newName) == ".erl" and os.path.basename(newName) != os.path.basename(name):
-                oldModuleName = os.path.basename(name)[:-4]
-                newModuleName = os.path.basename(newName)[:-4]
-                self.ReplaceModuleName(newName, oldModuleName, newModuleName)
+            self.AfterPasteMove(oldName, newName)
 
         self.tempData = []
+
+    def AfterPasteMove(self, oldName, newName):
+        pass
 
     def OnMenuDelete(self, event):
         for id in self.selectedItems:
@@ -437,8 +437,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         self.SetItemItalic(id, True)
 
     def ClearHiddenAttrs(self, id):
-        rootId = self.GetRootItem()
-        self.SetItemTextColour(id, self.GetItemTextColour(rootId))
+        self.SetItemTextColour(id, wx.NullColour)
         self.SetItemItalic(id, False)
 
     def OnMenuShowHide(self, event):

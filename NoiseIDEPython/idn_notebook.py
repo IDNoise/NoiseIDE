@@ -1,4 +1,5 @@
 from wx.lib.agw.aui.auibook import TabNavigatorWindow
+from idn_colorschema import ColorSchema
 from idn_erlangstc import ErlangSTC, ErlangSTCReadOnly
 from idn_marker_panel import MarkerPanel
 
@@ -283,6 +284,14 @@ class EditorNotebook(aui.AuiNotebook):
         #print self.navigationHistoryIndex
         self.Parent.toolbar.EnableTool(self.Parent.navBackT.GetId(), (self.navigationHistory != [] and self.navigationHistoryIndex > 0))
         self.Parent.toolbar.EnableTool(self.Parent.navForwardT.GetId(),  (self.navigationHistory != [] and self.navigationHistoryIndex < (len(self.navigationHistory) - 1)))
+
+    def HighlightErrorPaths(self, pathErrors):
+        for (path, hasErrors) in pathErrors:
+            index = self.FindPageIndexByPath(path)
+            if index >= 0:
+                color = ColorSchema.codeEditor["error_line_color"] if hasErrors else wx.NullColour
+                self.SetPageTextColour(index, color)
+
 
 class EditorPanel(wx.Panel):
     def __init__(self, parent, file):
