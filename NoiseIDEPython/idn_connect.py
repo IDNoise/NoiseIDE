@@ -298,12 +298,12 @@ class ErlangProcess(Process):
         self.handler = handler
 
     def Stop(self):
-        self.stopped = True
         if self.timer:
             self.timer.Stop()
         if not self.pid or self.stopped:
             return
         wx.Kill(self.pid, wx.SIGKILL, wx.KILL_CHILDREN)
+        self.stopped = True
 
     def OnTerminate(self, *args, **kwargs):
         if self.timer:

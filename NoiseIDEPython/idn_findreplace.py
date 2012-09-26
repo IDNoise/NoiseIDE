@@ -388,6 +388,7 @@ class ErrorsTree(IDNCustomTreeCtrl):
         self.SetItemText(rootNode, "{0} results in {1} files".format(resultsCount, filesCount))
         self.SetFocus()
         self.Expand(rootNode)
+        self.SortChildren(rootNode)
 
     def OnActivateItem(self, event):
         data = self.GetPyData(event.GetItem())

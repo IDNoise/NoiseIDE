@@ -169,7 +169,7 @@ class ErlangProject(Project):
 
     def UpdatePaths(self):
         dirs = ""
-        for app in self.GetApps():
+        for app in self.GetApps(True):
             appPath = os.path.join(self.AppsPath(), app)
             ebinDir = os.path.join(appPath, "ebin")
             self.shellConsole.shell.AddPath(ebinDir)
@@ -206,10 +206,10 @@ class ErlangProject(Project):
                 GetToolMgr().AddPage(self.consoles[title], '<{}> Console'.format(title))
                 self.consoleTabs[title] = self.consoles[title]
 
-    def GetApps(self):
+    def GetApps(self, all = False):
         apps = []
         for app in os.listdir(self.AppsPath()):
-            if app in self.projectData[CONFIG_EXCLUDED_DIRS]:
+            if not all and app in self.projectData[CONFIG_EXCLUDED_DIRS]:
                 continue
             appPath = os.path.join(self.AppsPath(), app)
             if not os.path.isdir(appPath):
