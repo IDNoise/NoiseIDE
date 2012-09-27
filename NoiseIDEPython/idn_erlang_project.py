@@ -360,8 +360,8 @@ class ErlangProject(Project):
                     errorCount += 1
                     pathErrors[path] = True
         pathErrors = sorted(pathErrors.iteritems(), key = operator.itemgetter(1))
-        self.explorer.HighlightErrorPaths(pathErrors)
-        GetTabMgr().HighlightErrorPaths(pathErrors)
+        wx.CallAfter(self.explorer.HighlightErrorPaths, pathErrors)
+        wx.CallAfter(GetTabMgr().HighlightErrorPaths, pathErrors)
         index = GetToolMgr().FindPageIndexByWindow(self.errorsTable)
         GetToolMgr().SetPageText(index, "Errors: {}, Warnings: {}".format(errorCount, warningCount))
 

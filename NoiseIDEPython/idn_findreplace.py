@@ -278,11 +278,13 @@ class FindInProjectDialog(wx.Dialog):
         return re.compile(pattern, flags)
 
     def FillFindResultsTable(self, results, filesCount, regexp):
-        if not FindInProjectDialog.resultsTable:
-            FindInProjectDialog.resultsTable = ErrorsTree(GetToolMgr())
-            GetToolMgr().AddPage(self.resultsTable, "Find Results")
-        GetToolMgr().SetSelection(GetToolMgr().GetPageIndex(FindInProjectDialog.resultsTable))
+        if FindInProjectDialog.resultsTable:
+            GetToolMgr().RemovePage(GetToolMgr().GetPageIndex(FindInProjectDialog.resultsTable))
+            FindInProjectDialog.resultsTable.Destroy()
+        FindInProjectDialog.resultsTable = ErrorsTree(GetToolMgr())
+        GetToolMgr().AddPage(self.resultsTable, "Find Results", True)
         FindInProjectDialog.resultsTable.SetResults(results, filesCount, regexp)
+        FindInProjectDialog.resultsTable.SetFocus()
 
     def OnKeyDown(self, event):
         keyCode = event.GetKeyCode()
@@ -333,19 +335,19 @@ class ErrorsTree(IDNCustomTreeCtrl):
         if self.regexp:
             result = FindInProjectDialog.GetDialog().SearchInFile(event.File, self.regexp)
             self.results[event.File] = result
-            self.UpdateResults()
+            wx.CallAfter(self.UpdateResults)
 
     def OnProjectFileModified(self, event):
         if self.regexp and event.File in self.results:
             result = FindInProjectDialog.GetDialog().SearchInFile(event.File, self.regexp)
             self.results[event.File] = result
-            self.UpdateResults()
+            wx.CallAfter(self.UpdateResults)
 
     def OnProjectFileDeleted(self, event):
         if self.regexp and event.File in self.results:
             result = FindInProjectDialog.GetDialog().SearchInFile(event.File, self.regexp)
             self.results[event.File] = result
-            self.UpdateResults()
+            wx.CallAfter(self.UpdateResults)
 
     def UpdateResults(self):
         expanded = []
@@ -386,7 +388,6 @@ class ErrorsTree(IDNCustomTreeCtrl):
                 self.SetPyData(resultNode,
                     ErrorsTreeItemPyData(file, result.lineNumber, result.start, result.end))
         self.SetItemText(rootNode, "{0} results in {1} files".format(resultsCount, filesCount))
-        self.SetFocus()
         self.Expand(rootNode)
         self.SortChildren(rootNode)
 

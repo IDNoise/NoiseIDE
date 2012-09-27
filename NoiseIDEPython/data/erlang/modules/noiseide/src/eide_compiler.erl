@@ -120,6 +120,7 @@ compile_internal(FileName, Options, ToBinary, RealPath) ->
                  {error, Errors, Warnings} ->
                      {Errors, Warnings}
              end,
+    %io:format("Spawn~p~n", [FileName == RealPath]),
     case FileName == RealPath of
         true -> spawn(eide_cache, gen_file_cache, [FileName]);
         _ -> spawn(eide_cache, create_cache_file_fly, [FileName, RealPath])

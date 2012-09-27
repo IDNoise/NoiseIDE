@@ -396,8 +396,11 @@ generate_from_source(Path) ->
     {ok, Source} = epp:parse_file(Path, eide_connect:prop(flat_includes, []), []),
     {ok, SourceMacros}  = epp_dodger:parse_file(Path),
     Content = parse_tree_simple(erl_syntax:form_list(SourceMacros), #content{file = Path, last_file_attr = Path}),
+    %io:format("Content:~p~n", [Content]),
+    %io:format("Source:~p~n", [Source]),
+    %io:format("SourceMacros:~p~n", [SourceMacros]),
     {#content{ 
-            file = Path, 
+            file = Path,  
             last_file_attr = Path, 
             macros = Content#content.macros, 
             includes = Content#content.includes
@@ -407,7 +410,7 @@ generate_from_source(Path) ->
 parse_tree_simple(Node, Content) ->
     case erl_syntax:type(Node) of
         form_list -> 
-            lists:foldl(fun parse_tree/2, Content,
+            lists:foldl(fun parse_tree_simple/2, Content,
                         erl_syntax:form_list_elements(Node));
         
         attribute ->
@@ -524,7 +527,9 @@ parse_atom_simple(Node, "include", Content) ->
     Content#content{includes = Includes};
 parse_atom_simple(Node, "include_lib", Content) -> 
     Includes = [parse_include(Node) | Content#content.includes],
-    Content#content{includes = Includes}.
+    Content#content{includes = Includes};
+parse_atom_simple(_, _, Content) ->
+    Content.
     
 parse_export(Export) ->
     {erl_syntax:atom_value(erl_syntax:arity_qualifier_body(Export)),
