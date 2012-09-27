@@ -52,9 +52,6 @@ class ProgressTaskManagerDialog(wx.EvtHandler):
                 agwStyle = wx.PD_APP_MODAL | wx.PD_ELAPSED_TIME, style = wx.BORDER_NONE)
             self.progressDialog.SetGaugeProportion(0.1)
             self.progressDialog.SetGaugeSteps(70)
-            #self.progressDialog.SetGaugeBackground(wx.BLACK)
-            #self.progressDialog.SetFirstGradientColour(wx.RED)
-            #self.progressDialog.SetSecondGradientColour(wx.GREEN)
             self.progressDialog.SetSize((600, 110))
             self.lastTaskTime = time.time()
             self.progressDialog.ShowDialog()
@@ -62,12 +59,7 @@ class ProgressTaskManagerDialog(wx.EvtHandler):
     def OnProgressTimer(self, event):
         if self.progressDialog:
             self.UpdatePulse("Tasks left: {}".format(len(self.tasks)))
-            #if (time.time() - self.lastTaskTime > 10 and len(self.tasks) > 0):
-                #Log("####\n 10 seconds from last task done. Tasks left ", len(self.tasks))
-                #Log("\n\t".join([str(t) for t in self.tasks]))
             if (time.time() - self.lastTaskTime > 8 and len(self.tasks) > 0):
-                #Log("####\n 15 seconds from last task done. Tasks left ", len(self.tasks))
-                #Log("\n\t".join([str(t) for t in self.tasks]))
                 Log("tasks left:", self.tasks)
                 self.DestroyDialog()
 
@@ -75,7 +67,7 @@ class ProgressTaskManagerDialog(wx.EvtHandler):
         if self.progressDialog:
             self.progressDialog.Destroy()
             self.progressDialog = None
-        self.window.SetFocus()
+        #self.window.SetFocus()
 
 class Project(ProgressTaskManagerDialog):
 

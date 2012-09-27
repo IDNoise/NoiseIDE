@@ -143,8 +143,9 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.IndicatorSetStyle(0, stc.STC_INDIC_ROUNDBOX)
         self.IndicatorSetForeground(0, ColorSchema.codeEditor["highlighted_word"])
 
-        self.SetVisiblePolicy(stc.STC_VISIBLE_STRICT, 0)
+        self.SetVisiblePolicy(stc.STC_CARET_STRICT | stc.STC_CARET_EVEN, 0)
         #self.SetYCaretPolicy(stc.STC_CARET_STRICT | stc.STC_CARET_EVEN, 0)
+        self.SetYCaretPolicy(stc.STC_CARET_JUMPS | stc.STC_CARET_EVEN, 0)
 
 
         self.font = wx.Font(ColorSchema.codeEditor["font_size"],
@@ -523,7 +524,7 @@ class ConsoleSTC(CustomSTC):
     def Append(self, text):
         text = text.rstrip()
         text += "\n"
-        wx.CallAfter(self._AppendText, text)
+        self._AppendText(text)
 
     def _AppendText(self, text):
         try:
