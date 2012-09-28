@@ -112,7 +112,8 @@ class EditorNotebook(aui.AuiNotebook):
     def OnPageClose(self, event):
         page = event.GetSelection()
         self[page].OnClose()
-        self.NavigateBack()
+        if self.GetSelection() == page:
+            self.NavigateBack(True)
 
 
     def OnNavigationKeyNotebook(self, event):
@@ -211,6 +212,7 @@ class EditorNotebook(aui.AuiNotebook):
             self._AddToHistory(editor, prevEditor, fromLine)
         self.UpdateNavToolbar()
         editor.EnsureVisibleEnforcePolicy(line)
+        self.EnsureVisible(self.FindPageIndexByEditor(editor))
         return editor
 
     def AddCustomPage(self, page, title):
@@ -266,10 +268,11 @@ class EditorNotebook(aui.AuiNotebook):
             return self[self.GetSelection()]
         return None
 
-    def NavigateBack(self):
+    def NavigateBack(self, pageMustExist = False):
         if self.navigationHistoryIndex > 0 and self.navigationHistory:
             self.navigationHistoryIndex -= 1
             data = self.navigationHistory[self.navigationHistoryIndex]
+            if pageMustExist and data[0] not in self.OpenedFiles(): return
             self.LoadFileLine(data[0], data[1], False)
         self.UpdateNavToolbar()
 
@@ -289,7 +292,7 @@ class EditorNotebook(aui.AuiNotebook):
         for (path, hasErrors) in pathErrors:
             index = self.FindPageIndexByPath(path)
             if index >= 0:
-                color = ColorSchema.codeEditor["error_line_color"] if hasErrors else wx.NullColour
+                color = ColorSchema.codeEditor["error_tab_color"] if hasErrors else wx.NullColour
                 self.SetPageTextColour(index, color)
 
 
@@ -316,9 +319,12 @@ class EditorPanel(wx.Panel):
 
     def OnKeyDown(self, event):
         keyCode = event.GetKeyCode()
-#        if keyCode == ord('F') and event.ControlDown() and not event.ShiftDown() and not event.AltDown():
-#            self.ShowFind()
-        if keyCode == wx.WXK_ESCAPE and self.findVisible:
+        #print "kd", keyCode
+        if keyCode == ord('F') and event.ControlDown() and not event.ShiftDown() and not event.AltDown():
+            self.ShowFind()
+        elif keyCode == ord('F') and event.AltDown() and not event.ShiftDown() and not event.ControlDown():
+            self.ShowFind(True)
+        elif keyCode == wx.WXK_ESCAPE and self.findVisible:
             self.HideFind()
             #event.Skip()
         elif keyCode == wx.WXK_F3 and self.findVisible:

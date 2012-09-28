@@ -212,10 +212,10 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         for item in self.editorMenu.GetMenuItems():
             self.editorMenu.RemoveItem(item)
 
-        self.editorMenu.AppendMenuItem('Find in file', GetMainFrame(), lambda e: self.Parent.ShowFind(), "Ctrl-F")
-        self.editorMenu.AppendMenuItem('Incremental find in file', GetMainFrame(), lambda e: self.Parent.ShowFind(True), "Alt-F")
-        self.editorMenu.AppendMenuItem('Go to line', GetMainFrame(), lambda e: self.ShowGoToLineDialog(), "Ctrl-G")
-        self.editorMenu.AppendSeparator()
+        #self.editorMenu.AppendMenuItem('Find in file', GetMainFrame(), self.ShowFindInFile, "Ctrl-F")
+        #self.editorMenu.AppendMenuItem('Incremental find in file', GetMainFrame(), self.ShowIncrementalFindInFile, "Alt-F")
+        #self.editorMenu.AppendMenuItem('Go to line', GetMainFrame(), lambda e: self.ShowGoToLineDialog(), "Ctrl-G")
+        #self.editorMenu.AppendSeparator()
         self.editorMenu.AppendCheckMenuItem('Show white space', GetMainFrame(), self.OnMenuShowWhiteSpace, Config.GetProp("show_white_space", False))
         self.editorMenu.AppendCheckMenuItem('Show EOL', GetMainFrame(), self.OnMenuShowEOL, Config.GetProp("show_eol", False))
        # self.editorMenu.AppendSeparator()
@@ -234,7 +234,17 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         for editor in GetTabMgr().Pages():
             editor.UpdateOptions()
 
-
+#    def ShowFindInFile(self, event):
+#        if not self.HasFocus():
+#            event.Skip()
+#            return
+#        self.Parent.ShowFind()
+#
+#    def ShowIncrementalFindInFile(self, event):
+#        if not self.HasFocus():
+#            event.Skip()
+#            return
+#        self.Parent.ShowFind(True)
 
     def UpdateOptions(self):
         self.SetViewWhiteSpace(stc.STC_WS_VISIBLEALWAYS if CustomSTC.ShowWhiteSpace else  stc.STC_WS_INVISIBLE)
@@ -319,8 +329,8 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         elif ((keyCode == ord('K') and event.ControlDown()) or
               (keyCode == ord('.') and event.ControlDown())):
             self.GoToNextOccurence()
-        #elif keyCode == ord('G') and event.ControlDown():
-        #    self.ShowGoToLineDialog()
+        elif keyCode == ord('G') and event.ControlDown():
+            self.ShowGoToLineDialog()
         else:
             return False
         return True

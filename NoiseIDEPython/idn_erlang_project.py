@@ -121,7 +121,7 @@ class ErlangProject(Project):
                 self.Compile(module)
         elif path.endswith(".yrl"):
             self.GetShell().CompileYrls([path])
-        else:
+        elif path.endswith(".erl"):
             app = self.GetApp(path)
             if app in self.projectData[CONFIG_EXCLUDED_DIRS]:
                 return

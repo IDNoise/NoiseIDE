@@ -22,12 +22,12 @@
 %%%============================  ======= ================================
      
 -record(ololo, {     
-    field_1 :: beam_instr(),  
+    field_1 :: beam_instr(),
     field_2 :: atom() | boolean() | ololoxxx,
     field_3 :: dialyzer_plt:plt_info()
 }).       
       
--opaque ololo() :: #ololo{}. 
+-opaque ololo() :: #ololo{}.
 %%%===================================================================
 %%% Internal f unction s
 %%%====================================== =============================

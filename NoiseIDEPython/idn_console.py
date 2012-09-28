@@ -97,7 +97,7 @@ class ErlangConsole(wx.Panel):
 
     def OnEditorKeyDown(self, event):
         event.Skip()
-        if event.GetKeyCode() in [wx.WXK_SHIFT, wx.WXK_CONTROL] or event.ControlDown():
+        if event.GetKeyCode() in [wx.WXK_SHIFT, wx.WXK_CONTROL] or event.ControlDown() or event.AltDown():
             return
         ch = chr(event.GetKeyCode())
         if ch.isalpha() or ch.isdigit() or ch.isspace():

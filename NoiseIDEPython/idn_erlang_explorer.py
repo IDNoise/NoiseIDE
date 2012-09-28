@@ -158,7 +158,7 @@ class ErlangProjectExplorer(ProjectExplorer):
         for (path, hasErrors) in pathErrors:
             item = self.FindItemByPath(path)
             if not item: continue
-            color = ColorSchema.codeEditor["error_line_color"] if hasErrors else wx.NullColour
+            color = ColorSchema.codeEditor["error_explorer_color"] if hasErrors else wx.NullColour
             while item:
                 self.SetItemTextColour(item, color)
                 item = self.GetItemParent(item)

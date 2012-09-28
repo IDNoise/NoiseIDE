@@ -66,8 +66,8 @@ class ErlangSTC(ErlangHighlightedSTCBase):
 
         self.lastErrors = []
         self.errorsLines = []
-        self.markerPanel.SetMarkerColor("warning", ColorSchema.codeEditor["warning_line_color"])
-        self.markerPanel.SetMarkerColor("error", ColorSchema.codeEditor["error_line_color"])
+        self.markerPanel.SetMarkerColor("warning", ColorSchema.codeEditor["warning_marker_color"])
+        self.markerPanel.SetMarkerColor("error", ColorSchema.codeEditor["error_marker_color"])
 
         self.HighlightErrors(GetProject().GetErrors(self.filePath))
 
@@ -96,12 +96,12 @@ class ErlangSTC(ErlangHighlightedSTCBase):
             background = ColorSchema.codeEditor["warning_line_color"])
 
         self.MarkerDefine(self.MARKER_ERROR_CIRCLE, stc.STC_MARK_CIRCLE,
-            foreground = ColorSchema.codeEditor["error_line_color"],
-            background = ColorSchema.codeEditor["error_line_color"])
+            foreground = ColorSchema.codeEditor["error_marker_color"],
+            background = ColorSchema.codeEditor["error_marker_color"])
 
         self.MarkerDefine(self.MARKER_WARNING_CIRCLE, stc.STC_MARK_CIRCLE,
-            foreground = ColorSchema.codeEditor["warning_line_color"],
-            background = ColorSchema.codeEditor["warning_line_color"])
+            foreground = ColorSchema.codeEditor["warning_marker_color"],
+            background = ColorSchema.codeEditor["warning_marker_color"])
 
         self.SetMarginMask(2, ~stc.STC_MASK_FOLDERS)#self.MARKER_ERROR_CIRCLE | self.MARKER_WARNING_CIRCLE)
 
