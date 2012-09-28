@@ -58,6 +58,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         self.dirChecker = None
         self.tempData = []
         self.cut = False
+        self.paths = {}
 
         self.SetupIcons()
 
@@ -89,6 +90,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
             self.SetAttrsForHiddenItem(dir)
         self.Load(dir, path)
         self.SortChildren(dir)
+        self.paths[path] = dir
         return True
 
     def AppendFile(self, parentNode, path):
@@ -105,6 +107,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         if path in self.hiddenPaths:
             self.SetAttrsForHiddenItem(file)
         self.SetPyData(file, path)
+        self.paths[path] = file
         return True
 
     def SetupChecker(self):
@@ -224,6 +227,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         self.GetEventHandler().ProcessEvent(e)
         id = self.FindItemByPath(file)
         if id:
+            del self.paths[self.GetPyData(id)]
             self.Delete(id)
 
     def DirCreated(self, dir):
@@ -246,22 +250,12 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         self.GetEventHandler().ProcessEvent(e)
         id = self.FindItemByPath(dir)
         if id:
+            del self.paths[self.GetPyData(id)]
             self.Delete(id)
 
     def FindItemByPath(self, path):
-        id = self.GetRootItem()
-        items = self.SplitOnItemsFromRoot(path)
-        #print "items", list(items)
-        for item in items:
-            children = self.GetItemChildren(id)
-            for c in children:
-                if self.GetPyData(c).endswith(item):
-                    id = c
-                    break
-        #print self.GetPyData(id)
-        #print path
-        if self.GetPyData(id) == path:
-            return id
+        if path in self.paths:
+            return self.paths[path]
         print "not found", path
         return None
 
