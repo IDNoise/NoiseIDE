@@ -79,6 +79,8 @@ class MarkerPanel(wx.Panel):
         for area in self.areas:
             if y > area[0] and y < area[1]:
                 mouseLine = area[2]
+        if not mouseLine:
+            mouseLine = y * float(self.Editor.LineCount) / float(self.Size[1])
         result = None
         if mouseLine:
             for type, markers in self.markers.items():
@@ -91,6 +93,8 @@ class MarkerPanel(wx.Panel):
                 if result.indexFrom:
                     self.Editor.SetSelection(result.indexFrom, result.indexTo)
                 return
+            else:
+                self.Editor.GotoLine(mouseLine)
         event.Skip()
 
 

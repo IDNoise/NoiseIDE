@@ -214,10 +214,22 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         self.navigateTo = None
         pos = self.PositionFromPoint(event.GetPosition())
 
+        def showErrorTooltip():
+            line = self.LineFromPosition(pos)
+            errs = list(filter(lambda e: e.line == line, self.lastErrors))
+            if errs:
+                msg = reduce(lambda msg, e: msg + e.msg + "\n", errs, "")
+                self.ShowToolTip(msg)
+            else:
+                self.HideToolTip()
+
         if event.GetPosition()[0] < self.LineNumbersWidth() + self.FoldWidth + 10:
             self.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
             self.HideToolTip()
             self.completer.HideHelp()
+            if (event.GetPosition()[0] > self.LineNumbersWidth() and
+                event.GetPosition()[0] < self.LineNumbersWidth() + 10):
+                showErrorTooltip()
             return
 
         if event.ControlDown() and self.HasFocus():
@@ -227,13 +239,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         elif self.HasFocus():
             self.SetCursor(wx.StockCursor(wx.CURSOR_IBEAM))
             self.completer.HideHelp()
-            line = self.LineFromPosition(pos)
-            errs = list(filter(lambda e: e.line == line, self.lastErrors))
-            if errs:
-                msg = reduce(lambda msg, e: msg + e.msg + "\n", errs, "")
-                self.ShowToolTip(msg)
-            else:
-                self.HideToolTip()
+            showErrorTooltip()
 
 
     def CheckHelp(self, pos):

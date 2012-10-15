@@ -88,9 +88,6 @@ class EditorLineMarginMixin:
 
 
 class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
-    ShowEOL = False
-    ShowWhiteSpace = False
-
     def __init__(self, parent, markerPanel, filePath = None):
         #style = wx.MAXIMIZE_BOX|wx.RESIZE_BORDER|wx.SYSTEM_MENU|wx.CAPTION|wx.CLOSE_BOX
         StyledTextCtrl.__init__(self, parent, style = wx.NO_BORDER)#, style = style)
@@ -146,7 +143,6 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.SetVisiblePolicy(stc.STC_CARET_STRICT | stc.STC_CARET_EVEN, 0)
         #self.SetYCaretPolicy(stc.STC_CARET_STRICT | stc.STC_CARET_EVEN, 0)
         self.SetYCaretPolicy(stc.STC_CARET_JUMPS | stc.STC_CARET_EVEN, 0)
-
 
         self.font = wx.Font(ColorSchema.codeEditor["font_size"],
             wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, False,
@@ -223,14 +219,12 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
     def OnMenuShowWhiteSpace(self, event):
         newValue = not Config.GetProp("show_white_space", False)
         Config.SetProp("show_white_space", newValue)
-        CustomSTC.ShowWhiteSpace = newValue
         for editor in GetTabMgr().Pages():
             editor.UpdateOptions()
 
     def OnMenuShowEOL(self, event):
         newValue = not Config.GetProp("show_eol", False)
         Config.SetProp("show_eol", newValue)
-        CustomSTC.ShowEOL = newValue
         for editor in GetTabMgr().Pages():
             editor.UpdateOptions()
 
@@ -247,8 +241,8 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
 #        self.Parent.ShowFind(True)
 
     def UpdateOptions(self):
-        self.SetViewWhiteSpace(stc.STC_WS_VISIBLEALWAYS if CustomSTC.ShowWhiteSpace else  stc.STC_WS_INVISIBLE)
-        self.SetViewEOL(CustomSTC.ShowEOL)
+        self.SetViewWhiteSpace(stc.STC_WS_VISIBLEALWAYS if Config.GetProp("show_white_space", False) else  stc.STC_WS_INVISIBLE)
+        self.SetViewEOL(Config.GetProp("show_eol", False))
 
     def GetLastVisibleLine(self):
         """
@@ -402,6 +396,9 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
     def OnSavePointReached(self, event):
         self.saved = True
         self.UpdateTabTitle()
+        #print self.GetScrollRange(wx.VERTICAL)
+        #print self.GetScrollPos(wx.VERTICAL)
+        #print self.GetScrollThumb(wx.VERTICAL)
 
     def DoIndent(self):
         indent = self.GetLineIndentation(self.CurrentLine - 1)

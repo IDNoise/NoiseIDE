@@ -12,6 +12,15 @@ from idn_utils import Menu, writeFile, readFile, extension
 __author__ = 'IDNoise'
 
 class ErlangProjectExplorer(ProjectExplorer):
+    def __init__(self, parent, project):
+        ProjectExplorer.__init__(self, parent, project)
+        self.pathErrors = {}
+        self.needHighlight = True
+
+        self.highlightTimer = wx.Timer(self, wx.NewId())
+        self.highlightTimer.Start(250)
+        self.Bind(wx.EVT_TIMER, self.OnHighlightTimer, self.highlightTimer)
+
     def FillNewSubMenu(self, newMenu):
         newMenu.AppendMenuItem("New Module", self, lambda e:
             self.CreateFromTemplate("module.erl", "New Module", "module_1"))
@@ -154,11 +163,17 @@ class ErlangProjectExplorer(ProjectExplorer):
             newModuleName = os.path.basename(newName)[:-4]
             self.ReplaceModuleName(newName, oldModuleName, newModuleName)
 
-    def HighlightErrorPaths(self, pathErrors):
-        for (path, hasErrors) in pathErrors:
+    def SetPathErrors(self, pathErrors):
+        self.pathErrors = pathErrors
+        self.needHighlight = True
+
+    def OnHighlightTimer(self, event):
+        if not self.needHighlight: return
+        for (path, hasErrors) in self.pathErrors:
             item = self.FindItemByPath(path)
             if not item: continue
             color = ColorSchema.codeEditor["error_explorer_color"] if hasErrors else wx.NullColour
             while item:
                 self.SetItemTextColour(item, color)
                 item = self.GetItemParent(item)
+        self.needHighlight = False

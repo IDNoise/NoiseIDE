@@ -124,6 +124,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
 
     def SetRoot(self, root):
         self.root = os.path.normcase(root)
+        self.paths = {}
         self.SetupChecker()
         rootNode = self.AddRoot(root)
         self.SetItemHasChildren(rootNode, True)

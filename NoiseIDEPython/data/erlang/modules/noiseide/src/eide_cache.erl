@@ -3,7 +3,7 @@
 -include_lib("edoc/src/edoc_types.hrl").
  
 -define(log(P), io:format("~p~n", [P])).
--define(TERM, "term()").
+-define(TERM, "term()"). 
 -define(VAR, "Var"). 
   
 -export([ 
@@ -14,7 +14,7 @@
     create_cache_for_erlang_libs/2,
     create_cache_file_fly/2,
     generate_file/4,
-    %generate_html_file/3, 
+    %generate_html_file/3,  
     ignores/0,
     gen_file_cache/1,
     gen_erlang_cache/1, 
@@ -77,7 +77,11 @@
 %erlang_cache:create_cache("d:/temp/erlang_cache", "d:/projects/joe/server/apps", undefined, erlang_cache:ignores()).
 %erlang_cache:create_cache("d:/temp/erlang_cache", "d:/projects/gijoe/server/apps", undefined, erlang_cache:ignores()).
 %eide_cache:generate_file("D:/temp/erlang_cache", "eide_cache", "d:/Proects/noiseide/noiseidepython/data/erlang/modules/noiseide/src/eide_cache.erl", "", []).
-%appmon, aptransform, asn, commontest, compiler, cosEvent, cosEventDomain, cosFileTransfer, cosNotification, cosProperty, cosTime, cosTransactions, couchbeam, crypto, debugger, dialyzer, diameter, edoc, ejson, erldocgen, erlinterface, erts, et, eunit, genleader, gproc, gs, hipe, ibrowse, ic, inets, inviso, jinterface, kernel, megaco, mnesia, mochiweb, oauth, observer, odbc, orber, osmon, otpmibs, parsetools, percept, pman, proper, publickey, reltool, runtimetools, sasl, sha, snmp, ssh, ssl, stdlib, syntaxtools, testserver, toolbar, tools, tv, typer, webtool, wx
+
+%appmon, aptransform, asn, commontest, compiler, cosEvent, cosEventDomain, cosFileTransfer, cosNotification, cosProperty, cosTime, cosTransactions, couchbeam, crypto, debugger, 
+%dialyzer, diameter, edoc, ejson, erldocgen, erlinterface, erts, et, eunit, genleader, gproc, gs, hipe, ibrowse, ic, inets, inviso, jinterface, kernel, megaco, mnesia, mochiweb, 
+%oauth, observer, odbc, orber, osmon, otpmibs, parsetools, percept, pman, proper, publickey, reltool, runtimetools, sasl, sha, snmp, ssh, ssl, stdlib, syntaxtools, testserver, 
+%toolbar, tools, tv, typer, webtool, wx
 
 %eide_cache:generate_file("D:/temp/erlang_cache", "eide_cache", "d:/Projects/noiseide/noiseidepython/data/erlang/modules/noiseide/src/eide_cache.erl", undefined, []).
 %eide_cache:generate_file("D:/temp/erlang_cache", "unit_building", "d:/Projects/GIJoe/server/apps/gamelib/src/units/unit_building.erl", undefined, []).
@@ -90,7 +94,7 @@ gen_file_cache(File) ->
                 false -> create_cache(eide_connect:prop(cache_dir) ++ "/other", File);
                 _ -> create_cache(eide_connect:prop(cache_dir) ++ "/" ++ eide_connect:prop(project_name), File)
             end
-    end. 
+    end.  
 
 gen_erlang_cache(Runtime) ->
     Dir = eide_connect:prop(cache_dir) ++ "/erlang/" ++ Runtime,
@@ -253,7 +257,7 @@ dump_data_to_file(ModuleName, CacheDir, FilePath, CFile, Content, FlyFileName) -
              exported_types = ExpTypes} = Content, 
     %io:format("Data:~p~n", [{FlyFileName, Recs}]),
     Props = [ 
-        {name,list_to_binary(ModuleName)},
+        {name, list_to_binary(ModuleName)},
         {file, list_to_binary(FilePath)},
         {funs, funs_to_json(MN, CacheDir, Funs)},
         {macros, {struct, macros_to_json(Macs, FlyFileName)}},
@@ -992,7 +996,7 @@ add_data_from_html_fun({[FunName, Arity, SpecName, Params, _Result], Text}, Cont
                 case SimpleParams of
                     true -> Fun#function{params = [Params], result = ?TERM, doc = Text};
                     _ -> Fun#function{doc = Text}
-                end,
+                end, 
             Content#content{functions = lists:keyreplace({FunName, Arity1}, #function.name, Content#content.functions, NewFun)};
         _ -> 
             IsBif = case SpecName of "erlang:" ++ _ -> false; _ -> true end,
