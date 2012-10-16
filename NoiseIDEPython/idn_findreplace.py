@@ -354,7 +354,7 @@ class ErrorsTree(IDNCustomTreeCtrl):
         for node in self.GetItemChildren(self.GetRootItem()):
             if self.IsExpanded(node):
                 expanded.append(self.GetPyData(node).file)
-        print expanded
+
         self.SetResults(self.results, self.filesCount, self.regexp)
         for node in self.GetItemChildren(self.GetRootItem()):
             if self.GetPyData(node).file in expanded:

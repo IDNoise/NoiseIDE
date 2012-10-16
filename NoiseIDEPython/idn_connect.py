@@ -1,4 +1,7 @@
 from idn_cache import ErlangCache
+from idn_erlang_constats import *
+import idn_events
+from idn_utils import erlstr
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
@@ -134,18 +137,20 @@ class CompileErrorInfo:
         return cls.WARNING if str == "warning" else cls.ERROR
 
 class ErlangIDEConnectAPI(ErlangSocketConnection):
-    TASK_COMPILE, TASK_COMPILE_FLY, TASK_GEN_FILE_CACHE, TASK_GEN_ERLANG_CACHE = range(4)
-
     def __init__(self):
         ErlangSocketConnection.__init__(self)
         self.SetSocketHandler(self._HandleSocketResponse)
 
+        self.SocketDataReceivedEvent = idn_events.Event()
+
+        self.TaskAddedEvent = idn_events.Event()
+
     def CompileFile(self, file):
-        GetProject().AddTask((self.TASK_COMPILE, file.lower()))
+        self.TaskAddedEvent((TASK_COMPILE, file.lower()))
         self._ExecRequest("compile_file", '"{}"'.format(erlstr(file)))
 
     def CompileFileFly(self, realPath, flyPath):
-        GetProject().AddTask((self.TASK_COMPILE_FLY, realPath.lower()))
+        self.TaskAddedEvent((TASK_COMPILE_FLY, realPath.lower()))
         self._ExecRequest("compile_file_fly", '["{0}", "{1}"]'.format(erlstr(realPath), erlstr(flyPath)))
 
     def Rpc(self, module, fun):
@@ -161,13 +166,12 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
         self._ExecRequest("compile_project_file", '["{0}", "{1}"]'.format(erlstr(file), app))
 
     def CompileProjectFiles(self, files):
-        GetProject().CreateProgressDialog("Compiling project")
         for (file, app) in files:
-            GetProject().AddTask((self.TASK_COMPILE, file.lower()))
+            self.TaskAddedEvent((TASK_COMPILE, file.lower()))
             self.CompileProjectFile(file, app)
 
     def GenerateFileCache(self, file):
-        GetProject().AddTask((self.TASK_GEN_FILE_CACHE, file.lower()))
+        self.TaskAddedEvent((TASK_GEN_FILE_CACHE, file.lower()))
         self._ExecRequest("gen_file_cache", '"{}"'.format(erlstr(file)))
 
     def GenerateFileCaches(self, files):
@@ -177,7 +181,6 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
     def CompileYrls(self, files):
         for file in files:
             self.CompileFile(file)
-
 
     def GenerateErlangCache(self):
         self._ExecRequest("gen_erlang_cache", '"{}"'.format( GetProject().GetErlangRuntime()))
@@ -196,45 +199,14 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
 
     def _HandleSocketResponse(self, text):
         #Log("response", text)
+
         self.lastTaskDone = None
         try:
             js = json.loads(text)
             if not "response" in js: return
             res = js["response"]
 
-            if res == "compile" or res == "compile_fly":
-                errorsData = js["errors"]
-                path = pystr(js["path"])
-
-                if res == "compile":
-                    done = (self.TASK_COMPILE, path.lower())
-                else:
-                    done = (self.TASK_COMPILE_FLY, path.lower())
-                GetProject().TaskDone("Compiled {}".format(path), done)
-
-                errors = []
-                for error in errorsData:
-                    if error["line"] == "none":
-                        return
-                    errors.append(CompileErrorInfo(path, error["type"], error["line"], error["msg"]))
-                #print "compile result: {} = {}".format(path, errors)
-                GetProject().AddErrors(path, errors)
-
-            elif res == "gen_file_cache":
-                path = pystr(js["path"])
-                cachePath = pystr(js["cache_path"])
-                ErlangCache.AddToLoad(cachePath)
-                GetProject().TaskDone("Generated cache for {}".format(path), (self.TASK_GEN_FILE_CACHE, path.lower()))
-            elif res == "gen_erlang_cache":
-                GetProject().ErlangCacheChecked()
-            elif res == "compile_option":
-                path = pystr(js["path"])
-                option = js["option"]
-                data = js["result"]
-                wx.CallAfter(GetProject().OnCompileOptionResult, path, option, data)
-
-            elif res == "connect":
-                Log("socket connected. port:", self.port)
+            wx.CallAfter(self.SocketDataReceivedEvent, res, js)
 
         except Exception, e:
 
@@ -304,21 +276,16 @@ class ErlangProcessWithConnection(ErlangProcess, ErlangIDEConnectAPI):
     def Start(self):
         ErlangProcess.Start(self)
         self.SendCommandToProcess("eide_connect:start({}).".format(self.port))
-        time.sleep(1)
-        ErlangSocketConnection.Start(self)
+        #time.sleep(1)
 
     def Stop(self):
         ErlangSocketConnection.Stop(self)
         ErlangProcess.Stop(self)
 
+    def ConnectToSocket(self):
+        ErlangSocketConnection.Start(self)
+
     def OnClosed(self):
         print "closed"
         if not self.stopped:
             GetProject().OnIDEConnectionClosed()
-
-
-def erlstr(str):
-    return os.path.normcase(str).replace(os.sep, "/")
-
-def pystr(str):
-    return os.path.normcase(str).replace("/", os.sep)

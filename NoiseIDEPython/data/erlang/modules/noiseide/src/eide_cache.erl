@@ -86,7 +86,8 @@
 %eide_cache:generate_file("D:/temp/erlang_cache", "eide_cache", "d:/Projects/noiseide/noiseidepython/data/erlang/modules/noiseide/src/eide_cache.erl", undefined, []).
 %eide_cache:generate_file("D:/temp/erlang_cache", "unit_building", "d:/Projects/GIJoe/server/apps/gamelib/src/units/unit_building.erl", undefined, []).
 %ololololo comment
-gen_file_cache(File) ->
+gen_file_cache(File) -> 
+    %io:format("gen cache:~p~n", [File]),
     case eide_connect:prop(project_dir) of
         undefined -> create_cache(eide_connect:prop(cache_dir) ++ "/other", File);
         Dir ->  
@@ -97,10 +98,11 @@ gen_file_cache(File) ->
     end.  
 
 gen_erlang_cache(Runtime) ->
-    Dir = eide_connect:prop(cache_dir) ++ "/erlang/" ++ Runtime,
+    Dir = eide_connect:prop(cache_dir) ++ "/runtimes/" ++ Runtime,
     io:format("Checking cache for erlang libs ~p~n", [Dir]),
-    file:make_dir(Dir),
-    %io:format("Create cache dir:~p~n", [filelib:ensure_dir(Dir)]),
+    %file:make_dir(Dir),
+    filelib:ensure_dir(Dir),
+    %io:format("Create cache dir:~p~n", []),
     create_cache_for_erlang_libs(Dir, ignores()),
     io:format("Checking cache for erlang libs......Done~n").
 
@@ -146,9 +148,9 @@ create_cache_file_fly(FlyFile, RealFile) ->
     try 
        Data = generate(ModuleName, FlyFile, undefined), 
        dump_data_to_file(RealModuleName, CacheDir, RealFile, CacheFileName, Data, FlyFile),
-       send_answer(CacheDir, CacheFileName, RealFile)
+       send_answer(CacheFileName, RealFile)
     catch _:_ -> ok
-    end,   
+    end,    
     ok.
 
 add_paths(AppsPath) ->
@@ -214,6 +216,7 @@ get_cache_file_name(CacheDir, Name) ->
     CacheDir ++ "/" ++ Name ++ ".cache".
 
 generate_file(CacheDir, ModuleName, FilePath, DocsFilePath) ->
+    %io:format("generate_file:~p~n", [{CacheDir, ModuleName, FilePath, DocsFilePath}]),
     try
         CacheFileName = get_cache_file_name(CacheDir, ModuleName),
         case filelib:last_modified(FilePath) < filelib:last_modified(CacheFileName) of
@@ -223,28 +226,28 @@ generate_file(CacheDir, ModuleName, FilePath, DocsFilePath) ->
                 Data = generate(ModuleName, FilePath, DocsFilePath),
                 %io:format("~p~n", [Data]),
                 dump_data_to_file(ModuleName, CacheDir, FilePath, CacheFileName, Data)
-        end,
-        send_answer(CacheDir, CacheFileName, FilePath)
+        end, 
+        %io:format("cache answer:~p~n", [{CacheDir, CacheFileName, FilePath}]),
+        send_answer(CacheFileName, FilePath)
     %catch _:_ ->  
-    catch Error:Reason ->
-            ok
-            %io:format("File:~pError:~p, ~p~n~p~n", [FilePath, Error, Reason, erlang:get_stacktrace()])
+    catch 
+        exit:{ucs, {bad_utf8_character_code}} ->
+            ok;
+        Error:Reason ->
+            %ok
+            io:format("File:~p Error:~p, ~p~n~p~n", [FilePath, Error, Reason, erlang:get_stacktrace()])
             %file:write_file(CacheFileName ++ ".error", [Error, Reason])
     end,
     ok.
 
-send_answer(CacheDir, CacheFile, File) ->
-    case lists:suffix("erlang", CacheDir) of
-        false -> 
-            Response = mochijson2:encode({struct, [
-                {response, gen_file_cache},   
-                {path, iolist_to_binary(File)},     
-                {cache_path, iolist_to_binary(CacheFile)}]
-                }), 
-            eide_connect:send(Response);
-        _ ->
-            ok
-    end.
+send_answer(CacheFile, File) -> 
+    Response = mochijson2:encode({struct, [
+        {response, gen_file_cache},   
+        {path, iolist_to_binary(File)},     
+        {cache_path, iolist_to_binary(CacheFile)}]
+        }), 
+    eide_connect:send(Response).
+
 dump_data_to_file(ModuleName, CacheDir, FilePath, CFile, Content) ->
     dump_data_to_file(ModuleName, CacheDir, FilePath, CFile, Content, FilePath).
 

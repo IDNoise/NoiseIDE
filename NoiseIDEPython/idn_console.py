@@ -1,4 +1,5 @@
 from idn_colorschema import ColorSchema
+from idn_events import Event
 from idn_global import Log, GetTabMgr, GetMainFrame
 from idn_highlight import ErlangHighlighter
 from idn_notebook import ConsolePanel
@@ -18,6 +19,7 @@ class ErlangConsole(wx.Panel):
     def __init__(self, parent, cwd = os.getcwd(), params = []):
         wx.Panel.__init__(self, parent)
 
+        self.DataReceivedEvent = Event()
         self.startButton = CreateBitmapButton(self, 'start_console.png', lambda e: self.Start())
         self.stopButton = CreateBitmapButton(self, 'stop_console.png', lambda e: self.Stop())
         self.clearButton = CreateBitmapButton(self, 'clear_console.png', lambda e: self.Clear())
@@ -85,6 +87,8 @@ class ErlangConsole(wx.Panel):
         self.highlighter = ErlangHighlighter()
 
         self.consolePanel.editor.Bind(wx.EVT_KEY_DOWN, self.OnEditorKeyDown)
+
+
 
     def SetDefaultFontForCommandText(self):
         font = wx.Font(pointSize = int(ColorSchema.codeEditor["command_text_font_size"]),
@@ -178,6 +182,7 @@ class ErlangConsole(wx.Panel):
 
     def WriteToConsoleOut(self, text):
         text = "\n".join([re.sub(self.promptRegexp, "", line) for line in text.split("\n")])
+        self.DataReceivedEvent(text)
         self.consoleOut.Append(text)
 
     def SetParams(self, params):
@@ -213,10 +218,9 @@ class ErlangIDEConsole(ErlangConsole):
         self.shell = connect.ErlangProcessWithConnection(cwd)
         self.shell.SetOutputHandler(self.WriteToConsoleAndLog)
 
-
     def WriteToConsoleAndLog(self, text):
         text = "\n".join([re.sub(self.promptRegexp, "", line) for line in text.split("\n")])
+        self.DataReceivedEvent(text)
         self.consoleOut.Append(text)
-
         GetMainFrame().logFile.write(text)
         GetMainFrame().logFile.flush()

@@ -170,7 +170,7 @@ class ErlangCache:
         cls.project = project
         cls.CACHE_DIR = os.path.join(GetMainFrame().cwd, "cache", "erlang")
 
-        cls.ERLANG_LIBS_CACHE_DIR =  os.path.join(cls.CACHE_DIR, "erlang", project.GetErlangRuntime())
+        cls.ERLANG_LIBS_CACHE_DIR =  os.path.join(cls.CACHE_DIR, "runtimes", project.GetErlangRuntime())
         otherCacheDir =  os.path.join(cls.CACHE_DIR, "other")
         for dir in [cls.CACHE_DIR, cls.ERLANG_LIBS_CACHE_DIR, otherCacheDir]:
             if not os.path.isdir(dir):
@@ -260,7 +260,7 @@ class ErlangCache:
     def TryLoad(cls, module):
         if module in cls.moduleData:
             return True
-        for dir in ["erlang", GetProject().ProjectName()]:
+        for dir in [os.path.join("runtimes", cls.project.GetErlangRuntime()), cls.project.ProjectName()]:
             file = os.path.join(cls.CACHE_DIR, dir, module + ".cache")
             #print file
             if os.path.isfile(file):

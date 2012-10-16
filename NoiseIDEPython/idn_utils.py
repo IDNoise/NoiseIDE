@@ -22,6 +22,12 @@ def extension(path):
     name, ext = os.path.splitext(path)
     return ext
 
+def erlstr(str):
+    return os.path.normcase(str).replace(os.sep, "/")
+
+def pystr(str):
+    return os.path.normcase(str).replace("/", os.sep)
+
 class Timer(Thread):
     def __init__(self, interval, function):
         Thread.__init__(self)

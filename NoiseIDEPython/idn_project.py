@@ -34,9 +34,10 @@ class ProgressTaskManagerDialog(wx.EvtHandler):
 
     def TaskDone(self, description, task = None):
         #self.UpdatePulse(description)
-        self.lastTaskTime = time.time()
+        #print "done", task
         if task:
             if task in self.tasks:
+                self.lastTaskTime = time.time()
                 #print "done", task
                 self.tasks.remove(task)
             #else:
@@ -67,7 +68,7 @@ class ProgressTaskManagerDialog(wx.EvtHandler):
         if self.progressDialog:
             self.progressDialog.Destroy()
             self.progressDialog = None
-        #self.window.SetFocus()
+        self.window.SetFocus()
 
 class Project(ProgressTaskManagerDialog):
 
@@ -162,7 +163,7 @@ class Project(ProgressTaskManagerDialog):
             .MinimizeButton().CloseButton(False).BestSize2(300, 600).MinSize(100, 100)
             .MinimizeMode(aui.AUI_MINIMIZE_POS_LEFT | aui.AUI_MINIMIZE_CAPT_SMART))
         self.window.WinMgr.Update()
-        print "create explorer"
+        #print "create explorer"
 
     def GetMask(self):
         if self.CONFIG_MASK in self.userData:

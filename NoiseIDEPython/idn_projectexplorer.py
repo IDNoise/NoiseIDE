@@ -257,17 +257,8 @@ class ProjectExplorer(IDNCustomTreeCtrl):
     def FindItemByPath(self, path):
         if path in self.paths:
             return self.paths[path]
-        print "not found", path
+        #print "not found", path
         return None
-
-    def SplitOnItemsFromRoot(self, path):
-        #print "split", path, self.root
-        items = []
-        while path != self.root:
-            (path, folder) = os.path.split(path)
-            items.append(folder)
-
-        return reversed(items)
 
     def ShowMenu(self, event):
         self.selectedItems = self.GetSelections()#event.GetItem()
@@ -446,17 +437,13 @@ class ProjectExplorer(IDNCustomTreeCtrl):
             for path in sorted(self.hiddenPaths):
                 #print "hidden", path
                 if os.path.dirname(path) in self.hiddenPaths: continue
-                if os.path.isdir(path):
-                    id = self.FindItemByPath(os.path.dirname(path))
-                    #print "dir", id
-                    if id:
+                id = self.FindItemByPath(os.path.dirname(path))
+                if id:
+                    if os.path.isdir(path):
                         self.AppendDir(id, path)
-                else:
-                    id = self.FindItemByPath(os.path.dirname(path))
-                    #print "file", id
-                    if id:
+                    else:
                         self.AppendFile(id, path)
-                self.SortChildren(id)
+                    self.SortChildren(id)
 
     def OnMenuSetupMasks(self, event):
         dlg = MaskEditor(self)

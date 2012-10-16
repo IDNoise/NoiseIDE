@@ -126,7 +126,6 @@ class NoiseIDE(wx.Frame):
             lastProjects = Menu()
             self.fileMenu.AppendMenu(wx.NewId(), "Last projects", lastProjects)
             def handler(p):
-                print p
                 return lambda e: self.OpenProject(p)
             for p in Config.LastProjects():
                 if os.path.isfile(p):

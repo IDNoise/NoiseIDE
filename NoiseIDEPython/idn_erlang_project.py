@@ -15,7 +15,7 @@ from idn_global import GetMainFrame, GetToolMgr, GetTabMgr, Log
 from idn_notebook import ErlangCompileOptionPanel
 from idn_project import Project
 import idn_projectexplorer as exp
-from idn_utils import readFile, writeFile
+from idn_utils import readFile, writeFile, pystr
 
 __author__ = 'Yaroslav'
 
@@ -38,12 +38,6 @@ class ErlangProject(Project):
         self.SetupDirs()
         self.AddTabs()
         self.AddConsoles()
-        self.SetCompilerOptions()
-
-        self.CompileProject() #test
-
-        self.GenerateErlangCache() #test
-
 
         self.explorer.Bind(exp.EVT_PROJECT_FILE_CREATED, self.OnProjectFileCreated)
         self.explorer.Bind(exp.EVT_PROJECT_FILE_MODIFIED, self.OnProjectFileModified)
@@ -60,7 +54,7 @@ class ErlangProject(Project):
     #    Project.TaskDone(self, description, task)
 
     def ErlangCacheChecked(self):
-        ErlangCache.LoadCacheFromDir(os.path.join("erlang", self.GetErlangRuntime()))
+        ErlangCache.LoadCacheFromDir(os.path.join("runtimes", self.GetErlangRuntime()))
 
     def SetupMenu(self):
         Project.SetupMenu(self)
@@ -97,11 +91,11 @@ class ErlangProject(Project):
                 os.remove(os.path.join(self.flyDir, file))
 
     def RegenerateErlangCache(self):
-        ErlangCache.CleanDir(os.path.join("erlang", self.GetErlangRuntime()))
+        ErlangCache.CleanDir(os.path.join("runtimes", self.GetErlangRuntime()))
         self.GenerateErlangCache()
 
     def GenerateErlangCache(self):
-        print "generate erlang cache"
+        #print "generate erlang cache"
         self.GetShell().GenerateErlangCache()
 
     def GetShell(self):
@@ -163,11 +157,68 @@ class ErlangProject(Project):
         self.SetupShellConsole()
 
     def SetupShellConsole(self):
+        self.connected = False
         self.shellConsole = ErlangIDEConsole(GetToolMgr(), self.IDE_MODULES_DIR)
         self.shellConsole.shell.SetProp("cache_dir", os.path.normcase(ErlangCache.CACHE_DIR))
         self.shellConsole.shell.SetProp("project_dir", os.path.normcase(self.AppsPath()))
         self.shellConsole.shell.SetProp("project_name", self.ProjectName())
+        self.shellConsole.DataReceivedEvent += self.OnShellDataReceived
         GetToolMgr().AddPage(self.shellConsole, "IDE Console")
+
+    def OnShellDataReceived(self, text):
+        if "started on:" in text:
+            self.shellConsole.DataReceivedEvent -= self.OnShellDataReceived
+            self.shellConsole.shell.TaskAddedEvent += self.OnTaskAdded
+            self.shellConsole.shell.SocketDataReceivedEvent += self.OnSocketDataReceived
+            self.shellConsole.shell.ConnectToSocket()
+
+    def OnTaskAdded(self, task):
+        #print task
+        self.AddTask(task)
+
+    def OnSocketDataReceived(self, response, js):
+        #print response
+        if response == "connect":
+            self.connected = True
+            #self.shellConsole.shell.SocketDataReceivedEvent -= self.OnSocketDataReceived
+            self.OnSocketConnected()
+        elif response == "compile" or response == "compile_fly":
+            errorsData = js["errors"]
+            path = pystr(js["path"])
+
+            if response == "compile":
+                done = (TASK_COMPILE, path.lower())
+            else:
+                done = (TASK_COMPILE_FLY, path.lower())
+            self.TaskDone("Compiled {}".format(path), done)
+
+            errors = []
+            for error in errorsData:
+                if error["line"] == "none":
+                    return
+                errors.append(CompileErrorInfo(path, error["type"], error["line"], error["msg"]))
+                #print "compile result: {} = {}".format(path, errors)
+            self.AddErrors(path, errors)
+
+        elif response == "gen_file_cache":
+            path = pystr(js["path"])
+            cachePath = pystr(js["cache_path"])
+            ErlangCache.AddToLoad(cachePath)
+            self.TaskDone("Generated cache for {}".format(path), (TASK_GEN_FILE_CACHE, path.lower()))
+        elif response == "gen_erlang_cache":
+            self.ErlangCacheChecked()
+        elif response == "compile_option":
+            path = pystr(js["path"])
+            option = js["option"]
+            data = js["result"]
+            self.OnCompileOptionResult(path, option, data)
+
+    def OnSocketConnected(self):
+        self.SetCompilerOptions()
+        self.CreateProgressDialog("Compiling project")
+        self.CompileProject()
+        self.GenerateErlangCache()
+        #print 'on connected ..'
 
     def UpdatePaths(self):
         dirs = ""
@@ -295,7 +346,7 @@ class ErlangProject(Project):
                 ".app": ErlangHighlightedSTCBase}
 
     def CompileProject(self):
-        print "compile project"
+        #print "compile project"
         ErlangCache.CleanDir(self.ProjectName())
         filesToCompile = set()
         filesToCache = set()

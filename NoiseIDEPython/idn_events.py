@@ -7,9 +7,11 @@ class Event:
 
     def __add__(self, handler):
         self.handlers.append(handler)
+        return self
 
     def __sub__(self, handler):
         self.handlers.remove(handler)
+        return self
 
     def __call__(self, *args, **kwargs):
         for handler in self.handlers:

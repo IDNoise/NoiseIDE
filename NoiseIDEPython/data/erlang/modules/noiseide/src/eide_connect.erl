@@ -156,6 +156,7 @@ execute_action(gen_project_cache, _Binary) ->
     done(gen_project_cache);
 execute_action(gen_file_cache, Binary) ->
     File = binary_to_list(Binary),
+    %io:format("gen file cache action:~p~n", [File]),
     eide_cache:gen_file_cache(File),
     ?noreply;
 execute_action(compile_file, PathBinary) ->
