@@ -1,10 +1,12 @@
+from idn_events import Event
+
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 import os
 from stat import ST_MTIME
 from idn_utils import Timer, extension
 from idn_global import Log
-
+import wx
 
 class DirectoryInfo:
     def __init__(self, root, recursive = True, fileMask = [], excludeDirs = [], excludePaths = []):
@@ -72,13 +74,6 @@ class DirectoryInfoDiff:
         return (new, modified, deleted)
 
 class DirectoryChecker:
-    HANDLER_FILE_CREATED, \
-    HANDLER_FILE_MODIFIED, \
-    HANDLER_FILE_DELETED, \
-    HANDLER_DIR_CREATED, \
-    HANDLER_DIR_MODIFIED, \
-    HANDLER_DIR_DELETED = range(6)
-    HANDLER_TYPES = range(6)
 
     def __init__(self, interval, root, recursive = True, fileMask = [], excludeDirs = [], excludePaths = []):
         self.root = root
@@ -86,25 +81,22 @@ class DirectoryChecker:
         self.fileMask = fileMask
         self.excludeDirs = excludeDirs
         self.excludePaths = excludePaths
-        self.handlers = {t : [] for t in self.HANDLER_TYPES}
         self.timer = Timer(interval, self.CheckDirectoryChanges)
         if root:
             self.dirSnapshot = self.GetDirectoryInfo()
+
+        self.FilesCreatedEvent = Event()
+        self.FilesModifiedEvent = Event()
+        self.FilesDeletedEvent = Event()
+
+        self.DirsCreatedEvent = Event()
+        self.DirsModifiedEvent = Event()
+        self.DirsDeletedEvent = Event()
 
     def GetDirectoryInfo(self):
         info = DirectoryInfo(self.root, self.recursive, self.fileMask, self.excludeDirs, self.excludePaths)
         self.files = info.files.keys()
         return info
-
-    def AddHandler(self, type, fun):
-        if type not in self.HANDLER_TYPES: raise Exception("Wrong handler type")
-        self.handlers[type] += [fun]
-
-    def RemoveHandler(self, fun):
-        for type in self.handlers:
-            if fun in self.handlers[type]:
-                self.handlers[type].remove(fun)
-                return
 
     def SetInterval(self, interval):
         self.Stop()
@@ -140,18 +132,14 @@ class DirectoryChecker:
 
     def CheckDirectoryChanges(self):
         dirSnapshot = self.GetDirectoryInfo()
-
         diff = DirectoryInfoDiff(dirSnapshot, self.dirSnapshot)
-        self.SendEvents(self.HANDLER_DIR_CREATED, diff.createdDirs)
-        self.SendEvents(self.HANDLER_DIR_DELETED, diff.deletedDirs)
-        self.SendEvents(self.HANDLER_DIR_MODIFIED, diff.modifiedDirs)
-        self.SendEvents(self.HANDLER_FILE_CREATED, diff.createdFiles)
-        self.SendEvents(self.HANDLER_FILE_MODIFIED, diff.modifiedFiles)
-        self.SendEvents(self.HANDLER_FILE_DELETED, diff.deletedFiles)
         self.dirSnapshot = dirSnapshot
 
-    def SendEvents(self, type, values):
-        if not values or not self.handlers[type]: return
-        for value in values:
-            for handler in self.handlers[type]:
-                handler(value)
+        wx.CallAfter(self.DirsCreatedEvent, diff.createdDirs)
+        wx.CallAfter(self.DirsModifiedEvent, diff.modifiedDirs)
+        wx.CallAfter(self.DirsDeletedEvent, diff.deletedDirs)
+        wx.CallAfter(self.FilesCreatedEvent, diff.createdFiles)
+        wx.CallAfter(self.FilesModifiedEvent, diff.modifiedFiles)
+        wx.CallAfter(self.FilesDeletedEvent, diff.deletedFiles)
+
+

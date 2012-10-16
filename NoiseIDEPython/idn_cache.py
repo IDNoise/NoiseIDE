@@ -281,11 +281,21 @@ class ErlangCache:
         if folder in cls.checkers:
             cls.checkers[folder].Stop()
         checker = DirectoryChecker(1, os.path.join(cls.CACHE_DIR, folder), False, [".cache"])
-        checker.AddHandler(DirectoryChecker.HANDLER_FILE_CREATED, cls.LoadFile_)
-        checker.AddHandler(DirectoryChecker.HANDLER_FILE_MODIFIED, cls.LoadFile_)
-        checker.AddHandler(DirectoryChecker.HANDLER_FILE_DELETED, cls.UnloadCacheForFile)
+        checker.FilesCreatedEvent += cls.OnFilesCreated
+        checker.FilesModifiedEvent += cls.OnFilesCreated
+        checker.FilesDeletedEvent += cls.OnFilesDeleted
         checker.Start()
         cls.checkers[folder] = checker
+
+    @classmethod
+    def OnFilesCreated(cls, files):
+        for file in files:
+            cls.LoadFile_(file)
+
+    @classmethod
+    def OnFilesDeleted(cls, files):
+        for file in files:
+            cls.UnloadCacheForFile(file)
 
     @classmethod
     def StopCheckingFolder(cls, folder):

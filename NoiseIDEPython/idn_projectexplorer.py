@@ -1,3 +1,4 @@
+from idn_events import Event
 from idn_window_utils import IDNCustomTreeCtrl
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
@@ -12,31 +13,6 @@ from idn_global import GetTabMgr, GetMainFrame, Log
 
 
 ICON_SIZE = 16
-
-wxEVT_PROJECT_FILE_CREATED = wx.NewEventType()
-wxEVT_PROJECT_DIR_CREATED = wx.NewEventType()
-wxEVT_PROJECT_FILE_MODIFIED = wx.NewEventType()
-wxEVT_PROJECT_DIR_MODIFIED = wx.NewEventType()
-wxEVT_PROJECT_FILE_DELETED = wx.NewEventType()
-wxEVT_PROJECT_DIR_DELETED = wx.NewEventType()
-
-EVT_PROJECT_FILE_CREATED = wx.PyEventBinder(wxEVT_PROJECT_FILE_CREATED, 1)
-EVT_PROJECT_DIR_CREATED = wx.PyEventBinder(wxEVT_PROJECT_DIR_CREATED, 1)
-EVT_PROJECT_FILE_MODIFIED = wx.PyEventBinder(wxEVT_PROJECT_FILE_MODIFIED, 1)
-EVT_PROJECT_DIR_MODIFIED = wx.PyEventBinder(wxEVT_PROJECT_DIR_MODIFIED, 1)
-EVT_PROJECT_FILE_DELETED = wx.PyEventBinder(wxEVT_PROJECT_FILE_DELETED, 1)
-EVT_PROJECT_DIR_DELETED = wx.PyEventBinder(wxEVT_PROJECT_DIR_DELETED, 1)
-
-class ProjectExplorerFileEvent(wx.PyCommandEvent):
-    def __init__(self, evtType, evtId, file = None, **kwargs):
-        """
-        :param integer `evtType`: the event type;
-        :param integer `evtId`: the event identifier;
-        :param `file`: string path to file;
-        """
-
-        wx.PyCommandEvent.__init__(self, evtType, evtId, **kwargs)
-        self.File = file
 
 class ProjectExplorer(IDNCustomTreeCtrl):
     FILE, DIRECTORY_OPEN, DIRECTORY_CLOSED = range(3)
@@ -65,6 +41,13 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         self.Bind(CT.EVT_TREE_ITEM_MENU, self.ShowMenu)
         self.Bind(CT.EVT_TREE_ITEM_ACTIVATED, self.OnActivateItem)
         self.Bind(wx.EVT_KEY_DOWN, self.OnExplorerKeyDown)
+
+        self.ProjectFilesCreatedEvent = Event()
+        self.ProjectFilesModifiedEvent = Event()
+        self.ProjectFilesDeletedEvent = Event()
+        self.ProjectDirsCreatedEvent = Event()
+        self.ProjectDirsModifiedEvent = Event()
+        self.ProjectDirsDeletedEvent = Event()
 
     def SetupIcons(self):
         self.imageList = wx.ImageList(ICON_SIZE, ICON_SIZE)
@@ -114,13 +97,43 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         if self.dirChecker:
             self.dirChecker.Stop()
         self.dirChecker = DirectoryChecker(self.INTERVAL, self.root, True, self.mask, self.excludeDirs, self.excludePaths)
-        self.dirChecker.AddHandler(DirectoryChecker.HANDLER_FILE_CREATED, self.FileCreated)
-        self.dirChecker.AddHandler(DirectoryChecker.HANDLER_FILE_MODIFIED, self.FileModified)
-        self.dirChecker.AddHandler(DirectoryChecker.HANDLER_FILE_DELETED, self.FileDeleted)
-        self.dirChecker.AddHandler(DirectoryChecker.HANDLER_DIR_CREATED, self.DirCreated)
-        self.dirChecker.AddHandler(DirectoryChecker.HANDLER_DIR_MODIFIED, self.DirModified)
-        self.dirChecker.AddHandler(DirectoryChecker.HANDLER_DIR_DELETED, self.DirDeleted)
+        self.dirChecker.FilesCreatedEvent += self.OnFilesCreated
+        self.dirChecker.FilesModifiedEvent += self.OnFilesModified
+        self.dirChecker.FilesDeletedEvent += self.OnFilesDeleted
+        self.dirChecker.DirsCreatedEvent += self.OnDirsCreated
+        self.dirChecker.DirsModifiedEvent += self.OnDirsModified
+        self.dirChecker.DirsDeletedEvent += self.OnDirsDeleted
         self.dirChecker.Start()
+
+    def OnFilesCreated(self, files):
+        self.ProjectFilesCreatedEvent(files)
+        for file in files:
+            self.FileCreated(file)
+
+    def OnFilesModified(self, files):
+        self.ProjectFilesModifiedEvent(files)
+        for file in files:
+            self.FileModified(file)
+
+    def OnFilesDeleted(self, files):
+        self.ProjectFilesDeletedEvent(files)
+        for file in files:
+            self.FileDeleted(file)
+
+    def OnDirsCreated(self, dirs):
+        self.ProjectDirsCreatedEvent(dirs)
+        for dir in dirs:
+            self.DirCreated(dir)
+
+    def OnDirsModified(self, dirs):
+        self.ProjectDirsModifiedEvent(dirs)
+        for dir in dirs:
+            self.DirModified(dir)
+
+    def OnDirsDeleted(self, dirs):
+        self.ProjectDirsDeletedEvent(dirs)
+        for dir in dirs:
+            self.DirDeleted(dir)
 
     def SetRoot(self, root):
         self.root = os.path.normcase(root)
@@ -207,9 +220,6 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         self.dirChecker.Stop()
 
     def FileCreated(self, file):
-        #print "file created", file
-        e = ProjectExplorerFileEvent(wxEVT_PROJECT_FILE_CREATED , self.GetId(), file)
-        self.GetEventHandler().ProcessEvent(e)
         id = self.FindItemByPath(os.path.dirname(file))
         if id and self.AppendFile(id, file):
             self.SortChildren(id)
@@ -218,14 +228,10 @@ class ProjectExplorer(IDNCustomTreeCtrl):
     def FileModified(self, file):
         #print "file mod", file
         if self.mask and extension(file) not in self.mask: return
-        e = ProjectExplorerFileEvent(wxEVT_PROJECT_FILE_MODIFIED , self.GetId(), file)
-        self.GetEventHandler().ProcessEvent(e)
 
     def FileDeleted(self, file):
         #print "file del", file
         if self.mask and extension(file) not in self.mask: return
-        e = ProjectExplorerFileEvent(wxEVT_PROJECT_FILE_DELETED , self.GetId(), file)
-        self.GetEventHandler().ProcessEvent(e)
         id = self.FindItemByPath(file)
         if id:
             del self.paths[self.GetPyData(id)]
@@ -233,8 +239,6 @@ class ProjectExplorer(IDNCustomTreeCtrl):
 
     def DirCreated(self, dir):
         #print "dir created", dir
-        e = ProjectExplorerFileEvent(wxEVT_PROJECT_DIR_CREATED, self.GetId(), dir)
-        self.GetEventHandler().ProcessEvent(e)
         id = self.FindItemByPath(os.path.dirname(dir))
         if id:
             self.AppendDir(id, dir)
@@ -242,13 +246,10 @@ class ProjectExplorer(IDNCustomTreeCtrl):
 
     def DirModified(self, dir):
         #print "dir mod", dir
-        e = ProjectExplorerFileEvent(wxEVT_PROJECT_DIR_MODIFIED, self.GetId(), dir)
-        self.GetEventHandler().ProcessEvent(e)
+        pass
 
     def DirDeleted(self, dir):
         #print "dir del", dir
-        e = ProjectExplorerFileEvent(wxEVT_PROJECT_DIR_DELETED , self.GetId(), dir)
-        self.GetEventHandler().ProcessEvent(e)
         id = self.FindItemByPath(dir)
         if id:
             del self.paths[self.GetPyData(id)]

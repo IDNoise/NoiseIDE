@@ -39,19 +39,10 @@ class ErlangProject(Project):
         self.AddTabs()
         self.AddConsoles()
 
-        self.explorer.Bind(exp.EVT_PROJECT_FILE_CREATED, self.OnProjectFileCreated)
-        self.explorer.Bind(exp.EVT_PROJECT_FILE_MODIFIED, self.OnProjectFileModified)
-        self.explorer.Bind(exp.EVT_PROJECT_FILE_DELETED, self.OnProjectFileDeleted)
-        self.explorer.Bind(exp.EVT_PROJECT_DIR_CREATED, self.OnProjectDirCreated)
-
-
-
-
-        #ErlangCache.LoadCacheFromDir(self.ProjectName())
-        #ErlangCache.StartCheckingFolder(self.ProjectName())
-
-    #def TaskDone(self, description, task = None):
-    #    Project.TaskDone(self, description, task)
+        self.explorer.ProjectFilesCreatedEvent += self.OnProjectFilesCreated
+        self.explorer.ProjectFilesModifiedEvent += self.OnProjectFilesModified
+        self.explorer.ProjectFilesDeletedEvent += self.OnProjectFilesDeleted
+        self.explorer.ProjectDirsCreatedEvent += self.OnProjectDirsCreated
 
     def ErlangCacheChecked(self):
         ErlangCache.LoadCacheFromDir(os.path.join("runtimes", self.GetErlangRuntime()))
@@ -108,18 +99,35 @@ class ErlangProject(Project):
         return app[:app.index(os.sep)]
 
     def Compile(self, path):
-        #print path
-        if path.endswith(".hrl"):
-            self.GetShell().GenerateFileCache(path)
-            for module in ErlangCache.GetDependentModules(os.path.basename(path)):
-                self.Compile(module)
-        elif path.endswith(".yrl"):
-            self.GetShell().CompileYrls([path])
-        elif path.endswith(".erl"):
-            app = self.GetApp(path)
+        hrls = set()
+        erls = set()
+        yrls = set()
+        def addByType(file):
+            if file.endswith(".hrl"):
+                hrls.add(file)
+            elif file.endswith(".erl"):
+                erls.add(file)
+            elif file.endswith(".yrl"):
+                yrls.add(file)
+        if isinstance(path, list):
+            for p in path:
+                addByType(p)
+        else:
+            addByType(path)
+
+        while len(hrls) > 0:
+            for hrl in hrls:
+                self.GetShell().GenerateFileCache(hrl)
+                dependent = ErlangCache.GetDependentModules(os.path.basename(hrl))
+                for d in dependent:
+                    addByType(d)
+
+        self.GetShell().CompileYrls(yrls)
+        for erl in erls:
+            app = self.GetApp(erl)
             if app in self.projectData[CONFIG_EXCLUDED_DIRS]:
                 return
-            self.GetShell().CompileProjectFile(path, app)
+            self.GetShell().CompileProjectFile(erl, app)
 
     def CompileOption(self, path, option):
         if not path.endswith(".erl"): return
@@ -283,23 +291,24 @@ class ErlangProject(Project):
         for w in self.consoleTabs.values() + [self.errorsTable, self.shellConsole]:
             GetToolMgr().ClosePage(GetToolMgr().FindPageIndexByWindow(w))
 
-    def OnProjectFileModified(self, event):
-        event.Skip()
-        file = event.File
-        editor = GetTabMgr().FindPageByPath(file)
-        if editor:
-            text = readFile(file)
-            if not text: return
-            if unicode(editor.savedText) != unicode(text):
-                dial = wx.MessageDialog(None,
-                    'File "{}" was modified.\nDo you want to reload document?'.format(file),
-                    'File modified',
-                    wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
-                if dial.ShowModal() == wx.ID_YES:
-                    wx.CallAfter(editor.LoadFile, file)
-                    wx.CallAfter(self.Compile, file)
-        else:
-            self.Compile(file)
+    def OnProjectFilesModified(self, files):
+        toCompile = []
+        for file in files:
+            editor = GetTabMgr().FindPageByPath(file)
+            if editor:
+                text = readFile(file)
+                if not text: continue
+                if unicode(editor.savedText) != unicode(text):
+                    dial = wx.MessageDialog(None,
+                        'File "{}" was modified.\nDo you want to reload document?'.format(file),
+                        'File modified',
+                        wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
+                    if dial.ShowModal() == wx.ID_YES:
+                        editor.LoadFile(file)
+                        toCompile += file
+            else:
+                toCompile += file
+        self.Compile(toCompile)
 
 
     def FileSaved(self, file):
@@ -307,38 +316,35 @@ class ErlangProject(Project):
         self.Compile(file)
 
 
-    def OnProjectFileDeleted(self, event):
-        file = event.File
-        self.AddErrors(file, [])
-        self.RemoveUnusedBeams()
-        editor = GetTabMgr().FindPageByPath(file)
-        page = GetTabMgr().FindPageIndexByPath(file)
+    def OnProjectFilesDeleted(self, files):
+        for file in files:
+            self.AddErrors(file, [])
+            self.RemoveUnusedBeams()
+            editor = GetTabMgr().FindPageByPath(file)
+            page = GetTabMgr().FindPageIndexByPath(file)
 
-        if editor:
-            dial = wx.MessageDialog(None,
-                'File "{}" was deleted.\nDo you want to close tab with deleted document?'.format(file),
-                "File deleted",
-                wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
-            result = dial.ShowModal()
-            if result == wx.ID_YES:
-                wx.CallAfter(GetTabMgr().ClosePage, page)
-            else:
-                editor.OnSavePointLeft(None)
-                editor.Changed()
-        event.Skip()
+            if editor:
+                dial = wx.MessageDialog(None,
+                    'File "{}" was deleted.\nDo you want to close tab with deleted document?'.format(file),
+                    "File deleted",
+                    wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
+                result = dial.ShowModal()
+                if result == wx.ID_YES:
+                    GetTabMgr().ClosePage(page)
+                else:
+                    editor.OnSavePointLeft(None)
+                    editor.Changed()
 
-    def OnProjectFileCreated(self, event):
-        file = event.File
-        self.Compile(file)
-        event.Skip()
+    def OnProjectFilesCreated(self, files):
+        self.Compile(files)
 
-    def OnProjectDirCreated(self, event):
-        appPath = event.File
-        (root, app) = os.path.split(appPath)
-        if root == self.AppsPath():
-            self.UpdatePaths()
-            self.UpdateProjectConsoles()
-        event.Skip()
+    def OnProjectDirsCreated(self, dirs):
+        for dir in dirs:
+            appPath = dir
+            (root, app) = os.path.split(appPath)
+            if root == self.AppsPath():
+                self.UpdatePaths()
+                self.UpdateProjectConsoles()
 
     def GetEditorTypes(self):
         return {".config": ErlangHighlightedSTCBase,
@@ -347,6 +353,7 @@ class ErlangProject(Project):
 
     def CompileProject(self):
         #print "compile project"
+        self.CreateProgressDialog("Compiling project")
         ErlangCache.CleanDir(self.ProjectName())
         filesToCompile = set()
         filesToCache = set()
@@ -365,11 +372,20 @@ class ErlangProject(Project):
                             yrlToCompile.add(file)
                         elif file.endswith(".hrl"):
                             filesToCache.add(file)
+
+        for file in list(yrlToCompile):
+            (path, ext) = os.path.splitext(file)
+            erl = path + ".erl"
+            key = (erl, self.GetApp(erl))
+            if key in filesToCompile:
+                filesToCompile.remove(key)
+
         filesToCompile = sorted(list(filesToCompile))
         filesToCache = sorted(list(filesToCache))
-        self.GetShell().CompileProjectFiles(filesToCompile)
-        self.GetShell().GenerateFileCaches(filesToCache)
+
         self.GetShell().CompileYrls(yrlToCompile)
+        self.GetShell().GenerateFileCaches(filesToCache)
+        self.GetShell().CompileProjectFiles(filesToCompile)
         self.RemoveUnusedBeams()
 
     def RemoveUnusedBeams(self):
@@ -412,7 +428,8 @@ class ErlangProject(Project):
                     pathErrors[path] = True
         pathErrors = sorted(pathErrors.iteritems(), key = operator.itemgetter(1))
         self.explorer.SetPathErrors(pathErrors)
-        wx.CallAfter(GetTabMgr().HighlightErrorPaths, pathErrors)
+        #wx.CallAfter(GetTabMgr().HighlightErrorPaths, pathErrors)
+        GetTabMgr().HighlightErrorPaths(pathErrors)
         index = GetToolMgr().FindPageIndexByWindow(self.errorsTable)
         GetToolMgr().SetPageText(index, "Errors: {}, Warnings: {}".format(errorCount, warningCount))
 
