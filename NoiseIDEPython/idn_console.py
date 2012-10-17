@@ -178,7 +178,7 @@ class ErlangConsole(wx.Panel):
 
     def CreateShell(self, cwd, params):
         self.shell = connect.ErlangProcess(cwd, params)
-        self.shell.SetOutputHandler(self.WriteToConsoleOut)
+        self.shell.DataReceivedEvent += self.WriteToConsoleOut
 
     def WriteToConsoleOut(self, text):
         text = "\n".join([re.sub(self.promptRegexp, "", line) for line in text.split("\n")])
@@ -195,7 +195,7 @@ class ErlangProjectConsole(ErlangConsole):
 
     def CreateShell(self, cwd, params):
         self.shell = connect.ErlangProcess(cwd, params)
-        self.shell.SetOutputHandler(self.WriteToConsoleOut)
+        self.shell.DataReceivedEvent += self.WriteToConsoleOut
 
     def SetStartCommand(self, command):
         self.startCommand = command
@@ -216,7 +216,7 @@ class ErlangIDEConsole(ErlangConsole):
 
     def CreateShell(self, cwd, params):
         self.shell = connect.ErlangProcessWithConnection(cwd)
-        self.shell.SetOutputHandler(self.WriteToConsoleAndLog)
+        self.shell.DataReceivedEvent += self.WriteToConsoleAndLog
 
     def WriteToConsoleAndLog(self, text):
         text = "\n".join([re.sub(self.promptRegexp, "", line) for line in text.split("\n")])

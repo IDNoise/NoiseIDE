@@ -17,6 +17,9 @@ import json
 import random
 import wx
 from idn_global import GetProject, Log, GetMainFrame
+from twisted.internet import protocol
+from twisted.internet import reactor
+import re
 
 class AsyncoreThread(Thread):
     def __init__(self):
@@ -213,13 +216,80 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
             Log("===== connection exception ", text, e)
 
 
-class ErlangProcess(Process):
+
+class ErlangNodeProtocol(protocol.ProcessProtocol):
+    def __init__(self, parent):
+        self.parent = parent
+
+    def connectionMade(self):
+        print "connectionMade!"
+#        for i in range(self.verses):
+#            self.transport.write("Aleph-null bottles of beer on the wall,\n" +
+#                                 "Aleph-null bottles of beer,\n" +
+#                                 "Take one down and pass it around,\n" +
+#                                 "Aleph-null bottles of beer on the wall.\n")
+        #self.transport.closeStdin() # tell them we're done
+    def outReceived(self, data):
+        self.parent.DataReceived(data)
+        print "outReceived! with %d bytes!" % len(data)
+        #self.data = self.data + data
+    def errReceived(self, data):
+        print "errReceived! with %d bytes!" % len(data)
+    def inConnectionLost(self):
+        print "inConnectionLost! stdin is closed! (we probably did it)"
+    def outConnectionLost(self):
+        print "outConnectionLost! The child closed their stdout!"
+    def errConnectionLost(self):
+        print "errConnectionLost! The child closed their stderr."
+    def processExited(self, reason):
+        print "processExited, status %d" % (reason.value.exitCode,)
+    def processEnded(self, reason):
+        print "processEnded, status %d" % (reason.value.exitCode,)
+        print "quitting"
+        reactor.stop()
+    def Write(self, cmd):
+        self.transport.write(cmd)
+        self.transport.flush()
+
+
+class ErlangProcess():
+    def __init__(self, cwd, params = []):
+        self.cwd = cwd
+
+        self.protocol = ErlangNodeProtocol(self)
+
+        self.SetParams(params)
+        self.DataReceivedEvent = idn_events.Event()
+        self.stopped = False
+        #print self.DataReceivedEvent
+
+    def DataReceived(self, data):
+        self.DataReceivedEvent(data)
+
+    def SendCommandToProcess(self, cmd):
+        self.protocol.Write(cmd)
+
+    def SetParams(self, params):
+        self.cmd = GetProject().GetErlangPath()
+        self.params = ' '.join(params + ["-s reloader"])
+        self.program = "erlang"
+
+    def Start(self):
+        self.stopped = False
+        reactor.spawnProcess(self.protocol, self.cmd, [self.program, self.params])
+        reactor.run()
+
+    def Stop(self):
+        reactor.stop()
+
+
+class ErlangProcess_(Process):
     def __init__(self, cwd = os.getcwd(), params = []):
         Process.__init__(self)
         self.Redirect()
         self.cwd = cwd
         erlang = GetProject().GetErlangPath()
-        self.cmd = "{} {}".format(erlang, ' '.join(params + ["-s reloader +S 4:4"]))
+        self.cmd = "{} {}".format(erlang, ' '.join(params + ["-s reloader"]))
         self.pid = None
         self.handler = None
         self.processQueue = Queue()
@@ -230,7 +300,7 @@ class ErlangProcess(Process):
 
     def SetParams(self, params):
         erlang = GetProject().GetErlangPath()
-        self.cmd = "{} {}".format(erlang, ' '.join(params + ["-s reloader +S 4:4"]))
+        self.cmd = "{} {}".format(erlang, ' '.join(params + ["-s reloader"]))
 
     def SendCommandToProcess(self, cmd):
         cmd += '\n'

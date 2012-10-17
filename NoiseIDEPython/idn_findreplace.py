@@ -327,27 +327,30 @@ class ErrorsTree(IDNCustomTreeCtrl):
         self.filesCount = 0
         self.regexp = None
         self.Bind(CT.EVT_TREE_ITEM_ACTIVATED, self.OnActivateItem)
-        GetProject().explorer.Bind(exp.EVT_PROJECT_FILE_CREATED, self.OnProjectFileCreated)
-        GetProject().explorer.Bind(exp.EVT_PROJECT_FILE_MODIFIED, self.OnProjectFileModified)
-        GetProject().explorer.Bind(exp.EVT_PROJECT_FILE_DELETED, self.OnProjectFileDeleted)
+        GetProject().explorer.ProjectFilesCreatedEvent += self.OnProjectFilesCreated
+        GetProject().explorer.ProjectFilesModifiedEvent += self.OnProjectFilesModified
+        GetProject().explorer.ProjectFilesDeletedEvent += self.OnProjectFilesDeleted
 
-    def OnProjectFileCreated(self, event):
-        if self.regexp:
-            result = FindInProjectDialog.GetDialog().SearchInFile(event.File, self.regexp)
-            self.results[event.File] = result
-            wx.CallAfter(self.UpdateResults)
+    def OnProjectFilesCreated(self, files):
+        for file in files:
+            if self.regexp:
+                result = FindInProjectDialog.GetDialog().SearchInFile(file, self.regexp)
+                self.results[file] = result
+                self.UpdateResults()
 
-    def OnProjectFileModified(self, event):
-        if self.regexp and event.File in self.results:
-            result = FindInProjectDialog.GetDialog().SearchInFile(event.File, self.regexp)
-            self.results[event.File] = result
-            wx.CallAfter(self.UpdateResults)
+    def OnProjectFilesModified(self, files):
+        for file in files:
+            if self.regexp and file in self.results:
+                result = FindInProjectDialog.GetDialog().SearchInFile(file, self.regexp)
+                self.results[file] = result
+                wx.CallAfter(self.UpdateResults)
 
-    def OnProjectFileDeleted(self, event):
-        if self.regexp and event.File in self.results:
-            result = FindInProjectDialog.GetDialog().SearchInFile(event.File, self.regexp)
-            self.results[event.File] = result
-            wx.CallAfter(self.UpdateResults)
+    def OnProjectFilesDeleted(self, files):
+        for file in files:
+            if self.regexp and file in self.results:
+                result = FindInProjectDialog.GetDialog().SearchInFile(file, self.regexp)
+                self.results[file] = result
+                wx.CallAfter(self.UpdateResults)
 
     def UpdateResults(self):
         expanded = []

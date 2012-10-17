@@ -419,7 +419,7 @@ class ErlangSTCReadOnly(ErlangSTC):
         self.filePath = filePath
         self.option = option
 
-        GetProject().explorer.Bind(exp.EVT_PROJECT_FILE_MODIFIED, self.OnProjectFileModified)
+        GetProject().explorer.ProjectFilesModifiedEvent += self.OnProjectFilesModified
 
         self.completer = ErlangCompleter(self)
 
@@ -447,11 +447,10 @@ class ErlangSTCReadOnly(ErlangSTC):
     def Save(self):
         pass
 
-    def OnProjectFileModified(self, event):
-        file = event.File
-        if file == self.filePath:
-            GetProject().CompileOption(self.filePath, self.option)
-        event.Skip()
+    def OnProjectFilesModified(self, files):
+        for file in files:
+            if file == self.filePath:
+                GetProject().CompileOption(self.filePath, self.option)
 
     def SetNewText(self, text):
         self.SetReadOnly(False)
