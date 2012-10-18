@@ -51,8 +51,8 @@ class ErlangProject(Project):
         Project.SetupMenu(self)
 
         self.menu.AppendSeparator()
-        self.menu.AppendMenuItem("Regenerate erlang cache", self.window, lambda e: self.RegenerateErlangCache())
         self.menu.AppendMenuItem("Rebuild project", self.window, lambda e: self.CompileProject())
+        GetMainFrame().erlangMenu.AppendMenuItem("Regenerate erlang cache", self, lambda e: self.RegenerateErlangCache())
 
     def OnEditProject(self, event):
         ErlangProjectFrom(self).ShowModal()

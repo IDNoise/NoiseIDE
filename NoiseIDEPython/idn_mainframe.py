@@ -132,21 +132,30 @@ class NoiseIDE(wx.Frame):
                     lastProjects.AppendMenuItem(os.path.basename(p), self, handler(p))
 
         self.fileMenu.AppendSeparator()
-        self.fileMenu.AppendMenuItem('Edit options', self, self.OnEditOptions)
+        self.fileMenu.AppendMenuItem('User Settings', self, self.OnEditOptions)
         self.fileMenu.AppendSeparator()
         self.fileMenu.AppendMenuItem('Quit', self, self.OnQuit)
         self.menubar.Append(self.fileMenu, '&File')
 
         self.editorMenu = Menu()
-        self.menubar.Append(self.editorMenu, '&Editor')
+        self.menubar.Append(self.editorMenu, '&Edit')
+
 
         languagesMenu = Menu()
-        self.menubar.Append(languagesMenu, "Languages")
+        self.menubar.Append(languagesMenu, "&Languages")
         erlangMenu = Menu()
         languagesMenu.AppendMenu(wx.NewId(), 'Erlang', erlangMenu)
-        erlangMenu.AppendMenuItem("Edit Options", self, lambda e: self.SetupRuntimes())
+        erlangMenu.AppendMenuItem("Options", self, lambda e: self.SetupRuntimes())
         erlangMenu.AppendCheckMenuItem("Fly Compilation", self, self.OnCheckErlangFlyCompilation, Config.GetProp("erlang_fly_compilation", True))
         erlangMenu.AppendCheckMenuItem("Highlight whole line on error", self, self.OnCheckErlangHighlightErrorBackground, Config.GetProp("highlight_error_background", False))
+        self.erlangMenu = erlangMenu
+
+        self.viewMenu = Menu()
+        self.viewMenu.AppendCheckMenuItem('Show white space', self, self.OnMenuShowWhiteSpace, Config.GetProp("show_white_space", False))
+        self.viewMenu.AppendCheckMenuItem('Show EOL', self, self.OnMenuShowEOL, Config.GetProp("show_eol", False))
+        self.menubar.Append(self.viewMenu, "&View")
+
+
 
         helpMenu = Menu()
         helpMenu.AppendMenuItem("About", self, self.OnHelpAbout)
@@ -161,6 +170,18 @@ class NoiseIDE(wx.Frame):
         self.Bind(wx.EVT_TOOL, lambda e: self.TabMgr.NavigateForward(), self.navForwardT)
 
         self.toolbar.Realize()
+
+    def OnMenuShowWhiteSpace(self, event):
+        newValue = not Config.GetProp("show_white_space", False)
+        Config.SetProp("show_white_space", newValue)
+        for editor in self.TabMgr.Pages():
+            editor.UpdateOptions()
+
+    def OnMenuShowEOL(self, event):
+        newValue = not Config.GetProp("show_eol", False)
+        Config.SetProp("show_eol", newValue)
+        for editor in self.TabMgr.Pages():
+            editor.UpdateOptions()
 
     def OnCheckErlangFlyCompilation(self, event):
         currentValue = Config.GetProp("erlang_fly_compilation")

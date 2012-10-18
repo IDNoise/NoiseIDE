@@ -42,7 +42,7 @@ class ErlangProjectExplorer(ProjectExplorer):
         newMenu.AppendMenu(wx.NewId(), "Template", menu)
 
     def DefaultMask(self):
-        return [".erl", ".hrl", ".config", ".c", ".cpp", ".bat", ".igor", ".src", ".app"]
+        return [".erl", ".hrl", ".config", ".c", ".cpp", ".bat", ".igor", ".src", ".app", ".html", ".xml", ".xhtml", ".css", '.js']
 
     def OnMenuNewHeader(self, event):
         (_, path) = self.RequestName("New Header", "Enter header name", "new_header")
@@ -87,7 +87,7 @@ class ErlangProjectExplorer(ProjectExplorer):
 
 
     def DefaultExcludeDirs(self):
-        return ProjectExplorer.DefaultExcludeDirs(self) + ["ebin", ".settings"]
+        return ProjectExplorer.DefaultExcludeDirs(self) + [".settings"] #"ebin",
 
     def _GetTemplate(self, template):
         path = os.path.join(GetMainFrame().cwd, "data", "erlang", "templates", template)

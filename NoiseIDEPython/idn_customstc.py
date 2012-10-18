@@ -1,4 +1,5 @@
 from idn_config import Config
+from idn_findreplace import FindInProjectDialog
 from idn_marker_panel import Marker
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
@@ -208,37 +209,28 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         for item in self.editorMenu.GetMenuItems():
             self.editorMenu.RemoveItem(item)
 
-        #self.editorMenu.AppendMenuItem('Find in file', GetMainFrame(), self.ShowFindInFile, "Ctrl-F")
-        #self.editorMenu.AppendMenuItem('Incremental find in file', GetMainFrame(), self.ShowIncrementalFindInFile, "Alt-F")
-        #self.editorMenu.AppendMenuItem('Go to line', GetMainFrame(), lambda e: self.ShowGoToLineDialog(), "Ctrl-G")
-        #self.editorMenu.AppendSeparator()
-        self.editorMenu.AppendCheckMenuItem('Show white space', GetMainFrame(), self.OnMenuShowWhiteSpace, Config.GetProp("show_white_space", False))
-        self.editorMenu.AppendCheckMenuItem('Show EOL', GetMainFrame(), self.OnMenuShowEOL, Config.GetProp("show_eol", False))
-       # self.editorMenu.AppendSeparator()
+        self.editorMenu.AppendMenuItem('Find in file', GetMainFrame(), self.ShowFindInFile)
+        self.editorMenu.AppendMenuItem('Incremental find in file', GetMainFrame(), self.ShowIncrementalFindInFile)
+        self.editorMenu.AppendMenuItem('Go to line', GetMainFrame(), lambda e: self.ShowGoToLineDialog())
+        self.editorMenu.AppendMenuItem('Find/Replace in project', GetMainFrame(), lambda e: self.ShowFindInProject(), "Ctrl-Shift-F")
+        self.editorMenu.AppendSeparator()
 
-    def OnMenuShowWhiteSpace(self, event):
-        newValue = not Config.GetProp("show_white_space", False)
-        Config.SetProp("show_white_space", newValue)
-        for editor in GetTabMgr().Pages():
-            editor.UpdateOptions()
+    def ShowFindInProject(self):
+        dialog = FindInProjectDialog.GetDialog(GetTabMgr())
+        dialog.Show()
+        dialog.findText.SetFocus()
 
-    def OnMenuShowEOL(self, event):
-        newValue = not Config.GetProp("show_eol", False)
-        Config.SetProp("show_eol", newValue)
-        for editor in GetTabMgr().Pages():
-            editor.UpdateOptions()
+    def ShowFindInFile(self, event):
+        if not self.HasFocus():
+            event.Skip()
+            return
+        self.Parent.ShowFind()
 
-#    def ShowFindInFile(self, event):
-#        if not self.HasFocus():
-#            event.Skip()
-#            return
-#        self.Parent.ShowFind()
-#
-#    def ShowIncrementalFindInFile(self, event):
-#        if not self.HasFocus():
-#            event.Skip()
-#            return
-#        self.Parent.ShowFind(True)
+    def ShowIncrementalFindInFile(self, event):
+        if not self.HasFocus():
+            event.Skip()
+            return
+        self.Parent.ShowFind(True)
 
     def UpdateOptions(self):
         self.SetViewWhiteSpace(stc.STC_WS_VISIBLEALWAYS if Config.GetProp("show_white_space", False) else  stc.STC_WS_INVISIBLE)

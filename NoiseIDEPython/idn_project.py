@@ -119,8 +119,7 @@ class Project(ProgressTaskManagerDialog):
         GetTabMgr().Parent.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
 
     def SetupMenu(self):
-        self.menu.AppendMenuItem('Edit Project', self.window, self.OnEditProject)
-        self.menu.AppendMenuItem('Find in project', self.window, lambda e: self.ShowFindInProject(), "Ctrl-Shift-F")
+        self.menu.AppendMenuItem('Project Settings', self.window, self.OnEditProject)
         self.menu.AppendMenuItem('Go to file', self.window, lambda e: self.ShowFastOpen(), "Ctrl-O")
 
     def OnEditProject(self, event):
@@ -226,8 +225,3 @@ class Project(ProgressTaskManagerDialog):
     def ShowFastOpen(self):
         dialog = FastProjectFileOpenDialog(GetTabMgr(), self)
         dialog.ShowModal()
-
-    def ShowFindInProject(self):
-        dialog = FindInProjectDialog.GetDialog(GetTabMgr())
-        dialog.Show()
-        dialog.findText.SetFocus()
