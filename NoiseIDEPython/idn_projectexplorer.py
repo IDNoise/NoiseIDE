@@ -364,7 +364,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
                     shutil.copytree(what, newName)
                 else:
                     shutil.copy(what, newName)
-            self.AfterPasteMove(oldName, newName)
+            self.AfterPasteMove(what, newName)
 
         self.tempData = []
 
