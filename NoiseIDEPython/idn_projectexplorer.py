@@ -81,7 +81,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         children = [self.GetPyData(c) for c in self.GetItemChildren(parentNode)]
         if (path in self.excludePaths or
             (not self.showHidden and path in self.hiddenPaths) or
-            self.mask and extension(file) not in self.mask or
+            (self.mask and "*" not in self.mask and extension(file) not in self.mask) or
             path in children):
             return False
         icon = self.GetIconIndex(path)
