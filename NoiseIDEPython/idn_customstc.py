@@ -484,7 +484,68 @@ class YAMLSTC(CustomSTC):
     def SetupLexer(self):
         self.SetLexer(stc.STC_LEX_YAML)
 
-#class ErrorMarkersPanel(wx.)
+    def SetupLanguageStyles(self):
+        formats = ColorSchema.LanguageFormats("yaml")
+        self.StyleSetSpec(stc.STC_YAML_DEFAULT, formats["default"])
+        self.StyleSetSpec(stc.STC_YAML_COMMENT, formats["comment"])
+        self.StyleSetSpec(stc.STC_YAML_IDENTIFIER, formats["identifier"])
+        self.StyleSetSpec(stc.STC_YAML_NUMBER, formats["number"])
+        self.StyleSetSpec(stc.STC_YAML_KEYWORD, formats["word"])
+        self.StyleSetSpec(stc.STC_YAML_TEXT, formats["string"])
+
+class HtmlSTC(CustomSTC):
+    def SetupLexer(self):
+        self.SetLexer(stc.STC_LEX_HTML)
+
+    def SetupLanguageStyles(self):
+        formats = ColorSchema.LanguageFormats("html")
+        self.StyleSetSpec(stc.STC_H_DEFAULT, formats["default"])
+        self.StyleSetSpec(stc.STC_H_OTHER, formats["default"])
+        self.StyleSetSpec(stc.STC_H_ATTRIBUTE, formats["attribute"])
+        self.StyleSetSpec(stc.STC_H_ATTRIBUTEUNKNOWN, formats["attribute"])
+        self.StyleSetSpec(stc.STC_H_SINGLESTRING, formats["string"])
+        self.StyleSetSpec(stc.STC_H_DOUBLESTRING, formats["string"])
+        self.StyleSetSpec(stc.STC_H_TAG, formats["tag"])
+        self.StyleSetSpec(stc.STC_H_TAGEND, formats["tag"])
+        self.StyleSetSpec(stc.STC_H_NUMBER, formats["number"])
+        self.StyleSetSpec(stc.STC_H_COMMENT, formats["comment"])
+
+        formats = ColorSchema.LanguageFormats("css")
+        self.StyleSetSpec(stc.STC_CSS_OPERATOR, formats["operator"])
+        self.StyleSetSpec(stc.STC_CSS_DOUBLESTRING, formats["string"])
+        self.StyleSetSpec(stc.STC_CSS_SINGLESTRING, formats["string"])
+        self.StyleSetSpec(stc.STC_CSS_CLASS, formats["class"])
+        self.StyleSetSpec(stc.STC_CSS_ID, formats["id"])
+        self.StyleSetSpec(stc.STC_CSS_VALUE, formats["value"])
+
+class CppSTC(CustomSTC):
+    def SetupLexer(self):
+        self.SetLexer(stc.STC_LEX_CPP)
+
+    def SetupLanguageStyles(self):
+        formats = ColorSchema.LanguageFormats("cpp")
+        self.StyleSetSpec(stc.STC_C_DEFAULT, formats["default"])
+        self.StyleSetSpec(stc.STC_C_COMMENTLINE, formats["comment"])
+        self.StyleSetSpec(stc.STC_C_NUMBER, formats["number"])
+        self.StyleSetSpec(stc.STC_C_STRING, formats["string"])
+        self.StyleSetSpec(stc.STC_C_CHARACTER, formats["char"])
+        self.StyleSetSpec(stc.STC_C_WORD, formats["word"])
+        self.StyleSetSpec(stc.STC_C_IDENTIFIER, formats["identifier"])
+        self.StyleSetSpec(stc.STC_C_PREPROCESSOR, formats["preproc"])
+
+        keywords = [
+            'asm', 'delete', 'goto', 'return', 'typedef', 'auto', 'do', 'if', 'short',
+            'typeid', 'bad_cast', 'double', 'inline', 'signed', 'typename',
+            'bad_typeid', 'dynamic_cast', 'int', 'sizeof', 'union', 'bool',
+            'else', 'long', 'static', 'unsigned', 'break', 'enum', 'mutable',
+            'static_cast', 'using', 'case', 'except', 'namespace', 'struct', 'virtual',
+            'catch', 'explicit', 'new', 'switch', 'void', 'char', 'extern', 'operator',
+            'template', 'volatile', 'class', 'false', 'private', 'this', 'while',
+            'const', 'finally', 'protected', 'throw', 'const_cast', 'float', 'public',
+            'true', 'continue', 'for', 'register', 'try', 'default', 'friend',
+            'reinterpret_cast', 'type_info']
+
+        self.SetKeyWords(keywords)
 
 class HtmlWin(wx.html.HtmlWindow):
     def SetPage(self, text):

@@ -11,13 +11,20 @@ from wx.aui import wxEVT_COMMAND_AUINOTEBOOK_TAB_MIDDLE_UP
 from idn_findreplace import FindInFilePanel
 from idn_global import GetProject, GetWinMgr, GetMainFrame
 from idn_utils import extension, Menu
-from idn_customstc import CustomSTC, YAMLSTC, PythonSTC, ConsoleSTC
+from idn_customstc import CustomSTC, YAMLSTC, PythonSTC, ConsoleSTC, CppSTC, HtmlSTC
 
 EXT_STC_TYPE = {
-    ".erl": ErlangSTC,
-    ".hrl": ErlangSTC,
+    ".erl":  ErlangSTC,
+    ".hrl":  ErlangSTC,
     ".yaml": YAMLSTC,
-    ".py": PythonSTC
+    ".cpp":  CppSTC,
+    ".c":    CppSTC,
+    ".h":    CppSTC,
+    ".hpp":  CppSTC,
+    ".py":   PythonSTC,
+    ".html": HtmlSTC,
+    ".xhtml":HtmlSTC,
+    ".xml":  HtmlSTC
 }
 
 def GetSTCTypeByExt(file):

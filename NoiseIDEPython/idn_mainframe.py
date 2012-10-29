@@ -148,6 +148,8 @@ class NoiseIDE(wx.Frame):
         erlangMenu.AppendMenuItem("Options", self, lambda e: self.SetupRuntimes())
         erlangMenu.AppendCheckMenuItem("Fly Compilation", self, self.OnCheckErlangFlyCompilation, Config.GetProp("erlang_fly_compilation", True))
         erlangMenu.AppendCheckMenuItem("Highlight whole line on error", self, self.OnCheckErlangHighlightErrorBackground, Config.GetProp("highlight_error_background", False))
+        erlangMenu.AppendSeparator()
+        erlangMenu.AppendMenuItem("Check project with XRef", self, lambda e: self.StartXRef())
         self.erlangMenu = erlangMenu
 
         self.viewMenu = Menu()
@@ -170,6 +172,10 @@ class NoiseIDE(wx.Frame):
         self.Bind(wx.EVT_TOOL, lambda e: self.TabMgr.NavigateForward(), self.navForwardT)
 
         self.toolbar.Realize()
+
+    def StartXRef(self):
+        if self.project:
+            self.project.StartXRef()
 
     def OnMenuShowWhiteSpace(self, event):
         newValue = not Config.GetProp("show_white_space", False)

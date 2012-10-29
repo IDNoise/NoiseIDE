@@ -89,6 +89,12 @@ class ErlangProject(Project):
         #print "generate erlang cache"
         self.GetShell().GenerateErlangCache()
 
+    def StartXRef(self):
+        files = self.explorer.GetAllFiles()
+        for file in files:
+            if file.endswith(".erl"):
+                self.GetShell().XRef(file)
+
     def GetShell(self):
         return self.shellConsole.shell
 
@@ -208,6 +214,11 @@ class ErlangProject(Project):
                 #print "compile result: {} = {}".format(path, errors)
             self.AddErrors(path, errors)
 
+        elif response == "xref_module":
+            path = pystr(js["path"])
+            undefined = [((u["where_m"], u["where_f"], u["where_a"]),
+                          (u["what_m"], u["what_f"], u["what_a"])) for u in js["undefined"]]
+            self.AddXRefErrors(path, undefined)
         elif response == "gen_file_cache":
             path = pystr(js["path"])
             cachePath = pystr(js["cache_path"])
@@ -237,6 +248,9 @@ class ErlangProject(Project):
             dirs += ' "{}"'.format(ebinDir)
         dirs += ' "{}"'.format(self.IDE_MODULES_DIR)
         self.dirs = dirs
+
+    def AddXRefErrors(self, path, errors):
+        pass
 
     def UpdateProjectConsoles(self):
         self.consoles = {}
@@ -320,6 +334,7 @@ class ErlangProject(Project):
         for file in files:
             self.AddErrors(file, [])
             self.RemoveUnusedBeams()
+            self.ClearCacheForFile(file)
             editor = GetTabMgr().FindPageByPath(file)
             page = GetTabMgr().FindPageIndexByPath(file)
 
@@ -345,6 +360,10 @@ class ErlangProject(Project):
             if root == self.AppsPath():
                 self.UpdatePaths()
                 self.UpdateProjectConsoles()
+
+    def ClearCacheForFile(self, path):
+        pass
+
 
     def GetEditorTypes(self):
         return {".config": ErlangHighlightedSTCBase,

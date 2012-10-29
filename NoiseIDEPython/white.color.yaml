@@ -45,3 +45,33 @@ code_editor:
       fundec:     fore:#000000
       bif:        fore:#000000
       fullstop:   fore:#000000
+    cpp:
+      default:    fore:#000000
+      comment:    fore:#7F7F7F
+      number:     fore:#007F7F
+      string:     fore:#7F007F
+      character:  fore:#7F007F
+      word:       fore:#00007F
+      identifier: fore:#000000
+      preproc:    fore:#00007F
+    html:
+      default:    fore:#000000
+      other:      fore:#882288
+      comment:    fore:#006600
+      number:     fore:#00ff00
+      attribute:  fore:#993300
+      tag:        fore:#882288
+      string:     fore:#2200bb
+    css:
+      operator:   fore:#000000
+      string:     fore:#2200bb
+      class:      fore:#000000
+      id:         fore:#000000
+      value:      fore:#993300
+    yaml:
+      default:    fore:#000000
+      comment:    fore:#006600
+      number:     fore:#00ff00
+      word:       fore:#882288
+      string:     fore:#2200bb
+      identifier: fore:#000000

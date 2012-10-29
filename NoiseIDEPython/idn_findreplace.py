@@ -69,13 +69,13 @@ class FindInFilePanel(wx.Panel):
                 else:
                     self.editor.GotoPos(anchor)
                     self.editor.SetAnchor(pos)
-
-#        if self.TryFind() or not self.findText.Value:
-#            self.findText.SetBackgroundColour(wx.WHITE)
-#        else:
-#            self.findText.SetBackgroundColour(wx.Colour(200, 80, 80))
-#        self.findText.Refresh()
-#        self.findText.ClearBackground()
+        if self.TryFind() or not self.findText.Value:
+            self.findText.SetBackgroundColour(wx.WHITE)
+        else:
+            self.findText.SetBackgroundColour(wx.Colour(200, 80, 80))
+        self.findText.SetForegroundColour(wx.BLACK)
+        self.findText.Refresh()
+        self.findText.ClearBackground()
 
     def OnFind(self, event = None):
         self.textToFind = self.findText.Value
