@@ -1,5 +1,3 @@
-from twisted.internet.defer import Deferred
-from idn_cache import ErlangCache
 from idn_erlang_constats import *
 import idn_events
 from idn_utils import erlstr
@@ -8,19 +6,15 @@ __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 import socket
 import os
-import time
 import struct
 from Queue import Queue
 from threading import Thread, Event
 from wx import Process
 import asyncore
 import json
-import random
 import wx
-from idn_global import GetProject, Log, GetMainFrame
-#from twisted.internet import protocol, threads
-#from twisted.internet import reactor
-#import re
+from idn_global import GetProject, Log
+
 
 class AsyncoreThread(Thread):
     def __init__(self):
