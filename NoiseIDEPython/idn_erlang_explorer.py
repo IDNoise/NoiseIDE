@@ -22,10 +22,10 @@ class ErlangProjectExplorer(ProjectExplorer):
         self.Bind(wx.EVT_TIMER, self.OnHighlightTimer, self.highlightTimer)
 
     def FillNewSubMenu(self, newMenu):
-        newMenu.AppendMenuItem("New Module", self, lambda e:
-            self.CreateFromTemplate("module.erl", "New Module", "module_1"))
-        newMenu.AppendMenuItem("New Header", self, self.OnMenuNewHeader)
-        newMenu.AppendMenuItem("New Application", self, self.OnMenuNewApplication)
+        newMenu.AppendMenuItem("Module", self, lambda e:
+            self.CreateFromTemplate("module.erl", "Module", "module_1"))
+        newMenu.AppendMenuItem("Header", self, self.OnMenuNewHeader)
+        newMenu.AppendMenuItem("Application", self, self.OnMenuNewApplication)
         menu = Menu()
         menu.AppendMenuItem("Gen Server", self, lambda e:
             self.CreateFromTemplate("gen_server.erl", "Gen server", "gen_server_1"))

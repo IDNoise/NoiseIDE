@@ -7,7 +7,7 @@ import os
 import wx
 import shutil
 import wx.lib.agw.customtreectrl as CT
-from idn_utils import extension, Menu, CreateButton
+from idn_utils import extension, Menu, CreateButton, writeFile
 from idn_directoryinfo import DirectoryChecker
 from idn_global import GetTabMgr, GetMainFrame, Log
 
@@ -270,26 +270,33 @@ class ProjectExplorer(IDNCustomTreeCtrl):
             menu.AppendMenuItem("Setup masks", self, self.OnMenuSetupMasks)
             menu.AppendCheckMenuItem("Show hidden", self, self.OnMenuShowHide, self.showHidden)
             menu.AppendSeparator()
-            menu.AppendCheckMenuItem("New Dir", self, self.OnMenuNewDir)
+            newMenu = Menu()
+            newMenu.AppendMenuItem("File", self, self.OnMenuNewFile)
+            newMenu.AppendMenuItem("Dir", self, self.OnMenuNewDir)
+            newMenu.AppendSeparator()
+            self.FillNewSubMenu(newMenu)
+            menu.AppendMenu(wx.NewId(), "New", newMenu)
         elif self.GetRootItem() in self.selectedItems:
             pass
         else:
             if len(self.selectedItems) == 1:
                 if self.ItemHasChildren(self.eventItem):
                     newMenu = Menu()
-                    newMenu.AppendMenuItem("New Dir", self, self.OnMenuNewDir)
+                    newMenu.AppendMenuItem("File", self, self.OnMenuNewFile)
+                    newMenu.AppendMenuItem("Dir", self, self.OnMenuNewDir)
                     newMenu.AppendSeparator()
                     self.FillNewSubMenu(newMenu)
                     menu.AppendMenu(wx.NewId(), "New", newMenu)
-                    menu.AppendSeparator()
+
 
                 if (self.IsExecutable(self.eventItem) and self.IsEditable(self.eventItem)):
-                    menu.AppendMenuItem("Edit", self, self.OnMenuEditExecutable)
                     menu.AppendSeparator()
+                    menu.AppendMenuItem("Edit", self, self.OnMenuEditExecutable)
 
-                menu.AppendMenuItem("Rename", self, self.OnMenuRename)
                 menu.AppendSeparator()
+                menu.AppendMenuItem("Rename", self, self.OnMenuRename)
 
+            menu.AppendSeparator()
             menu.AppendMenuItem("Cut", self, self.OnMenuCut)
             menu.AppendMenuItem("Copy", self, self.OnMenuCopy)
 
@@ -319,6 +326,11 @@ class ProjectExplorer(IDNCustomTreeCtrl):
 
     def DefaultExcludePaths(self):
         return []
+
+    def OnMenuNewFile(self, event):
+        (_, file) = self.RequestName("New File", "Enter file name", "new_file.txt")
+        if file and not os.path.isfile(file):
+            writeFile(file, "")
 
     def OnMenuNewDir(self, event):
         (_, dir) = self.RequestName("New Directory", "Enter dir name", "new_dir")
