@@ -13,7 +13,7 @@ from idn_customstc import CustomSTC
 from idn_erlang_completer import ErlangCompleter
 from idn_erlang_constats import TYPE_MODULE, TYPE_UNKNOWN, TYPE_HRL
 from idn_erlang_lexer import ErlangLexer
-from idn_global import GetProject, GetMainFrame, GetToolMgr, GetTabMgr
+from idn_global import GetProject, GetMainFrame, GetToolMgr, GetTabMgr, Log
 from idn_highlight import ErlangHighlightType
 from idn_marker_panel import Marker
 from idn_outline import ErlangOutline
@@ -359,6 +359,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         self.Refresh()
 
     def OnFileSaved(self):
+        #Log("saved stc", self.filePath)
         GetProject().FileSaved(self.filePath)
 
     def DoIndent(self):

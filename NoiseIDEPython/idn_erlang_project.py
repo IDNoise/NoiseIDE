@@ -11,6 +11,7 @@ from idn_erlang_explorer import ErlangProjectExplorer
 from idn_erlang_project_form import ErlangProjectFrom
 from idn_erlangstc import ErlangHighlightedSTCBase, ErlangSTCReadOnly
 from idn_errors_table import ErrorsTableGrid, XrefTableGrid
+from idn_global import Log
 from idn_notebook import ErlangCompileOptionPanel
 from idn_project import Project
 import idn_projectexplorer as exp
@@ -187,11 +188,15 @@ class ErlangProject(Project):
             addByType(path)
 
         while len(hrls) > 0:
+            toRemove = []
             for hrl in hrls:
                 self.GetShell().GenerateFileCache(hrl)
                 dependent = ErlangCache.GetDependentModules(os.path.basename(hrl))
                 for d in dependent:
                     addByType(d)
+                toRemove.append(hrl)
+            for h in toRemove:
+                hrls.remove(h)
 
         self.GetShell().CompileYrls(yrls)
         for erl in erls:
