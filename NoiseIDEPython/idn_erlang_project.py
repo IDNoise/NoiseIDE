@@ -14,7 +14,7 @@ from idn_errors_table import ErrorsTableGrid, XrefTableGrid
 from idn_notebook import ErlangCompileOptionPanel
 from idn_project import Project
 import idn_projectexplorer as exp
-from idn_utils import readFile, writeFile, pystr, Menu
+from idn_utils import readFile, writeFile, pystr, Menu, GetImage
 
 __author__ = 'Yaroslav'
 
@@ -68,6 +68,15 @@ class ErlangProject(Project):
         self.consoleMenu = Menu()
 
         self.window.viewMenu.AppendMenu(wx.NewId(), "Consoles", self.consoleMenu)
+
+        self.window.toolbar.AddSeparator()
+        self.rebuildT = self.window.toolbar.AddLabelTool(wx.NewId(), 'Rebuild project', GetImage('build.png'), shortHelp = 'Rebuild project')
+        self.xrefCheckT = self.window.toolbar.AddLabelTool(wx.NewId(), 'XRef check', GetImage('xrefCheck.png'), shortHelp = 'XRef check')
+
+        self.Bind(wx.EVT_TOOL, lambda e: self.CompileProject(), self.rebuildT)
+        self.Bind(wx.EVT_TOOL, lambda e: self.StartXRef(), self.xrefCheckT)
+
+        self.window.toolbar.Realize()
 
     def OnCheckErlangFlyCompilation(self, event):
         currentValue = Config.GetProp("erlang_fly_compilation")

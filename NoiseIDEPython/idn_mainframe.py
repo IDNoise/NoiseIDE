@@ -208,8 +208,8 @@ class NoiseIDE(wx.Frame):
 
     def CreateToolBar(self):
         self.toolbar = wx.Frame.CreateToolBar(self)
-        self.navBackT = self.toolbar.AddLabelTool(wx.NewId(), 'Navigate Back', GetImage('navigateBack.png'))
-        self.navForwardT = self.toolbar.AddLabelTool(wx.NewId(), 'Navigate Forward', GetImage('navigateForward.png'))
+        self.navBackT = self.toolbar.AddLabelTool(wx.NewId(), 'Navigate Back', GetImage('navigateBack.png'), shortHelp = 'Navigate Back')
+        self.navForwardT = self.toolbar.AddLabelTool(wx.NewId(), 'Navigate Forward', GetImage('navigateForward.png'), shortHelp = 'Navigate Forward')
 
         self.Bind(wx.EVT_TOOL, lambda e: self.TabMgr.NavigateBack(), self.navBackT)
         self.Bind(wx.EVT_TOOL, lambda e: self.TabMgr.NavigateForward(), self.navForwardT)
