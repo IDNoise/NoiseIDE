@@ -160,8 +160,8 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
     def RemoveProp(self, prop):
         self._ExecRequest("remove_prop", '"{}"'.format(prop))
 
-    def XRef(self, path):
-        self._ExecRequest("xref_module", '"{}"'.format(erlstr(path)))
+    def XRef(self, module):
+        self._ExecRequest("xref_module", '"{}"'.format(module))
 
     def CompileProjectFile(self, file, app):
         self._ExecRequest("compile_project_file", '["{0}", "{1}"]'.format(erlstr(file), app))

@@ -278,13 +278,10 @@ class FindInProjectDialog(wx.Dialog):
         return re.compile(pattern, flags)
 
     def FillFindResultsTable(self, results, filesCount, regexp):
-        if FindInProjectDialog.resultsTable:
-            GetToolMgr().RemovePage(GetToolMgr().GetPageIndex(FindInProjectDialog.resultsTable))
-            FindInProjectDialog.resultsTable.Destroy()
-        FindInProjectDialog.resultsTable = ErrorsTree(GetToolMgr())
-        GetToolMgr().AddPage(self.resultsTable, "Find Results", True)
-        FindInProjectDialog.resultsTable.SetResults(results, filesCount, regexp)
-        FindInProjectDialog.resultsTable.SetFocus()
+        resultsTable = ErrorsTree(GetToolMgr())
+        GetToolMgr().AddPage(resultsTable, "Find Results: {}".format(self.textToFind), True)
+        resultsTable.SetResults(results, filesCount, regexp)
+        resultsTable.SetFocus()
 
     def OnKeyDown(self, event):
         keyCode = event.GetKeyCode()

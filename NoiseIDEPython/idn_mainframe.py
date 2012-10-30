@@ -37,7 +37,8 @@ class NoiseIDE(wx.Frame):
         agwFlags = aui.AUI_MGR_DEFAULT | aui.AUI_MGR_AUTONB_NO_CAPTION
         self.WinMgr = Manager(self, agwFlags = agwFlags )
 
-        self.SetupMenu()
+        self.SetupSimpleMenu()
+        self.CreateToolBar()
 
         Project.TYPE_PROJECT_DICT["erlang"] = ErlangProject
 
@@ -92,30 +93,47 @@ class NoiseIDE(wx.Frame):
 #        for item in self.editorMenu.GetMenuItems():
 #            self.editorMenu.Enable(item.GetId(), self.TabMgr.GetSelection() != -1)
 
-    def Log(self, text):
-        print text
-        self.logFile.write(text)
-        self.logFile.flush()
-        #self.log.Append(text)
-
-#    def ClearLog(self):
-#        self.log.Clear()
-
-    def TryLoadLastProject(self):
-        lastProject = Config.GetProp("last_project")
-        if lastProject and os.path.isfile(lastProject):
-            dial = wx.MessageDialog(None,
-                'Do you want to open last project {}?'.format(os.path.basename(lastProject)),
-                'Last project',
-                wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
-            if dial.ShowModal() == wx.ID_YES:
-                self.OpenProject(lastProject)
-
-    def SetupMenu(self):
+    def SetupSimpleMenu(self):
         self.menubar = wx.MenuBar()
         self.fileMenu = Menu()
-        #self.fileMenu.AppendMenuItem('Open File', self, self.OnOpen)
-       # self.fileMenu.AppendSeparator()
+
+        projectsMenu = Menu()
+        projectsMenu.AppendMenuItem('Erlang', self, self.OnNewErlangProject)
+
+        self.fileMenu.AppendMenu(wx.NewId(), "New project", projectsMenu)
+        self.fileMenu.AppendMenuItem('Open Project', self, self.OnOpenProject)
+
+        if Config.LastProjects():
+            lastProjects = Menu()
+            self.fileMenu.AppendMenu(wx.NewId(), "Last projects", lastProjects)
+            def handler(p):
+                return lambda e: self.OpenProject(p)
+            for p in Config.LastProjects():
+                if os.path.isfile(p):
+                    lastProjects.AppendMenuItem(os.path.basename(p), self, handler(p))
+
+        self.fileMenu.AppendSeparator()
+        self.fileMenu.AppendMenuItem('User Settings', self, self.OnEditOptions)
+        self.fileMenu.AppendSeparator()
+        self.fileMenu.AppendMenuItem('Quit', self, self.OnQuit)
+        self.menubar.Append(self.fileMenu, '&File')
+
+
+        languagesMenu = Menu()
+        self.menubar.Append(languagesMenu, "&Languages")
+        erlangMenu = Menu()
+        languagesMenu.AppendMenu(wx.NewId(), 'Erlang', erlangMenu)
+        erlangMenu.AppendMenuItem("Options", self, lambda e: self.SetupRuntimes())
+
+        helpMenu = Menu()
+        helpMenu.AppendMenuItem("About", self, self.OnHelpAbout)
+        self.menubar.Append(helpMenu, '&Help')
+        self.SetMenuBar(self.menubar)
+
+    def SetupProjectMenu(self):
+        self.menubar = wx.MenuBar()
+        self.fileMenu = Menu()
+
         projectsMenu = Menu()
         projectsMenu.AppendMenuItem('Erlang', self, self.OnNewErlangProject)
 
@@ -140,31 +158,57 @@ class NoiseIDE(wx.Frame):
         self.editorMenu = Menu()
         self.menubar.Append(self.editorMenu, '&Edit')
 
+        self.projectMenu = Menu()
+        self.menubar.Append(self.projectMenu, '&Project')
 
         languagesMenu = Menu()
         self.menubar.Append(languagesMenu, "&Languages")
         erlangMenu = Menu()
         languagesMenu.AppendMenu(wx.NewId(), 'Erlang', erlangMenu)
         erlangMenu.AppendMenuItem("Options", self, lambda e: self.SetupRuntimes())
+        erlangMenu.AppendSeparator()
         erlangMenu.AppendCheckMenuItem("Fly Compilation", self, self.OnCheckErlangFlyCompilation, Config.GetProp("erlang_fly_compilation", True))
         erlangMenu.AppendCheckMenuItem("Highlight whole line on error", self, self.OnCheckErlangHighlightErrorBackground, Config.GetProp("highlight_error_background", False))
-        erlangMenu.AppendSeparator()
-        erlangMenu.AppendMenuItem("Check project with XRef", self, lambda e: self.StartXRef())
+       # erlangMenu.AppendSeparator()
         self.erlangMenu = erlangMenu
 
         self.viewMenu = Menu()
         self.viewMenu.AppendCheckMenuItem('Show white space', self, self.OnMenuShowWhiteSpace, Config.GetProp("show_white_space", False))
         self.viewMenu.AppendCheckMenuItem('Show EOL', self, self.OnMenuShowEOL, Config.GetProp("show_eol", False))
+        self.viewMenu.AppendSeparator()
+        #self.viewMenu.AppendMenuItem("Log", self.window, lambda e: self.ShowLog())
+
         self.menubar.Append(self.viewMenu, "&View")
-
-
 
         helpMenu = Menu()
         helpMenu.AppendMenuItem("About", self, self.OnHelpAbout)
         self.menubar.Append(helpMenu, '&Help')
         self.SetMenuBar(self.menubar)
 
-        self.toolbar = self.CreateToolBar()
+    def ShowLog(self):
+        pass#if self.ToolMgr.FindPageIndexByWindow(self.)
+
+    def Log(self, text):
+        print text
+        self.logFile.write(text)
+        self.logFile.flush()
+        #self.log.Append(text)
+
+#    def ClearLog(self):
+#        self.log.Clear()
+
+    def TryLoadLastProject(self):
+        lastProject = Config.GetProp("last_project")
+        if lastProject and os.path.isfile(lastProject):
+            dial = wx.MessageDialog(None,
+                'Do you want to open last project {}?'.format(os.path.basename(lastProject)),
+                'Last project',
+                wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
+            if dial.ShowModal() == wx.ID_YES:
+                self.OpenProject(lastProject)
+
+    def CreateToolBar(self):
+        self.toolbar = wx.Frame.CreateToolBar(self)
         self.navBackT = self.toolbar.AddLabelTool(wx.NewId(), 'Navigate Back', GetImage('navigateBack.png'))
         self.navForwardT = self.toolbar.AddLabelTool(wx.NewId(), 'Navigate Forward', GetImage('navigateForward.png'))
 
@@ -172,10 +216,6 @@ class NoiseIDE(wx.Frame):
         self.Bind(wx.EVT_TOOL, lambda e: self.TabMgr.NavigateForward(), self.navForwardT)
 
         self.toolbar.Realize()
-
-    def StartXRef(self):
-        if self.project:
-            self.project.StartXRef()
 
     def OnMenuShowWhiteSpace(self, event):
         newValue = not Config.GetProp("show_white_space", False)
@@ -208,21 +248,6 @@ class NoiseIDE(wx.Frame):
     def MenuBar(self):
         return self.menubar
 
-    def OnOpen(self, event):
-        dialog = wx.FileDialog(
-            self,
-            message = "Select file",
-            #wildcard = "*.erl",
-            style = wx.FD_MULTIPLE | wx.FD_OPEN | wx.FD_FILE_MUST_EXIST
-        )
-        if dialog.ShowModal() == wx.ID_OK:
-            files = dialog.GetFilenames()
-            dirname = dialog.GetDirectory()
-            for file in files:
-                file =os.path.join(dirname, file)
-                self.TabMgr.LoadFileLine(file)
-        dialog.Destroy()
-
     def OnOpenProject(self, event):
         dialog = wx.FileDialog(
             self,
@@ -248,9 +273,13 @@ class NoiseIDE(wx.Frame):
         projects.append(projectFile)
         Config.SetLastProjects(projects)
 
+        self.SetupProjectMenu()
         self.LoadProject(projectFile)
+
         #self.project.mEditProject.Enable(True)
         self.SetTitle(self.project.ProjectName() + " - " + "Noise IDE")
+
+        self.project.SetupMenu()
 
     def LoadProject(self, filePath):
         projectData = yaml.load(file(filePath, 'r'))

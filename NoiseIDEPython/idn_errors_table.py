@@ -3,6 +3,7 @@ import operator
 import os
 import wx
 from wx.grid import PyGridTableBase
+from idn_cache import ErlangCache
 from idn_global import GetTabMgr
 
 __author__ = 'Yaroslav'
@@ -11,7 +12,7 @@ class ErrorsTableGrid(wx.grid.Grid):
     def __init__(self, parent, project):
         wx.grid.Grid.__init__(self, parent, -1)
         self.project = project
-        self.table = ErrorsTable([])
+        self.table = self.CreateTable()
         self.SetTable(self.table, True)
         self.AutoSizeColumns(False)
         self.SetRowLabelSize(0)
@@ -30,6 +31,10 @@ class ErrorsTableGrid(wx.grid.Grid):
         self.DisableDragGridSize()
         self.DisableDragRowSize()
         self.Bind(wx.grid.EVT_GRID_CELL_LEFT_DCLICK, self.OnLeftDClick)
+
+
+    def CreateTable(self):
+        return ErrorsTable([])
 
     def OnLeftDClick(self, event):
         row = event.GetRow()
@@ -117,3 +122,31 @@ class ErrorsTable(PyGridTableBase):
         # This sends an event to the grid table to update all of the values
         msg = wx.grid.GridTableMessage(self, wx.grid.GRIDTABLE_REQUEST_VIEW_GET_VALUES)
         grid.ProcessTableMessage(msg)
+
+class XrefTable(ErrorsTable):
+    def __init__(self, data):
+        ErrorsTable.__init__(self, data)
+        self.colLabels = ["File", "Line", "Function", "Undefined function call"]
+
+class XrefTableGrid(ErrorsTableGrid):
+    def __init__(self, parent, project):
+        ErrorsTableGrid.__init__(self, parent, project)
+        self.SetColSize(0, 450)
+        self.SetColSize(1, 50)
+        self.SetColSize(2, 150)
+        self.SetColSize(3, 750)
+
+    def CreateTable(self):
+        return XrefTable([])
+
+    def AddErrors(self, path, errors):
+        currentRows = len(self.table.data)
+        newPath = path.replace(self.project.AppsPath() + os.sep, "")
+        data = list(filter(lambda x: x[0] != newPath, self.table.data))
+        for ((wm, wf, wa), (m, f, a)) in errors:
+            funData = ErlangCache.ModuleFunction(wm, wf, wa)
+
+            data.append((newPath, funData.line - 1, "{}:{}/{}".format(wm, wf, wa), "{}:{}/{}".format(m, f, a)))
+        data = sorted(data, key = operator.itemgetter(2, 0))
+        self.table.data = data
+        self.table.ResetView(self, currentRows)

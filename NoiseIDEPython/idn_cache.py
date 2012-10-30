@@ -273,8 +273,21 @@ class ErlangCache:
         if not os.path.isfile(file): return
         if not fileName.endswith(".cache"): return
         name = os.path.basename(file)[:-6]
+        if not name in cls.moduleData: return
         del cls.moduleData[name]
-        cls.modules.remove(name)
+        if name.endswith(".hrl"):
+            cls.includes.add(name)
+        else:
+            cls.modules.remove(name)
+
+    @classmethod
+    def UnloadModule(cls, name):
+        if not name in cls.moduleData: return
+        del cls.moduleData[name]
+        if name.endswith(".hrl"):
+            cls.includes.add(name)
+        else:
+            cls.modules.remove(name)
 
     @classmethod
     def StartCheckingFolder(cls, folder):

@@ -110,17 +110,13 @@ class Project(ProgressTaskManagerDialog):
         self.OnLoadProject()
         self.OpenLastFiles()
 
-        self.menu = Menu()
-        self.SetupMenu()
-        self.menuPos = window.MenuBar().GetMenuCount() - 1
-        self.window.MenuBar().Insert(self.menuPos, self.menu, "&Project")
         self.SetupPerspective()
 
         GetTabMgr().Parent.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
 
     def SetupMenu(self):
-        self.menu.AppendMenuItem('Project Settings', self.window, self.OnEditProject)
-        self.menu.AppendMenuItem('Go to file', self.window, lambda e: self.ShowFastOpen(), "Ctrl-O")
+        self.window.projectMenu.AppendMenuItem('Project Settings', self.window, self.OnEditProject)
+        self.window.projectMenu.AppendMenuItem('Go to file', self.window, lambda e: self.ShowFastOpen(), "Ctrl-O")
 
     def OnEditProject(self, event):
         pass
@@ -176,7 +172,8 @@ class Project(ProgressTaskManagerDialog):
         self.window.WinMgr.Update()
         self.explorer.Destroy()
         GetTabMgr().CloseAll()
-        self.window.MenuBar().Remove(self.menuPos)
+        for item in self.window.projectMenu.GetMenuItems():
+            self.window.projectMenu.Remove(item.GetId())
 
     def SaveUserData(self):
         #print "save user data"

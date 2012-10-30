@@ -39,10 +39,20 @@ def GetSTCTypeByExt(file):
 
 class Notebook(aui.AuiNotebook):
     def __init__(self, parent):
-        agwStyle = aui.AUI_NB_DEFAULT_STYLE ^ aui.AUI_NB_CLOSE_ON_ACTIVE_TAB
+        agwStyle = aui.AUI_NB_DEFAULT_STYLE | aui.AUI_NB_CLOSE_ON_ALL_TABS# aui.AUI_NB_CLOSE_ON_ACTIVE_TAB
         aui.AuiNotebook.__init__(self, parent, agwStyle = agwStyle)
 
         self.Bind(aui.EVT_AUINOTEBOOK_TAB_DCLICK, self.OnTabDClick)
+        #self.Bind(aui.EVT_AUINOTEBOOK_PAGE_CLOSED, self.OnPageClosed)
+
+
+    def DeletePage(self, page_idx, permanent = False):
+        widget = self[page_idx]
+        if not permanent and hasattr(widget, "onlyHide"):
+            self.RemovePage(page_idx)
+            widget.Hide()
+        else:
+            aui.AuiNotebook.DeletePage(self, page_idx)
 
     def OnTabDClick(self, event):
         if GetMainFrame().ToolMgrPaneInfo.IsMaximized():
@@ -89,13 +99,13 @@ class Notebook(aui.AuiNotebook):
         for tabControl in self.GetChildren():
             if isinstance(tabControl, aui.AuiTabCtrl):
                 break
-
-        event = wx.aui.AuiNotebookEvent(wx.aui.EVT_AUINOTEBOOK_PAGE_CLOSE.typeId, tabControl.Id)
-        event.SetOldSelection(-1)
-        event.SetSelection(page)
-        event.SetEventObject(tabControl)
-        event.SetInt(aui.AUI_BUTTON_CLOSE)
-        self.OnTabButton(event)
+        if page:
+            event = wx.aui.AuiNotebookEvent(wx.aui.EVT_AUINOTEBOOK_PAGE_CLOSE.typeId, tabControl.Id)
+            event.SetOldSelection(-1)
+            event.SetSelection(page)
+            event.SetEventObject(tabControl)
+            event.SetInt(aui.AUI_BUTTON_CLOSE)
+            self.OnTabButton(event)
 
 class EditorNotebook(aui.AuiNotebook):
 
