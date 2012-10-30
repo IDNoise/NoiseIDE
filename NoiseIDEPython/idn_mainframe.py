@@ -167,8 +167,7 @@ class NoiseIDE(wx.Frame):
         languagesMenu.AppendMenu(wx.NewId(), 'Erlang', erlangMenu)
         erlangMenu.AppendMenuItem("Options", self, lambda e: self.SetupRuntimes())
         erlangMenu.AppendSeparator()
-        erlangMenu.AppendCheckMenuItem("Fly Compilation", self, self.OnCheckErlangFlyCompilation, Config.GetProp("erlang_fly_compilation", True))
-        erlangMenu.AppendCheckMenuItem("Highlight whole line on error", self, self.OnCheckErlangHighlightErrorBackground, Config.GetProp("highlight_error_background", False))
+
        # erlangMenu.AppendSeparator()
         self.erlangMenu = erlangMenu
 
@@ -229,14 +228,6 @@ class NoiseIDE(wx.Frame):
         for editor in self.TabMgr.Pages():
             editor.UpdateOptions()
 
-    def OnCheckErlangFlyCompilation(self, event):
-        currentValue = Config.GetProp("erlang_fly_compilation")
-        Config.SetProp("erlang_fly_compilation", not currentValue)
-
-    def OnCheckErlangHighlightErrorBackground(self, event):
-        currentValue = Config.GetProp("highlight_error_background")
-        Config.SetProp("highlight_error_background", not currentValue)
-
     def OnEditOptions(self, event):
         form = ConfigEditForm()
         form.ShowModal()
@@ -279,7 +270,6 @@ class NoiseIDE(wx.Frame):
         #self.project.mEditProject.Enable(True)
         self.SetTitle(self.project.ProjectName() + " - " + "Noise IDE")
 
-        self.project.SetupMenu()
 
     def LoadProject(self, filePath):
         projectData = yaml.load(file(filePath, 'r'))

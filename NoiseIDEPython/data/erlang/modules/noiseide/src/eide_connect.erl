@@ -177,16 +177,20 @@ execute_action(xref_module, Binary) ->
         catch _:_ ->
             binary_to_atom(Binary, latin1)
         end,
-    [_, {undefined, Undefined}, _] = xref:m(Module),
-    Data = [{struct, [{where_m, WM}, {where_f, WF}, {where_a, WA}, 
-            {what_m, M}, {what_f, F}, {what_a, A}]} 
-            || {{WM, WF, WA}, {M, F, A}} <- Undefined],
-    Response = {struct, [
-        {response, xref_module},
-        {module, Binary},
-        {undefined, Data}
-    ]},
-    mochijson2:encode(Response);
+    case xref:m(Module) of
+        [_, {undefined, Undefined}, _] ->
+            Data = [{struct, [{where_m, WM}, {where_f, WF}, {where_a, WA}, 
+                    {what_m, M}, {what_f, F}, {what_a, A}]} 
+                    || {{WM, WF, WA}, {M, F, A}} <- Undefined],
+            Response = {struct, [
+                {response, xref_module},
+                {module, Binary},
+                {undefined, Data}
+            ]},
+            mochijson2:encode(Response);
+        _ ->
+            ?noreply
+    end;
 execute_action(Action, Data) ->
     io:format("Unknown action ~p with data ~p~n", [Action, Data]),
     ?noreply.

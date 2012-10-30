@@ -106,6 +106,8 @@ class Project(ProgressTaskManagerDialog):
         else:
             self.userData = {}
 
+        self.SetupMenu()
+
         self.CreateExplorer()
         self.OnLoadProject()
         self.OpenLastFiles()

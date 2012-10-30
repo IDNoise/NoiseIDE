@@ -107,6 +107,11 @@ class Notebook(aui.AuiNotebook):
             event.SetInt(aui.AUI_BUTTON_CLOSE)
             self.OnTabButton(event)
 
+    def FocusOnWidget(self, widget):
+        index = self.FindPageIndexByWindow(widget)
+        if index:
+            self.SetSelection(index)
+
 class EditorNotebook(aui.AuiNotebook):
 
     def __init__(self, parent):

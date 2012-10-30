@@ -105,6 +105,16 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         self.dirChecker.DirsDeletedEvent += self.OnDirsDeleted
         self.dirChecker.Start()
 
+    def Destroy(self, *args, **kwargs):
+        if self.dirChecker:
+            self.dirChecker.FilesCreatedEvent -= self.OnFilesCreated
+            self.dirChecker.FilesModifiedEvent -= self.OnFilesModified
+            self.dirChecker.FilesDeletedEvent -= self.OnFilesDeleted
+            self.dirChecker.DirsCreatedEvent -= self.OnDirsCreated
+            self.dirChecker.DirsModifiedEvent -= self.OnDirsModified
+            self.dirChecker.DirsDeletedEvent -= self.OnDirsDeleted
+        IDNCustomTreeCtrl.Destroy(self, *args, **kwargs)
+
     def OnFilesCreated(self, files):
         self.ProjectFilesCreatedEvent(files)
         for file in files:

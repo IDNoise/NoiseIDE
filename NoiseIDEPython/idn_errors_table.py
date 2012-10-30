@@ -133,13 +133,24 @@ class XrefTableGrid(ErrorsTableGrid):
         ErrorsTableGrid.__init__(self, parent, project)
         self.SetColSize(0, 450)
         self.SetColSize(1, 50)
-        self.SetColSize(2, 150)
-        self.SetColSize(3, 750)
+        self.SetColSize(2, 300)
+        self.SetColSize(3, 300)
+        self.pathErrors = {}
 
     def CreateTable(self):
         return XrefTable([])
 
+    def Clear(self):
+        current = len(self.table.data)
+        self.table.data = []
+        self.pathErrors = {}
+        self.table.ResetView(self, current)
+
     def AddErrors(self, path, errors):
+        if path in self.pathErrors and self.pathErrors[path] == errors:
+            return
+        if path not in self.pathErrors and not errors:
+            return
         currentRows = len(self.table.data)
         newPath = path.replace(self.project.AppsPath() + os.sep, "")
         data = list(filter(lambda x: x[0] != newPath, self.table.data))
@@ -150,3 +161,4 @@ class XrefTableGrid(ErrorsTableGrid):
         data = sorted(data, key = operator.itemgetter(2, 0))
         self.table.data = data
         self.table.ResetView(self, currentRows)
+        self.pathErrors[path] = errors

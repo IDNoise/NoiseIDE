@@ -189,7 +189,7 @@ class ErlangCache:
 
     @classmethod
     def OnProgressTimer(cls, event):
-        for i in range(15):
+        for i in range(40):
             try:
                 file = cls.toLoad.pop()
                 cls.LoadFile_(file)
@@ -236,13 +236,17 @@ class ErlangCache:
                 except Exception, e:
                     Log("error ", e, "on get long path name for ", data[FILE])
             file = data[FILE]
-            #Log("loading cache for", file)
-            if (name in cls.modules and name in cls.moduleData and
-                cls.moduleData[name].file.lower().startswith(cls.erlangDir) and
-                file != cls.moduleData[name].file):
-                Log("Ignoring replace of cache for standard erlang " +
-                    "module: {}\n\tPath:{}".format(name, file))
+            if (name in cls.modules and
+                not cls.moduleData[name].file.lower().startswith(cls.erlangDir) and
+                file.lower().startswith(cls.erlangDir)):
                 return
+            #Log("loading cache for", file)
+#            if (name in cls.modules and name in cls.moduleData and
+#                cls.moduleData[name].file.lower().startswith(cls.erlangDir) and
+#                file != cls.moduleData[name].file):
+#                Log("Ignoring replace of cache for standard erlang " +
+#                    "module: {}\n\tPath:{}".format(name, file))
+#                return
 
             if name.endswith(".hrl"):
                 cls.includes.add(name)

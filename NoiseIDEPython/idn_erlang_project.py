@@ -14,7 +14,7 @@ from idn_errors_table import ErrorsTableGrid, XrefTableGrid
 from idn_notebook import ErlangCompileOptionPanel
 from idn_project import Project
 import idn_projectexplorer as exp
-from idn_utils import readFile, writeFile, pystr
+from idn_utils import readFile, writeFile, pystr, Menu
 
 __author__ = 'Yaroslav'
 
@@ -31,6 +31,9 @@ class ErlangProject(Project):
 
         self.errors = {}
         self.consoleTabs = {}
+
+        self.errorCount = 0
+        self.warningCount = 0
 
         ErlangCache.Init(self)
 
@@ -51,35 +54,50 @@ class ErlangProject(Project):
 
         self.window.projectMenu.AppendSeparator()
         self.window.projectMenu.AppendMenuItem("Rebuild project", self.window, lambda e: self.CompileProject())
-        self.window.projectMenu.AppendMenuItem("Check project with XRef", self.window, lambda e: self.StartXRef())
+        self.window.projectMenu.AppendMenuItem("XRef check", self.window, lambda e: self.StartXRef())
+
         self.window.erlangMenu.AppendMenuItem("Regenerate erlang cache", self.window, lambda e: self.RegenerateErlangCache())
+        self.window.erlangMenu.AppendSeparator()
+        self.window.erlangMenu.AppendCheckMenuItem("Fly Compilation", self.window, self.OnCheckErlangFlyCompilation, Config.GetProp("erlang_fly_compilation", True))
+        self.window.erlangMenu.AppendCheckMenuItem("Highlight whole line on error", self.window, self.OnCheckErlangHighlightErrorBackground, Config.GetProp("highlight_error_background", False))
 
         self.window.viewMenu.AppendMenuItem("Errors/Warnings", self.window, lambda e: self.ShowErrorsTable())
         self.window.viewMenu.AppendMenuItem("IDE Console", self.window, lambda e: self.ShowIDEConsole())
         self.window.viewMenu.AppendMenuItem("XRef Result", self.window, lambda e: self.ShowXrefTable())
 
-        for title, console in self.consoleTabs.iteritems():
-            self.window.viewMenu.AppendMenuItem("Console <{}>".format(title), self.window, lambda e: self.ShowConsole(title, console))
+        self.consoleMenu = Menu()
+
+        self.window.viewMenu.AppendMenu(wx.NewId(), "Consoles", self.consoleMenu)
+
+    def OnCheckErlangFlyCompilation(self, event):
+        currentValue = Config.GetProp("erlang_fly_compilation")
+        Config.SetProp("erlang_fly_compilation", not currentValue)
+
+    def OnCheckErlangHighlightErrorBackground(self, event):
+        currentValue = Config.GetProp("highlight_error_background")
+        Config.SetProp("highlight_error_background", not currentValue)
 
     def ShowIDEConsole(self):
-        if not self.window.ToolMgr.FindPageIndexByWindow(self.shellConsole):
+        if self.window.ToolMgr.FindPageIndexByWindow(self.shellConsole) == None:
             self.window.ToolMgr.AddPage(self.shellConsole, "IDE Console")
-        self.shellConsole.SetFocus()
+        self.window.ToolMgr.FocusOnWidget(self.shellConsole)
 
     def ShowConsole(self, title, consoleWidget):
-        if not self.window.ToolMgr.FindPageIndexByWindow(consoleWidget):
-            self.window.ToolMgr.AddPage(consoleWidget, title)
-        consoleWidget.SetFocus()
+        if self.window.ToolMgr.FindPageIndexByWindow(consoleWidget) == None:
+            self.window.ToolMgr.AddPage(consoleWidget, "Console <{}>".format(title))
+        self.window.ToolMgr.FocusOnWidget(consoleWidget)
 
     def ShowErrorsTable(self):
-        if not self.window.ToolMgr.FindPageIndexByWindow(self.errorsTable):
-            self.window.ToolMgr.AddPage(self.errorsTable, 'Errors: 0, Warnings: 0')
-        self.errorsTable.SetFocus()
+        if self.window.ToolMgr.FindPageIndexByWindow(self.errorsTable) == None:
+            self.window.ToolMgr.AddPage(self.errorsTable, '')
+        index = self.window.ToolMgr.FindPageIndexByWindow(self.errorsTable)
+        self.window.ToolMgr.SetPageText(index, "Errors: {}, Warnings: {}".format(self.errorCount, self.warningCount))
+        self.window.ToolMgr.FocusOnWidget(self.errorsTable)
 
     def ShowXrefTable(self):
-        if not self.window.ToolMgr.FindPageIndexByWindow(self.xrefTable):
+        if self.window.ToolMgr.FindPageIndexByWindow(self.xrefTable) == None:
             self.window.ToolMgr.AddPage(self.xrefTable, 'XRef result')
-        self.xrefTable.SetFocus()
+        self.window.ToolMgr.FocusOnWidget(self.xrefTable)
 
     def OnEditProject(self, event):
         ErlangProjectFrom(self).ShowModal()
@@ -119,7 +137,10 @@ class ErlangProject(Project):
         files = self.explorer.GetAllFiles()
         for file in files:
             if file.endswith(".erl"):
-                self.GetShell().XRef(os.path.basename(file)[:-4])
+                module = os.path.basename(file)[:-4]
+                self.GetShell().XRef(module)
+                #print "xref", module
+        self.xrefTable.Clear()
         self.ShowXrefTable()
 
     def GetShell(self):
@@ -191,7 +212,9 @@ class ErlangProject(Project):
 
     def OnIDEConnectionClosed(self):
         if self.shellConsole:
-            self.window.ToolMgr.ClosePage(self.window.ToolMgr.FindPageIndexByWindow(self.shellConsole))
+            index = self.window.ToolMgr.FindPageIndexByWindow(self.shellConsole)
+            if index != None:
+                self.window.ToolMgr.ClosePage(index)
         self.SetupShellConsole()
 
     def SetupShellConsole(self):
@@ -242,10 +265,11 @@ class ErlangProject(Project):
 
         elif response == "xref_module":
             module = pystr(js["module"])
-            #print module, js["undefined"]
+
             if not module in ErlangCache.moduleData: return
             undefined = [((u["where_m"], u["where_f"], u["where_a"]),
                           (u["what_m"], u["what_f"], u["what_a"])) for u in js["undefined"]]
+            #print "xref result", module, undefined
             self.AddXRefErrors(ErlangCache.moduleData[module].file, undefined)
         elif response == "gen_file_cache":
             path = pystr(js["path"])
@@ -290,7 +314,11 @@ class ErlangProject(Project):
                 c = self.consoleTabs[console]
                 c.Stop()
                 index = self.window.ToolMgr.FindPageIndexByWindow(c)
-                self.window.ToolMgr.DeletePage(index, True)
+                if index != None:
+                    self.window.ToolMgr.DeletePage(index, True)
+                id = self.consoleMenu.FindItem('Console <{}>'.format(console))
+                if id != wx.NOT_FOUND:
+                    self.consoleMenu.Delete(id)
 
         for title in consoles:
             data = consoles[title]
@@ -307,8 +335,13 @@ class ErlangProject(Project):
                 self.consoles[title] = ErlangProjectConsole(self.window.ToolMgr, self.AppsPath(), params)
                 self.consoles[title].onlyHide = True
                 self.consoles[title].SetStartCommand(data[CONFIG_CONSOLE_COMMAND])
-                self.window.ToolMgr.AddPage(self.consoles[title], '<{}> Console'.format(title))
                 self.consoleTabs[title] = self.consoles[title]
+                self.ShowConsole(title, self.consoles[title])
+                #self.window.ToolMgr.AddPage(self.consoles[title], 'Console <{}>'.format(title))
+
+            def showConsole(title):
+                return lambda e: self.ShowConsole(title, self.consoleTabs[title])
+            self.consoleMenu.AppendMenuItem("Console <{}>".format(title), self.window, showConsole(title))
 
     def GetApps(self, all = False):
         apps = []
@@ -326,7 +359,8 @@ class ErlangProject(Project):
         self.errorsTable.onlyHide = True
 
         self.xrefTable = XrefTableGrid(self.window.ToolMgr, self)
-        self.errorsTable.onlyHide = True
+        self.xrefTable.onlyHide = True
+        self.xrefTable.Hide()
 
         self.ShowErrorsTable()
 
@@ -336,8 +370,12 @@ class ErlangProject(Project):
         for title, console in self.consoles.items():
             console.Stop()
         Project.Close(self)
-        for w in self.consoleTabs.values() + [self.errorsTable, self.shellConsole]:
-            self.window.ToolMgr.ClosePage(self.window.ToolMgr.FindPageIndexByWindow(w))
+        for w in self.consoleTabs.values() + [self.errorsTable, self.shellConsole, self.xrefTable]:
+            index = self.window.ToolMgr.FindPageIndexByWindow(w)
+            #print "try delete page", w, index
+            if index != None:
+                #print "delete page", w
+                self.window.ToolMgr.DeletePage(index, True)
 
     def OnProjectFilesModified(self, files):
         toCompile = []
@@ -362,7 +400,6 @@ class ErlangProject(Project):
     def FileSaved(self, file):
         #Log("saved", file)
         self.Compile(file)
-
 
     def OnProjectFilesDeleted(self, files):
         for file in files:
@@ -438,6 +475,10 @@ class ErlangProject(Project):
         filesToCompile = sorted(list(filesToCompile))
         filesToCache = sorted(list(filesToCache))
 
+#        print "compile: ", filesToCompile
+#        print "yrl compile: ", yrlToCompile
+#        print "cache: ", filesToCache
+
         self.GetShell().CompileYrls(yrlToCompile)
         self.GetShell().GenerateFileCaches(filesToCache)
         self.GetShell().CompileProjectFiles(filesToCompile)
@@ -486,7 +527,10 @@ class ErlangProject(Project):
         #wx.CallAfter(self.window.TabMgr.HighlightErrorPaths, pathErrors)
         self.window.TabMgr.HighlightErrorPaths(pathErrors)
         index = self.window.ToolMgr.FindPageIndexByWindow(self.errorsTable)
-        self.window.ToolMgr.SetPageText(index, "Errors: {}, Warnings: {}".format(errorCount, warningCount))
+        self.errorCount = errorCount
+        self.warningCount = warningCount
+        if index != None:
+            self.ShowErrorsTable()
 
     def GetErrors(self, path):
         if path not in self.errors: return []
