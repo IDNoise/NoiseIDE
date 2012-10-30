@@ -134,14 +134,22 @@ class ErlangProject(Project):
         self.GetShell().GenerateErlangCache()
 
     def StartXRef(self):
-        files = self.explorer.GetAllFiles()
-        for file in files:
-            if file.endswith(".erl"):
-                module = os.path.basename(file)[:-4]
-                self.GetShell().XRef(module)
-                #print "xref", module
+        filesForXref = set()
+        for app in self.GetApps():
+            path = os.path.join(os.path.join(self.AppsPath(), app), "src")
+            for root, _, files in os.walk(path):
+                for file in files:
+                    file = os.path.join(root, file)
+                    if file.endswith(".erl"):
+                        filesForXref.add(file)
+        self.xrefModules = set()
+        for file in filesForXref:
+            module = os.path.basename(file)[:-4]
+            self.GetShell().XRef(module)
+            self.xrefModules.add(module)
+        #print "start", self.xrefModules
         self.xrefTable.Clear()
-        self.ShowXrefTable()
+        #self.ShowXrefTable()
 
     def GetShell(self):
         return self.shellConsole.shell
@@ -266,11 +274,15 @@ class ErlangProject(Project):
         elif response == "xref_module":
             module = pystr(js["module"])
 
+            self.xrefModules.remove(module)
             if not module in ErlangCache.moduleData: return
             undefined = [((u["where_m"], u["where_f"], u["where_a"]),
                           (u["what_m"], u["what_f"], u["what_a"])) for u in js["undefined"]]
             #print "xref result", module, undefined
             self.AddXRefErrors(ErlangCache.moduleData[module].file, undefined)
+            #print "result", module, self.xrefModules
+            if len(self.xrefModules) == 0:
+                self.ShowXrefTable()
         elif response == "gen_file_cache":
             path = pystr(js["path"])
             cachePath = pystr(js["cache_path"])
