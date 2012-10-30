@@ -73,8 +73,8 @@ class ErlangProject(Project):
         self.rebuildT = self.window.toolbar.AddLabelTool(wx.NewId(), 'Rebuild project', GetImage('build.png'), shortHelp = 'Rebuild project')
         self.xrefCheckT = self.window.toolbar.AddLabelTool(wx.NewId(), 'XRef check', GetImage('xrefCheck.png'), shortHelp = 'XRef check')
 
-        self.Bind(wx.EVT_TOOL, lambda e: self.CompileProject(), self.rebuildT)
-        self.Bind(wx.EVT_TOOL, lambda e: self.StartXRef(), self.xrefCheckT)
+        self.window.Bind(wx.EVT_TOOL, lambda e: self.CompileProject(), self.rebuildT)
+        self.window.Bind(wx.EVT_TOOL, lambda e: self.StartXRef(), self.xrefCheckT)
 
         self.window.toolbar.Realize()
 

@@ -191,7 +191,6 @@ execute_action(xref_module, Binary) ->
                     {module, Binary},
                     {undefined, UndefinedData}
                 ]},
-    io:format("~p~n", [Module]),
     mochijson2:encode(Response);
 execute_action(Action, Data) ->
     io:format("Unknown action ~p with data ~p~n", [Action, Data]),
