@@ -21,5 +21,9 @@ setup(
         version = "0.1",
         description = "NoiseIDE",
         options = {"build_exe": build_exe_options},
-        executables = [Executable("idn_mainframe.py", base = base, targetName = "NoiseIDE.exe")])
+        executables = [Executable("idn_mainframe.py",
+            base = base,
+            targetName = "NoiseIDE.exe",
+            icon = "data/images/icon.ico")
+        ])
 

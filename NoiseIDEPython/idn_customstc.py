@@ -218,6 +218,10 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
     def ShowFindInProject(self):
         dialog = FindInProjectDialog.GetDialog(GetTabMgr())
         dialog.Show()
+        if self.SelectedText:
+            dialog.findText.Value = self.SelectedText
+           # dialog.findText.SetSelection(-1, -1)
+            dialog.findText.SetInsertionPointEnd()
         dialog.findText.SetFocus()
 
     def ShowFindInFile(self, event):
@@ -275,11 +279,28 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.Changed()
         event.Skip()
 
+    brackets = {'"': '"', "'": "'", '(': ')', '<': '>', '{' : '}', '[': ']'}
     def OnCharAdded(self, event):
+        event.Skip()
         char = event.GetKey()
         if char == ord('\n'):
             self.DoIndent()
-        event.Skip()
+        elif Config.GetProp("close_brackets_quotes", False) and char in self.brackets:
+            self.AppendText(self.brackets[char])
+        elif (Config.GetProp("put_brackets_quotes_around", False) and self.SelectedText and
+              (char in self.brackets.keys() or char in self.brackets.values())):
+            if char in self.brackets:
+                open = char
+                close = self.brackets[char]
+            else:
+                close = char
+                open = None
+                for o, c in self.brackets.items():
+                    if c == close:
+                        open = o
+                        break
+                if not open: return
+            self.ReplaceSelection(open + self.SelectedText + close)
 
     def OnKeyDown(self, event):
         if self.HandleKeyDownEvent(event):
@@ -595,6 +616,6 @@ class ConsoleSTC(CustomSTC):
             if self.GetLastVisibleLine() >= linesCount:
                 self.ScrollToLine(self.GetLineCount())
         except Exception, e:
-            print "append text error", e
+            Log("append text error", e)
 
 

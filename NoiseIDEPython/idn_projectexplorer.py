@@ -230,10 +230,11 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         self.dirChecker.Stop()
 
     def FileCreated(self, file):
+        if file in self.paths:
+            return
         id = self.FindItemByPath(os.path.dirname(file))
         if id and self.AppendFile(id, file):
             self.SortChildren(id)
-
 
     def FileModified(self, file):
         #print "file mod", file
@@ -264,6 +265,10 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         if id:
             del self.paths[self.GetPyData(id)]
             self.Delete(id)
+
+        for path in self.paths.keys():
+            if path.startswith(dir):
+                del self.paths[path]
 
     def FindItemByPath(self, path):
         if path in self.paths:
@@ -620,7 +625,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         try:
             CT.CustomTreeCtrl.OnPaint(self, event)
         except Exception, e:
-            print "tree control pain exception", e
+            Log("tree control pain exception", e)
 
 
 class PythonProjectExplorer(ProjectExplorer):

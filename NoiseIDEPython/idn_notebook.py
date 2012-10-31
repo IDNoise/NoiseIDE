@@ -361,6 +361,10 @@ class EditorPanel(wx.Panel):
         self.sizer.Show(self.findPanel, True)
         self.findPanel.incremental = incremental
         self.Layout()
+        if self.editor.SelectedText:
+            self.findPanel.findText.Value = self.editor.SelectedText
+            #self.findPanel.findText.SetSelection(-1, -1)
+            self.findPanel.findText.SetInsertionPointEnd()
         self.findPanel.findText.SetFocus()
         self.findVisible = True
 

@@ -24,7 +24,7 @@ class FindInFilePanel(wx.Panel):
         self.findButton = CreateButton(self, "Find", self.OnFind, wx.BU_EXACTFIT)
         self.replaceButton = CreateButton(self, "Replace", self.OnReplace, wx.BU_EXACTFIT)
         self.replaceAllButton = CreateButton(self, "Replace All", self.OnReplaceAll, wx.BU_EXACTFIT)
-        self.closeButton = CreateBitmapButton(self, 'clear_console.png', self.OnClose)
+        self.closeButton = CreateBitmapButton(self, 'close.png', self.OnClose)
         self.closeButton.SetMaxSize((25, 25))
         self.searchUpCb = wx.CheckBox(self, label = "Search up")
         self.wholeWordsCb = wx.CheckBox(self, label = "Whole words")
@@ -345,8 +345,7 @@ class ErrorsTree(IDNCustomTreeCtrl):
     def OnProjectFilesDeleted(self, files):
         for file in files:
             if self.regexp and file in self.results:
-                result = FindInProjectDialog.GetDialog().SearchInFile(file, self.regexp)
-                self.results[file] = result
+                self.results[file] = None
                 wx.CallAfter(self.UpdateResults)
 
     def UpdateResults(self):
@@ -373,7 +372,7 @@ class ErrorsTree(IDNCustomTreeCtrl):
         self.SetItemHasChildren(rootNode, True)
         resultsCount = 0
         for (file, res) in results.items():
-            if len(res) == 0:
+            if not res or len(res) == 0:
                 continue
             resultsCount += len(res)
             fileLabel = file.replace(GetProject().projectDir + os.sep, "")

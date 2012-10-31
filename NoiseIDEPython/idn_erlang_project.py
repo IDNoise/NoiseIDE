@@ -357,6 +357,7 @@ class ErlangProject(Project):
 
             if title in self.consoleTabs:
                 self.consoleTabs[title].SetParams(params)
+                self.consoleTabs[title].SetStartCommand(data[CONFIG_CONSOLE_COMMAND])
             else:
                 self.consoles[title] = ErlangProjectConsole(self.window.ToolMgr, self.AppsPath(), params)
                 self.consoles[title].onlyHide = True

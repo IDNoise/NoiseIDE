@@ -1,9 +1,12 @@
 import sys
+import urllib2
 import yaml
+from PyProgress import PyProgress
 from idn_erlang_dialogs import ErlangOptionsDialog
 from idn_erlang_project import ErlangProject
 from idn_erlang_project_form import ErlangProjectFrom
-from idn_utils import Menu, GetImage
+import idn_installer
+from idn_utils import Menu, GetImage, readFile, writeFile, writeBinaryFile
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
@@ -16,6 +19,9 @@ from idn_notebook import  Notebook, EditorNotebook, ConsolePanel
 from idn_config import Config, ConfigEditForm
 import idn_global
 from idn_project import Project
+
+
+installNewVersion = False
 
 class NoiseIDE(wx.Frame):
     def __init__(self, *args, **kwargs):
@@ -126,6 +132,7 @@ class NoiseIDE(wx.Frame):
         erlangMenu.AppendMenuItem("Options", self, lambda e: self.SetupRuntimes())
 
         helpMenu = Menu()
+        helpMenu.AppendMenuItem("Check for updates", self, self.OnHelpCheckForUpdates)
         helpMenu.AppendMenuItem("About", self, self.OnHelpAbout)
         self.menubar.Append(helpMenu, '&Help')
         self.SetMenuBar(self.menubar)
@@ -174,16 +181,68 @@ class NoiseIDE(wx.Frame):
         self.viewMenu = Menu()
         self.viewMenu.AppendCheckMenuItem('Show white space', self, self.OnMenuShowWhiteSpace, Config.GetProp("show_white_space", False))
         self.viewMenu.AppendCheckMenuItem('Show EOL', self, self.OnMenuShowEOL, Config.GetProp("show_eol", False))
+        self.viewMenu.AppendCheckMenuItem('Close brackets/quotes', self, self.OnMenuCloseBracketsQuotes, Config.GetProp("close_brackets_quotes", False))
+        self.viewMenu.AppendCheckMenuItem('Put brackets/quotes around selected text', self, self.OnMenuPutBracketsQuotesAround, Config.GetProp("put_brackets_quotes_around", False))
         self.viewMenu.AppendSeparator()
         #self.viewMenu.AppendMenuItem("Log", self.window, lambda e: self.ShowLog())
 
         self.menubar.Append(self.viewMenu, "&View")
 
         helpMenu = Menu()
+        helpMenu.AppendMenuItem("Check for updates", self, self.OnHelpCheckForUpdates)
         helpMenu.AppendMenuItem("About", self, self.OnHelpAbout)
         self.menubar.Append(helpMenu, '&Help')
         self.SetMenuBar(self.menubar)
 
+    def OnHelpCheckForUpdates(self, event):
+        try:
+            f = os.path.join(self.cwd, "rev.cfg")
+            version = 0
+            if os.path.isfile(f):
+                data = readFile(f)
+                version = float(data.split("\n")[0].split(":")[1].strip())
+
+            revfile = urllib2.urlopen("https://dl.dropbox.com/s/1a36pmlgmdy4rly/rev.cfg")
+            newData = revfile.read()
+            newVersion = float(newData.split("\n")[0].split(":")[1].strip())
+            if newVersion != version:
+                dial = wx.MessageDialog(None,
+                    'There is new version {} available. Do you want to update after exit?'.format(newVersion),
+                    'New version available',
+                    wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
+                if dial.ShowModal() == wx.ID_YES:
+                    progressDialog = wx.ProgressDialog("Autoupdater", "Downloading installer...", parent = self, style = wx.PD_APP_MODAL | wx.PD_ELAPSED_TIME | wx.PD_AUTO_HIDE)
+                    progressDialog.Show()
+                    installerFile = open(os.path.join(self.cwd, "installer.zip"), 'wb')
+                    dataFile = urllib2.urlopen("https://dl.dropbox.com/s/a2qrs1zw20who93/noiseide.zip")
+                    meta = dataFile.info()
+                    fileSize = int(meta.getheaders("Content-Length")[0])
+                    #print "Downloading: %s Bytes: %s" % (os.path.join(self.cwd, "installer.zip"), fileSize)
+
+                    fileSizeDl = 0
+                    block_sz = 8192
+                    while True:
+                        buffer = dataFile.read(block_sz)
+                        if not buffer:
+                            break
+
+                        fileSizeDl += len(buffer)
+                        installerFile.write(buffer)
+                        #status = "Downloading installer... {} / {} done".format(round(fileSizeDl / 1000000.0, 3), round(fileSize / 1000000.0, 3))
+                        newValue = int(float(fileSizeDl) / float(fileSize) * 100)
+                        progressDialog.Update(newValue)
+                    #progressDialog.Destroy()
+                    installerFile.close()
+                    writeBinaryFile(f, newData)
+                    global installNewVersion
+                    installNewVersion = True
+                    self.Enable()
+                    self.SetFocus()
+            else:
+                wx.MessageBox("You have last version", "Check result")
+        except Exception, e:
+            Log("Update error", e)
+            wx.MessageBox("Update check error. Check log for info", "Check result")
     def ShowLog(self):
         pass#if self.ToolMgr.FindPageIndexByWindow(self.)
 
@@ -228,13 +287,20 @@ class NoiseIDE(wx.Frame):
         for editor in self.TabMgr.Pages():
             editor.UpdateOptions()
 
+    def OnMenuCloseBracketsQuotes(self, event):
+        newValue = not Config.GetProp("close_brackets_quotes", False)
+        Config.SetProp("close_brackets_quotes", newValue)
+
+    def OnMenuPutBracketsQuotesAround(self, event):
+        newValue = not Config.GetProp("put_brackets_quotes_around", False)
+        Config.SetProp("put_brackets_quotes_around", newValue)
+
     def OnEditOptions(self, event):
         form = ConfigEditForm()
         form.ShowModal()
 
-
     def OnHelpAbout(self, event):
-        wx.MessageBox("IDE with good functionality for Erlang programming language.\nMade by Yaroslav 'IDNoise' Nikityshev.", "Noise IDE v0.1")
+        wx.MessageBox("IDE with good functionality for Erlang programming language.\nMade by Yaroslav 'IDNoise' Nikityshev.", "Noise IDE")
 
     def MenuBar(self):
         return self.menubar
@@ -326,5 +392,7 @@ if __name__ == '__main__':
     #p.strip_dirs().sort_stats(-1).print_stats()
     try:
         main()
+        if installNewVersion:
+            idn_installer.Install()
     except Exception, e:
         print "app error", e

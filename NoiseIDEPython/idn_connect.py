@@ -58,7 +58,7 @@ class ErlangSocketConnection(asyncore.dispatcher):
                 self.connect((self.Host(), self.port))
                 break
             except Exception ,e:
-                print "connect",  e
+                Log("connect",  e)
         self.asyncoreThread = AsyncoreThread()
         self.asyncoreThread.Start()
 
@@ -97,7 +97,7 @@ class ErlangSocketConnection(asyncore.dispatcher):
                 try:
                     data += self.socket.recv(msgLen - len(data))
                 except Exception, e:
-                    print "recv error", e
+                    Log("recv error", e)
             if self.socketHandler:
                 self.socketHandler(data)
 
@@ -353,6 +353,6 @@ class ErlangProcessWithConnection(ErlangProcess, ErlangIDEConnectAPI):
         ErlangSocketConnection.Start(self)
 
     def OnClosed(self):
-        print "closed"
+        Log("connection closed")
         if not self.stopped:
             GetProject().OnIDEConnectionClosed()

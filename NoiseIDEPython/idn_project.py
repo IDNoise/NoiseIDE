@@ -66,9 +66,10 @@ class ProgressTaskManagerDialog(wx.EvtHandler):
 
     def DestroyDialog(self):
         if self.progressDialog:
+            self.progressDialog.ReenableOtherWindows()
             self.progressDialog.Destroy()
             self.progressDialog = None
-        self.window.SetFocus()
+        #self.window.SetFocus()
 
 class Project(ProgressTaskManagerDialog):
 

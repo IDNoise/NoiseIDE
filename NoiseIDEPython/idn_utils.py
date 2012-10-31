@@ -18,6 +18,12 @@ def writeFile(file, data):
     f.flush()
     f.close()
 
+def writeBinaryFile(file, data):
+    f = open(file, 'wb')
+    f.write(data)
+    f.flush()
+    f.close()
+
 def extension(path):
     name, ext = os.path.splitext(path)
     return ext
