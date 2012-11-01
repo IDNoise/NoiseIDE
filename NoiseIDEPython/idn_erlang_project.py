@@ -157,7 +157,7 @@ class ErlangProject(Project):
             module = os.path.basename(file)[:-4]
             self.GetShell().XRef(module)
             self.xrefModules.add(module)
-        #print "start", self.xrefModules
+        #print "start xref", self.xrefModules
         self.xrefTable.Clear()
         #self.ShowXrefTable()
 
@@ -287,8 +287,8 @@ class ErlangProject(Project):
 
         elif response == "xref_module":
             module = pystr(js["module"])
-
-            self.xrefModules.remove(module)
+            if module in self.xrefModules:
+                self.xrefModules.remove(module)
             if not module in ErlangCache.moduleData: return
             undefined = [((u["where_m"], u["where_f"], u["where_a"]),
                           (u["what_m"], u["what_f"], u["what_a"])) for u in js["undefined"]]

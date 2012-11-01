@@ -148,7 +148,7 @@ class NoiseIDE(wx.Frame):
 
         if Config.LastProjects():
             lastProjects = Menu()
-            self.fileMenu.AppendMenu(wx.NewId(), "Last projects", lastProjects)
+            self.fileMenu.AppendMenu(wx.NewId(), "Recent projects", lastProjects)
             def handler(p):
                 return lambda e: self.OpenProject(p)
             for p in Config.LastProjects():
