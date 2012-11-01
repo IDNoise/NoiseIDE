@@ -126,7 +126,7 @@ compile_internal(FileName, Options, ToBinary, RealPath) ->
         _ -> spawn(eide_cache, create_cache_file_fly, [FileName, RealPath])
     end,
 %    [[io:format("Error on compile ~p: ~p~n", [FileName, Er])|| Er <- Err, element(1, Er) == none]|| {_File, Err} <- E],
-
+    %io:format("Error on compile ~p: ~p~n", [FileName, {E, W}]),
     Errs = 
         [[begin
             case Er of

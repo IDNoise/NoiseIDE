@@ -7,11 +7,11 @@ __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 import os
 import wx
-from wx import stc
+from wx import stc, GetMousePosition
 from wx import html
 from wx.stc import STC_FOLDLEVELHEADERFLAG, StyledTextCtrl
 from idn_colorschema import ColorSchema
-from idn_global import  GetTabMgr, GetMainFrame
+from idn_global import  GetTabMgr, GetMainFrame, Log
 
 class EditorFoldMixin:
     def __init__(self):
@@ -190,6 +190,11 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.SetupEditorMenu()
 
         self.Bind(wx.EVT_RIGHT_UP, self.CreatePopupMenu)
+
+        self.customTooltip = STCContextToolTip(self, 500, self.OnRequestTooltipText)
+
+    def OnRequestTooltipText(self):
+        return None
 
     def CreatePopupMenu(self, event):
         pass
@@ -647,4 +652,169 @@ class ConsoleSTC(CustomSTC):
         except Exception, e:
             Log("append text error", e)
 
+class STCContextToolTip:
+    def __init__(self, stc, delay, handler):
+        self.stc = stc
+        self.delay = delay
+        self.handler = handler
+        self.tooltipWin = None
+        self.showPos = (0, 0)
+        self.lastPos = (0, 0)
+        self.tooltipWin = STCTooltip(self.stc)
+        self.tooltipWin.Hide()
+        self.showtime = None
+        self.counter = 0
 
+        self.stc.Bind(wx.EVT_ENTER_WINDOW, self.OnEnter)
+        self.stc.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeave)
+        self.stc.Bind(wx.EVT_MOTION, self.OnMotion)
+        self.stc.Bind(wx.EVT_WINDOW_DESTROY, self.OnDestroy)
+
+    def OnEnter(self, event):
+        self.showtime = wx.PyTimer(self.ShowTimer)
+        self.showtime.Start(50)
+        event.Skip()
+
+    def OnLeave(self, event):
+        if self.tooltipWin:
+            pos = wx.GetMousePosition()
+            realPos = self.tooltipWin.ScreenToClient(pos)
+            rect = self.tooltipWin.GetClientRect()
+#            rect.Top -= 15
+#            rect.Bottom += 15
+#            rect.Left -= 15
+#            rect.Right += 15
+
+            #x = wx.Rect()
+            #x.Le
+            if rect.Contains(realPos):
+                # We get fake leave events...
+                event.Skip()
+                return
+
+        self.tooltipWin.Hide()
+        #print "hide on leave"
+        self.showtime.Stop()
+        event.Skip()
+
+    def OnDestroy(self, event):
+        if self.showtime:
+            self.showtime.Stop()
+        self.tooltipWin.Destroy()
+        event.Skip()
+
+    def OnMotion(self, event):
+        #print "==="
+        #print not self.tooltipWin
+        event.Skip()
+        if not self.tooltipWin.IsShown():
+            return
+        currentPos = wx.GetMousePosition()
+        #print self.tooltipWin, self.tooltipWin.Shown, wx.FindWindowAtPoint(currentPos), self.tooltipWin == wx.FindWindowAtPoint(currentPos)
+        if self.tooltipWin.Shown:
+
+            pos = wx.GetMousePosition()
+            realPos = self.tooltipWin.ScreenToClient(pos)
+            rect = self.tooltipWin.GetClientRect()
+            rect.Top -=10
+            rect.Bottom += 10
+            rect.Left -=10
+            rect.Right += 10
+            if rect.Contains(realPos):
+                return
+            #if self.tooltipWin == wx.FindWindowAtPoint(currentPos):
+            #    return
+            #print self.showPos, currentPos
+            if (abs(self.showPos[0] - currentPos[0]) < 15 and
+                abs(self.showPos[1] - currentPos[1]) < 15):
+                return
+            #print "hide on motion", self.showPos, currentPos
+            self.HideToolTip()
+
+
+    def ShowTimer(self):
+        if self.tooltipWin.IsShown(): return
+        if not self.stc.HasFocus(): return
+        current = wx.GetMousePosition()
+        if current != self.lastPos:
+            self.counter = 0
+            self.lastPos = current
+        else:
+            self.counter += 50
+            if self.counter == self.delay:
+                text = self.handler()
+                if text:
+                    self.showPos = wx.GetMousePosition()
+                    self.tooltipWin.SetPosition((self.showPos[0] - 3, self.showPos[1] + 10))
+                    self.tooltipWin.SetText(text)
+                    self.tooltipWin.FadeIn()
+                else:
+                    #print "no text hide"
+                    self.HideToolTip()
+        #print "show timer"
+        #text = "xad asdasd asd asd asd " * 1000#self.handler()
+
+        #print text
+
+
+    def HideToolTip(self):
+        #self.tooltipWin.Hide()
+        self.tooltipWin.FadeOut()
+
+
+
+class STCTooltip(wx.Frame):
+    def __init__(self, parent):
+        wx.Frame.__init__(self, parent, style = wx.NO_BORDER | wx.FRAME_FLOAT_ON_PARENT |
+                                                wx.FRAME_NO_TASKBAR | wx.POPUP_WINDOW)
+
+        self.SetSize((500, 200))
+
+        self.helpWindow = HtmlWin(self)
+        self.sizer = wx.BoxSizer(wx.VERTICAL)
+        self.sizer.Add(self.helpWindow, 1, wx.EXPAND)
+        self.SetSizer(self.sizer)
+        self.Layout()
+
+        self.transp = 255
+        #self.fadeTimer = wx.PyTimer(self.Fade)
+        #self.Bind(wx.EVT_LEAVE_WINDOW, lambda e: self.Hide())
+        #self.Bind(wx.EVT_KILL_FOCUS, lambda e: self.Hide())
+
+    def FadeOut(self):
+        def handler():
+            self.transp -= 15
+            self.transp = max(self.transp, 0)
+            self.SetTransparent(self.transp)
+            if self.transp == 0:
+                self.fadeTimer.Stop()
+                self.Hide()
+        self.fadeTimer = wx.PyTimer(handler)
+        self.fadeTimer.Start(15)
+
+    def FadeIn(self):
+        def handler():
+            self.Show()
+            self.transp += 15
+            self.transp = min(self.transp, 255)
+            self.SetTransparent(self.transp)
+            if self.transp == 255:
+                self.fadeTimer.Stop()
+        self.fadeTimer = wx.PyTimer(handler)
+        self.fadeTimer.Start(15)
+
+    def SetText(self, text):
+        self.helpWindow.SetPage(text)
+        #self.SetSize(self.helpWindow.Get())
+
+
+#if wx.Platform == "__WXMAC__":
+#    class STCTooltip(wx.Frame, STCTooltipBase):
+#        def __init__(self, parent):
+#            wx.Frame.__init__(self, parent, style=wx.NO_BORDER|wx.FRAME_FLOAT_ON_PARENT|wx.FRAME_NO_TASKBAR|wx.POPUP_WINDOW)
+#            STCTooltipBase.__init__(self, parent)
+#else:
+#    class STCTooltip(STCTooltipBase, wx.PopupWindow):
+#       def __init__(self, parent):
+#            wx.PopupWindow.__init__(self, parent)
+#            STCTooltipBase.__init__(self, parent)

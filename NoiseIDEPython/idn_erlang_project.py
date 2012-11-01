@@ -128,7 +128,7 @@ class ErlangProject(Project):
         projectCacheDir = os.path.join(ErlangCache.CACHE_DIR, self.ProjectName())
         if not os.path.isdir(projectCacheDir):
             os.makedirs(projectCacheDir)
-        self.flyDir = os.path.join(self.window.cwd, "data", "erlang", "fly")
+        self.flyDir = os.path.join(self.window.cwd, "data", "erlang", "fly", self.ProjectName())
         if not os.path.isdir(self.flyDir):
             os.makedirs(self.flyDir)
         for file in os.listdir(self.flyDir):
@@ -403,6 +403,9 @@ class ErlangProject(Project):
             if index != None:
                 #print "delete page", w
                 self.window.ToolMgr.DeletePage(index, True)
+        self.window.toolbar.DeleteTool(self.xrefCheckT.GetId())
+        self.window.toolbar.DeleteTool(self.rebuildT.GetId())
+        self.window.toolbar.DeleteToolByPos(self.window.toolbar.GetToolsCount() - 1)
 
     def OnProjectFilesModified(self, files):
         toCompile = []

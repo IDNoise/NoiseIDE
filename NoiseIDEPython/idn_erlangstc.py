@@ -214,35 +214,76 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         self.navigateTo = None
         pos = self.PositionFromPoint(event.GetPosition())
 
-        def showErrorTooltip():
-            line = self.LineFromPosition(pos)
-            errs = list(filter(lambda e: e.line == line, self.lastErrors))
-            if errs:
-                msg = reduce(lambda msg, e: msg + e.msg + "\n", errs, "")
-                self.ShowToolTip(msg)
-            else:
-                self.HideToolTip()
+#        def showErrorTooltip():
+#            line = self.LineFromPosition(pos)
+#            errs = list(filter(lambda e: e.line == line, self.lastErrors))
+#            if errs:
+#                msg = reduce(lambda msg, e: msg + e.msg + "\n", errs, "")
+#                self.ShowToolTip(msg)
+#            else:
+#                self.HideToolTip()
 
         if event.GetPosition()[0] < self.LineNumbersWidth() + self.FoldWidth + 10:
             self.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
-            self.HideToolTip()
-            self.completer.HideHelp()
-            if (event.GetPosition()[0] > self.LineNumbersWidth() and
-                event.GetPosition()[0] < self.LineNumbersWidth() + 10):
-                showErrorTooltip()
+#            self.HideToolTip()
+#            if (event.GetPosition()[0] > self.LineNumbersWidth() and
+#                event.GetPosition()[0] < self.LineNumbersWidth() + 10):
+#                showErrorTooltip()
             return
 
+        #print event.GetModifiers() == wx.MOD_CONTROL,  self.HasFocus()
         if event.GetModifiers() == wx.MOD_CONTROL and self.HasFocus():
-            if not self.CheckHelp(pos):
+            if not self.CheckNavigation(pos):
                 self.SetCursor(wx.StockCursor(wx.CURSOR_IBEAM))
-                self.completer.HideHelp()
         elif self.HasFocus():
             self.SetCursor(wx.StockCursor(wx.CURSOR_IBEAM))
-            self.completer.HideHelp()
-            showErrorTooltip()
+#            showErrorTooltip()
+
+    def OnRequestTooltipText(self):
+        if wx.GetKeyState(wx.WXK_CONTROL):
+            return None
+        data = self.GetContextData()
+        if not data:
+            pos = self.PositionFromPoint(self.ScreenToClient(wx.GetMousePosition()))
+            line = self.LineFromPosition(pos)
+            errs = list(filter(lambda e: e.line == line, self.lastErrors))
+            if errs:
+                data = reduce(lambda msg, e: msg + e.msg + "\n", errs, "")
+        return data
 
 
-    def CheckHelp(self, pos):
+    def GetContextData(self):
+        pos = self.PositionFromPoint(self.ScreenToClient(wx.GetMousePosition()))
+        style = self.GetStyleAt(pos)
+        #print pos, style
+        #print ErlangHighlightType.FUNCTION, ErlangHighlightType.RECORD, ErlangHighlightType.MACROS
+        if style not in [ErlangHighlightType.ATOM,
+                         ErlangHighlightType.FUNCTION,
+                         ErlangHighlightType.MACROS,
+                         ErlangHighlightType.MODULE,
+                         ErlangHighlightType.RECORD,
+                         ErlangHighlightType.MODULEATTR,
+                         ErlangHighlightType.STRING]:
+            return None
+        start = self.WordStartPosition(pos, True)
+        end = self.WordEndPosition(pos, True)
+        if start == end:
+            return None
+
+        line = self.LineFromPosition(pos)
+        lineStart = self.PositionFromLine(line)
+        prefix = self.GetTextRange(lineStart, start)
+        value = self.GetTextRange(start, end)
+        if style == ErlangHighlightType.FUNCTION:
+            return self.completer.GetFunctionNavAndHelp(value, prefix, end)[1]
+        elif style == ErlangHighlightType.RECORD:
+            return self.completer.GetRecordNavAndHelp(value)[1]
+        elif style == ErlangHighlightType.MACROS:
+            return self.completer.GetMacrosNavAndHelp(value)[1]
+
+        return None
+
+    def CheckNavigation(self, pos):
         style = self.GetStyleAt(pos)
         if style not in [ErlangHighlightType.ATOM,
                          ErlangHighlightType.FUNCTION,
@@ -270,11 +311,11 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         postfix = self.GetTextRange(end, lineEnd)
         #print value, prefix
         if style == ErlangHighlightType.FUNCTION:
-            self.navigateTo = self.completer.ShowFunctionHelp(value, prefix, end)
+            self.navigateTo = self.completer.GetFunctionNavAndHelp(value, prefix, end)[0]
         elif style == ErlangHighlightType.RECORD:
-            self.navigateTo = self.completer.ShowRecordHelp(value)
+            self.navigateTo = self.completer.GetRecordNavAndHelp(value)[0]
         elif style == ErlangHighlightType.MACROS:
-            self.navigateTo = self.completer.ShowMacrosHelp(value)
+            self.navigateTo = self.completer.GetMacrosNavAndHelp(value)[0]
         elif style in [ErlangHighlightType.ATOM, ErlangHighlightType.MODULE]:
             if value in ErlangCache.AllModules():
                 self.navigateTo = (ErlangCache.moduleData[value].file, 0)
@@ -292,7 +333,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                     self.navigateTo = (ErlangCache.moduleData[include].file, 0)
                     start = lineStart
                     end = lineEnd
-
+        print self.navigateTo
         if self.navigateTo:
             line = self.LineFromPosition(pos)
             self.navigateTo += (line, )
@@ -300,22 +341,22 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                 self.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
                 self.SetIndicatorCurrent(1)
                 self.IndicatorFillRange(start, end - start)
-        return True
+            return True
+        return False
 
     def OnMouseClick(self, event):
         if event.GetModifiers() == wx.MOD_CONTROL:
             if self.navigateTo:
                 #editor =
                 GetTabMgr().LoadFileLine(self.navigateTo[0], self.navigateTo[1] - 1, True, self.navigateTo[2])
-                self.completer.HideHelp()
                 return
         event.Skip()
 
     def OnMiddleMouseClick(self, event):
-        if event.GetModifiers() == wx.MOD_CONTROL:
-            if self.navigateTo:
-                self.completer.helpWindow.SetFocus()
-                return
+#        if event.GetModifiers() == wx.MOD_CONTROL:
+#            if self.navigateTo:
+#                #self.completer.helpWindow.SetFocus()
+#                return
         event.Skip()
 
     def OnFlyTimer(self, event):

@@ -309,7 +309,7 @@ class ErlangCompleter(wx.Frame):
             wx.Frame.Show(self, show)
             self.stc.SetFocus()
 
-    def ShowFunctionHelp(self, fun, prefix, pos):
+    def GetFunctionNavAndHelp(self, fun, prefix, pos):
         arity = self.GetFunArity(pos)
         module = ""
         if prefix and prefix[-1] == ":" and prefix[-2] != ")":
@@ -332,7 +332,7 @@ class ErlangCompleter(wx.Frame):
                 if not data:
                     data = ErlangCache.Bif(fun, arity)
                     if not data:
-                        return
+                        return (None, None)
                     help = self._FunctionHelp(data)
                 else:
                     help = self._ExportedTypeHelp(data)
@@ -341,9 +341,8 @@ class ErlangCompleter(wx.Frame):
         else:
             help = self._FunctionHelp(data)
         #print "fun help", fun, prefix, pos,  help
-        self.ShowHelp(help)
         file = data.moduleData.file if data.moduleData else None
-        return (file, data.line)
+        return ((file, data.line), help)
 
     def GetFunArity(self, pos):
         open = ['[', '(', '{']
@@ -383,20 +382,17 @@ class ErlangCompleter(wx.Frame):
             pos = pos + 1
         return arity
 
-    def ShowRecordHelp(self, record):
+    def GetRecordNavAndHelp(self, record):
         recordData = ErlangCache.RecordData(self.module, record)
         if not recordData: return
         help = self._RecordHelp(recordData)
-        self.ShowHelp(help)
-        return (recordData.moduleData.file, recordData.line)
+        return ((recordData.moduleData.file, recordData.line), help)
 
-    def ShowMacrosHelp(self, macros):
+    def GetMacrosNavAndHelp(self, macros):
         macrosData = ErlangCache.MacrosData(self.module, macros)
         if not macrosData: return
         help = self._MacrosHelp(macrosData)
-        #print "macros help", macros,  help
-        self.ShowHelp(help)
-        return (macrosData.moduleData.file, macrosData.line)
+        return ((macrosData.moduleData.file, macrosData.line), help)
 
     def ShowHelp(self, help):
         if help:
