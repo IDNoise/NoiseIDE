@@ -191,7 +191,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
 
         self.Bind(wx.EVT_RIGHT_UP, self.CreatePopupMenu)
 
-        self.customTooltip = STCContextToolTip(self, 500, self.OnRequestTooltipText)
+        self.customTooltip = STCContextToolTip(self, 1000, self.OnRequestTooltipText)
 
     def OnRequestTooltipText(self):
         return None
@@ -669,6 +669,22 @@ class STCContextToolTip:
         self.stc.Bind(wx.EVT_LEAVE_WINDOW, self.OnLeave)
         self.stc.Bind(wx.EVT_MOTION, self.OnMotion)
         self.stc.Bind(wx.EVT_WINDOW_DESTROY, self.OnDestroy)
+        self.stc.Bind(wx.EVT_KEY_DOWN, self.OnKey)
+        self.stc.Bind(wx.EVT_KEY_UP, self.OnKey)
+        self.stc.Bind(wx.EVT_CHAR, self.OnKey)
+        wx.GetApp().Bind(wx.EVT_ACTIVATE_APP, self.OnAppLostFocus)
+
+    def OnKey(self, event):
+        self.HideToolTip()
+        self.counter = 0
+        event.Skip()
+
+    def OnAppLostFocus(self, event):
+        try:
+            self.HideToolTip()
+        except:
+            pass
+        event.Skip()
 
     def OnEnter(self, event):
         self.showtime = wx.PyTimer(self.ShowTimer)
@@ -680,15 +696,8 @@ class STCContextToolTip:
             pos = wx.GetMousePosition()
             realPos = self.tooltipWin.ScreenToClient(pos)
             rect = self.tooltipWin.GetClientRect()
-#            rect.Top -= 15
-#            rect.Bottom += 15
-#            rect.Left -= 15
-#            rect.Right += 15
 
-            #x = wx.Rect()
-            #x.Le
             if rect.Contains(realPos):
-                # We get fake leave events...
                 event.Skip()
                 return
 
@@ -748,6 +757,7 @@ class STCContextToolTip:
                     self.tooltipWin.SetPosition((self.showPos[0] - 3, self.showPos[1] + 10))
                     self.tooltipWin.SetText(text)
                     self.tooltipWin.FadeIn()
+                    self.stc.SetFocus()
                 else:
                     #print "no text hide"
                     self.HideToolTip()
@@ -765,8 +775,7 @@ class STCContextToolTip:
 
 class STCTooltip(wx.Frame):
     def __init__(self, parent):
-        wx.Frame.__init__(self, parent, style = wx.NO_BORDER | wx.FRAME_FLOAT_ON_PARENT |
-                                                wx.FRAME_NO_TASKBAR | wx.POPUP_WINDOW)
+        wx.Frame.__init__(self, parent, style = wx.BORDER_NONE | wx.STAY_ON_TOP | wx.FRAME_NO_TASKBAR)
 
         self.SetSize((500, 200))
 
@@ -777,35 +786,50 @@ class STCTooltip(wx.Frame):
         self.Layout()
 
         self.transp = 255
+
+#        self.stc.Bind(wx.EVT_KEY_DOWN, self.OnKey)
+#        self.stc.Bind(wx.EVT_KEY_UP, self.OnKey)
+#        self.stc.Bind(wx.EVT_CHAR, self.OnKey)
+
+
         #self.fadeTimer = wx.PyTimer(self.Fade)
         #self.Bind(wx.EVT_LEAVE_WINDOW, lambda e: self.Hide())
         #self.Bind(wx.EVT_KILL_FOCUS, lambda e: self.Hide())
 
     def FadeOut(self):
         def handler():
-            self.transp -= 15
+            self.transp -= 25
             self.transp = max(self.transp, 0)
             self.SetTransparent(self.transp)
             if self.transp == 0:
                 self.fadeTimer.Stop()
                 self.Hide()
+            self.Parent.SetFocus()
         self.fadeTimer = wx.PyTimer(handler)
-        self.fadeTimer.Start(15)
+        self.fadeTimer.Start(5)
 
     def FadeIn(self):
         def handler():
             self.Show()
-            self.transp += 15
+            self.Parent.SetFocus()
+            self.transp += 25
             self.transp = min(self.transp, 255)
             self.SetTransparent(self.transp)
             if self.transp == 255:
                 self.fadeTimer.Stop()
         self.fadeTimer = wx.PyTimer(handler)
-        self.fadeTimer.Start(15)
+        self.fadeTimer.Start(5)
 
     def SetText(self, text):
         self.helpWindow.SetPage(text)
-        #self.SetSize(self.helpWindow.Get())
+#        self.helpWindow.
+        if len(text) < 100:
+            self.SetSize((500, 30))
+        if len(text) < 300:
+            self.SetSize((500, 70))
+        if len(text) > 1000:
+            self.SetSize((500, 200))
+            #self.SetSize(self.helpWindow.Get())
 
 
 #if wx.Platform == "__WXMAC__":

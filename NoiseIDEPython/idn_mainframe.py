@@ -1,22 +1,20 @@
+__author__ = 'Yaroslav Nikityshev aka IDNoise'
+
 import sys
 import urllib2
-from wx.lib.dialogs import ScrolledMessageDialog, MultiMessageDialog
+from wx.lib.dialogs import  MultiMessageDialog
 import yaml
-from PyProgress import PyProgress
 from idn_erlang_dialogs import ErlangOptionsDialog
 from idn_erlang_project import ErlangProject
 from idn_erlang_project_form import ErlangProjectFrom
 import idn_installer
 from idn_utils import Menu, GetImage, readFile, writeFile, writeBinaryFile
-
-__author__ = 'Yaroslav Nikityshev aka IDNoise'
-
 import os
 import wx
 from wx.lib.agw import aui
 from idn_colorschema import ColorSchema
 from idn_winmanager import Manager
-from idn_notebook import  Notebook, EditorNotebook, ConsolePanel
+from idn_notebook import  Notebook, EditorNotebook
 from idn_config import Config, ConfigEditForm
 import idn_global
 from idn_project import Project
@@ -203,11 +201,14 @@ class NoiseIDE(wx.Frame):
 
     def OnHelpCheckForUpdates(self, event):
         try:
+            self.SetCursor(wx.StockCursor(wx.CURSOR_WAIT))
             version = self.GetCurrentVersion()
-
             revfile = urllib2.urlopen("https://dl.dropbox.com/s/1a36pmlgmdy4rly/rev.cfg")
             newData = revfile.read()
             newVersion = float(newData.split("\n")[0].split(":")[1].strip())
+            dir = os.path.join(self.cwd, "installer")
+            if not os.path.isdir(dir):
+                os.mkdir(dir)
             if newVersion != version:
                 dial = MultiMessageDialog(self,
                     'There is new version {} available. Current version is {}. Do you want to update after exit?'.format(newVersion, version),
@@ -219,7 +220,8 @@ class NoiseIDE(wx.Frame):
                 if dial.ShowModal() == wx.ID_YES:
                     progressDialog = wx.ProgressDialog("Autoupdater", "Downloading installer...", parent = self, style = wx.PD_APP_MODAL | wx.PD_ELAPSED_TIME | wx.PD_AUTO_HIDE)
                     progressDialog.Show()
-                    installerFile = open(os.path.join(self.cwd, "installer.zip"), 'wb')
+                    installerFileName = os.path.join(dir, "installer.zip")
+                    installerFile = open(installerFileName, 'wb')
                     dataFile = urllib2.urlopen("https://dl.dropbox.com/s/a2qrs1zw20who93/noiseide.zip")
                     meta = dataFile.info()
                     fileSize = int(meta.getheaders("Content-Length")[0])
@@ -239,7 +241,8 @@ class NoiseIDE(wx.Frame):
                         progressDialog.Update(newValue)
                     #progressDialog.Destroy()
                     installerFile.close()
-                    writeBinaryFile(os.path.join(self.cwd, "rev.cfg"), newData)
+                    writeBinaryFile(os.path.join(dir, "rev.cfg"), newData)
+                    idn_installer.Decompress(installerFileName)
                     global installNewVersion
                     installNewVersion = True
                     self.Enable()
@@ -249,6 +252,7 @@ class NoiseIDE(wx.Frame):
         except Exception, e:
             idn_global.Log("Update error", e)
             wx.MessageBox("Update check error. Check log for info", "Check result")
+        self.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
     def ShowLog(self):
         pass#if self.ToolMgr.FindPageIndexByWindow(self.)
 
@@ -298,7 +302,7 @@ class NoiseIDE(wx.Frame):
         form.ShowModal()
 
     def OnHelpAbout(self, event):
-        wx.MessageBox("IDE with good functionality for Erlang programming language.\nMade by Yaroslav 'IDNoise' Nikityshev.", "Noise IDE v {}".format(self.GetCurrentVersion()))
+        wx.MessageBox("IDE with good functionality for Erlang programming language.\nMade by Yaroslav 'IDNoise' Nikityshev. Suck my balls :D", "Noise IDE v {}".format(self.GetCurrentVersion()))
 
     def MenuBar(self):
         return self.menubar
@@ -391,6 +395,21 @@ if __name__ == '__main__':
     try:
         main()
         if installNewVersion:
-            idn_installer.Install()
+            import shutil
+            root_src_dir = os.path.join(os.getcwd(), 'installer')
+            root_dst_dir = os.getcwd()
+            for src_dir, dirs, files in os.walk(root_src_dir):
+                dst_dir = src_dir.replace(root_src_dir, root_dst_dir)
+                if not os.path.exists(dst_dir):
+                    os.mkdir(dst_dir)
+                for file_ in files:
+                    src_file = os.path.join(src_dir, file_)
+                    dst_file = os.path.join(dst_dir, file_)
+                    if os.path.exists(dst_file):
+                        os.remove(dst_file)
+                    shutil.move(src_file, dst_dir)
+            os.rmdir(root_src_dir)
+
     except Exception, e:
-        print "app error", e
+        with open("ide.log", 'a') as logFile:
+            logFile.write("app error" + str(e))
