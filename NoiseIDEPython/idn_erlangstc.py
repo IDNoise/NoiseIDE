@@ -232,7 +232,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                 showErrorTooltip()
             return
 
-        if event.ControlDown() and self.HasFocus():
+        if event.GetModifiers() == wx.MOD_CONTROL and self.HasFocus():
             if not self.CheckHelp(pos):
                 self.SetCursor(wx.StockCursor(wx.CURSOR_IBEAM))
                 self.completer.HideHelp()
@@ -303,7 +303,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         return True
 
     def OnMouseClick(self, event):
-        if event.ControlDown():
+        if event.GetModifiers() == wx.MOD_CONTROL:
             if self.navigateTo:
                 #editor =
                 GetTabMgr().LoadFileLine(self.navigateTo[0], self.navigateTo[1] - 1, True, self.navigateTo[2])
@@ -312,7 +312,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         event.Skip()
 
     def OnMiddleMouseClick(self, event):
-        if event.ControlDown():
+        if event.GetModifiers() == wx.MOD_CONTROL:
             if self.navigateTo:
                 self.completer.helpWindow.SetFocus()
                 return
@@ -465,7 +465,7 @@ class ErlangSTCReadOnly(ErlangSTC):
             return result
         keyCode = event.GetKeyCode()
 
-        if keyCode == ord('R') and event.ControlDown():
+        if keyCode == ord('R') and event.GetModifiers() == wx.MOD_CONTROL:
             GetProject().CompileOption(self.filePath, self.option)
             return True
         else:

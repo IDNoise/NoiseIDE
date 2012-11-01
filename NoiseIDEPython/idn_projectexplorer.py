@@ -605,7 +605,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         canPaste = self.tempData
 
         code = event.GetKeyCode()
-        CTRL = event.ControlDown()
+        CTRL = event.GetModifiers() == wx.MOD_CONTROL
 
         if code == ord("C") and CTRL:
             self.OnMenuCopy(None)

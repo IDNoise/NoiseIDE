@@ -214,6 +214,16 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.editorMenu.AppendMenuItem('Go to line', GetMainFrame(), lambda e: self.ShowGoToLineDialog())
         self.editorMenu.AppendMenuItem('Find/Replace in project', GetMainFrame(), lambda e: self.ShowFindInProject(), "Ctrl-Shift-F")
         self.editorMenu.AppendSeparator()
+        self.editorMenu.AppendCheckMenuItem('Close brackets/quotes', GetMainFrame(), self.OnMenuCloseBracketsQuotes, Config.GetProp("close_brackets_quotes", False))
+        self.editorMenu.AppendCheckMenuItem('Put brackets/quotes around selected text', GetMainFrame(), self.OnMenuPutBracketsQuotesAround, Config.GetProp("put_brackets_quotes_around", False))
+
+    def OnMenuCloseBracketsQuotes(self, event):
+        newValue = not Config.GetProp("close_brackets_quotes", False)
+        Config.SetProp("close_brackets_quotes", newValue)
+
+    def OnMenuPutBracketsQuotesAround(self, event):
+        newValue = not Config.GetProp("put_brackets_quotes_around", False)
+        Config.SetProp("put_brackets_quotes_around", newValue)
 
     def ShowFindInProject(self):
         dialog = FindInProjectDialog.GetDialog(GetTabMgr())
@@ -281,26 +291,12 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
 
     brackets = {'"': '"', "'": "'", '(': ')', '<': '>', '{' : '}', '[': ']'}
     def OnCharAdded(self, event):
-        event.Skip()
-        char = event.GetKey()
-        if char == ord('\n'):
+        char = chr(event.GetKey())
+        if char == '\n':
             self.DoIndent()
         elif Config.GetProp("close_brackets_quotes", False) and char in self.brackets:
-            self.AppendText(self.brackets[char])
-        elif (Config.GetProp("put_brackets_quotes_around", False) and self.SelectedText and
-              (char in self.brackets.keys() or char in self.brackets.values())):
-            if char in self.brackets:
-                open = char
-                close = self.brackets[char]
-            else:
-                close = char
-                open = None
-                for o, c in self.brackets.items():
-                    if c == close:
-                        open = o
-                        break
-                if not open: return
-            self.ReplaceSelection(open + self.SelectedText + close)
+            self.AddText(self.brackets[char])
+        event.Skip()
 
     def OnKeyDown(self, event):
         if self.HandleKeyDownEvent(event):
@@ -308,10 +304,29 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         else:
             event.Skip()
 
+    bracketQuoteKeyMap = {
+        (57, wx.MOD_SHIFT) : '(',
+        (48, wx.MOD_SHIFT) : ')',
+        (44, wx.MOD_SHIFT) : '<',
+        (46, wx.MOD_SHIFT) : '>',
+        (91, wx.MOD_NONE) : '[',
+        (93, wx.MOD_NONE) : ']',
+        (91, wx.MOD_SHIFT) : '{',
+        (93, wx.MOD_SHIFT) : '}',
+        (39, wx.MOD_NONE) : "'",
+        (39, wx.MOD_SHIFT) : '"',
+    }
+
     def HandleKeyDownEvent(self, event):
         keyCode = event.GetKeyCode()
         #print keyCode
-        if keyCode in [wx.WXK_DOWN, wx.WXK_UP] and event.ControlDown() and event.ShiftDown():
+        brKey = (keyCode, event.GetModifiers())
+        if brKey in self.bracketQuoteKeyMap:
+            bracketQuote = self.bracketQuoteKeyMap[brKey]
+        else:
+            bracketQuote = None
+        #print bracketQuote
+        if keyCode in [wx.WXK_DOWN, wx.WXK_UP] and event.GetModifiers() == wx.MOD_CONTROL | wx.MOD_SHIFT:
             offset = -1 if keyCode == wx.WXK_UP else 1
             startLine = self.LineFromPosition(self.GetSelectionStart())
             endLine = self.LineFromPosition(self.GetSelectionEnd())
@@ -326,18 +341,32 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
             self.InsertText(-1, text)
             self.SetSelectionStart(self.PositionFromLine(startLine + offset))
             self.SetSelectionEnd(self.GetLineEndPosition(endLine + offset))
-        elif keyCode == ord('S') and event.ControlDown():
+        elif keyCode == ord('S') and event.GetModifiers() == wx.MOD_CONTROL:
             self.Save()
-        elif keyCode == wx.WXK_SPACE and event.ControlDown():
+        elif keyCode == wx.WXK_SPACE and event.GetModifiers() == wx.MOD_CONTROL:
             self.OnAutoComplete()
-        elif ((keyCode == ord('K') and event.ControlDown() and event.ShiftDown()) or
-            (keyCode == ord(',') and event.ControlDown())):
+        elif ((keyCode == ord('K') and event.GetModifiers() == wx.MOD_CONTROL | wx.MOD_SHIFT) or
+            (keyCode == ord(',') and event.GetModifiers() == wx.MOD_CONTROL)):
             self.GoToPrevOccurence()
-        elif ((keyCode == ord('K') and event.ControlDown()) or
-              (keyCode == ord('.') and event.ControlDown())):
+        elif ((keyCode == ord('K') or keyCode == ord('.'))
+                and event.GetModifiers() == wx.MOD_CONTROL):
             self.GoToNextOccurence()
-        elif keyCode == ord('G') and event.ControlDown():
+        elif keyCode == ord('G') and event.GetModifiers() == wx.MOD_CONTROL:
             self.ShowGoToLineDialog()
+        elif (Config.GetProp("put_brackets_quotes_around", False) and self.SelectedText and
+              (bracketQuote in self.brackets.keys() or bracketQuote in self.brackets.values())):
+            if bracketQuote in self.brackets:
+                open = bracketQuote
+                close = self.brackets[bracketQuote]
+            else:
+                close = bracketQuote
+                open = None
+                for o, c in self.brackets.items():
+                    if c == close:
+                        open = o
+                        break
+                if not open: return
+            self.ReplaceSelection(open + self.SelectedText + close)
         else:
             return False
         return True

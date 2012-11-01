@@ -145,19 +145,19 @@ class ErlangConsole(wx.Panel):
         keyCode = event.GetKeyCode()
         if keyCode == wx.WXK_ESCAPE:
             self.commandText.Clear()
-        elif event.ControlDown() and self.lastCommands and keyCode == wx.WXK_UP:
+        elif event.GetModifiers() == wx.MOD_CONTROL and self.lastCommands and keyCode == wx.WXK_UP:
             newText = self.lastCommands[-1]
             self.commandText.Clear()
             self.commandText.WriteText(newText)
             self.lastCommands = self.lastCommands[:-1]
             self.lastCommands.insert(0, newText)
-        elif event.ControlDown() and self.lastCommands and keyCode == wx.WXK_DOWN:
+        elif event.GetModifiers() == wx.MOD_CONTROL and self.lastCommands and keyCode == wx.WXK_DOWN:
             newText = self.lastCommands[0]
             self.commandText.Clear()
             self.commandText.WriteText(newText)
             self.lastCommands = self.lastCommands[1:]
             self.lastCommands.append(newText)
-        elif keyCode in [wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER] and event.AltDown():
+        elif keyCode in [wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER] and event.GetModifiers() == wx.MOD_ALT:
             editor = GetTabMgr().GetActiveEditor()
             if editor: editor.SetFocus()
         elif keyCode == wx.WXK_RETURN:

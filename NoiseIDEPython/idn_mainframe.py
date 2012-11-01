@@ -181,8 +181,6 @@ class NoiseIDE(wx.Frame):
         self.viewMenu = Menu()
         self.viewMenu.AppendCheckMenuItem('Show white space', self, self.OnMenuShowWhiteSpace, Config.GetProp("show_white_space", False))
         self.viewMenu.AppendCheckMenuItem('Show EOL', self, self.OnMenuShowEOL, Config.GetProp("show_eol", False))
-        self.viewMenu.AppendCheckMenuItem('Close brackets/quotes', self, self.OnMenuCloseBracketsQuotes, Config.GetProp("close_brackets_quotes", False))
-        self.viewMenu.AppendCheckMenuItem('Put brackets/quotes around selected text', self, self.OnMenuPutBracketsQuotesAround, Config.GetProp("put_brackets_quotes_around", False))
         self.viewMenu.AppendSeparator()
         #self.viewMenu.AppendMenuItem("Log", self.window, lambda e: self.ShowLog())
 
@@ -286,14 +284,6 @@ class NoiseIDE(wx.Frame):
         Config.SetProp("show_eol", newValue)
         for editor in self.TabMgr.Pages():
             editor.UpdateOptions()
-
-    def OnMenuCloseBracketsQuotes(self, event):
-        newValue = not Config.GetProp("close_brackets_quotes", False)
-        Config.SetProp("close_brackets_quotes", newValue)
-
-    def OnMenuPutBracketsQuotesAround(self, event):
-        newValue = not Config.GetProp("put_brackets_quotes_around", False)
-        Config.SetProp("put_brackets_quotes_around", newValue)
 
     def OnEditOptions(self, event):
         form = ConfigEditForm()

@@ -342,16 +342,16 @@ class EditorPanel(wx.Panel):
     def OnKeyDown(self, event):
         keyCode = event.GetKeyCode()
         #print "kd", keyCode
-        if keyCode == ord('F') and event.ControlDown() and not event.ShiftDown() and not event.AltDown():
+        if keyCode == ord('F') and event.GetModifiers() == wx.MOD_CONTROL:
             self.ShowFind()
-        elif keyCode == ord('F') and event.AltDown() and not event.ShiftDown() and not event.ControlDown():
+        elif keyCode == ord('F') and event.GetModifiers() == wx.MOD_ALT:
             self.ShowFind(True)
         elif keyCode == wx.WXK_ESCAPE and self.findVisible:
             self.HideFind()
             #event.Skip()
         elif keyCode == wx.WXK_F3 and self.findVisible:
             self.findPanel.OnFind()
-        elif keyCode == ord('W') and event.ControlDown():
+        elif keyCode == ord('W') and event.GetModifiers() == wx.MOD_CONTROL:
             index = self.Parent.FindPageIndexByEditor(self.editor)
             self.Parent.ClosePage(index)
         else:
