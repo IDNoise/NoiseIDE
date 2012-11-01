@@ -191,7 +191,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
 
         self.Bind(wx.EVT_RIGHT_UP, self.CreatePopupMenu)
 
-        self.customTooltip = STCContextToolTip(self, 1000, self.OnRequestTooltipText)
+        self.customTooltip = STCContextToolTip(self, 750, self.OnRequestTooltipText)
 
     def OnRequestTooltipText(self):
         return None
@@ -777,11 +777,11 @@ class STCTooltip(wx.Frame):
     def __init__(self, parent):
         wx.Frame.__init__(self, parent, style = wx.BORDER_NONE | wx.STAY_ON_TOP | wx.FRAME_NO_TASKBAR)
 
-        self.SetSize((500, 200))
+        self.SetSize((550, 200))
 
         self.helpWindow = HtmlWin(self)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
-        self.sizer.Add(self.helpWindow, 1, wx.EXPAND)
+        self.sizer.Add(self.helpWindow, 1, wx.EXPAND, 10)
         self.SetSizer(self.sizer)
         self.Layout()
 
@@ -822,15 +822,14 @@ class STCTooltip(wx.Frame):
 
     def SetText(self, text):
         self.helpWindow.SetPage(text)
-#        self.helpWindow.
-        if len(text) < 100:
-            self.SetSize((500, 30))
-        if len(text) < 300:
-            self.SetSize((500, 70))
-        if len(text) > 1000:
-            self.SetSize((500, 200))
-            #self.SetSize(self.helpWindow.Get())
-
+        cell = self.helpWindow.GetInternalRepresentation()
+        height = 300
+        if cell:
+            cell.SetWidthFloat(540, wx.html.HTML_UNITS_PIXELS)
+            height = cell.GetHeight()
+            height += self.helpWindow.GetCharHeight() / 2
+            height = min(height, 400)
+        self.SetSize((550, height))
 
 #if wx.Platform == "__WXMAC__":
 #    class STCTooltip(wx.Frame, STCTooltipBase):

@@ -288,7 +288,7 @@ class ErlangProcess(Process):
         self.Redirect()
         self.cwd = cwd
         erlang = GetProject().GetErlangPath()
-        self.cmd = "{} {}".format(erlang, ' '.join(params + ["-s reloader"]))
+        self.cmd = "{} -smp enable +S 2 {}".format(erlang, ' '.join(params + ["-s reloader"]))
         self.pid = None
         self.handler = None
         self.processQueue = Queue()
@@ -301,7 +301,7 @@ class ErlangProcess(Process):
 
     def SetParams(self, params):
         erlang = GetProject().GetErlangPath()
-        self.cmd = "{} {}".format(erlang, ' '.join(params + ["-s reloader"]))
+        self.cmd = "{} -smp enable +S 2 {}".format(erlang, ' '.join(params + ["-s reloader"]))
 
     def SendCommandToProcess(self, cmd):
         cmd += '\n'

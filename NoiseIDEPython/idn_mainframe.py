@@ -110,7 +110,7 @@ class NoiseIDE(wx.Frame):
 
         if Config.LastProjects():
             lastProjects = Menu()
-            self.fileMenu.AppendMenu(wx.NewId(), "Last projects", lastProjects)
+            self.fileMenu.AppendMenu(wx.NewId(), "Recent projects", lastProjects)
             def handler(p):
                 return lambda e: self.OpenProject(p)
             for p in Config.LastProjects():
@@ -302,7 +302,7 @@ class NoiseIDE(wx.Frame):
         form.ShowModal()
 
     def OnHelpAbout(self, event):
-        wx.MessageBox("IDE with good functionality for Erlang programming language.\nMade by Yaroslav 'IDNoise' Nikityshev. Suck my balls :D", "Noise IDE v {}".format(self.GetCurrentVersion()))
+        wx.MessageBox("IDE with good functionality for Erlang programming language.\nMade by Yaroslav 'IDNoise' Nikityshev.", "Noise IDE v {}".format(self.GetCurrentVersion()))
 
     def MenuBar(self):
         return self.menubar
