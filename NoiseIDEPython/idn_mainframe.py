@@ -195,7 +195,7 @@ class NoiseIDE(wx.Frame):
 
     def GetCurrentVersion(self):
         revCfg = os.path.join(self.cwd, "rev.cfg")
-        version = 0
+        version = 0.1
         if os.path.isfile(revCfg):
             data = readFile(revCfg)
             version = float(data.split("\n")[0].split(":")[1].strip())
@@ -210,7 +210,7 @@ class NoiseIDE(wx.Frame):
             newVersion = float(newData.split("\n")[0].split(":")[1].strip())
             if newVersion != version:
                 dial = MultiMessageDialog(self,
-                    'There is new version {} available(current = {}). Do you want to update after exit?'.format(newVersion, version),
+                    'There is new version {} available. Current version is {}. Do you want to update after exit?'.format(newVersion, version),
                     msg2 = 'Changelog:\n\n' + newData,
                     caption = 'New version {} available'.format(newVersion),
                     #icon = wx.ICON_QUESTION,
@@ -298,7 +298,7 @@ class NoiseIDE(wx.Frame):
         form.ShowModal()
 
     def OnHelpAbout(self, event):
-        wx.MessageBox("IDE with good functionality for Erlang programming language.\nMade by Yaroslav 'IDNoise' Nikityshev.", "Noise IDE")
+        wx.MessageBox("IDE with good functionality for Erlang programming language.\nMade by Yaroslav 'IDNoise' Nikityshev.", "Noise IDE v {}".format(self.GetCurrentVersion()))
 
     def MenuBar(self):
         return self.menubar
