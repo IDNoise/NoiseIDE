@@ -1,5 +1,6 @@
 import sys
 import urllib2
+from wx.lib.dialogs import ScrolledMessageDialog, MultiMessageDialog
 import yaml
 from PyProgress import PyProgress
 from idn_erlang_dialogs import ErlangOptionsDialog
@@ -192,22 +193,29 @@ class NoiseIDE(wx.Frame):
         self.menubar.Append(helpMenu, '&Help')
         self.SetMenuBar(self.menubar)
 
+    def GetCurrentVersion(self):
+        revCfg = os.path.join(self.cwd, "rev.cfg")
+        version = 0
+        if os.path.isfile(revCfg):
+            data = readFile(revCfg)
+            version = float(data.split("\n")[0].split(":")[1].strip())
+        return version
+
     def OnHelpCheckForUpdates(self, event):
         try:
-            f = os.path.join(self.cwd, "rev.cfg")
-            version = 0
-            if os.path.isfile(f):
-                data = readFile(f)
-                version = float(data.split("\n")[0].split(":")[1].strip())
+            version = self.GetCurrentVersion()
 
             revfile = urllib2.urlopen("https://dl.dropbox.com/s/1a36pmlgmdy4rly/rev.cfg")
             newData = revfile.read()
             newVersion = float(newData.split("\n")[0].split(":")[1].strip())
             if newVersion != version:
-                dial = wx.MessageDialog(None,
-                    'There is new version {} available. Do you want to update after exit?'.format(newVersion),
-                    'New version available',
-                    wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
+                dial = MultiMessageDialog(self,
+                    'There is new version {} available(current = {}). Do you want to update after exit?'.format(newVersion, version),
+                    msg2 = 'Changelog:\n\n' + newData,
+                    caption = 'New version {} available'.format(newVersion),
+                    #icon = wx.ICON_QUESTION,
+                    style = wx.YES_NO | wx.YES_DEFAULT | wx.ICON_QUESTION)
+                #dial.SetSize((600, 400))
                 if dial.ShowModal() == wx.ID_YES:
                     progressDialog = wx.ProgressDialog("Autoupdater", "Downloading installer...", parent = self, style = wx.PD_APP_MODAL | wx.PD_ELAPSED_TIME | wx.PD_AUTO_HIDE)
                     progressDialog.Show()
@@ -231,7 +239,7 @@ class NoiseIDE(wx.Frame):
                         progressDialog.Update(newValue)
                     #progressDialog.Destroy()
                     installerFile.close()
-                    writeBinaryFile(f, newData)
+                    writeBinaryFile(os.path.join(self.cwd, "rev.cfg"), newData)
                     global installNewVersion
                     installNewVersion = True
                     self.Enable()
@@ -239,7 +247,7 @@ class NoiseIDE(wx.Frame):
             else:
                 wx.MessageBox("You have last version", "Check result")
         except Exception, e:
-            Log("Update error", e)
+            idn_global.Log("Update error", e)
             wx.MessageBox("Update check error. Check log for info", "Check result")
     def ShowLog(self):
         pass#if self.ToolMgr.FindPageIndexByWindow(self.)
