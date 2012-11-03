@@ -585,6 +585,7 @@ class CppSTC(CustomSTC):
         self.StyleSetSpec(stc.STC_C_STRING, formats["string"])
         self.StyleSetSpec(stc.STC_C_CHARACTER, formats["char"])
         self.StyleSetSpec(stc.STC_C_WORD, formats["word"])
+        self.StyleSetSpec(stc.STC_C_WORD2, formats["word"])
         self.StyleSetSpec(stc.STC_C_IDENTIFIER, formats["identifier"])
         self.StyleSetSpec(stc.STC_C_PREPROCESSOR, formats["preproc"])
 
@@ -600,7 +601,9 @@ class CppSTC(CustomSTC):
             'true', 'continue', 'for', 'register', 'try', 'default', 'friend',
             'reinterpret_cast', 'type_info']
 
-        self.SetKeyWords(keywords)
+        self.SetKeyWords(0, ' '.join(keywords))
+        self.SetKeyWords(1, ' '.join(keywords))
+        self.SetKeyWords(2, ' '.join(keywords))
 
 class HtmlWin(wx.html.HtmlWindow):
     def SetPage(self, text):

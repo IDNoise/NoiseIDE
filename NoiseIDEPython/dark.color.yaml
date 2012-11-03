@@ -46,14 +46,14 @@ code_editor:
       bif:        fore:#E9C062
       fullstop:   fore:#DDDDDD
     cpp:
-      default:    fore:#000000
-      comment:    fore:#7F7F7F
-      number:     fore:#007F7F
-      string:     fore:#7F007F
-      character:  fore:#7F007F
-      word:       fore:#00007F
-      identifier: fore:#000000
-      preproc:    fore:#00007F
+      default:    fore:#DDDDDD
+      comment:    fore:#518576,italic
+      number:     fore:#99CF50
+      string:     fore:#65B042
+      char:       fore:#65B042
+      word:       fore:#CF6A4C,bold
+      identifier: fore:#DDDDDD
+      preproc:    fore:#758bc5
     html:
       default:    fore:#000000
       other:      fore:#882288
