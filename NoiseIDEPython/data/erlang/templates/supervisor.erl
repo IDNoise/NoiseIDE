@@ -17,8 +17,10 @@
 %%% API functions
 %%%===================================================================
 
-%% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
-%% @end
+-spec start_link() -> {ok, Pid} | ignore | {error, Error} when
+    Pid :: pid(),
+    Error :: {already_started, Pid} | term().
+
 start_link() ->
         supervisor:start_link({local, ?SERVER}, ?MODULE, []).
 
@@ -26,10 +28,13 @@ start_link() ->
 %%% Supervisor callbacks
 %%%===================================================================
 
-%% @spec init(Args) -> {ok, {SupFlags, [ChildSpec]}} |
-%%                     ignore |
-%%                     {error, Reason}
-%% @end
+-spec init(Args :: term()) ->
+    {ok, {{RestartStrategy :: supervisor:strategy(),
+           MaxR            :: non_neg_integer(),
+           MaxT            :: non_neg_integer()},
+           [ChildSpec :: supervisor:child_spec()]}}
+    | ignore.
+
 init([]) ->
     RestartStrategy = one_for_one,
     MaxRestarts = 1000,

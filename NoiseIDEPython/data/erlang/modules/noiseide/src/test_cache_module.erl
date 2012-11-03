@@ -8,7 +8,9 @@
 %% Exported Functions
 
 -export([
-     x/0
+    x/0,
+    xxx/0,
+    round/2
 ]).    
 -define(XssssX, ololasdasdado).  
 -type beam_instr() :: 'bs_init_writable' | 'fclearerror' | 'if_end'
@@ -37,6 +39,7 @@
 %%% Internal f unction s
 %%%====================================== =============================
 
+%% @doc Prints the value X.
 xxx() ->
     ?XX + ?XssssX.  
 
@@ -49,13 +52,10 @@ xxx() ->
 x() -> 
     xxx(),
     io:format("~p~n", [?X]).
-   
- 
-          
-          
+    
 -spec round(XX, integer()) -> integer()
   when XX :: atom().
-
+%% @doc Prints the value X.
 round(Price, buy) ->
     [ {Key, apmath:ceil(Count)} || {Key, Count} <- Price ];
 round(Price, sell) ->

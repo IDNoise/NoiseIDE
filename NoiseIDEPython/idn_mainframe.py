@@ -19,6 +19,7 @@ from idn_config import Config, ConfigEditForm
 import idn_global
 from idn_project import Project
 
+#lists:flatten(edoc:read("d:/projects/noiseide/noiseidepython/data/erlang/modules/noiseide/src/test_cache_module.erl")).
 
 installNewVersion = False
 

@@ -333,7 +333,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                     self.navigateTo = (ErlangCache.moduleData[include].file, 0)
                     start = lineStart
                     end = lineEnd
-        print self.navigateTo
+        #print self.navigateTo
         if self.navigateTo:
             line = self.LineFromPosition(pos)
             self.navigateTo += (line, )
