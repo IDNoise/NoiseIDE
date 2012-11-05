@@ -52,7 +52,7 @@ class ErlangLexer(BaseLexer):
                             #print "dec", line, self.linesData[line].functionName, self.linesData[line].functionStart, self.linesData[line].functionEnd
                             break
                         line -= 1
-                if token.type == ErlangHighlightType.FULLSTOP:
+                elif token.type == ErlangHighlightType.FULLSTOP:
                     lineData.functionEnd = token.end + lineStart
                     line = startLine
                     while line > 0:
@@ -141,7 +141,7 @@ class ErlangLexer(BaseLexer):
         opened = '({['
         closed = ')}]'
         comma = ','
-        eq = ','
+        eq = '='
         recordOpenBracket = "{"
         constructs = {"case", "try", "receive", "begin", "if"}
         stateEnd = 1
@@ -166,7 +166,7 @@ class ErlangLexer(BaseLexer):
         record = ""
         #print(tokens)
         prefix = ""
-        if len(tokens) > 1 and tokens[0].type== ErlangHighlightType.ATOM and tokens[1].value in [comma, recordOpenBracket]:
+        if len(tokens) > 1 and tokens[0].type == ErlangHighlightType.ATOM and tokens[1].value in [comma, recordOpenBracket]:
             prefix = tokens[0].value
         elif len(tokens) > 0 and tokens[0].value in [comma, recordOpenBracket]:
             prefix = ""
