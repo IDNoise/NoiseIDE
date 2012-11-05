@@ -276,9 +276,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         #print "not found", path
         return None
 
-    def ShowMenu(self, event):
-        self.selectedItems = self.GetSelections()#event.GetItem()
-        self.eventItem = event.GetItem()
+    def CreateMenu(self):
         menu = Menu()
 
         if self.eventItem == self.GetRootItem():
@@ -289,7 +287,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
             newMenu.AppendMenuItem("File", self, self.OnMenuNewFile)
             newMenu.AppendMenuItem("Dir", self, self.OnMenuNewDir)
             newMenu.AppendSeparator()
-            self.FillNewSubMenu(newMenu)
+            menu.newMenu = newMenu
             menu.AppendMenu(wx.NewId(), "New", newMenu)
         elif self.GetRootItem() in self.selectedItems:
             pass
@@ -300,7 +298,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
                     newMenu.AppendMenuItem("File", self, self.OnMenuNewFile)
                     newMenu.AppendMenuItem("Dir", self, self.OnMenuNewDir)
                     newMenu.AppendSeparator()
-                    self.FillNewSubMenu(newMenu)
+                    menu.newMenu = newMenu
                     menu.AppendMenu(wx.NewId(), "New", newMenu)
 
 
@@ -320,18 +318,18 @@ class ProjectExplorer(IDNCustomTreeCtrl):
             menu.AppendMenuItem("Delete", self, self.OnMenuDelete)
             menu.AppendCheckMenuItem("Hide", self, self.OnMenuHide,
                 self.GetPyData(self.selectedItems[0]) in self.hiddenPaths)
+        return menu
 
-
-        self.PopupMenu(menu)
+    def ShowMenu(self, event):
+        self.selectedItems = self.GetSelections()
+        self.eventItem = event.GetItem()
+        self.PopupMenu(self.CreateMenu())
 
     def IsExecutable(self, item):
         return extension(self.GetPyData(item)) in [".bat", ".exe", ".cmd", ".html", ".xhtml"]
 
     def IsEditable(self, item):
         return extension(self.GetPyData(item)) in [".bat", ".cmd", ".html", ".xhtml"]
-
-    def FillNewSubMenu(self, newMenu):
-        pass
 
     def DefaultMask(self):
         return []

@@ -15,23 +15,29 @@ class ErrorsTableGrid(wx.grid.Grid):
         self.table = self.CreateTable()
         self.SetTable(self.table, True)
         self.AutoSizeColumns(False)
-        self.SetRowLabelSize(0)
+        self.SetRowLabelSize(25)
         self.SetMargins(0,0)
-        self.SetColSize(0, 450)
-        self.SetColSize(1, 50)
-        self.SetColSize(2, 100)
-        self.SetColSize(3, 750)
+        self.SetColSizes()
         self.EnableEditing(False)
-        self.SetColMinimalAcceptableWidth(50)
+        self.SetColMinimalAcceptableWidth(40)
+        self.SetRowMinimalAcceptableHeight(10)
 
         self.DisableCellEditControl()
         self.DisableDragCell()
         self.DisableDragColMove()
-        self.DisableDragColSize()
+        #self.DisableDragColSize()
         self.DisableDragGridSize()
-        self.DisableDragRowSize()
+        #self.DisableDragRowSize()
+
+        self.SetDefaultRenderer(CutomGridCellAutoWrapStringRenderer())
+
         self.Bind(wx.grid.EVT_GRID_CELL_LEFT_DCLICK, self.OnLeftDClick)
 
+    def SetColSizes(self):
+        self.SetColSize(0, 350)
+        self.SetColSize(1, 40)
+        self.SetColSize(2, 70)
+        self.SetColSize(3, 750)
 
     def CreateTable(self):
         return ErrorsTable([])
@@ -40,7 +46,7 @@ class ErrorsTableGrid(wx.grid.Grid):
         row = event.GetRow()
         rowData = self.table.data[row]
         file = os.path.join(self.project.AppsPath(), rowData[0])
-        line = rowData[1]
+        line = rowData[1] - 1
         GetTabMgr().LoadFileLine(file, line)
 
     def AddErrors(self, path, errors):
@@ -48,7 +54,7 @@ class ErrorsTableGrid(wx.grid.Grid):
         newPath = path.replace(self.project.AppsPath() + os.sep, "")
         data = list(filter(lambda x: x[0] != newPath, self.table.data))
         for e in errors:
-            data.append((newPath, e.line, e.TypeToStr(), e.msg))
+            data.append((newPath, e.line + 1, e.TypeToStr(), e.msg))
         data = sorted(data, key = operator.itemgetter(2, 0))
         self.table.data = data
         self.table.ResetView(self, currentRows)
@@ -131,11 +137,13 @@ class XrefTable(ErrorsTable):
 class XrefTableGrid(ErrorsTableGrid):
     def __init__(self, parent, project):
         ErrorsTableGrid.__init__(self, parent, project)
-        self.SetColSize(0, 450)
-        self.SetColSize(1, 50)
+        self.pathErrors = {}
+
+    def SetColSizes(self):
+        self.SetColSize(0, 350)
+        self.SetColSize(1, 40)
         self.SetColSize(2, 300)
         self.SetColSize(3, 300)
-        self.pathErrors = {}
 
     def CreateTable(self):
         return XrefTable([])
@@ -157,8 +165,92 @@ class XrefTableGrid(ErrorsTableGrid):
         for ((wm, wf, wa), (m, f, a)) in errors:
             funData = ErlangCache.ModuleFunction(wm, wf, wa)
 
-            data.append((newPath, funData.line - 1, "{}:{}/{}".format(wm, wf, wa), "{}:{}/{}".format(m, f, a)))
-        data = sorted(data, key = operator.itemgetter(2, 0))
+            data.append((newPath, funData.line, "{}:{}/{}".format(wm, wf, wa), "{}:{}/{}".format(m, f, a)))
+        data = sorted(data, key = operator.itemgetter(0))
         self.table.data = data
         self.table.ResetView(self, currentRows)
         self.pathErrors[path] = errors
+
+class DialyzerTable(ErrorsTable):
+    def __init__(self, data):
+        ErrorsTable.__init__(self, data)
+        self.colLabels = ["File", "Line", "Data"]
+
+
+
+class DialyzerTableGrid(ErrorsTableGrid):
+    def __init__(self, parent, project):
+        ErrorsTableGrid.__init__(self, parent, project)
+        self.EnableDragColSize()
+        self.EnableDragRowSize()
+        self.EnableGridLines()
+        #self.SetM#
+
+    def SetColSizes(self):
+        self.SetColSize(0, 350)
+        self.SetColSize(1, 40)
+        self.SetColSize(2, 850)
+
+    def CreateTable(self):
+        return DialyzerTable([])
+
+    def Clear(self):
+        current = len(self.table.data)
+        self.table.data = []
+        self.table.ResetView(self, current)
+
+    def SetWarnings(self, warnings):
+        currentRows = len(self.table.data)
+        data = []
+        for warning in warnings:
+           # print warning
+            warningData = warning.split(":")
+            #print data
+            module = warningData[0]
+            line = int(warningData[1])
+            msg = ':'.join(warningData[2:])
+
+            path = ErlangCache.moduleData[os.path.splitext(module)[0]].file
+            newPath = path.replace(self.project.AppsPath() + os.sep, "")
+            data.append((newPath, line, msg))
+
+        data = sorted(data, key = operator.itemgetter(0))
+        self.table.data = data
+        self.table.ResetView(self, currentRows)
+
+        self.AutoSizeRows()
+
+
+from wx.lib import wordwrap
+
+class CutomGridCellAutoWrapStringRenderer(wx.grid.PyGridCellRenderer):
+    def __init__(self):
+        wx.grid.PyGridCellRenderer.__init__(self)
+
+    def Draw(self, grid, attr, dc, rect, row, col, isSelected):
+        text = grid.GetCellValue(row, col)
+        dc.SetFont( attr.GetFont() )
+        text = wordwrap.wordwrap(text, grid.GetColSize(col), dc, breakLongWords = False)
+        hAlign, vAlign = attr.GetAlignment()
+        if isSelected:
+            bg = grid.GetSelectionBackground()
+            fg = grid.GetSelectionForeground()
+        else:
+            bg = attr.GetBackgroundColour()
+            fg = attr.GetTextColour()
+        dc.SetTextBackground(bg)
+        dc.SetTextForeground(fg)
+        dc.SetBrush(wx.Brush(bg, wx.SOLID))
+        dc.SetPen(wx.TRANSPARENT_PEN)
+        dc.DrawRectangleRect(rect)
+        grid.DrawTextRectangle(dc, text, rect, hAlign, vAlign)
+
+    def GetBestSize(self, grid, attr, dc, row, col):
+        text = grid.GetCellValue(row, col)
+        dc.SetFont(attr.GetFont())
+        text = wordwrap.wordwrap(text, grid.GetColSize(col), dc, breakLongWords = False)
+        w, h, lineHeight = dc.GetMultiLineTextExtent(text)
+        return wx.Size(w, h)
+
+    def Clone(self):
+        return CutomGridCellAutoWrapStringRenderer()

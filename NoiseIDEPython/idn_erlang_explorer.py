@@ -21,25 +21,55 @@ class ErlangProjectExplorer(ProjectExplorer):
         self.highlightTimer.Start(250)
         self.Bind(wx.EVT_TIMER, self.OnHighlightTimer, self.highlightTimer)
 
-    def FillNewSubMenu(self, newMenu):
-        newMenu.AppendMenuItem("Module", self, lambda e:
-            self.CreateFromTemplate("module.erl", "Module", "module_1"))
-        newMenu.AppendMenuItem("Header", self, self.OnMenuNewHeader)
-        newMenu.AppendMenuItem("Application", self, self.OnMenuNewApplication)
-        menu = Menu()
-        menu.AppendMenuItem("Gen Server", self, lambda e:
-            self.CreateFromTemplate("gen_server.erl", "Gen server", "gen_server_1"))
-        menu.AppendMenuItem("Gen Event", self, lambda e:
-            self.CreateFromTemplate("gen_event.erl", "Gen event", "gen_event_1"))
-        menu.AppendMenuItem("Gen FSM", self, lambda e:
-            self.CreateFromTemplate("gen_fsm.erl", "Gen fsm", "gen_fsm_1"))
-        menu.AppendMenuItem("Supervisor", self, lambda e:
-            self.CreateFromTemplate("supervisor.erl", "Supervisor", "supervisor_1"))
-        menu.AppendMenuItem("Application", self, lambda e:
-            self.CreateFromTemplate("application.erl", "Application", "application_1"))
-        menu.AppendMenuItem("App Src", self, lambda e:
-            self.CreateFromTemplate("app.src", "App Src", "application_1", ".app.src", "Enter application name:"))
-        newMenu.AppendMenu(wx.NewId(), "Template", menu)
+    def CreateMenu(self):
+        menu = ProjectExplorer.CreateMenu(self)
+        if hasattr(menu, "newMenu"):
+            newMenu = menu.newMenu
+            newMenu.AppendMenuItem("Module", self, lambda e:
+                self.CreateFromTemplate("module.erl", "Module", "module_1"))
+            newMenu.AppendMenuItem("Header", self, self.OnMenuNewHeader)
+            newMenu.AppendMenuItem("Application", self, self.OnMenuNewApplication)
+            tMenu = Menu()
+            tMenu.AppendMenuItem("Gen Server", self, lambda e:
+                self.CreateFromTemplate("gen_server.erl", "Gen server", "gen_server_1"))
+            tMenu.AppendMenuItem("Gen Event", self, lambda e:
+                self.CreateFromTemplate("gen_event.erl", "Gen event", "gen_event_1"))
+            tMenu.AppendMenuItem("Gen FSM", self, lambda e:
+                self.CreateFromTemplate("gen_fsm.erl", "Gen fsm", "gen_fsm_1"))
+            tMenu.AppendMenuItem("Supervisor", self, lambda e:
+                self.CreateFromTemplate("supervisor.erl", "Supervisor", "supervisor_1"))
+            tMenu.AppendMenuItem("Application", self, lambda e:
+                self.CreateFromTemplate("application.erl", "Application", "application_1"))
+            tMenu.AppendMenuItem("App Src", self, lambda e:
+                self.CreateFromTemplate("app.src", "App Src", "application_1", ".app.src", "Enter application name:"))
+            newMenu.AppendMenu(wx.NewId(), "Template", tMenu)
+
+        dialyzerMenu = Menu()
+        dialyzerMenu.AppendMenuItem("Project", self, lambda e: self.project.DialyzeProject())
+        if self.eventItem == self.GetRootItem():
+            menu.AppendSeparator()
+            menu.AppendMenu(wx.NewId(), "Dialyzer", dialyzerMenu)
+        elif self.GetRootItem() in self.selectedItems:
+            pass
+        else:
+            paths = []
+            for item in self.selectedItems:
+                paths.append(self.GetPyData(item))
+
+            allFiles = []
+            for item in self.selectedItems:
+                if self.ItemHasChildren(item):
+                    allFiles += self.GetAllItemFiles(item)
+                else:
+                    allFiles.append(self.GetPyData(item))
+
+            dialyzerMenu.AppendMenuItem("Apps", self, lambda e: self.project.DialyzeApps(paths))
+            dialyzerMenu.AppendMenuItem("Modules", self, lambda e: self.project.DialyzeModules(allFiles))
+            menu.AppendSeparator()
+            menu.AppendMenu(wx.NewId(), "Dialyzer", dialyzerMenu)
+
+
+        return menu
 
     def DefaultMask(self):
         return [".erl", ".hrl", ".config", ".c", ".cpp", ".bat", ".igor", ".src", ".app", ".html", ".xml", ".xhtml", ".css", '.js']

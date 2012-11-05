@@ -157,6 +157,17 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
     def SetProp(self, prop, value):
         self._ExecRequest("set_prop", '["{0}", "{1}"]'.format(prop, erlstr(value)))
 
+    def SetHomeDir(self, path):
+        self._ExecRequest("set_home", '"{}"'.format(erlstr(path)))
+
+    def DialyzeModules(self, files):
+        paths = '[' + ', '.join(['"{}"'.format(erlstr(file)) for file in files]) + ']'
+        self._ExecRequest("dialyze_modules", '{}'.format(paths))
+
+    def DialyzeApps(self, apps):
+        paths = '[' + ', '.join(['"{}"'.format(erlstr(app)) for app in apps]) + ']'
+        self._ExecRequest("dialyze_apps", '{}'.format(paths))
+
     def RemoveProp(self, prop):
         self._ExecRequest("remove_prop", '"{}"'.format(prop))
 

@@ -80,3 +80,17 @@ class IDNCustomTreeCtrl(CT.CustomTreeCtrl):
         except Exception, e:
             Log("Get item children error", e)
             return []
+
+    def GetAllItemFiles(self, item):
+        result = []
+        if not self.ItemHasChildren(item):
+            return result
+        def gatherChildren(item):
+            children = self.GetItemChildren(item)
+            for c in children:
+                if self.ItemHasChildren(c):
+                    gatherChildren(c)
+                else:
+                    result.append(self.GetPyData(c))
+        gatherChildren(item)
+        return result

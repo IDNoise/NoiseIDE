@@ -133,6 +133,9 @@ execute_instant_action(set_prop, Binary) ->
     set_prop(Key, Val), 
     %io:format("set p~p~n", [{Key, Val}]), 
     eide_compiler:generate_includes();
+execute_instant_action(set_home, Binary) ->
+    Path = binary_to_list(Binary),
+    os:putenv("HOME", Path);
 execute_instant_action(remove_prop, Binary) ->
     Key = binary_to_list(Binary),
     ets:delete(props, Key).
@@ -177,21 +180,13 @@ execute_action(xref_module, Binary) ->
         catch _:_ ->
             binary_to_atom(Binary, latin1)
         end,
-    UndefinedData = 
-        case xref:m(Module) of
-            [_, {undefined, Undefined}, _] ->
-                [{struct, [{where_m, WM}, {where_f, WF}, {where_a, WA}, 
-                 {what_m, M}, {what_f, F}, {what_a, A}]} 
-                 || {{WM, WF, WA}, {M, F, A}} <- Undefined];
-            _ ->
-                []
-        end,
-    Response = {struct, [
-                    {response, xref_module},
-                    {module, Binary},
-                    {undefined, UndefinedData}
-                ]},
-    mochijson2:encode(Response);
+    xref_module(Module);
+execute_action(dialyze_modules, Binary) ->
+    Modules = [binary_to_list(Path) || Path <- Binary],
+    dialyze(files, Modules);
+execute_action(dialyze_apps, Binary) ->
+    Apps = [binary_to_list(Path) || Path <- Binary],
+    dialyze(files_rec, Apps);
 execute_action(Action, Data) ->
     io:format("Unknown action ~p with data ~p~n", [Action, Data]),
     ?noreply.
@@ -210,3 +205,42 @@ prop(Prop, Default) ->
         [] -> Default;
         [{Prop, Value}] -> Value
     end.
+
+xref_module(Module) ->
+    UndefinedData = 
+        case xref:m(Module) of
+            [_, {undefined, Undefined}, _] ->
+                [{struct, [{where_m, WM}, {where_f, WF}, {where_a, WA}, 
+                 {what_m, M}, {what_f, F}, {what_a, A}]} 
+                 || {{WM, WF, WA}, {M, F, A}} <- Undefined];
+            _ ->
+                []
+        end,
+    Response = {struct, [
+                    {response, xref_module},
+                    {module, atom_to_binary(Module, latin1)},
+                    {undefined, UndefinedData}
+                ]},
+    mochijson2:encode(Response).
+
+dialyze(Type, FilesApps) ->
+    %io:format("dialyze ~p: ~p~n", [Type, FilesApps]),
+    Plt = prop(plt),
+    case os:getenv("HOME") of
+        false ->
+            os:putenv("HOME", prop(project_dir));
+        _ ->
+            ok
+    end,
+    Options = [
+        {Type, FilesApps}, 
+        {init_plt, Plt}, 
+        {get_warnings, true}
+    ],
+    Warnings = dialyzer:run(Options),
+    WarningsStrings = [list_to_binary(dialyzer:format_warning(W)) || W <- Warnings],
+    Response = {struct, [
+                    {response, dialyzer},
+                    {warnings, WarningsStrings}
+                ]},
+    mochijson2:encode(Response).

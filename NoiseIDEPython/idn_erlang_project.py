@@ -7,10 +7,11 @@ from idn_config import Config
 from idn_connect import CompileErrorInfo
 from idn_console import ErlangIDEConsole, ErlangProjectConsole
 from idn_erlang_constats import *
+from idn_erlang_dialogs import ErlangDialyzerDialog
 from idn_erlang_explorer import ErlangProjectExplorer
 from idn_erlang_project_form import ErlangProjectFrom
 from idn_erlangstc import ErlangHighlightedSTCBase, ErlangSTCReadOnly
-from idn_errors_table import ErrorsTableGrid, XrefTableGrid
+from idn_errors_table import ErrorsTableGrid, XrefTableGrid, DialyzerTableGrid
 from idn_global import Log
 from idn_notebook import ErlangCompileOptionPanel
 from idn_project import Project
@@ -41,11 +42,18 @@ class ErlangProject(Project):
         self.SetupDirs()
         self.AddTabs()
         self.AddConsoles()
+        self.SetupProps()
 
         self.explorer.ProjectFilesCreatedEvent += self.OnProjectFilesCreated
         self.explorer.ProjectFilesModifiedEvent += self.OnProjectFilesModified
         self.explorer.ProjectFilesDeletedEvent += self.OnProjectFilesDeleted
         self.explorer.ProjectDirsCreatedEvent += self.OnProjectDirsCreated
+
+    def SetupProps(self):
+        if self.PltPath():
+            self.GetShell().SetProp("plt", self.PltPath())
+        if self.HomeDir():
+            self.GetShell().SetHomeDir(path)
 
     def ErlangCacheChecked(self):
         ErlangCache.LoadCacheFromDir(os.path.join("runtimes", self.GetErlangRuntime()))
@@ -56,6 +64,13 @@ class ErlangProject(Project):
         self.window.projectMenu.AppendSeparator()
         self.window.projectMenu.AppendMenuItem("Rebuild project", self.window, lambda e: self.CompileProject())
         self.window.projectMenu.AppendMenuItem("XRef check", self.window, lambda e: self.StartXRef())
+
+        self.dialyzerMenu = Menu()
+        self.dialyzerMenu.AppendMenuItem("Edit Options", self.window, self.OnEditDialyzerOptions)
+        self.dialyzerMenu.AppendSeparator()
+        self.dialyzerMenu.AppendMenuItem("Project", self.window, lambda e: self.DialyzeProject())
+        self.dialyzerMenu.AppendMenuItem("Current module", self.window, self.OnDialyzerRunModule)
+        self.window.projectMenu.AppendMenu(wx.NewId(), "Dialyzer", self.dialyzerMenu)
 
         self.window.erlangMenu.AppendMenuItem("Regenerate erlang cache", self.window, lambda e: self.RegenerateErlangCache())
         self.window.erlangMenu.AppendSeparator()
@@ -112,6 +127,84 @@ class ErlangProject(Project):
     def OnEditProject(self, event):
         ErlangProjectFrom(self).ShowModal()
 
+    def OnEditDialyzerOptions(self, event):
+        ErlangDialyzerDialog(self.window, self).ShowModal()
+
+    def OnDialyzerRunModule(self, event):
+        editor = self.window.TabMgr.GetActiveEditor()
+        if not editor:
+            wx.MessageBox("No modules opened.")
+            return
+        if not editor.filePath.endswith(".erl"):
+            wx.MessageBox("Current file is not erlang module.")
+            return
+        self.DialyzeModules(editor.filePath)
+
+    def PltPath(self):
+        return None if not CONFIG_PLT_FILE_PATH in self.userData else self.userData[CONFIG_PLT_FILE_PATH]
+
+    def SetPltPath(self, path):
+        self.userData[CONFIG_PLT_FILE_PATH] = path
+        if not path: return
+        self.GetShell().SetProp("plt", path)
+
+    def HomeDir(self):
+        return None if not CONFIG_HOME_PATH in self.userData else self.userData[CONFIG_HOME_PATH]
+
+    def SetHomeDir(self, path):
+        self.userData[CONFIG_HOME_PATH] = path
+        if not path: return
+        self.GetShell().SetHomeDir(path)
+
+    def CheckPlt(self):
+        if not self.PltPath():
+            wx.MessageBox("Please specify plt for dialyzer. Project -> Dialyzer -> Edit Options.")
+            return False
+        return True
+
+    def DialyzeApps(self, paths):
+        #print paths
+        if not self.CheckPlt(): return
+        apps = set()
+        for path in paths:
+            app = self.GetApp(path)
+            if not app: continue
+            apps.add(self.EbinDirForApp(app))
+        if len(apps) == 0:
+            wx.MessageBox("No app to dialyze.")
+            return
+        #print apps
+        self.GetShell().DialyzeApps(list(apps))
+
+    def DialyzeProject(self):
+        if not self.CheckPlt(): return
+        apps = set()
+        for app in self.GetApps():
+            apps.add(self.EbinDirForApp(app))
+        self.GetShell().DialyzeApps(list(apps))
+
+    def EbinDirForApp(self, app):
+        return os.path.join(self.AppsPath(), app, "ebin")
+
+    def DialyzeModules(self, files):
+        if not self.CheckPlt(): return
+        beams = set()
+        for file in files:
+            if not file.endswith(".erl"): continue
+            beamPath = self.GetBeamPathFromSrcPath(file)
+            if not beamPath: continue
+            beams.add(beamPath)
+        if len(beams) == 0:
+            wx.MessageBox("No modules to dialyze.")
+            return
+        self.GetShell().DialyzeModules(list(beams))
+
+    def GetBeamPathFromSrcPath(self, path):
+        app = self.GetApp(path)
+        if not app:
+            return None
+        return os.path.join(self.EbinDirForApp(app), os.path.splitext(os.path.basename(path))[0] + ".beam")
+
     def AppsPath(self):
         if not CONFIG_APPS_DIR in self.projectData or not self.projectData[CONFIG_APPS_DIR]:
             return self.projectDir
@@ -165,10 +258,14 @@ class ErlangProject(Project):
         return self.shellConsole.shell
 
     def GetApp(self, path):
+        if os.path.isfile(path):
+            path = os.path.dirname(path)
         if not path.lower().startswith(self.AppsPath().lower()):
-            return
+            return None
         app = path.lower().replace(self.AppsPath().lower() + os.sep, "")
-        return app[:app.index(os.sep)]
+        if os.sep in app:
+            return app[:app.index(os.sep)]
+        return app
 
     def Compile(self, path):
         hrls = set()
@@ -297,6 +394,9 @@ class ErlangProject(Project):
             #print "result", module, self.xrefModules
             if len(self.xrefModules) == 0:
                 self.ShowXrefTable()
+        elif response == "dialyzer":
+            warnings = js["warnings"]
+            self.ShowDialyzerResult(warnings)
         elif response == "gen_file_cache":
             path = pystr(js["path"])
             cachePath = pystr(js["cache_path"])
@@ -329,6 +429,13 @@ class ErlangProject(Project):
 
     def AddXRefErrors(self, path, errors):
         self.xrefTable.AddErrors(path, errors)
+
+    def ShowDialyzerResult(self, warnings):
+        dialyzerTable = DialyzerTableGrid(self.window.ToolMgr, self)
+        dialyzerTable.SetWarnings(warnings)
+        self.window.ToolMgr.AddPage(dialyzerTable, "Dialyzer result")
+        self.window.ToolMgr.FocusOnWidget(dialyzerTable)
+
 
     def UpdateProjectConsoles(self):
         self.consoles = {}
