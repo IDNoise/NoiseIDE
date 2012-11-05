@@ -168,7 +168,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
             self.completer.OnKeyDown(event)
             return True
 
-        if keyCode in [wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER] and event.AltDown():
+        if keyCode in [wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER] and event.GetModifiers() == wx.MOD_ALT:
             activeToolPage = GetToolMgr().GetSelection()
             activeTool = GetToolMgr()[activeToolPage]
             consoles = GetProject().consoles
@@ -176,6 +176,12 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                 activeTool = consoles.values()[0]
             GetToolMgr().SetSelection(GetToolMgr().FindPageIndexByWindow(activeTool))
             activeTool.commandText.SetFocus()
+            return True
+        elif event.GetModifiers() == wx.MOD_CONTROL and keyCode == wx.WXK_UP:
+            self.GoToExport()
+            return True
+        elif event.GetModifiers() == wx.MOD_CONTROL and keyCode == wx.WXK_DOWN:
+            self.GoToFun()
             return True
         else:
             return False
@@ -432,17 +438,14 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         self.GotoPos(pos + indent)
 
     def AddToExport(self):
-        line = self.GetCurrentLine()
-        pos = self.PositionFromLine(line)
-        text = self.GetLine(line)
-        tokens = self.lexer.highlighter.GetHighlightingTokens(text)
-        if not tokens[0].type == ErlangHighlightType.FUNDEC:
-            return
+        funData = self.lexer.GetCurrentFunction()
+        if not funData: return
 
-        fun = self.GetTextRange(pos + tokens[0].start, pos + tokens[0].end)
-        arity = self.completer.GetFunArity(pos + tokens[0].end)
+        fun = funData[0]
+        arity = self.completer.GetFunArity(funData[1] + len(fun))
+
         funStr = "{}/{}".format(fun, arity)
-        (exports, insertPos) = self.lexer.GetAllExports()
+        (exports, startPos, insertPos) = self.lexer.GetAllExports()
         if funStr in exports:
             return
         if exports:
@@ -450,6 +453,40 @@ class ErlangSTC(ErlangHighlightedSTCBase):
 
         if insertPos:
             self.InsertText(insertPos, funStr)
+
+    def GoToExport(self):
+        funData = self.lexer.GetCurrentFunction()
+        #print funData
+        if not funData: return
+
+        fun = funData[0]
+        arity = self.completer.GetFunArity(funData[1] + len(fun))
+        funStr = "{}/{}".format(fun, arity)
+        (exports, startPos, insertPos) = self.lexer.GetAllExports()
+        #print funStr
+        if funStr not in exports: return
+        self.SetTargetStart(startPos)
+        self.SetTargetEnd(insertPos)
+        pos = self.SearchInTarget(funStr)
+        if pos >= 0:
+            self.SetAnchor(pos)
+            self.GotoPos(pos + len(funStr))
+
+    def GoToFun(self):
+        pos = self.CurrentPos
+        style = self.GetStyleAt(pos)
+        if style != ErlangHighlightType.FUNCTION: return
+
+        start = self.WordStartPosition(pos, True)
+        end = self.WordEndPosition(pos, True)
+        if start == end: return
+
+        line = self.LineFromPosition(pos)
+        lineStart = self.PositionFromLine(line)
+        prefix = self.GetTextRange(lineStart, start)
+        value = self.GetTextRange(start, end)
+        navigateTo = self.completer.GetFunctionNavAndHelp(value, prefix, end)[0]
+        self.GotoLine(navigateTo[1] - 1)
 
 class ErlangSTCReadOnly(ErlangSTC):
     def __init__(self, parent, panel, filePath, option, text):

@@ -218,14 +218,17 @@ class ErlangLexer(BaseLexer):
         pos = 0
         result = ""
         lastInsertPosition = None
+        start = None
         while True:
             match = r.search(text, pos)
             if not match:
                 break
+            if not start:
+                start = match.start()
             pos = match.end(0)
             lastInsertPosition = match.end(1)
             result += match.group(1)
-        return (result.strip(), lastInsertPosition)
+        return (result.strip(), start, lastInsertPosition)
 
 
 class LineData:
