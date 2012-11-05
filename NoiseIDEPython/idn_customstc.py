@@ -95,11 +95,6 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         EditorFoldMixin.__init__(self)
         EditorLineMarginMixin.__init__(self)
 
-        self.tooltip = wx.ToolTip(" " * 500)
-        self.tooltip.Enable(False)
-        self.tooltip.SetDelay(300)
-        self.SetToolTip(self.tooltip)
-
         self.markerPanel = markerPanel
         if self.markerPanel:
             self.markerPanel.Editor = self
@@ -747,6 +742,7 @@ class STCContextToolTip:
     def ShowTimer(self):
         if self.tooltipWin.IsShown(): return
         if not self.stc.HasFocus(): return
+        if not wx.GetApp().IsActive(): return
         current = wx.GetMousePosition()
         if current != self.lastPos:
             self.counter = 0
