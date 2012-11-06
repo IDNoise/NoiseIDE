@@ -53,7 +53,7 @@ class ErlangProject(Project):
         if self.PltPath():
             self.GetShell().SetProp("plt", self.PltPath())
         if self.HomeDir():
-            self.GetShell().SetHomeDir(path)
+            self.GetShell().SetHomeDir(self.HomeDir())
 
     def ErlangCacheChecked(self):
         ErlangCache.LoadCacheFromDir(os.path.join("runtimes", self.GetErlangRuntime()))
@@ -295,11 +295,12 @@ class ErlangProject(Project):
             for h in toRemove:
                 hrls.remove(h)
 
+        #print "to compile: ", erls
         self.GetShell().CompileYrls(yrls)
         for erl in erls:
             app = self.GetApp(erl)
             if app in self.projectData[CONFIG_EXCLUDED_DIRS]:
-                return
+                continue
             self.GetShell().CompileProjectFile(erl, app)
 
     def CompileOption(self, path, option):
@@ -425,6 +426,7 @@ class ErlangProject(Project):
             self.shellConsole.shell.AddPath(ebinDir)
             dirs += ' "{}"'.format(ebinDir)
         dirs += ' "{}"'.format(self.IDE_MODULES_DIR)
+        #print "new dirs", dirs
         self.dirs = dirs
 
     def AddXRefErrors(self, path, errors):
@@ -504,17 +506,20 @@ class ErlangProject(Project):
         for title, console in self.consoles.items():
             console.Stop()
         Project.Close(self)
-        for w in self.consoleTabs.values() + [self.errorsTable, self.shellConsole, self.xrefTable]:
-            index = self.window.ToolMgr.FindPageIndexByWindow(w)
-            #print "try delete page", w, index
-            if index != None:
-                #print "delete page", w
-                self.window.ToolMgr.DeletePage(index, True)
+
+#        for w in self.consoleTabs.values() + [self.errorsTable, self.shellConsole, self.xrefTable]:
+#            index = self.window.ToolMgr.FindPageIndexByWindow(w)
+#            #print "try delete page", w, index
+#            if index != None:
+#                #print "delete page", w
+#                self.window.ToolMgr.DeletePage(index, True)
+        self.window.ToolMgr.CloseAll()
         self.window.toolbar.DeleteTool(self.xrefCheckT.GetId())
         self.window.toolbar.DeleteTool(self.rebuildT.GetId())
         self.window.toolbar.DeleteToolByPos(self.window.toolbar.GetToolsCount() - 1)
 
     def OnProjectFilesModified(self, files):
+        #print "modified", files
         toCompile = []
         for file in files:
             editor = self.window.TabMgr.FindPageByPath(file)
@@ -559,6 +564,7 @@ class ErlangProject(Project):
                     editor.Changed()
 
     def OnProjectFilesCreated(self, files):
+        #print "created", files
         self.Compile(files)
 
     def OnProjectDirsCreated(self, dirs):

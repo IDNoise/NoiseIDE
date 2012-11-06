@@ -112,6 +112,10 @@ class Notebook(aui.AuiNotebook):
         if index:
             self.SetSelection(index)
 
+    def CloseAll(self, event = None):
+        while self.GetPageCount() > 0:
+            self.DeletePage(0, True)
+
 class EditorNotebook(aui.AuiNotebook):
 
     def __init__(self, parent):

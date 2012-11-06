@@ -135,11 +135,11 @@ class DirectoryChecker:
         diff = DirectoryInfoDiff(dirSnapshot, self.dirSnapshot)
         self.dirSnapshot = dirSnapshot
 
-        wx.CallAfter(self.DirsCreatedEvent, diff.createdDirs)
-        wx.CallAfter(self.DirsModifiedEvent, diff.modifiedDirs)
-        wx.CallAfter(self.DirsDeletedEvent, diff.deletedDirs)
-        wx.CallAfter(self.FilesCreatedEvent, diff.createdFiles)
-        wx.CallAfter(self.FilesModifiedEvent, diff.modifiedFiles)
-        wx.CallAfter(self.FilesDeletedEvent, diff.deletedFiles)
+        if diff.createdDirs: wx.CallAfter(self.DirsCreatedEvent, diff.createdDirs)
+        if diff.modifiedDirs: wx.CallAfter(self.DirsModifiedEvent, diff.modifiedDirs)
+        if diff.deletedDirs: wx.CallAfter(self.DirsDeletedEvent, diff.deletedDirs)
+        if diff.createdFiles: wx.CallAfter(self.FilesCreatedEvent, diff.createdFiles)
+        if diff.modifiedFiles: wx.CallAfter(self.FilesModifiedEvent, diff.modifiedFiles)
+        if diff.deletedFiles: wx.CallAfter(self.FilesDeletedEvent, diff.deletedFiles)
 
 

@@ -261,15 +261,9 @@ class ErlangSTC(ErlangHighlightedSTCBase):
     def GetContextData(self):
         pos = self.PositionFromPoint(self.ScreenToClient(wx.GetMousePosition()))
         style = self.GetStyleAt(pos)
-        #print pos, style
-        #print ErlangHighlightType.FUNCTION, ErlangHighlightType.RECORD, ErlangHighlightType.MACROS
-        if style not in [ErlangHighlightType.ATOM,
-                         ErlangHighlightType.FUNCTION,
+        if style not in [ErlangHighlightType.FUNCTION,
                          ErlangHighlightType.MACROS,
-                         ErlangHighlightType.MODULE,
-                         ErlangHighlightType.RECORD,
-                         ErlangHighlightType.MODULEATTR,
-                         ErlangHighlightType.STRING]:
+                         ErlangHighlightType.RECORD]:
             return None
         start = self.WordStartPosition(pos, True)
         end = self.WordEndPosition(pos, True)
@@ -280,12 +274,16 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         lineStart = self.PositionFromLine(line)
         prefix = self.GetTextRange(lineStart, start)
         value = self.GetTextRange(start, end)
+        data = None
         if style == ErlangHighlightType.FUNCTION:
-            return self.completer.GetFunctionNavAndHelp(value, prefix, end)[1]
+            data = self.completer.GetFunctionNavAndHelp(value, prefix, end)
         elif style == ErlangHighlightType.RECORD:
-            return self.completer.GetRecordNavAndHelp(value)[1]
+            data = self.completer.GetRecordNavAndHelp(value)
         elif style == ErlangHighlightType.MACROS:
-            return self.completer.GetMacrosNavAndHelp(value)[1]
+            data = self.completer.GetMacrosNavAndHelp(value)
+
+        if data:
+            return data[1]
 
         return None
 
@@ -316,12 +314,13 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         value = self.GetTextRange(start, end)
         postfix = self.GetTextRange(end, lineEnd)
         #print value, prefix
+        data = None
         if style == ErlangHighlightType.FUNCTION:
-            self.navigateTo = self.completer.GetFunctionNavAndHelp(value, prefix, end)[0]
+            data = self.completer.GetFunctionNavAndHelp(value, prefix, end)
         elif style == ErlangHighlightType.RECORD:
-            self.navigateTo = self.completer.GetRecordNavAndHelp(value)[0]
+            data = self.completer.GetRecordNavAndHelp(value)
         elif style == ErlangHighlightType.MACROS:
-            self.navigateTo = self.completer.GetMacrosNavAndHelp(value)[0]
+            data = self.completer.GetMacrosNavAndHelp(value)
         elif style in [ErlangHighlightType.ATOM, ErlangHighlightType.MODULE]:
             if value in ErlangCache.AllModules():
                 self.navigateTo = (ErlangCache.moduleData[value].file, 0)
@@ -340,6 +339,11 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                     start = lineStart
                     end = lineEnd
         #print self.navigateTo
+        if style in [ErlangHighlightType.FUNCTION, ErlangHighlightType.RECORD, ErlangHighlightType.MACROS]:
+            if data:
+                self.navigateTo = data[0]
+            else:
+                return False
         if self.navigateTo:
             line = self.LineFromPosition(pos)
             self.navigateTo += (line, )

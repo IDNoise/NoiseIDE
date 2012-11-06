@@ -18,10 +18,10 @@ generate_includes() ->
                 [];
             AppsPath ->
                 {ok, Apps} = file:list_dir(AppsPath),
-                [{i, "../include"}| [{i,Ai} || A <- Apps, End <- ["src", "include"],
+                [{i, "../include"}| [{i,Ai} || A <- Apps, End <- ["include"],
                  begin
                      Ai = AppsPath ++ "/"++ A ++"/" ++ End,
-                     filelib:is_dir(Ai) 
+                     filelib:is_dir(AppsPath ++ "/"++ A) 
                  end]]
     end, 
     %io:format("includes:~p~n", [Includes]),

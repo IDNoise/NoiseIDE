@@ -115,7 +115,7 @@ class RuntimeCreateEditDialog(wx.Dialog):
 
 class ErlangDialyzerDialog(wx.Dialog):
     def __init__(self, parent, project):
-        wx.Dialog.__init__(self, parent, title = "Dialyzer options", size = (370, 120),
+        wx.Dialog.__init__(self, parent, title = "Dialyzer options", size = (390, 120),
             style = wx.DEFAULT_DIALOG_STYLE | wx.WS_EX_VALIDATE_RECURSIVELY)
 
         self.project = project

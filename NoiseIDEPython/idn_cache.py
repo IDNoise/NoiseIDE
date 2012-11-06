@@ -331,9 +331,10 @@ class ErlangCache:
     @classmethod
     def GetDependentModules(cls, include):
         result = []
-        if not cls.TryLoad(include): return result
+        cls.TryLoad(include)
         for module in cls.moduleData:
             data = cls.moduleData[module]
+            if not data.file.startswith(GetProject().AppsPath()): continue
             if include in data.includes:
                 if data.file.endswith(".erl"):
                     result.append(data.file)

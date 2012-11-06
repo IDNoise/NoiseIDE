@@ -396,20 +396,25 @@ if __name__ == '__main__':
     try:
         main()
         if installNewVersion:
-            import shutil
-            root_src_dir = os.path.join(os.getcwd(), 'installer')
-            root_dst_dir = os.getcwd()
-            for src_dir, dirs, files in os.walk(root_src_dir):
-                dst_dir = src_dir.replace(root_src_dir, root_dst_dir)
-                if not os.path.exists(dst_dir):
-                    os.mkdir(dst_dir)
-                for file_ in files:
-                    src_file = os.path.join(src_dir, file_)
-                    dst_file = os.path.join(dst_dir, file_)
-                    if os.path.exists(dst_file):
-                        os.remove(dst_file)
-                    shutil.move(src_file, dst_dir)
-            os.rmdir(root_src_dir)
+            os.startfile("noiseide_copy.bat")
+            #os.spawnlp(os.P_NOWAIT, , "noiseide_copy")
+#            installerDir = os.path.join(os.getcwd(), 'installer')
+#            os.rmdir(installerDir)
+#            import shutil
+#            root_src_dir =
+#            root_dst_dir = os.getcwd()
+#            for src_dir, dirs, files in os.walk(root_src_dir):
+#                dst_dir = src_dir.replace(root_src_dir, root_dst_dir)
+#                if not os.path.exists(dst_dir):
+#                    os.mkdir(dst_dir)
+#                for file_ in files:
+#                    src_file = os.path.join(src_dir, file_)
+#                    dst_file = os.path.join(dst_dir, file_)
+#                    if os.path.exists(dst_file):
+#                        os.remove(dst_file)
+#                    print src_file
+#                    shutil.move(src_file, dst_dir)
+
 
     except Exception, e:
         with open("ide.log", 'a') as logFile:
