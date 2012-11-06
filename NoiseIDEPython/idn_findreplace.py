@@ -191,15 +191,17 @@ class FindInProjectDialog(wx.Dialog):
         self.wholeWordsCb = wx.CheckBox(self, label = "Whole words")
         self.matchCaseCb = wx.CheckBox(self, label = "Match case")
         self.useRegextCb = wx.CheckBox(self, label = "Regexp")
-        self.sizer.Add(self.findTextLabel, (0, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 2)
+        self.openNewSearchResultCb = wx.CheckBox(self, label = "Open new tab for result")
+        self.sizer.Add(self.findTextLabel, (0, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 10)
         self.sizer.Add(self.findText, (0, 1), flag = wx.ALL | wx.ALIGN_CENTER, border = 2)
         self.sizer.Add(self.findButton, (0, 2), flag = wx.ALL | wx.ALIGN_CENTER, border = 2)
-        self.sizer.Add(self.replaceTextLabel, (1, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 2)
+        self.sizer.Add(self.replaceTextLabel, (1, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 10)
         self.sizer.Add(self.replaceText, (1, 1), flag = wx.ALL | wx.ALIGN_CENTER, border = 2)
         self.sizer.Add(self.replaceButton, (1, 2), flag = wx.ALL | wx.ALIGN_CENTER, border = 2)
-        self.sizer.Add(self.useRegextCb, (2, 0), flag = wx.LEFT | wx.ALIGN_CENTER_VERTICAL, border = 10)
-        self.sizer.Add(self.wholeWordsCb, (3, 0), flag = wx.LEFT | wx.ALIGN_CENTER_VERTICAL, border = 10)
-        self.sizer.Add(self.matchCaseCb, (4, 0), flag = wx.LEFT | wx.ALIGN_CENTER_VERTICAL, border = 10)
+        self.sizer.Add(self.useRegextCb, (2, 1), flag = wx.LEFT | wx.ALIGN_CENTER_VERTICAL, border = 10)
+        self.sizer.Add(self.wholeWordsCb, (3, 1), flag = wx.LEFT | wx.ALIGN_CENTER_VERTICAL, border = 10)
+        self.sizer.Add(self.matchCaseCb, (4, 1), flag = wx.LEFT | wx.ALIGN_CENTER_VERTICAL, border = 10)
+        self.sizer.Add(self.openNewSearchResultCb, (5, 1), flag = wx.LEFT | wx.ALIGN_CENTER_VERTICAL, border = 10)
         self.SetSizer(self.sizer)
         self.Layout()
 
@@ -220,7 +222,7 @@ class FindInProjectDialog(wx.Dialog):
             result = self.SearchInFile(file, regexp)
             if result:
                 results[file] = result
-        self.FillFindResultsTable(results, len(files), regexp)
+        self.FillFindResultsTable(results, len(files), regexp, self.openNewSearchResultCb.Value)
 
     def SearchInFile(self, file, regexp):
         try:
@@ -277,11 +279,21 @@ class FindInProjectDialog(wx.Dialog):
         #print "search", pattern
         return re.compile(pattern, flags)
 
-    def FillFindResultsTable(self, results, filesCount, regexp):
-        resultsTable = ErrorsTree(GetToolMgr())
-        GetToolMgr().AddPage(resultsTable, "Find Results: {}".format(self.textToFind), True)
+    def FillFindResultsTable(self, results, filesCount, regexp, openNewTab):
+        title = "Find Results: {}".format(self.textToFind)
+        resultsTable = None
+        if not openNewTab:
+            for page in reversed(GetToolMgr().Pages()):
+                if isinstance(page, ErrorsTree):
+                    id = GetToolMgr().FindPageIndexByWindow(page)
+                    resultsTable = page
+                    GetToolMgr().SetPageText(id, title)
+                    break
+        if not resultsTable:
+            resultsTable = ErrorsTree(GetToolMgr())
+            GetToolMgr().AddPage(resultsTable, title, True)
         resultsTable.SetResults(results, filesCount, regexp)
-        resultsTable.SetFocus()
+        GetToolMgr().FocusOnWidget(resultsTable)
 
     def OnKeyDown(self, event):
         keyCode = event.GetKeyCode()
