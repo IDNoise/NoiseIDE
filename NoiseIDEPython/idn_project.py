@@ -7,10 +7,8 @@ import os
 import yaml
 import wx
 from wx.lib.agw import aui
-from idn_findreplace import FindInProjectDialog
-from idn_utils import  Menu
 import idn_projectexplorer as exp
-from idn_global import GetTabMgr, Log, GetMainFrame
+from idn_global import GetTabMgr, Log
 from PyProgress import PyProgress
 
 class ProgressTaskManagerDialog(wx.EvtHandler):

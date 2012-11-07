@@ -234,7 +234,7 @@ class ErlangProject(Project):
 
     def GenerateErlangCache(self):
         #print "generate erlang cache"
-        self.GetShell().GenerateErlangCache()
+        self.GetShell().GenerateErlangCache(self.GetErlangRuntime())
 
     def StartXRef(self):
         filesForXref = set()
@@ -346,6 +346,7 @@ class ErlangProject(Project):
         self.shellConsole.onlyHide = True
         self.ShowIDEConsole()
         self.shellConsole.DataReceivedEvent += self.OnShellDataReceived
+        self.shellConsole.shell.ClosedConnectionEvent += self.OnIDEConnectionClosed
 
 
     def OnShellDataReceived(self, text):

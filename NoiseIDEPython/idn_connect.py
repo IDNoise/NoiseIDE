@@ -194,8 +194,8 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
         for file in files:
             self.CompileFile(file)
 
-    def GenerateErlangCache(self):
-        self._ExecRequest("gen_erlang_cache", '"{}"'.format( GetProject().GetErlangRuntime()))
+    def GenerateErlangCache(self, runtime):
+        self._ExecRequest("gen_erlang_cache", '"{}"'.format( runtime))
 
     def GenerateProjectCache(self):
         self._ExecRequest("gen_project_cache", '[]')
@@ -353,6 +353,8 @@ class ErlangProcessWithConnection(ErlangProcess, ErlangIDEConnectAPI):
         ErlangProcess.__init__(self, cwd)
         ErlangIDEConnectAPI.__init__(self)
 
+        self.ClosedConnectionEvent = Event()
+
     def GetSMPData(self):
         return "-smp enable +sbt db +S3:3"
 
@@ -371,4 +373,4 @@ class ErlangProcessWithConnection(ErlangProcess, ErlangIDEConnectAPI):
     def OnClosed(self):
         Log("connection closed")
         if not self.stopped:
-            GetProject().OnIDEConnectionClosed()
+            self.ClosedConnectionEvent()
