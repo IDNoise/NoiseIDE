@@ -280,7 +280,7 @@ class ErlangCache:
         if not name in cls.moduleData: return
         del cls.moduleData[name]
         if name.endswith(".hrl"):
-            cls.includes.add(name)
+            cls.includes.remove(name)
         else:
             cls.modules.remove(name)
 
@@ -289,7 +289,7 @@ class ErlangCache:
         if not name in cls.moduleData: return
         del cls.moduleData[name]
         if name.endswith(".hrl"):
-            cls.includes.add(name)
+            cls.includes.remove(name)
         else:
             cls.modules.remove(name)
 

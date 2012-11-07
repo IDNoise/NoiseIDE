@@ -334,7 +334,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                 path = lineText[s:len(lineText)-3]
             if path:
                 include = os.path.basename(path)
-                if include in ErlangCache.includes:
+                if include in ErlangCache.moduleData:
                     self.navigateTo = (ErlangCache.moduleData[include].file, 0)
                     start = lineStart
                     end = lineEnd

@@ -207,9 +207,13 @@ class ProjectExplorer(IDNCustomTreeCtrl):
                 self.AppendFile(node, path)
 
     def GetIconIndex(self, fileName):
+        #return self.iconIndex[self.FILE]
         ext = extension(fileName)
+        wx.Log.EnableLogging(False)
+        noLog = wx.LogNull()
+        result = self.iconIndex[self.FILE]
         if ext in self.iconIndex:
-            return self.iconIndex[ext]
+            result = self.iconIndex[ext]
         else:
             try:
                 fileType = wx.TheMimeTypesManager.GetFileTypeFromExtension(ext)
@@ -222,11 +226,13 @@ class ProjectExplorer(IDNCustomTreeCtrl):
                             key = self.imageList.AddIcon(icon)
                             self.iconIndex[ext] = key
                             self.SetImageList(self.imageList)
-                            return iconkey
+                            result = iconkey
             except:
                 pass
-            finally:
-                return self.iconIndex[self.FILE]
+        del noLog
+        wx.Log.EnableLogging(True)
+        return result
+#        #wx.Log_GetActiveTarget()
 
     def StopTrackingProject(self):
         self.dirChecker.Stop()

@@ -547,6 +547,8 @@ class ErlangProject(Project):
         for file in files:
             self.AddErrors(file, [])
             self.RemoveUnusedBeams()
+            if file.endswith(".hrl"):
+                self.Compile(ErlangCache.GetDependentModules(os.path.basename(file)))
             self.ClearCacheForFile(file)
             editor = self.window.TabMgr.FindPageByPath(file)
             page = self.window.TabMgr.FindPageIndexByPath(file)
