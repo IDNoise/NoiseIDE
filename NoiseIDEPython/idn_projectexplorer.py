@@ -223,6 +223,8 @@ class ProjectExplorer(IDNCustomTreeCtrl):
                             self.iconIndex[ext] = key
                             self.SetImageList(self.imageList)
                             return iconkey
+            except:
+                pass
             finally:
                 return self.iconIndex[self.FILE]
 

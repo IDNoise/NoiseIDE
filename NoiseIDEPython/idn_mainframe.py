@@ -394,6 +394,10 @@ if __name__ == '__main__':
     #p = pstats.Stats('ideprof')
     #p.strip_dirs().sort_stats(-1).print_stats()
     try:
+        import shutil
+        installerPath = os.path.join(os.path.curdir, "installer")
+        if os.path.isdir(installerPath):
+            shutil.rmtree(installerPath)
         main()
         if installNewVersion:
             os.startfile("noiseide_copy.bat")
