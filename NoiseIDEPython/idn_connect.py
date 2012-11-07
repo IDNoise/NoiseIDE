@@ -298,8 +298,7 @@ class ErlangProcess(Process):
         Process.__init__(self)
         self.Redirect()
         self.cwd = cwd
-        erlang = GetProject().GetErlangPath()
-        self.cmd = "{} -smp enable +S 2 {}".format(erlang, ' '.join(params + ["-s reloader"]))
+        self.SetParams(params)
         self.pid = None
         self.handler = None
         self.processQueue = Queue()
@@ -310,9 +309,12 @@ class ErlangProcess(Process):
 
         self.DataReceivedEvent = idn_events.Event()
 
+    def GetSMPData(self):
+        return ""
+
     def SetParams(self, params):
         erlang = GetProject().GetErlangPath()
-        self.cmd = "{} -smp enable +S 2 {}".format(erlang, ' '.join(params + ["-s reloader"]))
+        self.cmd = "{} {} {}".format(erlang, self.GetSMPData(), ' '.join(params + ["-s reloader"]))
 
     def SendCommandToProcess(self, cmd):
         cmd += '\n'
@@ -350,6 +352,9 @@ class ErlangProcessWithConnection(ErlangProcess, ErlangIDEConnectAPI):
     def __init__(self, cwd):
         ErlangProcess.__init__(self, cwd)
         ErlangIDEConnectAPI.__init__(self)
+
+    def GetSMPData(self):
+        return "-smp enable +sbt db +S3:3"
 
     def Start(self):
         ErlangProcess.Start(self)

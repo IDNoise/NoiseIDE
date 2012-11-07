@@ -631,7 +631,7 @@ class ErlangProject(Project):
 
     def RemoveUnusedBeams(self):
         srcFiles = set()
-        for app in self.GetApps():
+        for app in self.GetApps(True):
             path = os.path.join(self.AppsPath(), app, "src")
             for root, _, files in os.walk(path):
                 for fileName in files:
