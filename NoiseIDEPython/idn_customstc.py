@@ -11,7 +11,7 @@ from wx import stc, GetMousePosition
 from wx import html
 from wx.stc import STC_FOLDLEVELHEADERFLAG, StyledTextCtrl
 from idn_colorschema import ColorSchema
-from idn_global import  GetTabMgr, GetMainFrame, Log
+import core
 
 class EditorFoldMixin:
     def __init__(self):
@@ -181,7 +181,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
             self.Bind(stc.EVT_STC_SAVEPOINTREACHED, self.OnSavePointReached)
         self.OnInit()
 
-        self.editorMenu = GetMainFrame().editorMenu
+        self.editorMenu = core.MainFrame.editorMenu
         self.SetupEditorMenu()
 
         self.Bind(wx.EVT_RIGHT_UP, self.CreatePopupMenu)
@@ -209,13 +209,13 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         for item in self.editorMenu.GetMenuItems():
             self.editorMenu.RemoveItem(item)
 
-        self.editorMenu.AppendMenuItem('Find in file', GetMainFrame(), self.ShowFindInFile)
-        self.editorMenu.AppendMenuItem('Incremental find in file', GetMainFrame(), self.ShowIncrementalFindInFile)
-        self.editorMenu.AppendMenuItem('Go to line', GetMainFrame(), lambda e: self.ShowGoToLineDialog())
-        self.editorMenu.AppendMenuItem('Find/Replace in project', GetMainFrame(), lambda e: self.ShowFindInProject(), "Ctrl-Shift-F")
+        self.editorMenu.AppendMenuItem('Find in file', core.MainFrame, self.ShowFindInFile)
+        self.editorMenu.AppendMenuItem('Incremental find in file', core.MainFrame, self.ShowIncrementalFindInFile)
+        self.editorMenu.AppendMenuItem('Go to line', core.MainFrame, lambda e: self.ShowGoToLineDialog())
+        self.editorMenu.AppendMenuItem('Find/Replace in project', core.MainFrame, lambda e: self.ShowFindInProject(), "Ctrl-Shift-F")
         self.editorMenu.AppendSeparator()
-        self.editorMenu.AppendCheckMenuItem('Close brackets/quotes', GetMainFrame(), self.OnMenuCloseBracketsQuotes, Config.GetProp("close_brackets_quotes", False))
-        self.editorMenu.AppendCheckMenuItem('Put brackets/quotes around selected text', GetMainFrame(), self.OnMenuPutBracketsQuotesAround, Config.GetProp("put_brackets_quotes_around", False))
+        self.editorMenu.AppendCheckMenuItem('Close brackets/quotes', core.MainFrame, self.OnMenuCloseBracketsQuotes, Config.GetProp("close_brackets_quotes", False))
+        self.editorMenu.AppendCheckMenuItem('Put brackets/quotes around selected text', core.MainFrame, self.OnMenuPutBracketsQuotesAround, Config.GetProp("put_brackets_quotes_around", False))
 
     def OnMenuCloseBracketsQuotes(self, event):
         newValue = not Config.GetProp("close_brackets_quotes", False)
@@ -226,7 +226,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         Config.SetProp("put_brackets_quotes_around", newValue)
 
     def ShowFindInProject(self):
-        dialog = FindInProjectDialog.GetDialog(GetTabMgr())
+        dialog = FindInProjectDialog.GetDialog(core.TabMgr)
         dialog.Show()
         if self.SelectedText:
             dialog.findText.Value = self.SelectedText
@@ -449,13 +449,13 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.GotoPos(pos + indent)
 
     def UpdateTabTitle(self):
-        index = GetTabMgr().FindPageIndexByPath(self.filePath)
+        index = core.TabMgr.FindPageIndexByPath(self.filePath)
         if index >= 0:
             if self.saved:
                 title = self.FileName()
             else:
                 title = "* " + self.FileName()
-            GetTabMgr().SetPageText(index, title)
+            core.TabMgr.SetPageText(index, title)
 
     def FileName(self):
         return os.path.basename(self.filePath)
@@ -648,7 +648,7 @@ class ConsoleSTC(CustomSTC):
             if self.GetLastVisibleLine() >= linesCount:
                 self.ScrollToLine(self.GetLineCount())
         except Exception, e:
-            Log("append text error", e)
+            core.Log("append text error", e)
 
 class STCContextToolTip:
     def __init__(self, stc, delay, handler):

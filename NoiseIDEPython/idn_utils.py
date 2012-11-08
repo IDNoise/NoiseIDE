@@ -1,7 +1,7 @@
 __author__ = 'Yaroslav'
 
 from threading import Thread, Event
-from idn_global import GetMainFrame
+import core
 
 import os
 import wx
@@ -60,7 +60,7 @@ def CreateButton(parent, label, handler, style = 0):
     return button
 
 def GetImagePath(image):
-    return os.path.join(GetMainFrame().cwd, "data", "images", image)
+    return os.path.join(core.MainFrame.cwd, "data", "images", image)
 
 def GetImage(image):
     path = GetImagePath(image)

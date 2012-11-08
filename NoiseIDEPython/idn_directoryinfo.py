@@ -5,7 +5,7 @@ __author__ = 'Yaroslav Nikityshev aka IDNoise'
 import os
 from stat import ST_MTIME
 from idn_utils import Timer, extension
-from idn_global import Log
+import core
 import wx
 
 class DirectoryInfo:
@@ -41,7 +41,7 @@ class DirectoryInfo:
                         continue
                     self.files[file] = mtime
             except Exception, e:
-                Log("Gather dir info error: ", e)
+                core.Log("Gather dir info error: ", e)
 
 
 class DirectoryInfoDiff:

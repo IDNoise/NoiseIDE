@@ -16,7 +16,7 @@ from idn_colorschema import ColorSchema
 from idn_winmanager import Manager
 from idn_notebook import  Notebook, EditorNotebook
 from idn_config import Config, ConfigEditForm
-import idn_global
+import core
 from idn_project import Project
 
 #lists:flatten(edoc:read("d:/projects/noiseide/noiseidepython/data/erlang/modules/noiseide/src/test_cache_module.erl")).
@@ -27,7 +27,7 @@ class NoiseIDE(wx.Frame):
     def __init__(self, *args, **kwargs):
         wx.Frame.__init__(self, None, wx.ID_ANY, 'Noise IDE', size = (1680, 900), pos = (10, 10))
         self.cwd = os.getcwd()
-        idn_global.MainFrame = self
+        core.MainFrame = self
         wx.ToolTip.SetMaxWidth(600)
 
         self.Maximize()
@@ -51,8 +51,6 @@ class NoiseIDE(wx.Frame):
 
         self.TabMgr = EditorNotebook(self)
         self.TabMgr.SetArtProvider(aui.VC71TabArt())
-        #self.TabMgr.SetArtProvider(aui.ChromeTabArt())
-        #self.TabMgr.SetArtProvider(aui.FF2TabArt())
         self.TabMgrPaneInfo = aui.AuiPaneInfo().Center()\
             .MaximizeButton().MinimizeButton().CaptionVisible(False)\
             .CloseButton(False).Floatable(False).MinSize(100, 100)
@@ -64,13 +62,9 @@ class NoiseIDE(wx.Frame):
             .BestSize(400, 300).MinSize(100, 100).Name("Tools").Caption("Tools").CaptionVisible(True)\
             .MinimizeMode(aui.AUI_MINIMIZE_POS_LEFT | aui.AUI_MINIMIZE_CAPT_SMART)
         self.WinMgr.AddPane1(self.ToolMgr, self.ToolMgrPaneInfo)
-
-        #self.logPanel = ConsolePanel(self.ToolMgr)
-        #self.log = self.logPanel.editor
-        #self.log.SetReadOnly(True)
-        #self.ToolMgr.AddPage(self.logPanel, "Log")
-        #self.ToolMgr.
-
+        core.TabMgr = self.TabMgr
+        core.ToolMgr = self.ToolMgr
+        core.WinMgr = self.WinMgr
         #self.WinMgr.MaximizePane()
 
         self.WinMgr.Update()
@@ -88,16 +82,6 @@ class NoiseIDE(wx.Frame):
                 wx.CallAfter(self.TryLoadLastProject)
         else:
             wx.CallAfter(self.TryLoadLastProject)
-
-        self.logFile = open(os.path.join(self.cwd, "ide.log"), 'w')
-
-        #self.TabMgr.Bind(aui.EVT_AUINOTEBOOK_PAGE_CHANGED, self.OnNotebookPageChanged)
-        #self.OpenProject("D:\\Projects\\GIJoe\\server\\gijoe.noiseide.project")
-        #self.OpenProject("D:\\Projects\\Joe\\server\\gijoe.noiseide.project")
-
-#    def OnNotebookPageChanged(self, event):
-#        for item in self.editorMenu.GetMenuItems():
-#            self.editorMenu.Enable(item.GetId(), self.TabMgr.GetSelection() != -1)
 
     def SetupSimpleMenu(self):
         self.menubar = wx.MenuBar()
@@ -175,14 +159,13 @@ class NoiseIDE(wx.Frame):
         erlangMenu.AppendMenuItem("Options", self, lambda e: self.SetupRuntimes())
         erlangMenu.AppendSeparator()
 
-       # erlangMenu.AppendSeparator()
+
         self.erlangMenu = erlangMenu
 
         self.viewMenu = Menu()
         self.viewMenu.AppendCheckMenuItem('Show white space', self, self.OnMenuShowWhiteSpace, Config.GetProp("show_white_space", False))
         self.viewMenu.AppendCheckMenuItem('Show EOL', self, self.OnMenuShowEOL, Config.GetProp("show_eol", False))
         self.viewMenu.AppendSeparator()
-        #self.viewMenu.AppendMenuItem("Log", self.window, lambda e: self.ShowLog())
 
         self.menubar.Append(self.viewMenu, "&View")
 
@@ -215,9 +198,7 @@ class NoiseIDE(wx.Frame):
                     'There is new version {} available. Current version is {}. Do you want to update after exit?'.format(newVersion, version),
                     msg2 = 'Changelog:\n\n' + newData,
                     caption = 'New version {} available'.format(newVersion),
-                    #icon = wx.ICON_QUESTION,
                     style = wx.YES_NO | wx.YES_DEFAULT | wx.ICON_QUESTION)
-                #dial.SetSize((600, 400))
                 if dial.ShowModal() == wx.ID_YES:
                     progressDialog = wx.ProgressDialog("Autoupdater", "Downloading installer...", parent = self, style = wx.PD_APP_MODAL | wx.PD_ELAPSED_TIME | wx.PD_AUTO_HIDE)
                     progressDialog.Show()
@@ -226,7 +207,6 @@ class NoiseIDE(wx.Frame):
                     dataFile = urllib2.urlopen("https://dl.dropbox.com/s/a2qrs1zw20who93/noiseide.zip")
                     meta = dataFile.info()
                     fileSize = int(meta.getheaders("Content-Length")[0])
-                    #print "Downloading: %s Bytes: %s" % (os.path.join(self.cwd, "installer.zip"), fileSize)
 
                     fileSizeDl = 0
                     block_sz = 8192
@@ -237,10 +217,8 @@ class NoiseIDE(wx.Frame):
 
                         fileSizeDl += len(buffer)
                         installerFile.write(buffer)
-                        #status = "Downloading installer... {} / {} done".format(round(fileSizeDl / 1000000.0, 3), round(fileSize / 1000000.0, 3))
                         newValue = int(float(fileSizeDl) / float(fileSize) * 100)
                         progressDialog.Update(newValue)
-                    #progressDialog.Destroy()
                     installerFile.close()
                     writeBinaryFile(os.path.join(dir, "rev.cfg"), newData)
                     idn_installer.Decompress(installerFileName)
@@ -251,20 +229,9 @@ class NoiseIDE(wx.Frame):
             else:
                 wx.MessageBox("You have last version", "Check result")
         except Exception, e:
-            idn_global.Log("Update error", e)
+            core.Log("Update error", e)
             wx.MessageBox("Update check error. Check log for info", "Check result")
         self.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
-    def ShowLog(self):
-        pass#if self.ToolMgr.FindPageIndexByWindow(self.)
-
-    def Log(self, text):
-        print text
-        self.logFile.write(text)
-        self.logFile.flush()
-        #self.log.Append(text)
-
-#    def ClearLog(self):
-#        self.log.Clear()
 
     def TryLoadLastProject(self):
         lastProject = Config.GetProp("last_project")
@@ -334,7 +301,7 @@ class NoiseIDE(wx.Frame):
         Config.SetLastProjects(projects)
 
         self.SetupProjectMenu()
-        self.LoadProject(projectFile)
+        self.project = self.LoadProject(projectFile)
 
         #self.project.mEditProject.Enable(True)
         self.SetTitle(self.project.ProjectName() + " - " + "Noise IDE")
@@ -374,8 +341,7 @@ class NoiseIDE(wx.Frame):
     def SetupRuntimes(self):
         dlg = ErlangOptionsDialog(self)
         dlg.ShowModal()
-#    def OnEvent(self, event):
-#        event.Skip()
+
 
 class App(wx.App):
     def __init__(self):
@@ -401,25 +367,6 @@ if __name__ == '__main__':
         main()
         if installNewVersion:
             os.startfile("noiseide_copy.bat")
-            #os.spawnlp(os.P_NOWAIT, , "noiseide_copy")
-#            installerDir = os.path.join(os.getcwd(), 'installer')
-#            os.rmdir(installerDir)
-#            import shutil
-#            root_src_dir =
-#            root_dst_dir = os.getcwd()
-#            for src_dir, dirs, files in os.walk(root_src_dir):
-#                dst_dir = src_dir.replace(root_src_dir, root_dst_dir)
-#                if not os.path.exists(dst_dir):
-#                    os.mkdir(dst_dir)
-#                for file_ in files:
-#                    src_file = os.path.join(src_dir, file_)
-#                    dst_file = os.path.join(dst_dir, file_)
-#                    if os.path.exists(dst_file):
-#                        os.remove(dst_file)
-#                    print src_file
-#                    shutil.move(src_file, dst_dir)
-
 
     except Exception, e:
-        with open("ide.log", 'a') as logFile:
-            logFile.write("app error" + str(e))
+        core.Log("app error" + str(e))

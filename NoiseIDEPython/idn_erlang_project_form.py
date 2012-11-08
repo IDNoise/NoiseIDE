@@ -3,16 +3,16 @@ import wx
 import yaml
 from idn_config import Config
 from idn_erlang_constats import *
-from idn_global import GetMainFrame
+import core
 from idn_project import Project
 from idn_utils import CreateButton, CreateLabel
-from idn_window_utils import PathExistsValidator, NotEmptyTextValidator
+from idn_window_utils import NotEmptyTextValidator
 
 __author__ = 'Yaroslav'
 
 class ErlangProjectFrom(wx.Dialog):
     def __init__(self, project = None):
-        wx.Dialog.__init__(self, GetMainFrame(), size = (450, 600), title = "Create\Edit project",
+        wx.Dialog.__init__(self, core.MainFrame, size = (450, 600), title = "Create\Edit project",
             style = wx.DEFAULT_DIALOG_STYLE | wx.WS_EX_VALIDATE_RECURSIVELY)
 
         self.consoles = {}
@@ -203,7 +203,7 @@ class ErlangProjectFrom(wx.Dialog):
             self.project.userData[CONFIG_ERLANG_RUNTIME] = erlang
             wx.CallAfter(self.project.UpdateProject)
         else:
-            wx.CallAfter(GetMainFrame().OpenProject, pFile)
+            wx.CallAfter(core.MainFrame.OpenProject, pFile)
 
         self.Close()
 

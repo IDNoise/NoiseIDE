@@ -5,7 +5,7 @@ import wx
 from idn_colorschema import ColorSchema
 from idn_config import Config
 from idn_findreplace import ReplaceInProject, ReplaceInFile
-from idn_global import GetTabMgr, GetMainFrame
+import core
 from idn_projectexplorer import ProjectExplorer
 from idn_utils import Menu, writeFile, readFile, extension
 
@@ -79,7 +79,7 @@ class ErlangProjectExplorer(ProjectExplorer):
         path = path + ".hrl"
         if path and not os.path.isfile(path):
             writeFile(path, "")
-            GetTabMgr().LoadFileLine(path)
+            core.TabMgr.LoadFileLine(path)
 
     def OnMenuNewApplication(self, event):
         (name, path) = self.RequestName("New Application", "Enter application name", "new_application")
@@ -111,16 +111,16 @@ class ErlangProjectExplorer(ProjectExplorer):
         writeFile(appModulePath, app)
         writeFile(supModulePath, sup)
         writeFile(appSrcPath, appSrc)
-        GetTabMgr().LoadFileLine(appModulePath)
-        GetTabMgr().LoadFileLine(supModulePath)
-        GetTabMgr().LoadFileLine(appSrcPath)
+        core.TabMgr.LoadFileLine(appModulePath)
+        core.TabMgr.LoadFileLine(supModulePath)
+        core.TabMgr.LoadFileLine(appSrcPath)
 
 
     def DefaultExcludeDirs(self):
         return ProjectExplorer.DefaultExcludeDirs(self) + [".settings"] #"ebin",
 
     def _GetTemplate(self, template):
-        path = os.path.join(GetMainFrame().cwd, "data", "erlang", "templates", template)
+        path = os.path.join(core.MainFrame.cwd, "data", "erlang", "templates", template)
         data = readFile(path)
         data = data.replace("[username]", Config.UserName())
         data = data.replace("[date]", time.strftime("%d.%m.%Y"))
@@ -133,7 +133,7 @@ class ErlangProjectExplorer(ProjectExplorer):
             data = self._GetTemplate(template)
             data = data.replace("[module_name]", module)
             writeFile(path, data)
-            GetTabMgr().LoadFileLine(path)
+            core.TabMgr.LoadFileLine(path)
 
     def Rename(self, path):
         if os.path.isfile(path):
@@ -148,13 +148,13 @@ class ErlangProjectExplorer(ProjectExplorer):
             newPath = os.path.join(os.path.dirname(path), dlg.Value)
 
             def updateEditor(old, new):
-                page = GetTabMgr().FindPageIndexByPath(old)
-                editor = GetTabMgr()[page]
+                page = core.TabMgr.FindPageIndexByPath(old)
+                editor = core.TabMgr[page]
                 editor.filePath = new
                 editor.UpdateTabTitle()
 
             if os.path.isfile(path):
-                if path in GetTabMgr().OpenedFiles():
+                if path in core.TabMgr.OpenedFiles():
                     if path.endswith(".erl"):
                         (oldModuleName, ext) = os.path.splitext(os.path.basename(path))
                         (newModuleName, ext) = os.path.splitext(os.path.basename(newPath))
@@ -163,7 +163,7 @@ class ErlangProjectExplorer(ProjectExplorer):
                     updateEditor(path, newPath)
 
             if os.path.isdir(path):
-                for oPath in GetTabMgr().OpenedFiles():
+                for oPath in core.TabMgr.OpenedFiles():
                     if oPath.startswith(path):
                         oNewPath = oPath.replace(path, newPath)
                         updateEditor(oPath, oNewPath)

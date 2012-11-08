@@ -4,7 +4,7 @@ import os
 import wx
 from wx.grid import PyGridTableBase
 from idn_cache import ErlangCache
-from idn_global import GetTabMgr
+import core
 
 __author__ = 'Yaroslav'
 
@@ -47,7 +47,7 @@ class ErrorsTableGrid(wx.grid.Grid):
         rowData = self.table.data[row]
         file = os.path.join(self.project.AppsPath(), rowData[0])
         line = rowData[1] - 1
-        GetTabMgr().LoadFileLine(file, line)
+        core.TabMgr.LoadFileLine(file, line)
 
     def AddErrors(self, path, errors):
         currentRows = len(self.table.data)

@@ -1,7 +1,7 @@
 import os
 import wx
 from TextCtrlAutoComplete import TextCtrlAutoComplete
-from idn_global import GetTabMgr
+import core
 
 __author__ = 'Yaroslav'
 
@@ -39,7 +39,7 @@ class FastProjectFileOpenDialog(wx.Dialog):
             value = self.cb.GetValue()
             if os.path.isfile(value):
                 self.Close()
-                GetTabMgr().LoadFileLine(value)
+                core.TabMgr.LoadFileLine(value)
             else:
                 event.Skip()
         else:
@@ -47,4 +47,4 @@ class FastProjectFileOpenDialog(wx.Dialog):
 
     def OnSelectCallback(self, values):
         self.Close()
-        GetTabMgr().LoadFileLine(values[1])
+        core.TabMgr.LoadFileLine(values[1])

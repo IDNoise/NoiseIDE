@@ -13,7 +13,7 @@ from wx import Process
 import asyncore
 import json
 import wx
-from idn_global import GetProject, Log
+import core
 
 
 class AsyncoreThread(Thread):
@@ -58,7 +58,7 @@ class ErlangSocketConnection(asyncore.dispatcher):
                 self.connect((self.Host(), self.port))
                 break
             except Exception ,e:
-                Log("connect",  e)
+                core.Log("connect",  e)
         self.asyncoreThread = AsyncoreThread()
         self.asyncoreThread.Start()
 
@@ -97,7 +97,7 @@ class ErlangSocketConnection(asyncore.dispatcher):
                 try:
                     data += self.socket.recv(msgLen - len(data))
                 except Exception, e:
-                    Log("recv error", e)
+                    core.Log("recv error", e)
             if self.socketHandler:
                 self.socketHandler(data)
 
@@ -106,7 +106,7 @@ class ErlangSocketConnection(asyncore.dispatcher):
 
     def _ExecRequest(self, action, data):
         request = '{' + '"action": "{}", "data": {}'.format(action, data) + '}'
-        #Log("request", request)
+        #core.Log("request", request)
         self.socketQueue.put(request)
 
     def OnClosed(self):
@@ -210,7 +210,7 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
         self._ExecRequest("add_path", '"{}"'.format(erlstr(path)))
 
     def _HandleSocketResponse(self, text):
-        #Log("response", text)
+        #core.Log("response", text)
 
         self.lastTaskDone = None
         try:
@@ -222,7 +222,7 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
 
         except Exception, e:
 
-            Log("===== connection exception ", text, e)
+            core.Log("===== connection exception ", text, e)
 
 
 
@@ -275,7 +275,7 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
 #        self.protocol.Write(cmd)
 #
 #    def SetParams(self, params):
-#        self.cmd = GetProject().GetErlangPath()
+#        self.cmd = core.Project.GetErlangPath()
 #        self.params = ' '.join(params + ["-s reloader"])
 #        self.program = "erlang"
 #
@@ -313,7 +313,7 @@ class ErlangProcess(Process):
         return ""
 
     def SetParams(self, params):
-        erlang = GetProject().GetErlangPath()
+        erlang = core.Project.GetErlangPath()
         self.cmd = "{} {} {}".format(erlang, self.GetSMPData(), ' '.join(params + ["-s reloader"]))
 
     def SendCommandToProcess(self, cmd):
@@ -353,7 +353,7 @@ class ErlangProcessWithConnection(ErlangProcess, ErlangIDEConnectAPI):
         ErlangProcess.__init__(self, cwd)
         ErlangIDEConnectAPI.__init__(self)
 
-        self.ClosedConnectionEvent = Event()
+        self.ClosedConnectionEvent = idn_events.Event()
 
     def GetSMPData(self):
         return "-smp enable +sbt db +S3:3"
@@ -371,6 +371,6 @@ class ErlangProcessWithConnection(ErlangProcess, ErlangIDEConnectAPI):
         ErlangSocketConnection.Start(self)
 
     def OnClosed(self):
-        Log("connection closed")
+        core.Log("connection closed")
         if not self.stopped:
             self.ClosedConnectionEvent()

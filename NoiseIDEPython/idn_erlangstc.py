@@ -13,7 +13,7 @@ from idn_customstc import CustomSTC
 from idn_erlang_completer import ErlangCompleter
 from idn_erlang_constats import TYPE_MODULE, TYPE_UNKNOWN, TYPE_HRL
 from idn_erlang_lexer import ErlangLexer
-from idn_global import GetProject, GetMainFrame, GetToolMgr, GetTabMgr, Log
+import core
 from idn_highlight import ErlangHighlightType
 from idn_marker_panel import Marker
 from idn_outline import ErlangOutline
@@ -69,7 +69,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         self.markerPanel.SetMarkerColor("warning", ColorSchema.codeEditor["warning_marker_color"])
         self.markerPanel.SetMarkerColor("error", ColorSchema.codeEditor["error_marker_color"])
 
-        self.HighlightErrors(GetProject().GetErrors(self.filePath))
+        self.HighlightErrors(core.Project.GetErrors(self.filePath))
 
         self.Bind(stc.EVT_STC_UPDATEUI, self.OnUpdateCompleter)
         self.Bind(wx.EVT_MOTION, self.OnMouseMove)
@@ -79,10 +79,10 @@ class ErlangSTC(ErlangHighlightedSTCBase):
     def SetupEditorMenu(self):
         ErlangHighlightedSTCBase.SetupEditorMenu(self)
         self.editorMenu.AppendSeparator()
-        self.editorMenu.AppendMenuItem('Outline', GetMainFrame(), lambda e: self.ShowOutline(), "Ctrl-H")
-        self.editorMenu.AppendMenuItem('Comment lines', GetMainFrame(), lambda e: self.CommentLines(), "Ctrl-/")
+        self.editorMenu.AppendMenuItem('Outline', core.MainFrame, lambda e: self.ShowOutline(), "Ctrl-H")
+        self.editorMenu.AppendMenuItem('Comment lines', core.MainFrame, lambda e: self.CommentLines(), "Ctrl-/")
         if self.ModuleType() == TYPE_MODULE:
-            self.editorMenu.AppendMenuItem('Add to export', GetMainFrame(), lambda e: self.AddToExport(), "Ctrl-E")
+            self.editorMenu.AppendMenuItem('Add to export', core.MainFrame, lambda e: self.AddToExport(), "Ctrl-E")
 
     def SetupLanguageStyles(self):
         ErlangHighlightedSTCBase.SetupLanguageStyles(self)
@@ -110,9 +110,9 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         if self.ModuleType() == TYPE_MODULE:
             compileOptionMenu = Menu()
             menu.AppendMenu(wx.NewId(), "Compile Option", compileOptionMenu)
-            compileOptionMenu.AppendCheckMenuItem("With 'P' flag", self, lambda e: GetProject().CompileOption(self.filePath, "P"))
-            compileOptionMenu.AppendCheckMenuItem("With 'E' flag", self, lambda e: GetProject().CompileOption(self.filePath, "E"))
-            compileOptionMenu.AppendCheckMenuItem("With 'S' flag", self, lambda e: GetProject().CompileOption(self.filePath, "S"))
+            compileOptionMenu.AppendCheckMenuItem("With 'P' flag", self, lambda e: core.Project.CompileOption(self.filePath, "P"))
+            compileOptionMenu.AppendCheckMenuItem("With 'E' flag", self, lambda e: core.Project.CompileOption(self.filePath, "E"))
+            compileOptionMenu.AppendCheckMenuItem("With 'S' flag", self, lambda e: core.Project.CompileOption(self.filePath, "S"))
 
         self.PopupMenu(menu)
 
@@ -169,12 +169,12 @@ class ErlangSTC(ErlangHighlightedSTCBase):
             return True
 
         if keyCode in [wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER] and event.GetModifiers() == wx.MOD_ALT:
-            activeToolPage = GetToolMgr().GetSelection()
-            activeTool = GetToolMgr()[activeToolPage]
-            consoles = GetProject().consoles
+            activeToolPage = core.ToolMgr.GetSelection()
+            activeTool = core.ToolMgr[activeToolPage]
+            consoles = core.Project.consoles
             if activeTool not in consoles.values():
                 activeTool = consoles.values()[0]
-            GetToolMgr().SetSelection(GetToolMgr().FindPageIndexByWindow(activeTool))
+            core.ToolMgr.FocusOnWidget(activeTool)
             activeTool.commandText.SetFocus()
             return True
         elif event.GetModifiers() == wx.MOD_CONTROL and keyCode == wx.WXK_UP:
@@ -358,7 +358,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         if event.GetModifiers() == wx.MOD_CONTROL:
             if self.navigateTo:
                 #editor =
-                GetTabMgr().LoadFileLine(self.navigateTo[0], self.navigateTo[1] - 1, True, self.navigateTo[2])
+                core.TabMgr.LoadFileLine(self.navigateTo[0], self.navigateTo[1] - 1, True, self.navigateTo[2])
                 return
         event.Skip()
 
@@ -370,14 +370,14 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         event.Skip()
 
     def OnFlyTimer(self, event):
-        if GetProject().IsFlyCompileEnabled() and self.changed:
+        if core.Project.IsFlyCompileEnabled() and self.changed:
             currentHash = hash(self.GetText())
             if currentHash == self.flyCompileHash: return
             self.flyCompileHash = currentHash
             self.CompileFly()
 
     def CompileFly(self):
-        GetProject().CompileFileFly(os.path.basename(self.filePath), self.filePath, self.GetText())
+        core.Project.CompileFileFly(os.path.basename(self.filePath), self.filePath, self.GetText())
 
     def HighlightErrors(self, errors):
         self.MarkerDeleteAll(self.MARKER_WARNING)
@@ -410,8 +410,8 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         self.Refresh()
 
     def OnFileSaved(self):
-        #Log("saved stc", self.filePath)
-        GetProject().FileSaved(self.filePath)
+        #core.Log("saved stc", self.filePath)
+        core.Project.FileSaved(self.filePath)
 
     def DoIndent(self):
         text = self.GetLine(self.CurrentLine - 1).strip()
@@ -502,7 +502,7 @@ class ErlangSTCReadOnly(ErlangSTC):
         self.filePath = filePath
         self.option = option
 
-        GetProject().explorer.ProjectFilesModifiedEvent += self.OnProjectFilesModified
+        core.Project.explorer.ProjectFilesModifiedEvent += self.OnProjectFilesModified
 
         self.completer = ErlangCompleter(self)
 
@@ -533,7 +533,7 @@ class ErlangSTCReadOnly(ErlangSTC):
     def OnProjectFilesModified(self, files):
         for file in files:
             if file == self.filePath:
-                GetProject().CompileOption(self.filePath, self.option)
+                core.Project.CompileOption(self.filePath, self.option)
 
     def SetNewText(self, text):
         self.SetReadOnly(False)
@@ -548,7 +548,7 @@ class ErlangSTCReadOnly(ErlangSTC):
         keyCode = event.GetKeyCode()
 
         if keyCode == ord('R') and event.GetModifiers() == wx.MOD_CONTROL:
-            GetProject().CompileOption(self.filePath, self.option)
+            core.Project.CompileOption(self.filePath, self.option)
             return True
         else:
             return False

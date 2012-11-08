@@ -9,7 +9,7 @@ import shutil
 import wx.lib.agw.customtreectrl as CT
 from idn_utils import extension, Menu, CreateButton, writeFile
 from idn_directoryinfo import DirectoryChecker
-from idn_global import GetTabMgr, GetMainFrame, Log
+import core
 
 
 ICON_SIZE = 16
@@ -187,7 +187,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
                 key = self.imageList.Add(wx.Bitmap(path, wx.BITMAP_TYPE_PNG))
                 self.iconIndex[id] = key
         except Exception, e:
-            Log("Add icon error: ", e)
+            core.Log("Add icon error: ", e)
 
     def AddIconFromArt(self, id, image):
         icon = wx.ArtProvider_GetBitmap(image, wx.ART_OTHER, (ICON_SIZE, ICON_SIZE))
@@ -436,7 +436,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         path = path.replace("\\", "/")
         import webbrowser
         webbrowser.open(path)
-        os.chdir(GetMainFrame().cwd)
+        os.chdir(core.MainFrame.cwd)
 
     def OnMenuHide(self, event):
         if self.GetPyData(self.selectedItems[0]) in self.hiddenPaths:
@@ -501,17 +501,17 @@ class ProjectExplorer(IDNCustomTreeCtrl):
             newPath = os.path.join(os.path.dirname(path), dlg.Value)
 
             def updateEditor(old, new):
-                page = GetTabMgr().FindPageIndexByPath(old)
-                editor = GetTabMgr()[page]
+                page = core.TabMgr.FindPageIndexByPath(old)
+                editor = core.TabMgr[page]
                 editor.filePath = new
                 editor.UpdateTabTitle()
 
             if os.path.isfile(path):
-                if path in GetTabMgr().OpenedFiles():
+                if path in core.TabMgr.OpenedFiles():
                     updateEditor(path, newPath)
 
             if os.path.isdir(path):
-                for oPath in GetTabMgr().OpenedFiles():
+                for oPath in core.TabMgr.OpenedFiles():
                     if oPath.startswith(path):
                         oNewPath = oPath.replace(path, newPath)
                         updateEditor(oPath, oNewPath)
@@ -539,7 +539,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
 
     def OpenFile(self, path):
         if os.path.isfile(path):
-            GetTabMgr().LoadFileLine(path)
+            core.TabMgr.LoadFileLine(path)
             return True
         return False
 
@@ -631,7 +631,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         try:
             CT.CustomTreeCtrl.OnPaint(self, event)
         except Exception, e:
-            Log("tree control pain exception", e)
+            core.Log("tree control pain exception", e)
 
 
 class PythonProjectExplorer(ProjectExplorer):

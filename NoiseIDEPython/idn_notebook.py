@@ -9,7 +9,7 @@ import wx
 from wx.lib.agw import aui
 from wx.aui import wxEVT_COMMAND_AUINOTEBOOK_TAB_MIDDLE_UP
 from idn_findreplace import FindInFilePanel
-from idn_global import GetProject, GetWinMgr, GetMainFrame
+import core
 from idn_utils import extension, Menu
 from idn_customstc import CustomSTC, YAMLSTC, PythonSTC, ConsoleSTC, CppSTC, HtmlSTC
 
@@ -30,8 +30,8 @@ EXT_STC_TYPE = {
 def GetSTCTypeByExt(file):
     ext = extension(file)
     types = EXT_STC_TYPE
-    if GetProject():
-        types.update(GetProject().GetEditorTypes())
+    if core.Project:
+        types.update(core.Project.GetEditorTypes())
     if ext in types:
         return types[ext]
     else:
@@ -55,11 +55,11 @@ class Notebook(aui.AuiNotebook):
             aui.AuiNotebook.DeletePage(self, page_idx)
 
     def OnTabDClick(self, event):
-        if GetMainFrame().ToolMgrPaneInfo.IsMaximized():
-            GetWinMgr().RestorePane(GetMainFrame().ToolMgrPaneInfo)
+        if core.MainFrame.ToolMgrPaneInfo.IsMaximized():
+            core.WinMgr.RestorePane(core.MainFrame.ToolMgrPaneInfo)
         else:
-            GetWinMgr().MaximizePane(GetMainFrame().ToolMgrPaneInfo)
-        GetWinMgr().Update()
+            core.WinMgr.MaximizePane(core.MainFrame.ToolMgrPaneInfo)
+        core.WinMgr.Update()
 
     def __getitem__(self, index):
         if index < self.GetPageCount():
@@ -170,11 +170,11 @@ class EditorNotebook(aui.AuiNotebook):
         self._AddToHistory(self.GetActiveEditor(), oldEditor)
 
     def OnTabDClick(self, event):
-        if GetMainFrame().TabMgrPaneInfo.IsMaximized():
-            GetWinMgr().RestorePane(GetMainFrame().TabMgrPaneInfo)
+        if core.MainFrame.TabMgrPaneInfo.IsMaximized():
+            core.WinMgr.RestorePane(core.MainFrame.TabMgrPaneInfo)
         else:
-            GetWinMgr().MaximizePane(GetMainFrame().TabMgrPaneInfo)
-        GetWinMgr().Update()
+            core.WinMgr.MaximizePane(core.MainFrame.TabMgrPaneInfo)
+        core.WinMgr.Update()
 
     def OnTabRightUp(self, event):
         page = event.GetSelection()
@@ -190,7 +190,7 @@ class EditorNotebook(aui.AuiNotebook):
                 self.ClosePage(i)
 
         def renameFile(event):
-            GetProject().explorer.Rename(editor.filePath)
+            core.Project.explorer.Rename(editor.filePath)
 
         menu = Menu()
         menu.AppendMenuItem("Rename", self, renameFile)
@@ -415,3 +415,9 @@ class ErlangCompileOptionPanel(EditorPanel):
         self.Fit()
 
         self.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
+
+
+#
+#
+#
+#

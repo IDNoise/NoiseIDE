@@ -3,7 +3,7 @@ import json
 import shutil
 from idn_config import Config
 from idn_directoryinfo import DirectoryChecker
-from idn_global import GetMainFrame, Log, GetProject
+import core
 from idn_utils import readFile
 import wx
 
@@ -168,7 +168,7 @@ class ErlangCache:
     @classmethod
     def Init(cls, project):
         cls.project = project
-        cls.CACHE_DIR = os.path.join(GetMainFrame().cwd, "cache", "erlang")
+        cls.CACHE_DIR = os.path.join(core.MainFrame.cwd, "cache", "erlang")
 
         cls.ERLANG_LIBS_CACHE_DIR =  os.path.join(cls.CACHE_DIR, "runtimes", project.GetErlangRuntime())
         otherCacheDir =  os.path.join(cls.CACHE_DIR, "other")
@@ -183,9 +183,9 @@ class ErlangCache:
         cls.includes = set()
         cls.moduleData = {}
 
-        cls.loadTimer = wx.Timer(GetMainFrame(), wx.NewId())
+        cls.loadTimer = wx.Timer(core.MainFrame, wx.NewId())
         cls.loadTimer.Start(100)
-        GetMainFrame().Bind(wx.EVT_TIMER, cls.OnProgressTimer, cls.loadTimer)
+        core.MainFrame.Bind(wx.EVT_TIMER, cls.OnProgressTimer, cls.loadTimer)
 
     @classmethod
     def OnProgressTimer(cls, event):
@@ -202,13 +202,13 @@ class ErlangCache:
 
     @classmethod
     def LoadCacheFromDir(cls, dir):
-        #Log("loading cache from", dir)
+        #core.Log("loading cache from", dir)
         dir = os.path.join(cls.CACHE_DIR, dir)
         for file in os.listdir(dir):
             file = os.path.join(dir, file)
             cls.AddToLoad(file)
             #cls.LoadFile(file)
-        #Log("end loading cache from", dir)
+        #core.Log("end loading cache from", dir)
 
     @classmethod
     def CleanDir(cls, dir):
@@ -234,17 +234,17 @@ class ErlangCache:
                 try:
                     data[FILE] = os.path.normcase(win32api.GetLongPathName(data[FILE]))
                 except Exception, e:
-                    Log("error ", e, "on get long path name for ", data[FILE])
+                    core.Log("error ", e, "on get long path name for ", data[FILE])
             file = data[FILE]
             if (name in cls.modules and
                 not cls.moduleData[name].file.lower().startswith(cls.erlangDir) and
                 file.lower().startswith(cls.erlangDir)):
                 return
-            #Log("loading cache for", file)
+            #core.Log("loading cache for", file)
 #            if (name in cls.modules and name in cls.moduleData and
 #                cls.moduleData[name].file.lower().startswith(cls.erlangDir) and
 #                file != cls.moduleData[name].file):
-#                Log("Ignoring replace of cache for standard erlang " +
+#                core.Log("Ignoring replace of cache for standard erlang " +
 #                    "module: {}\n\tPath:{}".format(name, file))
 #                return
 
@@ -255,10 +255,10 @@ class ErlangCache:
 
             cls.moduleData[name] = ModuleData(name, data)
 
-            #Log("Loaded cache for", file)
+            #core.Log("Loaded cache for", file)
         except  Exception, e:
-            Log("load cache file error", e)
-        #Log("Cache:", file)
+            core.Log("load cache file error", e)
+        #core.Log("Cache:", file)
 
     @classmethod
     def TryLoad(cls, module):

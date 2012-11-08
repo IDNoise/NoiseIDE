@@ -12,10 +12,9 @@ from idn_erlang_explorer import ErlangProjectExplorer
 from idn_erlang_project_form import ErlangProjectFrom
 from idn_erlangstc import ErlangHighlightedSTCBase, ErlangSTCReadOnly
 from idn_errors_table import ErrorsTableGrid, XrefTableGrid, DialyzerTableGrid
-from idn_global import Log
+import core
 from idn_notebook import ErlangCompileOptionPanel
 from idn_project import Project
-import idn_projectexplorer as exp
 from idn_utils import readFile, writeFile, pystr, Menu, GetImage
 
 __author__ = 'Yaroslav'
@@ -541,7 +540,7 @@ class ErlangProject(Project):
 
 
     def FileSaved(self, file):
-        #Log("saved", file)
+        #core.Log("saved", file)
         self.Compile(file)
 
     def OnProjectFilesDeleted(self, files):

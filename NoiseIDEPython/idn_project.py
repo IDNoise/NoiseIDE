@@ -8,7 +8,7 @@ import yaml
 import wx
 from wx.lib.agw import aui
 import idn_projectexplorer as exp
-from idn_global import GetTabMgr, Log
+import core
 from PyProgress import PyProgress
 
 class ProgressTaskManagerDialog(wx.EvtHandler):
@@ -59,7 +59,7 @@ class ProgressTaskManagerDialog(wx.EvtHandler):
         if self.progressDialog:
             self.UpdatePulse("Tasks left: {}".format(len(self.tasks)))
             if (time.time() - self.lastTaskTime > 8 and len(self.tasks) > 0):
-                Log("tasks left:", self.tasks)
+                core.Log("tasks left:", self.tasks)
                 self.DestroyDialog()
 
     def DestroyDialog(self):
@@ -90,7 +90,7 @@ class Project(ProgressTaskManagerDialog):
     def __init__(self, window, filePath, projectData):
         ProgressTaskManagerDialog.__init__(self)
         self.window = window
-        window.project = self
+        core.Project = self
         self.projectFilePath = filePath
         self.projectDir = os.path.dirname(filePath)
         self.projectData = projectData
@@ -113,7 +113,7 @@ class Project(ProgressTaskManagerDialog):
 
         self.SetupPerspective()
 
-        GetTabMgr().Parent.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
+        core.TabMgr.Parent.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
 
     def SetupMenu(self):
         self.window.projectMenu.AppendMenuItem('Project Settings', self.window, self.OnEditProject)
@@ -143,7 +143,7 @@ class Project(ProgressTaskManagerDialog):
             if not os.path.isfile(file):
                 removedFiles.append(file)
             else:
-                GetTabMgr().LoadFileLine(file)
+                core.TabMgr.LoadFileLine(file)
         if removedFiles:
             self.userData[self.CONFIG_LAST_OPENED_FILES] = \
                 [file for file in self.userData[self.CONFIG_LAST_OPENED_FILES] if file not in removedFiles]
@@ -172,23 +172,23 @@ class Project(ProgressTaskManagerDialog):
         self.window.WinMgr.DetachPane(self.explorer)
         self.window.WinMgr.Update()
         self.explorer.Destroy()
-        GetTabMgr().CloseAll()
+        core.TabMgr.CloseAll()
         for item in self.window.projectMenu.GetMenuItems():
             self.window.projectMenu.Remove(item.GetId())
 
     def SaveUserData(self):
         #print "save user data"
         openedFiles = []
-        for path in GetTabMgr().OpenedFiles():
+        for path in core.TabMgr.OpenedFiles():
             if path.lower().startswith(self.projectDir.lower()):
                 openedFiles.append(path)
         self.userData[self.CONFIG_LAST_OPENED_FILES] = openedFiles
         self.userData[self.CONFIG_HIDDEN_PATHS] = self.explorer.hiddenPaths
         self.userData[self.CONFIG_MASK] = self.explorer.GetCustomMask()
 
-        #self.userData[self.CONFIG_TAB_PERSP] = GetTabMgr().SavePerspective()
-        #self.userData[self.CONFIG_TOOL_PERSP] = GetToolMgr().SavePerspective()
-        #self.userData[self.CONFIG_GLOBAL_PERSP] = GetWinMgr().SavePerspective()
+        #self.userData[self.CONFIG_TAB_PERSP] = core.TabMgr.SavePerspective()
+        #self.userData[self.CONFIG_TOOL_PERSP] = core.ToolMgr.SavePerspective()
+        #self.userData[self.CONFIG_GLOBAL_PERSP] = core.WinMgr.SavePerspective()
 
         #print(self.userData[self.CONFIG_MASK])
         #print(self.userData[self.CONFIG_HIDDEN_PATHS])
@@ -199,14 +199,14 @@ class Project(ProgressTaskManagerDialog):
     def SetupPerspective(self):
         pass
         #if self.CONFIG_TAB_PERSP in self.userData:
-         #   GetTabMgr().LoadPerspective(self.userData[self.CONFIG_TAB_PERSP])
-        #    GetTabMgr().Update()
+         #   core.TabMgr.LoadPerspective(self.userData[self.CONFIG_TAB_PERSP])
+        #    core.TabMgr.Update()
         #if self.CONFIG_TOOL_PERSP in self.userData:
-        #    GetToolMgr().LoadPerspective(self.userData[self.CONFIG_TOOL_PERSP])
-        #    GetToolMgr().Update()
+        #    core.ToolMgr.LoadPerspective(self.userData[self.CONFIG_TOOL_PERSP])
+        #    core.ToolMgr.Update()
 #        if self.CONFIG_GLOBAL_PERSP in self.userData:
-#            GetWinMgr().LoadPerspective(self.userData[self.CONFIG_GLOBAL_PERSP])
-#            GetWinMgr().Update()
+#            core.WinMgr.LoadPerspective(self.userData[self.CONFIG_GLOBAL_PERSP])
+#            core.WinMgr.Update()
 
     def SaveData(self):
         stream = file(self.projectFilePath, 'w')
@@ -221,5 +221,5 @@ class Project(ProgressTaskManagerDialog):
         event.Skip()
 
     def ShowFastOpen(self):
-        dialog = FastProjectFileOpenDialog(GetTabMgr(), self)
+        dialog = FastProjectFileOpenDialog(core.TabMgr, self)
         dialog.ShowModal()

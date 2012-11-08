@@ -6,7 +6,7 @@ import os
 import wx
 import yaml
 import shutil
-from idn_global import GetMainFrame
+import core
 from idn_utils import CreateButton
 
 class Config:
@@ -18,9 +18,9 @@ class Config:
     @classmethod
     def load(cls):
         firstTime = False
-        path = os.path.join(GetMainFrame().cwd, "noiseide.yaml")
+        path = os.path.join(core.MainFrame.cwd, "noiseide.yaml")
         if not os.path.isfile(path):
-            shutil.copy2(os.path.join(GetMainFrame().cwd, "noiseide.template.yaml"), path)
+            shutil.copy2(os.path.join(core.MainFrame.cwd, "noiseide.template.yaml"), path)
             firstTime = True
         stream = file(path, 'r')
         cls.data = yaml.load(stream)
@@ -30,7 +30,7 @@ class Config:
 
     @classmethod
     def save(cls):
-        path = os.path.join(GetMainFrame().cwd, "noiseide.yaml")
+        path = os.path.join(core.MainFrame.cwd, "noiseide.yaml")
         stream = file(path, 'w')
         yaml.dump(cls.data, stream)
         ColorSchema.load(cls.ColorSchema())
@@ -72,11 +72,11 @@ class Config:
 
 class ConfigEditForm(wx.Dialog):
     def __init__(self):
-        wx.Dialog.__init__(self, GetMainFrame(), size = (290, 120), title = "Edit config")
+        wx.Dialog.__init__(self, core.MainFrame, size = (290, 120), title = "Edit config")
 
         sizer = wx.GridBagSizer(2, 2)
         self.colorSchemas = []
-        for file in os.listdir(GetMainFrame().cwd):
+        for file in os.listdir(core.MainFrame.cwd):
             if file.endswith(".color.yaml"):
                 self.colorSchemas.append(file.split(".")[0])
         self.colorSchemaCB = wx.ComboBox(self, choices = self.colorSchemas,

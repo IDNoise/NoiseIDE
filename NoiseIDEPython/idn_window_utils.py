@@ -2,7 +2,7 @@ from exceptions import Exception
 import os
 import wx
 import wx.lib.agw.customtreectrl as CT
-from idn_global import Log
+import core
 
 __author__ = 'Yaroslav'
 
@@ -78,7 +78,7 @@ class IDNCustomTreeCtrl(CT.CustomTreeCtrl):
                 child, cookie = self.GetNextChild(item, cookie)
             return children
         except Exception, e:
-            Log("Get item children error", e)
+            core.Log("Get item children error", e)
             return []
 
     def GetAllItemFiles(self, item):

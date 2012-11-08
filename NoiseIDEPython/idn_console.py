@@ -1,6 +1,6 @@
 from idn_colorschema import ColorSchema
 from idn_events import Event
-from idn_global import Log, GetTabMgr, GetMainFrame
+import core
 from idn_highlight import ErlangHighlighter
 from idn_notebook import ConsolePanel
 
@@ -120,7 +120,7 @@ class ErlangConsole(wx.Panel):
         try:
             self.shell.Stop()
         except Exception, e:
-            Log(e)
+            core.Log(e)
         finally:
             self.WriteToConsoleOut("\n\nSTOPPED\n\n")
             self.startButton.Enabled = True
@@ -158,7 +158,7 @@ class ErlangConsole(wx.Panel):
             self.lastCommands = self.lastCommands[1:]
             self.lastCommands.append(newText)
         elif keyCode in [wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER] and event.GetModifiers() == wx.MOD_ALT:
-            editor = GetTabMgr().GetActiveEditor()
+            editor = core.TabMgr.GetActiveEditor()
             if editor: editor.SetFocus()
         elif keyCode == wx.WXK_RETURN:
             if event.ControlDown():
@@ -222,5 +222,4 @@ class ErlangIDEConsole(ErlangConsole):
         text = "\n".join([re.sub(self.promptRegexp, "", line) for line in text.split("\n")])
         self.DataReceivedEvent(text)
         self.consoleOut.Append(text)
-        GetMainFrame().logFile.write(text)
-        GetMainFrame().logFile.flush()
+        core.Log(text)

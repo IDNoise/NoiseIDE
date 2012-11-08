@@ -7,7 +7,7 @@ import wx
 import re
 from wx import stc
 import wx.lib.agw.customtreectrl as CT
-from idn_global import GetTabMgr, GetProject, GetToolMgr, Log
+import core
 from idn_utils import CreateButton, extension, writeFile, readFile, CreateBitmapButton
 import idn_projectexplorer as exp
 
@@ -217,7 +217,7 @@ class FindInProjectDialog(wx.Dialog):
 
         results = {}
         regexp = self.PrepareRegexp()
-        files = GetProject().explorer.GetAllFiles()
+        files = core.Project.explorer.GetAllFiles()
         for file in sorted(files):
             result = self.SearchInFile(file, regexp)
             if result:
@@ -228,8 +228,8 @@ class FindInProjectDialog(wx.Dialog):
         try:
             result = []
             lineNumber = 0
-            if file in GetTabMgr().OpenedFiles():
-                fileText = GetTabMgr().FindPageByPath(file).GetText().split("\n")
+            if file in core.TabMgr.OpenedFiles():
+                fileText = core.TabMgr.FindPageByPath(file).GetText().split("\n")
             else:
                 fileText = open(file, "r")
             for lineText in fileText:
@@ -243,7 +243,7 @@ class FindInProjectDialog(wx.Dialog):
                 lineNumber += 1
             return result
         except Exception, e:
-            Log("find in project error", e)
+            core.Log("find in project error", e)
 
     def OnReplace(self, event):
         self.textToFind = self.findText.Value
@@ -283,17 +283,17 @@ class FindInProjectDialog(wx.Dialog):
         title = "Find Results: {}".format(self.textToFind)
         resultsTable = None
         if not openNewTab:
-            for page in reversed(GetToolMgr().Pages()):
+            for page in reversed(core.ToolMgr.Pages()):
                 if isinstance(page, ErrorsTree):
-                    id = GetToolMgr().FindPageIndexByWindow(page)
+                    id = core.ToolMgr.FindPageIndexByWindow(page)
                     resultsTable = page
-                    GetToolMgr().SetPageText(id, title)
+                    core.ToolMgr.SetPageText(id, title)
                     break
         if not resultsTable:
-            resultsTable = ErrorsTree(GetToolMgr())
-            GetToolMgr().AddPage(resultsTable, title, True)
+            resultsTable = ErrorsTree(core.ToolMgr)
+            core.ToolMgr.AddPage(resultsTable, title, True)
         resultsTable.SetResults(results, filesCount, regexp)
-        GetToolMgr().FocusOnWidget(resultsTable)
+        core.ToolMgr.FocusOnWidget(resultsTable)
 
     def OnKeyDown(self, event):
         keyCode = event.GetKeyCode()
@@ -306,7 +306,7 @@ class FindInProjectDialog(wx.Dialog):
 
 
 def ReplaceInProject(regexp, replacement, mask = None):
-    files = GetProject().explorer.GetAllFiles()
+    files = core.Project.explorer.GetAllFiles()
     for file in sorted(files):
         if mask and extension(file) not in mask:
             continue
@@ -314,8 +314,8 @@ def ReplaceInProject(regexp, replacement, mask = None):
 
 def ReplaceInFile(file, regexp, replacement):
     try:
-        if file in GetTabMgr().OpenedFiles():
-            editor = GetTabMgr().FindPageByPath(file)
+        if file in core.TabMgr.OpenedFiles():
+            editor = core.TabMgr.FindPageByPath(file)
             text = editor.GetText()
             if regexp.search(text):
                 text = regexp.sub(replacement, text)
@@ -327,7 +327,7 @@ def ReplaceInFile(file, regexp, replacement):
                 fileText = regexp.sub(replacement, fileText)
                 writeFile(file, fileText)
     except Exception, e:
-        Log("replace in project error: '", file, e)
+        core.Log("replace in project error: '", file, e)
 
 class ErrorsTree(IDNCustomTreeCtrl):
     def __init__(self, parent):
@@ -336,9 +336,9 @@ class ErrorsTree(IDNCustomTreeCtrl):
         self.filesCount = 0
         self.regexp = None
         self.Bind(CT.EVT_TREE_ITEM_ACTIVATED, self.OnActivateItem)
-        GetProject().explorer.ProjectFilesCreatedEvent += self.OnProjectFilesCreated
-        GetProject().explorer.ProjectFilesModifiedEvent += self.OnProjectFilesModified
-        GetProject().explorer.ProjectFilesDeletedEvent += self.OnProjectFilesDeleted
+        core.Project.explorer.ProjectFilesCreatedEvent += self.OnProjectFilesCreated
+        core.Project.explorer.ProjectFilesModifiedEvent += self.OnProjectFilesModified
+        core.Project.explorer.ProjectFilesDeletedEvent += self.OnProjectFilesDeleted
 
     def OnProjectFilesCreated(self, files):
         for file in files:
@@ -387,7 +387,7 @@ class ErrorsTree(IDNCustomTreeCtrl):
             if not res or len(res) == 0:
                 continue
             resultsCount += len(res)
-            fileLabel = file.replace(GetProject().projectDir + os.sep, "")
+            fileLabel = file.replace(core.Project.projectDir + os.sep, "")
             fileNode = self.AppendItem(rootNode, "{0}: {1} results".format(fileLabel, len(res)))
 
             self.SetPyData(fileNode, ErrorsTreeItemPyData(file))
@@ -405,11 +405,11 @@ class ErrorsTree(IDNCustomTreeCtrl):
     def OnActivateItem(self, event):
         data = self.GetPyData(event.GetItem())
         if not data.file: return
-        editor = GetTabMgr().LoadFileLine(data.file, data.lineNumber)
+        editor = core.TabMgr.LoadFileLine(data.file, data.lineNumber)
         if data.lineNumber:
             editor.GotoLine(data.lineNumber)
             pos = editor.PositionFromLine(data.lineNumber)
-            #Log(data.lineNumber, pos, data.start, data.end)
+            #core.Log(data.lineNumber, pos, data.start, data.end)
            # editor.SetSelection(pos, pos + 1)
             editor.SetSelection(pos + data.start, pos + data.end)
 
