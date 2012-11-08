@@ -9,6 +9,7 @@ if sys.platform == "win32":
 includefiles = ['dark.color.yaml', 
                 'white.color.yaml', 
                 'noiseide_copy.bat', 
+                'rev.cfg', 
                 'noiseide.template.yaml', 
                 'data/images',
                 'data/erlang/modules/noiseide/ebin',
