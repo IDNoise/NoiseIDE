@@ -1,6 +1,5 @@
 import os
 import wx
-from wx import html
 from idn_cache import ErlangCache, Function, Record, ExportedType, Macros
 from idn_colorschema import ColorSchema
 from idn_customstc import HtmlWin
@@ -39,7 +38,7 @@ class ErlangCompleter(wx.Frame):
 
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.sizer.Add(self.list)
-        self.sizer.Add(self.helpWindow)
+        self.sizer.Add(self.helpWindow, 1, wx.EXPAND)
         self.SetSizer(self.sizer)
         self.Layout()
         self.Hide()
@@ -241,7 +240,7 @@ class ErlangCompleter(wx.Frame):
     def OnItemSelected(self, id):
         help = self.list.GetClientData(id)
         if not help:
-            self.SetHelpText("")
+            self.helpWindow.SetPage("")
             self.SetSize(self.LIST_SIZE)
             self.sizer.Hide(self.helpWindow)
         else:
@@ -250,7 +249,7 @@ class ErlangCompleter(wx.Frame):
                 text = readFile(path)
             else:
                 text = help
-            self.SetHelpText(text)
+            self.helpWindow.SetPage(text)
             self.sizer.Show(self.helpWindow)
             self.SetSize(self.SIZE)
         self.Layout()
@@ -322,7 +321,7 @@ class ErlangCompleter(wx.Frame):
                 module = self.module
         else:
             module = self.module
-       # print "show fun help", module, fun, arity
+            # print "show fun help", module, fun, arity
         data = ErlangCache.ModuleFunction(module, fun, arity)
         if not data:
             data = ErlangCache.ModuleExportedData(module, fun)
@@ -339,7 +338,7 @@ class ErlangCompleter(wx.Frame):
                 help = self._ExportedTypeHelp(data)
         else:
             help = self._FunctionHelp(data)
-        #print "fun help", fun, prefix, pos,  help
+            #print "fun help", fun, prefix, pos,  help
         file = data.moduleData.file if data.moduleData else None
         return ((file, data.line), help)
 
@@ -392,14 +391,3 @@ class ErlangCompleter(wx.Frame):
         if not macrosData: return
         help = self._MacrosHelp(macrosData)
         return ((macrosData.moduleData.file, macrosData.line), help)
-
-    def SetHelpText(self, text):
-        self.helpWindow.SetPage(text)
-        cell = self.helpWindow.GetInternalRepresentation()
-        height = 300
-        if cell:
-            cell.SetWidthFloat(410, wx.html.HTML_UNITS_PIXELS)
-            height = cell.GetHeight()
-            height += self.helpWindow.GetCharHeight() / 2
-            height = min(height, 300)
-        self.helpWindow.SetSize((420, height))

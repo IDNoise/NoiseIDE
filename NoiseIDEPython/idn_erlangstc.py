@@ -246,6 +246,8 @@ class ErlangSTC(ErlangHighlightedSTCBase):
     def OnRequestTooltipText(self):
         if wx.GetKeyState(wx.WXK_CONTROL):
             return None
+        if self.completer.IsShown():
+            return None
         data = self.GetContextData()
         if not data:
             pos = self.PositionFromPoint(self.ScreenToClient(wx.GetMousePosition()))
@@ -257,9 +259,6 @@ class ErlangSTC(ErlangHighlightedSTCBase):
 
 
     def GetContextData(self):
-        if self.completer.IsShown:
-            return None
-
         pos = self.PositionFromPoint(self.ScreenToClient(wx.GetMousePosition()))
         style = self.GetStyleAt(pos)
         if style not in [ErlangHighlightType.FUNCTION,
