@@ -1,3 +1,5 @@
+__author__ = 'IDNoise'
+
 import os
 import re
 import time
@@ -7,9 +9,8 @@ from idn_config import Config
 from idn_findreplace import ReplaceInProject, ReplaceInFile
 import core
 from idn_projectexplorer import ProjectExplorer
-from idn_utils import Menu, writeFile, readFile, extension
-
-__author__ = 'IDNoise'
+from idn_utils import Menu, writeFile, readFile
+from idn_erlang_utils import IsModule
 
 class ErlangProjectExplorer(ProjectExplorer):
     def __init__(self, parent, project):
@@ -155,7 +156,7 @@ class ErlangProjectExplorer(ProjectExplorer):
 
             if os.path.isfile(path):
                 if path in core.TabMgr.OpenedFiles():
-                    if path.endswith(".erl"):
+                    if IsModule(path):
                         (oldModuleName, ext) = os.path.splitext(os.path.basename(path))
                         (newModuleName, ext) = os.path.splitext(os.path.basename(newPath))
                         self.ReplaceOccurencesInProject(path, oldModuleName, newModuleName)
@@ -169,7 +170,7 @@ class ErlangProjectExplorer(ProjectExplorer):
                         updateEditor(oPath, oNewPath)
 
             os.rename(path, newPath)
-            if extension(newPath) == ".erl" and os.path.basename(path) != os.path.basename(newPath):
+            if IsModule(newPath) and os.path.basename(path) != os.path.basename(newPath):
                 oldModuleName = os.path.basename(path)[:-4]
                 newModuleName = os.path.basename(newPath)[:-4]
                 self.ReplaceModuleName(newPath, oldModuleName, newModuleName)
@@ -188,7 +189,7 @@ class ErlangProjectExplorer(ProjectExplorer):
         ReplaceInFile(path, re.compile(what, re.MULTILINE | re.DOTALL), on)
 
     def AfterPasteMove(self, oldName, newName):
-        if extension(newName) == ".erl" and os.path.basename(newName) != os.path.basename(oldName):
+        if IsModule(newName) and os.path.basename(newName) != os.path.basename(oldName):
             oldModuleName = os.path.basename(oldName)[:-4]
             newModuleName = os.path.basename(newName)[:-4]
             self.ReplaceModuleName(newName, oldModuleName, newModuleName)

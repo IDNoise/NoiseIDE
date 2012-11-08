@@ -95,6 +95,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         EditorFoldMixin.__init__(self)
         EditorLineMarginMixin.__init__(self)
 
+        self.findPanel = None
         self.markerPanel = markerPanel
         if self.markerPanel:
             self.markerPanel.Editor = self
@@ -107,7 +108,8 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.changed = False
         self.saved = True
 
-        self.SetCaretWidth(2)
+        self.SetCaretWidth(ColorSchema.codeEditor["caret_size"])
+        self.SetCaretForeground(ColorSchema.codeEditor["caret_color"])
         self.SetCaretLineBackground(ColorSchema.codeEditor["current_line_background"])
         self.SetCaretLineVisible(True)
 
@@ -345,12 +347,6 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
             self.Save()
         elif keyCode == wx.WXK_SPACE and event.GetModifiers() == wx.MOD_CONTROL:
             self.OnAutoComplete()
-        elif ((keyCode == ord('K') and event.GetModifiers() == wx.MOD_CONTROL | wx.MOD_SHIFT) or
-            (keyCode == ord(',') and event.GetModifiers() == wx.MOD_CONTROL)):
-            self.GoToPrevOccurence()
-        elif ((keyCode == ord('K') or keyCode == ord('.'))
-                and event.GetModifiers() == wx.MOD_CONTROL):
-            self.GoToNextOccurence()
         elif keyCode == ord('G') and event.GetModifiers() == wx.MOD_CONTROL:
             self.ShowGoToLineDialog()
         elif (Config.GetProp("put_brackets_quotes_around", False) and self.SelectedText and
@@ -367,6 +363,11 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
                         break
                 if not open: return
             self.ReplaceSelection(open + self.SelectedText + close)
+        elif keyCode == wx.WXK_F3 and (event.GetModifiers() == wx.MOD_SHIFT or event.GetModifiers() == wx.MOD_NONE):
+            searchDown = not event.ShiftDown()
+            word = self.GetWordUnderCursor()
+            if word:
+                self.findPanel.FindText(word, searchDown = searchDown, select = False)
         else:
             return False
         return True
@@ -377,37 +378,6 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         if start == end:
             return None
         return self.GetTextRange(start, end)
-
-    def GoToPrevOccurence(self):
-        self.GoToOccurence(False)
-
-    def GoToNextOccurence(self):
-        self.GoToOccurence()
-
-    def GoToOccurence(self, down = True):
-        word = self.GetWordUnderCursor()
-        fun = self.SearchNext if down else self.SearchPrev
-        if not word: return
-        startPos = self.CurrentPos
-        for i in range(2):
-            self.SetAnchor(self.CurrentPos)
-            self.SearchAnchor()
-            pos = fun(0, word)
-            if pos >= 0:
-                self.GotoPos(pos + int(len(word) / 2))
-#                if down:
-#                    self.GotoPos(pos + int(len(word) / 2))
-#                    self.SetAnchor(pos)
-#                else:
-#                    self.GotoPos(pos + int(len(word) / 2))
-#                    self.SetAnchor(pos + int(len(word) / 2))
-                return
-            else:
-                if i == 0:
-                    if down:  self.SetCurrentPos(0)
-                    else: self.SetCurrentPos(self.Length)
-                else:
-                    self.SetCurrentPos(startPos)
 
     def ShowGoToLineDialog(self):
         dlg = wx.TextEntryDialog(self, 'Line:', 'Goto Line', style = wx.OK | wx.CANCEL)
@@ -438,9 +408,6 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
     def OnSavePointReached(self, event):
         self.saved = True
         self.UpdateTabTitle()
-        #print self.GetScrollRange(wx.VERTICAL)
-        #print self.GetScrollPos(wx.VERTICAL)
-        #print self.GetScrollThumb(wx.VERTICAL)
 
     def DoIndent(self):
         indent = self.GetLineIndentation(self.CurrentLine - 1)

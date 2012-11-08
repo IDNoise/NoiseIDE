@@ -6,6 +6,7 @@ from idn_directoryinfo import DirectoryChecker
 import core
 from idn_utils import readFile
 import wx
+from idn_erlang_utils import IsInclude, IsModule
 
 FILE = "file"
 NAME = "name"
@@ -279,7 +280,7 @@ class ErlangCache:
         name = os.path.basename(file)[:-6]
         if not name in cls.moduleData: return
         del cls.moduleData[name]
-        if name.endswith(".hrl"):
+        if IsInclude(name):
             cls.includes.remove(name)
         else:
             cls.modules.remove(name)
@@ -288,7 +289,7 @@ class ErlangCache:
     def UnloadModule(cls, name):
         if not name in cls.moduleData: return
         del cls.moduleData[name]
-        if name.endswith(".hrl"):
+        if IsInclude(name):
             cls.includes.remove(name)
         else:
             cls.modules.remove(name)
@@ -336,9 +337,9 @@ class ErlangCache:
             data = cls.moduleData[module]
             if not data.file.startswith(cls.project.AppsPath()): continue
             if include in data.includes:
-                if data.file.endswith(".erl"):
+                if IsModule(data.file):
                     result.append(data.file)
-                if data.file.endswith(".hrl"):
+                if IsInclude(data.file):
                     result += cls.GetDependentModules(data.module)
         return result
 

@@ -1,7 +1,4 @@
-from idn_config import Config
-
 __author__ = 'Yaroslav'
-
 
 import os
 import wx
@@ -18,7 +15,8 @@ from idn_highlight import ErlangHighlightType
 from idn_marker_panel import Marker
 from idn_outline import ErlangOutline
 from idn_utils import Menu
-import idn_projectexplorer as exp
+from idn_config import Config
+from idn_erlang_utils import IsModule
 
 
 class ErlangHighlightedSTCBase(CustomSTC):
@@ -118,7 +116,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
 
     def ModuleName(self):
         name = self.FileName()
-        if name.endswith(".erl"):
+        if IsModule(name):
             return name[:-4]
         else:
             return name
@@ -259,6 +257,9 @@ class ErlangSTC(ErlangHighlightedSTCBase):
 
 
     def GetContextData(self):
+        if self.completer.IsShown:
+            return None
+
         pos = self.PositionFromPoint(self.ScreenToClient(wx.GetMousePosition()))
         style = self.GetStyleAt(pos)
         if style not in [ErlangHighlightType.FUNCTION,

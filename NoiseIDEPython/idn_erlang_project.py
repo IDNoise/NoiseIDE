@@ -1,3 +1,5 @@
+__author__ = 'Yaroslav'
+
 import os
 import operator
 import wx
@@ -16,8 +18,7 @@ import core
 from idn_notebook import ErlangCompileOptionPanel
 from idn_project import Project
 from idn_utils import readFile, writeFile, pystr, Menu, GetImage
-
-__author__ = 'Yaroslav'
+from idn_erlang_utils import IsBeam, IsInclude, IsYrl, IsModule
 
 class ErlangProject(Project):
     IDE_MODULES_DIR = os.path.join(os.getcwd(), 'data', 'erlang', 'modules', 'noiseide', 'ebin')
@@ -134,7 +135,7 @@ class ErlangProject(Project):
         if not editor:
             wx.MessageBox("No modules opened.")
             return
-        if not editor.filePath.endswith(".erl"):
+        if not IsModule(editor.filePath):
             wx.MessageBox("Current file is not erlang module.")
             return
         self.DialyzeModules(editor.filePath)
@@ -189,7 +190,7 @@ class ErlangProject(Project):
         if not self.CheckPlt(): return
         beams = set()
         for file in files:
-            if not file.endswith(".erl"): continue
+            if not IsModule(file): continue
             beamPath = self.GetBeamPathFromSrcPath(file)
             if not beamPath: continue
             beams.add(beamPath)
@@ -224,7 +225,7 @@ class ErlangProject(Project):
         if not os.path.isdir(self.flyDir):
             os.makedirs(self.flyDir)
         for file in os.listdir(self.flyDir):
-            if file.endswith(".erl"):
+            if IsModule(file):
                 os.remove(os.path.join(self.flyDir, file))
 
     def RegenerateErlangCache(self):
@@ -242,7 +243,7 @@ class ErlangProject(Project):
             for root, _, files in os.walk(path):
                 for file in files:
                     file = os.path.join(root, file)
-                    if file.endswith(".erl"):
+                    if IsModule(file):
                         filesForXref.add(file)
         self.xrefModules = set()
         for file in filesForXref:
@@ -271,11 +272,11 @@ class ErlangProject(Project):
         erls = set()
         yrls = set()
         def addByType(file):
-            if file.endswith(".hrl"):
+            if IsInclude(file):
                 hrls.add(file)
-            elif file.endswith(".erl"):
+            elif IsModule(file):
                 erls.add(file)
-            elif file.endswith(".yrl"):
+            elif IsYrl(file):
                 yrls.add(file)
         if isinstance(path, list):
             for p in path:
@@ -303,7 +304,7 @@ class ErlangProject(Project):
             self.GetShell().CompileProjectFile(erl, app)
 
     def CompileOption(self, path, option):
-        if not path.endswith(".erl"): return
+        if not IsModule(path): return
         app = self.GetApp(path)
         if app in self.projectData[CONFIG_EXCLUDED_DIRS]:
             return
@@ -533,9 +534,9 @@ class ErlangProject(Project):
                         wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
                     if dial.ShowModal() == wx.ID_YES:
                         editor.LoadFile(file)
-                        toCompile += file
+                        toCompile.append(file)
             else:
-                toCompile += file
+                toCompile.append(file)
         self.Compile(toCompile)
 
 
@@ -547,7 +548,7 @@ class ErlangProject(Project):
         for file in files:
             self.AddErrors(file, [])
             self.RemoveUnusedBeams()
-            if file.endswith(".hrl"):
+            if IsInclude(file):
                 self.Compile(ErlangCache.GetDependentModules(os.path.basename(file)))
             self.ClearCacheForFile(file)
             editor = self.window.TabMgr.FindPageByPath(file)
@@ -579,7 +580,7 @@ class ErlangProject(Project):
 
     def ClearCacheForFile(self, path):
         name = os.path.basename(path)
-        if name.endswith(".erl"):
+        if IsModule(name):
             name = name[:-4]
         ErlangCache.UnloadModule(name)
 
@@ -603,11 +604,11 @@ class ErlangProject(Project):
                 for root, _, files in os.walk(path):
                     for file in files:
                         file = os.path.join(root, file)
-                        if file.endswith(".erl"):
+                        if IsModule(file):
                             filesToCompile.add((file, app))
-                        if file.endswith(".yrl"):
+                        if IsYrl(file):
                             yrlToCompile.add(file)
-                        elif file.endswith(".hrl"):
+                        elif IsInclude(file):
                             filesToCache.add(file)
 
         for file in list(yrlToCompile):
@@ -620,13 +621,13 @@ class ErlangProject(Project):
         filesToCompile = sorted(list(filesToCompile))
         filesToCache = sorted(list(filesToCache))
 
-#        print "compile: ", filesToCompile
-#        print "yrl compile: ", yrlToCompile
+        #print "compile: ", filesToCompile
+        #print "yrl compile: ", yrlToCompile
 #        print "cache: ", filesToCache
 
-        self.GetShell().CompileYrls(yrlToCompile)
         self.GetShell().GenerateFileCaches(filesToCache)
         self.GetShell().CompileProjectFiles(filesToCompile)
+        self.GetShell().CompileYrls(yrlToCompile)
         self.RemoveUnusedBeams()
 
     def RemoveUnusedBeams(self):
@@ -636,13 +637,14 @@ class ErlangProject(Project):
             for root, _, files in os.walk(path):
                 for fileName in files:
                     (file, ext) = os.path.splitext(fileName)
-                    if ext == ".erl":
+                    if IsModule(fileName):
                         srcFiles.add(file)
-            path = os.path.join(self.AppsPath(), app, "ebin")
+
+            path = self.EbinDirForApp(app)
             for root, _, files in os.walk(path):
                 for fileName in files:
                     (file, ext) = os.path.splitext(fileName)
-                    if ext == ".beam":
+                    if IsBeam(fileName):
                         if file not in srcFiles:
                             os.remove(os.path.join(root, fileName))
 

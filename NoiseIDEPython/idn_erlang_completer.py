@@ -1,5 +1,6 @@
 import os
 import wx
+from wx import html
 from idn_cache import ErlangCache, Function, Record, ExportedType, Macros
 from idn_colorschema import ColorSchema
 from idn_customstc import HtmlWin
@@ -38,7 +39,7 @@ class ErlangCompleter(wx.Frame):
 
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.sizer.Add(self.list)
-        self.sizer.Add(self.helpWindow, 1, wx.EXPAND)
+        self.sizer.Add(self.helpWindow)
         self.SetSizer(self.sizer)
         self.Layout()
         self.Hide()
@@ -97,10 +98,6 @@ class ErlangCompleter(wx.Frame):
             fType = fToken.type
             fValue = fToken.value
             fIsAtom = fType == ErlangTokenType.ATOM
-            #print len(tokens)
-            #print tokens[0].value
-            #print tokens[1].value
-            #print tokens[2].value
             if (fType == ErlangTokenType.SPACE or
                 (len(tokens) == 1 and fIsAtom) or
                 (fIsAtom and tokens[1].type == ErlangTokenType.SPACE) or
@@ -112,15 +109,13 @@ class ErlangCompleter(wx.Frame):
                 else:
                     self.prefix = fValue.strip()
                 if self.moduleType == TYPE_MODULE:
-                    if self.stc.lexer.IsInFunction():
-                        data += ErlangCache.ModuleFunctions(self.module, False)
-                        data += ErlangCache.Bifs()
-                    else:
+                    if self.stc.lexer.IsInSpec():
                         data += ErlangCache.ModuleExportedTypes(self.module)
                         data += ErlangCache.ERLANG_TYPES
-
+                    else:
+                        data += ErlangCache.ModuleFunctions(self.module, False)
+                        data += ErlangCache.Bifs()
                 data += ErlangCache.AllModules()
-
             elif (len(tokens) > 1 and
                   ((fIsAtom and tokens[1].value == ":") or fValue == ":")):
                 i = 1 if fValue == ":" else 2
@@ -131,10 +126,11 @@ class ErlangCompleter(wx.Frame):
                     #onlyExported = False mb make it show all funs
                 self.prefix = "" if fValue == ":" else fValue
                 #print self.stc.lexer.IsInFunction()
-                if self.stc.lexer.IsInFunction():
-                    data = ErlangCache.ModuleFunctions(moduleName, onlyExported)
-                else:
+                #print self.stc.lexer.IsInSpec()
+                if self.stc.lexer.IsInSpec():
                     data += ErlangCache.ModuleExportedTypes(moduleName)
+                else:
+                    data += ErlangCache.ModuleFunctions(moduleName, onlyExported)
             elif (fValue == "?" or fType == ErlangTokenType.MACROS):
                 self.prefix = "" if fValue == "?" else fValue[1:]
                 data = ErlangCache.Macroses(self.module)
@@ -245,7 +241,7 @@ class ErlangCompleter(wx.Frame):
     def OnItemSelected(self, id):
         help = self.list.GetClientData(id)
         if not help:
-            self.helpWindow.SetPage("")
+            self.SetHelpText("")
             self.SetSize(self.LIST_SIZE)
             self.sizer.Hide(self.helpWindow)
         else:
@@ -254,7 +250,7 @@ class ErlangCompleter(wx.Frame):
                 text = readFile(path)
             else:
                 text = help
-            self.helpWindow.SetPage(text)
+            self.SetHelpText(text)
             self.sizer.Show(self.helpWindow)
             self.SetSize(self.SIZE)
         self.Layout()
@@ -291,6 +287,9 @@ class ErlangCompleter(wx.Frame):
 
     def AutoComplete(self, text):
         toInsert = text[len(self.prefix):]
+        nextChar = self.stc.GetCharAt(self.stc.CurrentPos)
+        if nextChar == "(" and "(" in toInsert:
+            toInsert = toInsert[:toInsert.find(nextChar)]
         self.stc.AddText(toInsert)
         self.HideCompleter()
 
@@ -394,27 +393,13 @@ class ErlangCompleter(wx.Frame):
         help = self._MacrosHelp(macrosData)
         return ((macrosData.moduleData.file, macrosData.line), help)
 
-    def ShowHelp(self, help):
-        if help:
-            #print help
-            self.showingHelp = True
-            self.UpdateCompleterPosition(None)
-            self.helpWindow.SetPage(help)
-            self.SetSize((self.SIZE[0] - self.LIST_SIZE[0], self.SIZE[1]))
-            self.sizer.Hide(self.list)
-            self.sizer.Show(self.helpWindow)
-            self.Layout()
-            wx.Frame.Show(self)
-            self.stc.SetFocus()
-
-        else:
-            self.showingHelp = False
-            self.Hide()
-
-    def HideHelp(self):
-        if self.showingHelp:
-            self.helpWindow.SetPage("")
-            self.showingHelp = False
-            self.Hide()
-        #self.Refresh()
-        #self.stc.Refresh()
+    def SetHelpText(self, text):
+        self.helpWindow.SetPage(text)
+        cell = self.helpWindow.GetInternalRepresentation()
+        height = 300
+        if cell:
+            cell.SetWidthFloat(410, wx.html.HTML_UNITS_PIXELS)
+            height = cell.GetHeight()
+            height += self.helpWindow.GetCharHeight() / 2
+            height = min(height, 300)
+        self.helpWindow.SetSize((420, height))

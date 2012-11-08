@@ -42,23 +42,29 @@ class ErlangLexer(BaseLexer):
                 self.stc.SetStyling(len(token.value), token.type)
                 lastEnd  = lineStart + token.end
 #            self.UpdateLineData(startLine, tokens)
-                if token.type == ErlangHighlightType.FUNDEC and tokens[0].value != "-spec":
-                    lineData.functionName = token.value
-                    lineData.functionStart = token.start + lineStart
-                    line = startLine - 1
-                    while line > 0:
-                        if self.linesData[line].functionName == token.value:
-                            self.linesData[line].functionEnd = self.stc.GetLineEndPosition(startLine - 1)
-                            #print "dec", line, self.linesData[line].functionName, self.linesData[line].functionStart, self.linesData[line].functionEnd
-                            break
-                        line -= 1
+                if token.type == ErlangHighlightType.FUNDEC:
+                    if tokens[0].value == "-spec":
+                        lineData.specName = token.value
+                        lineData.specStart = tokens[0].start + lineStart
+                    else:
+                        lineData.functionName = token.value
+                        lineData.functionStart = token.start + lineStart
+                        line = startLine - 1
+                        while line > 0:
+                            if self.linesData[line].functionName == token.value:
+                                self.linesData[line].functionEnd = self.stc.GetLineEndPosition(startLine - 1)
+                                #print "dec", line, self.linesData[line].functionName, self.linesData[line].functionStart, self.linesData[line].functionEnd
+                                break
+                            line -= 1
                 elif token.type == ErlangHighlightType.FULLSTOP:
                     lineData.functionEnd = token.end + lineStart
                     line = startLine
                     while line > 0:
                         if self.linesData[line].functionName != None and self.linesData[line].functionEnd == None:
                             self.linesData[line].functionEnd = token.end + lineStart
-                            #print "stop", line, self.linesData[line].functionName, self.linesData[line].functionStart, self.linesData[line].functionEnd
+                            break
+                        elif self.linesData[line].specName != None and self.linesData[line].specEnd == None:
+                            self.linesData[line].specEnd = token.end + lineStart
                             break
                         line -= 1
 
@@ -135,6 +141,16 @@ class ErlangLexer(BaseLexer):
                     break
             line -= 1
         return None
+
+    def IsInSpec(self):
+        line = self.stc.GetCurrentLine()
+        caretPos = self.stc.GetCurrentPos()
+        while line > 0:
+            data = self.linesData[line]
+            #print line, data.specName, data.specStart, data.specEnd
+            if data.specEnd: return data.specEnd > caretPos
+            line -= 1
+        return False
 
 
     def RecordFieldUnderCursor(self):
@@ -236,6 +252,9 @@ class LineData:
         self.functionName = None
         self.functionStart = None
         self.functionEnd = None
+        self.specName = None
+        self.specStart = None
+        self.specEnd = None
 
 
 class RecordStart:

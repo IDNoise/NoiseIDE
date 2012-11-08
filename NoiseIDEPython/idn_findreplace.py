@@ -17,6 +17,7 @@ class FindInFilePanel(wx.Panel):
         self.SetMaxSize((3000, 25))
 
         self.editor = editor
+        self.editor.findPanel = self
 
         self.sizer = wx.BoxSizer(wx.HORIZONTAL)
         self.findText = wx.ComboBox(self, size = (200, 25))
@@ -79,51 +80,64 @@ class FindInFilePanel(wx.Panel):
 
     def OnFind(self, event = None):
         self.textToFind = self.findText.Value
-        self.findSuccessful = False
         if self.textToFind and self.editor:
             if not self.textToFind in self.findText.Items:
                 self.findText.Append(self.textToFind)
+        else:
+            return
+        wholeWords = self.wholeWordsCb.Value
+        matchCase = self.matchCaseCb.Value
+        useRegexp = self.useRegextCb.Value
+        searchDown = not self.searchUpCb.Value
+        self.findSuccessful = self.FindText(self.textToFind, wholeWords, matchCase, useRegexp, searchDown)
 
-            findOptions = 0
-            wholeWords = self.wholeWordsCb.Value
-            matchCase = self.matchCaseCb.Value
-            searchDown = not self.searchUpCb.Value
-            useRegexp = self.useRegextCb.Value
-            if useRegexp:
-                findOptions |= stc.STC_FIND_REGEXP
-            else:
-                if wholeWords:
-                    findOptions |= stc.STC_FIND_WHOLEWORD
-                if matchCase:
-                    findOptions |= stc.STC_FIND_MATCHCASE
-
-            for attempt in range(2):
-                caretPosition = self.editor.CurrentPos
-                self.editor.SetAnchor(caretPosition)
-                self.editor.SearchAnchor()
+    def FindText(self, text, wholeWords = True, matchCase = True, useRegexp = False, searchDown = True, select = True):
+        findOptions = 0
+        if useRegexp:
+            findOptions |= stc.STC_FIND_REGEXP
+        else:
+            if wholeWords:
+                findOptions |= stc.STC_FIND_WHOLEWORD
+            if matchCase:
+                findOptions |= stc.STC_FIND_MATCHCASE
+        startPos = self.editor.CurrentPos
+        for attempt in range(2):
+            caretPosition = self.editor.CurrentPos
+            self.editor.SetAnchor(caretPosition)
+            self.editor.SearchAnchor()
+            def search():
                 if searchDown:
-                    pos = self.editor.SearchNext(findOptions, self.textToFind)
+                    return self.editor.SearchNext(findOptions, text)
                 else:
-                    pos = self.editor.SearchPrev(findOptions, self.textToFind)
-                if pos >= 0:
+                    return self.editor.SearchPrev(findOptions, text)
+            pos = search()
+            #print pos, startPos, caretPosition
+            if pos == startPos:
+                caretPosition += 1 if searchDown else -1
+                self.editor.SetCurrentPos(caretPosition)
+                self.editor.SearchAnchor()
+                pos = search()
+            #print pos, caretPosition
+            if pos >= 0:
+                if select:
+                    self.editor.GotoPos(pos)
+                    self.editor.SetAnchor(pos + len(text))
+                else:
+                    self.editor.GotoPos(pos)
+                    self.editor.SetAnchor(pos)
+                return True
+            else:
+                if attempt == 0:
                     if searchDown:
-                        self.editor.GotoPos(pos + len(self.textToFind))
-                        self.editor.SetAnchor(pos)
+                        self.editor.SetCurrentPos(0)
                     else:
-                        self.editor.GotoPos(pos)
-                        self.editor.SetAnchor(pos + len(self.textToFind))
-                    self.findSuccessful = True
-                    break
+                        self.editor.SetCurrentPos(self.editor.Length)
+                    continue
                 else:
-                    if attempt == 0:
-                        if searchDown:
-                            self.editor.SetCurrentPos(0)
-                        else:
-                            self.editor.SetCurrentPos(self.editor.Length)
-                        continue
-                    else:
-                        self.editor.SetCurrentPos(caretPosition)
-                        break
+                    self.editor.SetCurrentPos(startPos)
+                    self.editor.SetAnchor(startPos)
+                    break
+        return False
 
     def TryFind(self):
         findOptions = 0

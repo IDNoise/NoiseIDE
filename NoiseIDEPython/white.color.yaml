@@ -4,6 +4,8 @@ code_editor:
   font_name:  'courier new'
   font_size:  10
   current_line_background:     '#eeeeff'
+  caret_color:                 '#000000'
+  caret_size:                  2
   line_number_area_background: '#bbbbbb'
   marker_panel_background:     '#bbbbbb'
   fold_area_background:        '#cccccc'

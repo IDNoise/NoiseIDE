@@ -4,6 +4,8 @@ code_editor:
   font_name:  consolas
   font_size:  11
   current_line_background:     '#404040'
+  caret_color:                 '#FFFFFF'
+  caret_size:                  2
   line_number_area_background: '#6d6d70'
   marker_panel_background:     '#6d6d70'
   fold_area_background:        '#6d6d70'
