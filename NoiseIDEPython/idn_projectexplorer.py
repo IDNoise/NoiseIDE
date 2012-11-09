@@ -302,6 +302,8 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         else:
             if len(self.selectedItems) == 1:
                 if self.ItemHasChildren(self.eventItem):
+                    menu.AppendMenuItem("Open in explorer", self, self.OnMenuOpenInExplorer)
+                    menu.AppendSeparator()
                     newMenu = Menu()
                     newMenu.AppendMenuItem("File", self, self.OnMenuNewFile)
                     newMenu.AppendMenuItem("Dir", self, self.OnMenuNewDir)
@@ -430,6 +432,18 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         path = self.GetPyData(self.eventItem)
         if not self.OpenFile(path):
             event.Skip()
+
+    def OnMenuOpenInExplorer(self, event):
+        import subprocess
+        import sys
+        path = self.GetPyData(self.eventItem)
+        #print path, sys.platform
+        if sys.platform == 'darwin':
+            subprocess.call(['open', '--', path])
+        elif sys.platform == 'linux2':
+            subprocess.call(['gnome-open', '--', path])
+        elif sys.platform in ['windows', "win32"]:
+            subprocess.call(['explorer', path])
 
     def ExecuteFile(self, path):
         os.chdir(os.path.dirname(path))
