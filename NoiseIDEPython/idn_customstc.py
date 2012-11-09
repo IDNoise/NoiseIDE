@@ -293,7 +293,10 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
 
     brackets = {'"': '"', "'": "'", '(': ')', '<': '>', '{' : '}', '[': ']'}
     def OnCharAdded(self, event):
-        char = chr(event.GetKey())
+        try:
+            char = chr(event.GetKey())
+        except:
+            char = None
         if char == '\n':
             self.DoIndent()
         elif Config.GetProp("close_brackets_quotes", False) and char in self.brackets:
@@ -387,6 +390,8 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         dlg.Destroy()
 
     def Save(self):
+        if not self.changed:
+            return
         self.savedText = self.GetText()
         self.SaveFile(self.filePath)
         self.Changed(False)
@@ -708,6 +713,7 @@ class STCContextToolTip:
 
     def ShowTimer(self):
         if self.tooltipWin.IsShown(): return
+        if not core.TabMgr.GetActiveEditor() == self.stc: return
         if not self.stc.HasFocus(): return
         if not wx.GetApp().IsActive(): return
         current = wx.GetMousePosition()

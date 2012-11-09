@@ -14,7 +14,7 @@ def readFile(file):
 
 def writeFile(file, data):
     f = open(file, 'w')
-    f.write(unicode(data))
+    f.write(data)
     f.flush()
     f.close()
 

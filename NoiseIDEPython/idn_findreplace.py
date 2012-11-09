@@ -353,6 +353,12 @@ class ErrorsTree(IDNCustomTreeCtrl):
         core.Project.explorer.ProjectFilesCreatedEvent += self.OnProjectFilesCreated
         core.Project.explorer.ProjectFilesModifiedEvent += self.OnProjectFilesModified
         core.Project.explorer.ProjectFilesDeletedEvent += self.OnProjectFilesDeleted
+        self.Bind(wx.EVT_WINDOW_DESTROY, self.OnDestroy)
+
+    def OnDestroy(self, event):
+        core.Project.explorer.ProjectFilesCreatedEvent -= self.OnProjectFilesCreated
+        core.Project.explorer.ProjectFilesModifiedEvent -= self.OnProjectFilesModified
+        core.Project.explorer.ProjectFilesDeletedEvent -= self.OnProjectFilesDeleted
 
     def OnProjectFilesCreated(self, files):
         for file in files:

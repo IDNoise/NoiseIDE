@@ -506,6 +506,12 @@ class ErlangProject(Project):
         self.shellConsole.Stop()
         for title, console in self.consoles.items():
             console.Stop()
+
+        self.window.ToolMgr.CloseAll()
+        self.window.toolbar.DeleteTool(self.xrefCheckT.GetId())
+        self.window.toolbar.DeleteTool(self.rebuildT.GetId())
+        self.window.toolbar.DeleteToolByPos(self.window.toolbar.GetToolsCount() - 1)
+
         Project.Close(self)
 
 #        for w in self.consoleTabs.values() + [self.errorsTable, self.shellConsole, self.xrefTable]:
@@ -514,10 +520,7 @@ class ErlangProject(Project):
 #            if index != None:
 #                #print "delete page", w
 #                self.window.ToolMgr.DeletePage(index, True)
-        self.window.ToolMgr.CloseAll()
-        self.window.toolbar.DeleteTool(self.xrefCheckT.GetId())
-        self.window.toolbar.DeleteTool(self.rebuildT.GetId())
-        self.window.toolbar.DeleteToolByPos(self.window.toolbar.GetToolsCount() - 1)
+
 
     def OnProjectFilesModified(self, files):
         #print "modified", files

@@ -51,6 +51,12 @@ xxx() ->
   
 x() -> 
     xxx(),
+    SortedQueueDiffs = 
+        lists:sort(fun({{_, IR1}, D1}, {{_, IR2}, D2}) -> 
+            Add1 = case IR1 of true -> 1; _ -> 0 end, 
+            Add2 = case IR2 of true -> 1; _ -> 0 end, 
+            D1 * 1000 + Add1 < D2 * 1000 + Add2 
+        end, []),
     io:format("~p~n", [?X]).
     
 -spec round(XX, integer()) -> integer()

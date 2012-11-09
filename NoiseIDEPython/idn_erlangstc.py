@@ -448,7 +448,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         fun = funData[0]
         arity = self.completer.GetFunArity(funData[1] + len(fun))
 
-        funStr = "{}/{}".format(fun, arity)
+        funStr = "\n    {}/{}".format(fun, arity)
         (exports, startPos, insertPos) = self.lexer.GetAllExports()
         if funStr in exports:
             return

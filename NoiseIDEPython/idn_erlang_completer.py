@@ -1,3 +1,5 @@
+__author__ = 'Yaroslav'
+
 import os
 import wx
 from idn_cache import ErlangCache, Function, Record, ExportedType, Macros
@@ -6,8 +8,9 @@ from idn_customstc import HtmlWin
 from idn_erlang_constats import TYPE_MODULE
 from idn_token import ErlangTokenizer, ErlangTokenType
 from idn_utils import readFile
+from cStringIO import StringIO
+from tokenize import generate_tokens
 
-__author__ = 'Yaroslav'
 
 class ErlangCompleter(wx.Frame):
     SIZE = (740, 270)
@@ -342,10 +345,20 @@ class ErlangCompleter(wx.Frame):
         file = data.moduleData.file if data.moduleData else None
         return ((file, data.line), help)
 
+
     def GetFunArity(self, pos):
-        open = ['[', '(', '{']
-        close = [']', ')', '}']
-        startPos = pos
+        open = ['[', '(', '{', 'fun', 'case', 'if', 'try', 'begin', 'receive']
+        close = {
+            '[' : ']',
+            '(' : ')',
+            '{' : '}',
+            'fun' : 'end',
+            'case' : 'end',
+            'if' : 'end',
+            'try' : 'end',
+            'begin' : 'end',
+            'receive' : 'end'
+        }
         lvl = 0
         if self.stc.GetCharAt(pos) == "/":
             pos += 1
@@ -365,19 +378,24 @@ class ErlangCompleter(wx.Frame):
             return 0
         else:
             arity = 1
-        while True:
-            if pos > self.stc.GetLength() or\
-               abs(pos - startPos) > 2000: break
-            c = self.stc.GetCharAt(pos)
-            if c in open:
+        text = self.stc.GetText()[pos:pos + 1000]
+        gentokens = generate_tokens(StringIO(text).readline)
+        tokens = []
+        try:
+            for token in gentokens:
+                if token[1]:
+                    tokens.append(token[1])
+        except:
+            pass
+        for token in tokens:
+            if token in open:
                 lvl += 1
-            elif c == "," and lvl == 1:
+            elif token == "," and lvl == 1:
                 arity += 1
-            elif c in close:
-                lvl = lvl - 1
+            elif token in close.values():
+                lvl -= 1
             if lvl == 0:
                 break
-            pos = pos + 1
         return arity
 
     def GetRecordNavAndHelp(self, record):
