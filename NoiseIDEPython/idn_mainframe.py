@@ -1,3 +1,5 @@
+from idn_shortcut_window import ShortcutWindow
+
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 import sys
@@ -116,6 +118,7 @@ class NoiseIDE(wx.Frame):
         erlangMenu.AppendMenuItem("Options", self, lambda e: self.SetupRuntimes())
 
         helpMenu = Menu()
+        helpMenu.AppendMenuItem("Shorcuts", self, self.OnHelpShortcuts)
         helpMenu.AppendMenuItem("Check for updates", self, self.OnHelpCheckForUpdates)
         helpMenu.AppendMenuItem("About", self, self.OnHelpAbout)
         self.menubar.Append(helpMenu, '&Help')
@@ -170,10 +173,15 @@ class NoiseIDE(wx.Frame):
         self.menubar.Append(self.viewMenu, "&View")
 
         helpMenu = Menu()
+        helpMenu.AppendMenuItem("Shorcuts", self, self.OnHelpShortcuts)
         helpMenu.AppendMenuItem("Check for updates", self, self.OnHelpCheckForUpdates)
         helpMenu.AppendMenuItem("About", self, self.OnHelpAbout)
         self.menubar.Append(helpMenu, '&Help')
         self.SetMenuBar(self.menubar)
+
+    def OnHelpShortcuts(self, event):
+        ShortcutWindow(self).Show()
+
 
     def GetCurrentVersion(self):
         revCfg = os.path.join(self.cwd, "rev.cfg")
