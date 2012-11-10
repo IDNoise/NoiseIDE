@@ -404,6 +404,11 @@ class ProjectExplorer(IDNCustomTreeCtrl):
     def AfterPasteMove(self, oldName, newName):
         pass
 
+    def SelectPath(self, path):
+        item = self.FindItemByPath(path)
+        if not item: return
+        self.SelectItem(item)
+
     def OnMenuDelete(self, event):
         for id in self.selectedItems:
             path = self.GetPyData(id)

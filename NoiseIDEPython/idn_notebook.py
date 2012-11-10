@@ -198,7 +198,12 @@ class EditorNotebook(aui.AuiNotebook):
         menu.AppendMenuItem("Close this tab", self, closeCurrent)
         menu.AppendMenuItem("Close other tabs", self, closeOther)
         menu.AppendMenuItem("Close all tabs", self, self.CloseAll)
+        menu.AppendSeparator()
+        menu.AppendMenuItem("Show in project explorer", self, lambda e: self.ShowInProjectExplorer(editor.filePath))
         self.PopupMenu(menu)
+
+    def ShowInProjectExplorer(self, path):
+        core.Project.explorer.SelectPath(path)
 
 
     def __getitem__(self, index):
