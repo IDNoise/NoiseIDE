@@ -358,6 +358,27 @@ class ErlangCache:
         return None
 
     @classmethod
+    def AllRecords(cls):
+        result = []
+        for include in cls.includes:
+            result += cls.moduleData[include].AllRecords()
+        return result
+
+    @classmethod
+    def AllRecordsData(cls, record):
+        for include in cls.includes:
+            for rec in cls.moduleData[include].AllRecords():
+                if rec.name == record:
+                    return rec
+        return None
+
+    @classmethod
+    def AllRecordFields(cls, record):
+        data = cls.AllRecordsData(record)
+        if not data: return []
+        return data.FieldsData()
+
+    @classmethod
     def ModuleFunctions(cls, module, exported = True):
         if not cls.TryLoad(module):return []
         return cls.moduleData[module].Functions(exported)
