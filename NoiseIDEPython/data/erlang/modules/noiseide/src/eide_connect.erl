@@ -21,7 +21,7 @@
 -define(noreply, noreply).
 
 start(Port) ->
-    {ok, LS} = gen_tcp:listen(Port, [binary, {active, false}, {packet, 4}, {sndbuf, 1000*1000}]), %{reuseaddr, true},
+    {ok, LS} = gen_tcp:listen(Port, [binary, {active, false}, {packet, 4}, {sndbuf, 4096}]), %{reuseaddr, true},
     io:format("started on:~p~n", [Port]),
     ets:new(props, [named_table, public]),
     Pid = spawn(fun() -> accept(LS) end), 
@@ -162,17 +162,13 @@ execute_action(gen_file_cache, Binary) ->
     %io:format("gen file cache action:~p~n", [File]),
     eide_cache:gen_file_cache(File),
     ?noreply;
-execute_action(compile_file, PathBinary) ->
+execute_action(compile, PathBinary) ->
     Path = binary_to_list(PathBinary),
     %io:format("compile_file~p~n", [Path]),  
-    eide_compiler:compile_simple(Path);
+    eide_compiler:compile(Path);
 execute_action(compile_option, Data) ->
     [FileName, App, Option] = Data,
     eide_compiler:compile_with_option(binary_to_list(FileName), binary_to_list(App), binary_to_atom(Option, latin1));
-execute_action(compile_project_file, PathBinary) ->
-    [FileName, App] = PathBinary,
-    %io:format("compile_project_file~p~n", [{FileName, App}]), 
-    eide_compiler:compile(binary_to_list(FileName), binary_to_list(App));
 execute_action(xref_module, Binary) ->
     Module = 
         try 

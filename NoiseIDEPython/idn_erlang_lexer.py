@@ -1,6 +1,6 @@
 import re
 from wx.stc import STC_FOLDLEVELHEADERFLAG, STC_FOLDLEVELBASE
-from idn_highlight import ErlangHighlighter, ErlangHighlightType
+from idn_highlight import ErlangHighlighter, ErlangHighlightType, IgorHighlighter, IgorHighlightType
 from idn_lexer import BaseLexer
 
 __author__ = 'Yaroslav'
@@ -289,3 +289,67 @@ class RecordStart:
 #                    if data.starts
 #
 #        self.lineData[line] = data
+
+
+class IgorLexer(BaseLexer):
+    def __init__(self, stc):
+        BaseLexer.__init__(self, stc)
+        self.highlighter = IgorHighlighter()
+
+    def StyleText(self, startPos, endPos):
+        startLine = self.stc.LineFromPosition(startPos)
+        startLineBeginPos = self.stc.PositionFromLine(startLine)
+        endLine = self.stc.LineFromPosition(endPos)
+        endLineEndPos = self.stc.GetLineEndPosition(endLine)
+        self.stc.StartStyling(startLineBeginPos, 0x1f)
+        lastEnd = startLineBeginPos
+        defaultStyle = IgorHighlightType.DEFAULT
+        while startLine <= endLine:
+            lineStart = self.stc.PositionFromLine(startLine)
+            text = self.stc.GetLine(startLine)
+            tokens = self.highlighter.GetHighlightingTokens(text)
+            for token in tokens:
+                start = lineStart + token.start
+                if start > lastEnd:
+                    self.stc.SetStyling(start - lastEnd, defaultStyle)
+                self.stc.SetStyling(len(token.value), token.type)
+                lastEnd  = lineStart + token.end
+            startLine += 1
+        if lastEnd < endLineEndPos:
+            self.stc.SetStyling(endLineEndPos - lastEnd, defaultStyle)
+
+    def DoFold(self, startPos, endPos):
+        startLine = self.stc.LineFromPosition(startPos) - 1
+        endLine = self.stc.LineFromPosition(endPos)
+        prevFoldLevel = 0
+        if startLine > 0:
+            prevFoldLevel = self.stc.GetFoldLevel(startLine - 1)
+        nextLineFoldLevel = prevFoldLevel
+        if prevFoldLevel ^ STC_FOLDLEVELHEADERFLAG == STC_FOLDLEVELBASE:
+            nextLineFoldLevel = STC_FOLDLEVELBASE + 1
+        elif prevFoldLevel == STC_FOLDLEVELBASE + 2:
+            nextLineFoldLevel = 0
+        while startLine <= endLine:
+            currentLineFoldLevel = nextLineFoldLevel
+            text = self.stc.GetLine(startLine)
+            tokens = self.highlighter.GetHighlightingTokens(text)
+            for token in tokens:
+                if (token.value in ["record", "enum", "service", "variant"]):
+                    currentLineFoldLevel = STC_FOLDLEVELBASE
+                    nextLineFoldLevel = STC_FOLDLEVELBASE  + 1
+                elif token.value == "}":
+                    if currentLineFoldLevel ==  STC_FOLDLEVELBASE  + 1:
+                        currentLineFoldLevel = STC_FOLDLEVELBASE  + 2
+                    elif currentLineFoldLevel == STC_FOLDLEVELBASE:
+                        currentLineFoldLevel = 0
+                        if prevFoldLevel == STC_FOLDLEVELHEADERFLAG | STC_FOLDLEVELBASE:
+                            self.stc.SetFoldLevel(startLine - 1, 0)
+                    nextLineFoldLevel = 0
+            if currentLineFoldLevel == STC_FOLDLEVELBASE:
+                currentLineFoldLevel |= STC_FOLDLEVELHEADERFLAG
+            if (currentLineFoldLevel == STC_FOLDLEVELHEADERFLAG | STC_FOLDLEVELBASE and
+                currentLineFoldLevel == prevFoldLevel):
+                self.stc.SetFoldLevel(startLine - 1, 0)
+            prevFoldLevel = currentLineFoldLevel
+            self.stc.SetFoldLevel(startLine, currentLineFoldLevel)
+            startLine += 1

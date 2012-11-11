@@ -9,9 +9,9 @@ from idn_connect import CompileErrorInfo
 from idn_customstc import CustomSTC
 from idn_erlang_completer import ErlangCompleter
 from idn_erlang_constats import TYPE_MODULE, TYPE_UNKNOWN, TYPE_HRL
-from idn_erlang_lexer import ErlangLexer
+from idn_erlang_lexer import ErlangLexer, IgorLexer
 import core
-from idn_highlight import ErlangHighlightType
+from idn_highlight import ErlangHighlightType, IgorHighlightType
 from idn_marker_panel import Marker
 from idn_outline import ErlangOutline
 from idn_utils import Menu
@@ -552,3 +552,18 @@ class ErlangSTCReadOnly(ErlangSTC):
             return True
         else:
             return False
+
+class IgorSTC(CustomSTC):
+    def SetupLexer(self):
+        self.lexer = IgorLexer(self)
+        self.SetLexer(stc.STC_LEX_CONTAINER)
+
+    def SetupLanguageStyles(self):
+        formats = ColorSchema.LanguageFormats("igor")
+        self.StyleSetSpec(IgorHighlightType.DEFAULT, formats["default"])
+        self.StyleSetSpec(IgorHighlightType.STRING, formats["string"])
+        self.StyleSetSpec(IgorHighlightType.NUMBER, formats["number"])
+        self.StyleSetSpec(IgorHighlightType.KEYWORD, formats["keyword"])
+        self.StyleSetSpec(IgorHighlightType.TYPE, formats["type"])
+        self.StyleSetSpec(IgorHighlightType.VALUE, formats["value"])
+        self.StyleSetSpec(IgorHighlightType.SPECIAL_SYMBOL, formats["special"])

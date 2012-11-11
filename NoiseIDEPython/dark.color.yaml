@@ -71,9 +71,17 @@ code_editor:
       id:         fore:#000000
       value:      fore:#993300
     yaml:
-      default:    fore:#000000
+      default:    fore:#DDDDDD
       comment:    fore:#006600
       number:     fore:#00ff00
       word:       fore:#882288
       string:     fore:#2200bb
-      identifier: fore:#000000
+      identifier: fore:#FFFFFF
+    igor:
+      default:    fore:#DDDDDD
+      number:     fore:#99CF50
+      string:     fore:#65B042
+      keyword:    fore:#CF6A4C,bold
+      type:       fore:#758bc5
+      value:      fore:#99CF50
+      special:    fore:#BF62E8,bold

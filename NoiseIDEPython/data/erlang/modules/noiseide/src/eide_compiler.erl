@@ -3,8 +3,7 @@
 -include_lib("kernel/include/file.hrl").
 
 -export([
-    compile/2, 
-    compile_simple/1,
+    compile/1,
     compile_file_fly/2,
     generate_includes/0,
     compile_yecc/1,
@@ -28,18 +27,14 @@ generate_includes() ->
     eide_connect:set_prop(includes, Includes),
     FlatIncludes = lists:map(fun({i, F}) -> F end, Includes),
     eide_connect:set_prop(flat_includes, FlatIncludes). 
- 
-compile(FileName, App) ->
-    OutDir = eide_connect:prop(project_dir) ++ "/" ++ App ++ "/ebin",
-    %OutputFileName = OutDir ++ "/" ++ filename:rootname(filename:basename(FileName)) ++ ".beam",
-    Includes = eide_connect:prop(includes),
-    catch file:make_dir(OutDir),  
-    create_response(FileName, compile_internal(FileName, [{outdir, OutDir} | Includes])).
-
-compile_simple(FileName) -> 
+  
+compile(FileName) -> 
     case filename:extension(FileName) of
         ".erl" -> 
-            create_response(FileName, compile_internal(FileName, [{outdir, filename:dirname(FileName)}]));
+            OutDir = eide_connect:prop(project_dir) ++ "/" ++ app_name(FileName) ++ "/ebin",
+            Includes = eide_connect:prop(includes),
+            catch file:make_dir(OutDir),  
+            create_response(FileName, compile_internal(FileName, [{outdir, OutDir} | Includes]));
         ".yrl" -> 
             compile_yecc(FileName),
             create_response(FileName, [])
@@ -59,8 +54,49 @@ compile_with_option(FileName, App, Option) ->
                                 {result, iolist_to_binary(Data)}]}).
 
 compile_yecc(FileName) ->
-    ModuleName = filename:rootname(FileName) ++ ".erl",
-    yecc:yecc(FileName, ModuleName).
+    %ModuleName = filename:rootname(FileName) ++ ".erl",
+    Result = yecc:file(FileName, [report]),
+    %io:format("yecc result ~p~n", [Result]),
+    case Result of
+        {ok, ModuleName} ->
+            Response = eide_compiler:compile(ModuleName),
+            eide_connect:send(Response), 
+			send_yecc_response(FileName, warning, []),
+			noreply;
+        {ok, ModuleName, Warnings} ->
+            Response = eide_compiler:compile(ModuleName),
+            eide_connect:send(Response),
+            send_yecc_errors(warning, Warnings), 
+            noreply;
+        {error, Warnings, Errors} ->
+            send_yecc_errors(warning, Warnings),
+            send_yecc_errors(error, Errors),
+            noreply;
+        _ ->
+            mochijson2:encode({struct, [{response, compile}, 
+										{errors, [[{type, error}, {line, 0}, 
+												   {msg, iolist_to_binary("Unknown compilation error")}]]}, 
+										{path, iolist_to_binary(FileName)}]})
+    end.
+ 
+app_name(ModuleName) ->
+    Elements = filename:split(ModuleName),
+    lists:last(lists:takewhile(fun(E) -> E =/= "src" end, Elements)).
+    
+send_yecc_errors(Type, Errors) ->
+    [send_yecc_response(File, Type, ErrorsInfo) || {File, ErrorsInfo} <- Errors].
+
+send_yecc_response(File, Type, ErrorsInfo) ->
+    Errors = 
+        [begin
+            Msg = iolist_to_binary(Module:format_error(Error)),
+            [{type, Type}, {line, Line}, {msg, Msg}]
+         end || {Line, Module, Error} <- ErrorsInfo],
+    Response = 
+        mochijson2:encode({struct, [{response, compile}, 
+                                    {errors, Errors}, 
+                                    {path, iolist_to_binary(File)}]}),
+    eide_connect:send(Response).  
     
 default_options() ->
     [ 

@@ -1,6 +1,6 @@
 from wx.lib.agw.aui.auibook import TabNavigatorWindow
 from idn_colorschema import ColorSchema
-from idn_erlangstc import ErlangSTC, ErlangSTCReadOnly
+from idn_erlangstc import ErlangSTC, ErlangSTCReadOnly, IgorSTC
 from idn_marker_panel import MarkerPanel
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
@@ -16,6 +16,7 @@ from idn_customstc import CustomSTC, YAMLSTC, PythonSTC, ConsoleSTC, CppSTC, Htm
 EXT_STC_TYPE = {
     ".erl":  ErlangSTC,
     ".hrl":  ErlangSTC,
+    ".igor":  IgorSTC,
     ".yaml": YAMLSTC,
     ".cpp":  CppSTC,
     ".c":    CppSTC,

@@ -270,14 +270,14 @@ class ErlangProject(Project):
     def Compile(self, path):
         hrls = set()
         erls = set()
-        yrls = set()
+        #yrls = set()
         def addByType(file):
             if IsInclude(file):
                 hrls.add(file)
             elif IsModule(file):
                 erls.add(file)
             elif IsYrl(file):
-                yrls.add(file)
+                erls.add(file)
         if isinstance(path, list):
             for p in path:
                 addByType(p)
@@ -296,12 +296,12 @@ class ErlangProject(Project):
                 hrls.remove(h)
 
         #print "to compile: ", erls
-        self.GetShell().CompileYrls(yrls)
+        #self.GetShell().CompileYrls(yrls)
         for erl in erls:
             app = self.GetApp(erl)
             if app in self.projectData[CONFIG_EXCLUDED_DIRS]:
                 continue
-            self.GetShell().CompileProjectFile(erl, app)
+            self.GetShell().Compile(erl)
 
     def CompileOption(self, path, option):
         if not IsModule(path): return
@@ -514,14 +514,6 @@ class ErlangProject(Project):
 
         Project.Close(self)
 
-#        for w in self.consoleTabs.values() + [self.errorsTable, self.shellConsole, self.xrefTable]:
-#            index = self.window.ToolMgr.FindPageIndexByWindow(w)
-#            #print "try delete page", w, index
-#            if index != None:
-#                #print "delete page", w
-#                self.window.ToolMgr.DeletePage(index, True)
-
-
     def OnProjectFilesModified(self, files):
         #print "modified", files
         toCompile = []
@@ -530,7 +522,7 @@ class ErlangProject(Project):
             if editor:
                 text = readFile(file)
                 if not text: continue
-                if unicode(editor.savedText) != unicode(text):
+                if editor.savedText != text:
                     dial = wx.MessageDialog(None,
                         'File "{}" was modified.\nDo you want to reload document?'.format(file),
                         'File modified',
@@ -608,7 +600,7 @@ class ErlangProject(Project):
                     for file in files:
                         file = os.path.join(root, file)
                         if IsModule(file):
-                            filesToCompile.add((file, app))
+                            filesToCompile.add(file)
                         if IsYrl(file):
                             yrlToCompile.add(file)
                         elif IsInclude(file):
@@ -617,11 +609,10 @@ class ErlangProject(Project):
         for file in list(yrlToCompile):
             (path, ext) = os.path.splitext(file)
             erl = path + ".erl"
-            key = (erl, self.GetApp(erl))
-            if key in filesToCompile:
-                filesToCompile.remove(key)
+            if erl in filesToCompile:
+                filesToCompile.remove(erl)
 
-        filesToCompile = sorted(list(filesToCompile))
+        filesToCompile = sorted(list(filesToCompile) + list(yrlToCompile))
         filesToCache = sorted(list(filesToCache))
 
         #print "compile: ", filesToCompile
@@ -630,7 +621,6 @@ class ErlangProject(Project):
 
         self.GetShell().GenerateFileCaches(filesToCache)
         self.GetShell().CompileProjectFiles(filesToCompile)
-        self.GetShell().CompileYrls(yrlToCompile)
         self.RemoveUnusedBeams()
 
     def RemoveUnusedBeams(self):

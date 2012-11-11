@@ -114,11 +114,11 @@ gen_project_cache() ->
 ignores() ->
     [appmon, asn, cosEvent, cosEventDomain, 
      cosFileTransfer, cosNotification, cosProperty, 
-     cosTime, cosTransactions, parsetools, percept, 
+     cosTime, cosTransactions, percept, 
      erldocgen, erlinterface, et, gs, hipe, ic, 
      inviso, jinterface, megaco, observer, orber, osmon, 
      otpmibs, runtimetools, testserver, toolbar, 
-     tv, typer, webtool, wx]. 
+     tv, webtool, wx]. 
 
 prepare_ignores(AppsPath, IgnoreApps) ->
     Dir = case AppsPath == code:root_dir() of true -> "/lib/"; _ -> "/" end,
