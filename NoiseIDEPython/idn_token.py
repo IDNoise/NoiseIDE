@@ -70,3 +70,42 @@ class ErlangTokenizer:
             tokens.append(Token(type, value, m.start(), m.end()))
         return tokens
 
+class IgorTokenType:
+    STRING = "string"
+    NUMBER = "number"
+    VALUE = "value"
+    SPACE = "space"
+    BRACKET = "bracket"
+    OTHER = "other"
+
+class IgorTokenizer:
+    def __init__(self):
+        self.tokenRegexp = re.compile(
+            r"""
+            (?P<string>"([^"\\]|\\.)*"|"[^"\\]*?$)
+            |(?P<number>[0-9]{1,2}\#[0-9a-z]*|[0-9]*\.?[0-9]+)
+            |(?P<value>s->c|c->s|[a-zA-Z][a-zA-Z0-9_]*)
+            |(?P<bracket>\(|\[|\{|\)|\]|\})
+            |(?P<operator>\+|\-|/|\*|<=|>=|==|=|\?|:|\.|\,)
+            |(?P<other>\S+)
+            |(?P<space>\s+)
+            """,
+            re.VERBOSE | re.MULTILINE)
+
+    def GetTokens(self, text):
+        tokens = []
+        lastValue = None
+        pos = 0
+        while True:
+            m = self.tokenRegexp.search(text, pos)
+            if not m: break
+            d = m.groupdict()
+            for g in d:
+                if d[g] != None:
+                    value = d[g]
+                    start = m.start(g)
+                    end = m.end(g)
+                    #print g, value, start, end
+                    tokens.append(Token(g, value, start, end))
+            pos = m.end()
+        return tokens

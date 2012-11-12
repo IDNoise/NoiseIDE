@@ -143,9 +143,9 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
 
         self.TaskAddedEvent = idn_events.Event()
 
-    def CompileFile(self, file):
+    def Compile(self, file):
         self.TaskAddedEvent((TASK_COMPILE, file.lower()))
-        self._ExecRequest("compile_file", '"{}"'.format(erlstr(file)))
+        self._ExecRequest("compile", '"{}"'.format(erlstr(file)))
 
     def CompileFileFly(self, realPath, flyPath):
         self.TaskAddedEvent((TASK_COMPILE_FLY, realPath.lower()))
@@ -174,13 +174,10 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
     def XRef(self, module):
         self._ExecRequest("xref_module", '"{}"'.format(module))
 
-    def CompileProjectFile(self, file, app):
-        self._ExecRequest("compile_project_file", '["{0}", "{1}"]'.format(erlstr(file), app))
-
     def CompileProjectFiles(self, files):
-        for (file, app) in files:
+        for file in files:
             self.TaskAddedEvent((TASK_COMPILE, file.lower()))
-            self.CompileProjectFile(file, app)
+            self.Compile(file)
 
     def GenerateFileCache(self, file):
         self.TaskAddedEvent((TASK_GEN_FILE_CACHE, file.lower()))
@@ -189,10 +186,6 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
     def GenerateFileCaches(self, files):
         for file in files:
             self.GenerateFileCache(file)
-
-    def CompileYrls(self, files):
-        for file in files:
-            self.CompileFile(file)
 
     def GenerateErlangCache(self, runtime):
         self._ExecRequest("gen_erlang_cache", '"{}"'.format( runtime))

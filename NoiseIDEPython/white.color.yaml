@@ -77,3 +77,11 @@ code_editor:
       word:       fore:#882288
       string:     fore:#2200bb
       identifier: fore:#000000
+    igor:
+      default:    fore:#000000
+      number:     fore:#0033cc
+      string:     fore:#bb7777
+      keyword:    fore:#a611bb,bold
+      type:       fore:#007777
+      value:      fore:#0033cc
+      special:    fore:#00aabb,bold

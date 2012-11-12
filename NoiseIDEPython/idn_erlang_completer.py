@@ -13,8 +13,8 @@ from tokenize import generate_tokens
 
 
 class ErlangCompleter(wx.Frame):
-    SIZE = (740, 270)
-    LIST_SIZE = (320, 150)
+    SIZE = (760, 270)
+    LIST_SIZE = (340, 150)
 
     def __init__(self, stc):
         style = wx.BORDER_NONE | wx.STAY_ON_TOP | wx.FRAME_NO_TASKBAR
@@ -409,3 +409,163 @@ class ErlangCompleter(wx.Frame):
         if not macrosData: return
         help = self._MacrosHelp(macrosData)
         return ((macrosData.moduleData.file, macrosData.line), help)
+
+
+class ErlangSimpleCompleter(wx.Frame):
+    SIZE = (340, 100)
+
+    def __init__(self, textctrl):
+        style = wx.BORDER_NONE | wx.STAY_ON_TOP | wx.FRAME_NO_TASKBAR
+        pre = wx.PreFrame()
+        pre.SetBackgroundStyle(wx.BG_STYLE_TRANSPARENT)
+        pre.Create(textctrl, style = style, size = self.SIZE)
+        self.PostCreate(pre)
+        self.tokenizer = ErlangTokenizer()
+
+        self.textctrl = textctrl
+        self.lineHeight = 15
+        self.separators = ",;([{<-"
+        self.lastText = None
+
+        self.list = wx.ListBox(self, size = self.SIZE, style = wx.LB_SORT | wx.LB_SINGLE | wx.WANTS_CHARS)
+        self.list.SetBackgroundColour(ColorSchema.codeEditor["completer_list_back"])
+        self.list.SetForegroundColour(ColorSchema.codeEditor["completer_list_fore"])
+
+        sizer = wx.BoxSizer()
+        sizer.Add(self.list, 1, flag = wx.EXPAND)
+        self.SetSizer(sizer)
+        self.Layout()
+        self.Hide()
+
+        self.list.Bind(wx.EVT_LISTBOX_DCLICK, self.OnItemDoubleClick)
+        self.list.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
+        self.textctrl.Bind(wx.EVT_MOUSE_EVENTS, self.OnTextCtrlMouseDown)
+        wx.GetApp().Bind(wx.EVT_ACTIVATE_APP, self.OnAppFocusLost)
+
+    def OnAppFocusLost(self, event):
+        try:
+            self.HideCompleter()
+        except:
+            pass
+        event.Skip()
+
+    def OnTextCtrlMouseDown(self, event):
+        event.Skip()
+        if event.ButtonDown(wx.MOUSE_BTN_LEFT) or event.ButtonDown(wx.MOUSE_BTN_RIGHT):
+            self.HideCompleter()
+
+    def UpdateCompleterPosition(self, pos):
+        pos = self.textctrl.ClientToScreen((pos[0], pos[1] - self.list.Size[1]))
+        self.SetPosition(pos)
+
+    def ValidateCompleter(self):
+        if len(self.list.GetStrings()) == 0:
+            self.HideCompleter()
+            return
+        self.list.SetSelection(0)
+
+    def Update(self, text, nextChar = None):
+        if self.lastText == text: return
+        self.lastText = text
+        tokens = self.tokenizer.GetTokens(text)
+        tokens.reverse()
+        data = []
+        self.prefix = ""
+        if not tokens:
+            self.HideCompleter()
+            return
+        else:
+            fToken = tokens[0]
+            fType = fToken.type
+            fValue = fToken.value
+            fIsAtom = fType == ErlangTokenType.ATOM
+            #print fValue, fIsAtom
+            if (fType == ErlangTokenType.SPACE or
+                (len(tokens) == 1 and fIsAtom) or
+                (fIsAtom and tokens[1].type == ErlangTokenType.SPACE) or
+                (fIsAtom and tokens[1].value in self.separators) or
+                fValue in self.separators):
+                if fValue in self.separators or fType == ErlangTokenType.SPACE:
+                    self.prefix = ""
+                else:
+                    self.prefix = fValue.strip()
+                data += ErlangCache.Bifs()
+                data += ErlangCache.AllModules()
+            elif (len(tokens) > 1 and
+                  ((fIsAtom and tokens[1].value == ":") or fValue == ":")):
+                i = 1 if fValue == ":" else 2
+                moduleName = tokens[i].value
+                onlyExported = True
+                self.prefix = "" if fValue == ":" else fValue
+                data += ErlangCache.ModuleFunctions(moduleName, onlyExported)
+            elif (len(tokens) > 2 and fIsAtom and tokens[1].value == "."
+                  and tokens[2].type == ErlangTokenType.RECORD):
+                self.prefix = fValue
+                record = tokens[2].value[1:]
+                data = ErlangCache.AllRecordFields(record)
+            elif (len(tokens) > 1 and fValue == "." and tokens[1].type == ErlangTokenType.RECORD):
+                self.prefix = ""
+                record = tokens[1].value[1:]
+                data = ErlangCache.AllRecordFields(record)
+            elif fType == ErlangTokenType.RECORD or fValue == "#":
+                self.prefix = "" if fValue == "#" else fValue[1:]
+                data = ErlangCache.AllRecords()
+        self._PrepareData(data)
+
+    def _PrepareData(self, data):
+        self.list.Clear()
+        self.lastData = []
+        for d in set(data):
+            if isinstance(d, Function):
+                text = "{}({})".format(d.name, ", ".join(d.params))
+            elif isinstance(d, Record):
+                text = d.name
+            elif isinstance(d, tuple):
+                (text, help) = d
+            else:
+                text = d
+            if text.startswith(self.prefix):
+                self.lastData.append(d)
+                self.list.Append(text)
+        #print self.list.Items
+        self.ValidateCompleter()
+
+    def OnItemDoubleClick(self, event):
+        id = event.GetSelection()
+        text = self.list.GetString(id)
+        self.AutoComplete(text)
+
+    def OnKeyDown(self, event):
+        keyCode = event.GetKeyCode()
+        if keyCode in [wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER]:
+            self.AutoComplete(self.list.GetString(self.list.GetSelection()))
+        elif keyCode == wx.WXK_UP:
+            current = self.list.GetSelection()
+            if current == 0:
+                current = self.list.Count - 1
+            else:
+                current -= 1
+            self.list.SetSelection(current)
+        elif keyCode == wx.WXK_DOWN:
+            current = self.list.GetSelection()
+            if current == self.list.Count - 1:
+                current = 0
+            else:
+                current += 1
+            self.list.SetSelection(current)
+        elif keyCode == wx.WXK_ESCAPE:
+            self.HideCompleter()
+
+
+    def AutoComplete(self, text):
+        toInsert = text[len(self.prefix):]
+        self.textctrl.WriteText(toInsert)
+        self.HideCompleter()
+
+    def HideCompleter(self):
+        wx.Frame.Hide(self)
+
+    def Show(self, show = True):
+        if len(self.list.GetStrings()) > 0:
+            wx.Frame.Show(self, show)
+            self.textctrl.SetFocus()

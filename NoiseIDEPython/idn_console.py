@@ -1,4 +1,5 @@
 from idn_colorschema import ColorSchema
+from idn_erlang_completer import ErlangSimpleCompleter
 from idn_events import Event
 import core
 from idn_highlight import ErlangHighlighter
@@ -85,6 +86,7 @@ class ErlangConsole(wx.Panel):
         self.lastCommands = []
 
         self.highlighter = ErlangHighlighter()
+        self.completer = ErlangSimpleCompleter(self.commandText)
 
         self.consolePanel.editor.Bind(wx.EVT_KEY_DOWN, self.OnEditorKeyDown)
 
@@ -142,8 +144,16 @@ class ErlangConsole(wx.Panel):
         self.WriteToConsoleOut(cmd + '\n')
 
     def OnCommandTextKeyDown(self, event):
+        if self.completer.IsShown():
+            self.UpdateCompleter()
+
         keyCode = event.GetKeyCode()
-        if keyCode == wx.WXK_ESCAPE:
+        if (self.completer.IsShown() and
+            keyCode in [wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER,
+                        wx.WXK_DOWN, wx.WXK_UP, wx.WXK_ESCAPE]):
+            self.completer.OnKeyDown(event)
+            return
+        elif keyCode == wx.WXK_ESCAPE:
             self.commandText.Clear()
         elif event.GetModifiers() == wx.MOD_CONTROL and self.lastCommands and keyCode == wx.WXK_UP:
             newText = self.lastCommands[-1]
@@ -160,6 +170,9 @@ class ErlangConsole(wx.Panel):
         elif keyCode in [wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER] and event.GetModifiers() == wx.MOD_ALT:
             editor = core.TabMgr.GetActiveEditor()
             if editor: editor.SetFocus()
+        elif event.GetModifiers() == wx.MOD_CONTROL and keyCode == wx.WXK_SPACE:
+            self.UpdateCompleter()
+            self.completer.Show()
         elif keyCode == wx.WXK_RETURN:
             if event.ControlDown():
                 self.commandText.AppendText("\n")
@@ -167,6 +180,12 @@ class ErlangConsole(wx.Panel):
                 self.Exec()
         else:
             event.Skip()
+
+    def UpdateCompleter(self):
+        text = self.commandText.Value[:self.commandText.GetInsertionPoint()]
+        self.completer.Update(text)
+        x, y = self.commandText.PositionToXY(self.commandText.GetInsertionPoint())
+        self.completer.UpdateCompleterPosition(wx.Point(x * (int(ColorSchema.codeEditor["command_text_font_size"]) - 3),y))
 
     def OnTextChanged(self, event):
         event.Skip()
@@ -217,6 +236,7 @@ class ErlangIDEConsole(ErlangConsole):
     def CreateShell(self, cwd, params):
         self.shell = connect.ErlangProcessWithConnection(cwd)
         self.shell.DataReceivedEvent += self.WriteToConsoleAndLog
+
 
     def WriteToConsoleAndLog(self, text):
         text = "\n".join([re.sub(self.promptRegexp, "", line) for line in text.split("\n")])

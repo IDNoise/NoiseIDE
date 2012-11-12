@@ -1,6 +1,6 @@
 from wx.lib.agw.aui.auibook import TabNavigatorWindow
 from idn_colorschema import ColorSchema
-from idn_erlangstc import ErlangSTC, ErlangSTCReadOnly
+from idn_erlangstc import ErlangSTC, ErlangSTCReadOnly, IgorSTC
 from idn_marker_panel import MarkerPanel
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
@@ -16,6 +16,7 @@ from idn_customstc import CustomSTC, YAMLSTC, PythonSTC, ConsoleSTC, CppSTC, Htm
 EXT_STC_TYPE = {
     ".erl":  ErlangSTC,
     ".hrl":  ErlangSTC,
+    ".igor":  IgorSTC,
     ".yaml": YAMLSTC,
     ".cpp":  CppSTC,
     ".c":    CppSTC,
@@ -167,7 +168,8 @@ class EditorNotebook(aui.AuiNotebook):
             oldEditor = self[event.GetOldSelection()]
             if hasattr(oldEditor, "completer"):
                 oldEditor.completer.HideCompleter()
-        self._AddToHistory(self.GetActiveEditor(), oldEditor)
+#        print "add to history from page changed", self.GetActiveEditor().filePath, oldEditor.filePath if oldEditor else ""
+#        self._AddToHistory(self.GetActiveEditor(), oldEditor)
 
     def OnTabDClick(self, event):
         if core.MainFrame.TabMgrPaneInfo.IsMaximized():
@@ -198,7 +200,12 @@ class EditorNotebook(aui.AuiNotebook):
         menu.AppendMenuItem("Close this tab", self, closeCurrent)
         menu.AppendMenuItem("Close other tabs", self, closeOther)
         menu.AppendMenuItem("Close all tabs", self, self.CloseAll)
+        menu.AppendSeparator()
+        menu.AppendMenuItem("Show in project explorer", self, lambda e: self.ShowInProjectExplorer(editor.filePath))
         self.PopupMenu(menu)
+
+    def ShowInProjectExplorer(self, path):
+        core.Project.explorer.SelectPath(path)
 
 
     def __getitem__(self, index):
@@ -230,11 +237,13 @@ class EditorNotebook(aui.AuiNotebook):
             editorPanel.editor.SetFocus()
             return  editorPanel.editor
 
-    def LoadFileLine(self, file, line = 0, addToHistory = True, fromLine = None):
+    def LoadFileLine(self, file, line = 0, addToHistory = True, fromLine = 0):
         prevEditor = self.GetActiveEditor()
         editor = self.LoadFile(file)
         editor.GotoLine(line)
+
         if addToHistory:
+            #print "add to history from Load From Line", file, line, "from", fromLine
             self._AddToHistory(editor, prevEditor, fromLine)
         self.UpdateNavToolbar()
         editor.EnsureVisibleEnforcePolicy(line)
@@ -246,6 +255,9 @@ class EditorNotebook(aui.AuiNotebook):
         #self._AddToHistory(editor, prevEditor, fromLine)
 
     def _AddToHistory(self, new, prev = None, prevLine = 0):
+        #print "current: ", self.navigationHistory
+        #print "index: ", self.navigationHistoryIndex
+        #self.navigationHistory = self.navigationHistory[:self.navigationHistoryIndex + 1]
         self.navigationHistory = self.navigationHistory[:self.navigationHistoryIndex + 1]
         if prev:
             prevFile = prev.filePath
@@ -255,8 +267,12 @@ class EditorNotebook(aui.AuiNotebook):
                 self.navigationHistory.append((prevFile, prevLine))
         file = new.filePath
         line = new.CurrentLine
-        self.navigationHistory.append((file, line))
-        self.navigationHistoryIndex = len(self.navigationHistory) - 1
+        if not self.navigationHistory or self.navigationHistory[-1] != (file, line):
+            self.navigationHistory.append((file, line))
+            self.navigationHistoryIndex = len(self.navigationHistory) - 1
+        #print "after add", self.navigationHistory
+        #print " after add index: ", self.navigationHistoryIndex
+        #print "=" * 20
 
     def FindPageIndexByPath(self, path):
         for index in range(self.GetPageCount()):
