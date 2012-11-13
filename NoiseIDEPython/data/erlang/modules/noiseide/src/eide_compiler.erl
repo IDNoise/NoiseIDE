@@ -166,6 +166,8 @@ compile_internal(FileName, Options, ToBinary, RealPath) ->
     Errs = 
         [[begin
             case Er of
+                {compile, write_error} ->
+                    [{type, error}, {line, 0}, {msg, iolist_to_binary("Error with writing file.")}];
                 {compile,{module_name, MName, FName}} ->
 %                    io:format("mn~p~n", [{MName, FName, FileName, file:read_file(FileName)}]),
                     [{type, error}, {line, 2}, {msg, iolist_to_binary("Module in file '" ++ FName ++ 

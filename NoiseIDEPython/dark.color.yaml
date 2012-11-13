@@ -57,15 +57,15 @@ code_editor:
       identifier: fore:#DDDDDD
       preproc:    fore:#758bc5
     html:
-      default:    fore:#000000
+      default:    fore:#DDDDDD
       other:      fore:#882288
       comment:    fore:#006600
       number:     fore:#00ff00
-      attribute:  fore:#993300
-      tag:        fore:#882288
-      string:     fore:#2200bb
+      attribute:  fore:#CF6A4C
+      tag:        fore:#758bc5
+      string:     fore:#65B042
     css:
-      operator:   fore:#000000
+      operator:   fore:#DDDDDD
       string:     fore:#2200bb
       class:      fore:#000000
       id:         fore:#000000

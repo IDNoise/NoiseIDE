@@ -593,8 +593,9 @@ class ErlangProject(Project):
         yrlToCompile = set()
         for app in self.GetApps():
             srcPath = os.path.join(os.path.join(self.AppsPath(), app), "src")
+            testPath = os.path.join(os.path.join(self.AppsPath(), app), "test")
             includePath = os.path.join(os.path.join(self.AppsPath(), app), "include")
-            for path in [srcPath, includePath]:
+            for path in [srcPath, includePath, testPath]:
                 #if not os.path.isdir(path): continue
                 for root, _, files in os.walk(path):
                     for file in files:
