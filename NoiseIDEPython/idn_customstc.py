@@ -204,8 +204,6 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
                 wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
             if dial.ShowModal() == wx.ID_YES:
                 self.Save()
-            else:
-                self.OnFileSaved()
 
     def SetupEditorMenu(self):
         for item in self.editorMenu.GetMenuItems():

@@ -80,8 +80,8 @@ compile_yecc(FileName) ->
     end.
  
 app_name(ModuleName) ->
-    Elements = filename:split(ModuleName),
-    lists:last(lists:takewhile(fun(E) -> E =/= "src" andalso E =/= "test" end, Elements)).
+    AppsDirLen = length(eide_connect:prop(project_dir) ++ "/"),
+    hd(filename:split(lists:nthtail(AppsDirLen, ModuleName))).
     
 send_yecc_errors(Type, Errors) ->
     [send_yecc_response(File, Type, ErrorsInfo) || {File, ErrorsInfo} <- Errors].
