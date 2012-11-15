@@ -81,7 +81,7 @@ compile_yecc(FileName) ->
  
 app_name(ModuleName) ->
     Elements = filename:split(ModuleName),
-    lists:last(lists:takewhile(fun(E) -> E =/= "src" end, Elements)).
+    lists:last(lists:takewhile(fun(E) -> E =/= "src" andalso E =/= "test" end, Elements)).
     
 send_yecc_errors(Type, Errors) ->
     [send_yecc_response(File, Type, ErrorsInfo) || {File, ErrorsInfo} <- Errors].

@@ -1,0 +1,48 @@
+C:\Programming\Python27\python.exe D:/Projects/NoiseIde/NoiseIDEPython/idn_mainframe.py
+Traceback (most recent call last):
+  File "D:\Projects\NoiseIde\NoiseIDEPython\idn_customstc.py", line 217, in <lambda>
+    self.editorMenu.AppendMenuItem('Find/Replace in project', core.MainFrame, lambda e: self.ShowFindInProject(), "Ctrl-Shift-F")
+  File "C:\Programming\Python27\lib\site-packages\wx-2.9.3-msw\wx\_core.py", line 16713, in __getattr__
+    raise PyDeadObjectError(self.attrStr % self._name)
+wx._core.PyDeadObjectError: The C++ part of the ErlangSTC object has been deleted, attribute access no longer allowed.
+Traceback (most recent call last):
+  File "D:\Projects\NoiseIde\NoiseIDEPython\idn_customstc.py", line 217, in <lambda>
+    self.editorMenu.AppendMenuItem('Find/Replace in project', core.MainFrame, lambda e: self.ShowFindInProject(), "Ctrl-Shift-F")
+  File "C:\Programming\Python27\lib\site-packages\wx-2.9.3-msw\wx\_core.py", line 16713, in __getattr__
+    raise PyDeadObjectError(self.attrStr % self._name)
+wx._core.PyDeadObjectError: The C++ part of the ErlangSTC object has been deleted, attribute access no longer allowed.
+Traceback (most recent call last):
+  File "D:\Projects\NoiseIde\NoiseIDEPython\idn_customstc.py", line 217, in <lambda>
+    self.editorMenu.AppendMenuItem('Find/Replace in project', core.MainFrame, lambda e: self.ShowFindInProject(), "Ctrl-Shift-F")
+  File "C:\Programming\Python27\lib\site-packages\wx-2.9.3-msw\wx\_core.py", line 16713, in __getattr__
+    raise PyDeadObjectError(self.attrStr % self._name)
+wx._core.PyDeadObjectError: The C++ part of the ErlangSTC object has been deleted, attribute access no longer allowed.
+
+
+
+
+***************************************************************************************************************************************
+***************************************************************************************************************************************
+***************************************************************************************************************************************
+***************************************************************************************************************************************
+
+Traceback (most recent call last):
+  File "D:\Projects\NoiseIde\NoiseIDEPython\TextCtrlAutoComplete.py", line 270, in onKeyDown
+    self._setValueFromSelected()
+  File "D:\Projects\NoiseIde\NoiseIDEPython\TextCtrlAutoComplete.py", line 408, in _setValueFromSelected
+    self._selectCallback( values )
+  File "D:\Projects\NoiseIde\NoiseIDEPython\idn_project_dialogs.py", line 50, in OnSelectCallback
+    core.TabMgr.LoadFileLine(values[1])
+  File "D:\Projects\NoiseIde\NoiseIDEPython\idn_notebook.py", line 242, in LoadFileLine
+    editor = self.LoadFile(file)
+  File "D:\Projects\NoiseIde\NoiseIDEPython\idn_notebook.py", line 235, in LoadFile
+    editorPanel = EditorPanel(self, file)
+  File "D:\Projects\NoiseIde\NoiseIDEPython\idn_notebook.py", line 348, in __init__
+    self.findPanel = FindInFilePanel(self, self.editor)
+  File "D:\Projects\NoiseIde\NoiseIDEPython\idn_findreplace.py", line 28, in __init__
+    self.closeButton = CreateBitmapButton(self, 'close.png', self.OnClose)
+  File "D:\Projects\NoiseIde\NoiseIDEPython\idn_utils.py", line 71, in CreateBitmapButton
+    button = wx.BitmapButton(parent, wx.NewId(), bitmap = wx.Bitmap(GetImagePath(image)))
+  File "C:\Programming\Python27\lib\site-packages\wx-2.9.3-msw\wx\_controls.py", line 304, in __init__
+    _controls_.BitmapButton_swiginit(self,_controls_.new_BitmapButton(*args, **kwargs))
+wx._core.PyAssertionError: C++ assertion "id == wxID_ANY || (id >= 0 && id < 32767) || (id >= wxID_AUTO_LOWEST && id <= wxID_AUTO_HIGHEST)" failed at ..\..\src\common\wincmn.cpp(364) in wxWindowBase::CreateBase(): invalid id value
