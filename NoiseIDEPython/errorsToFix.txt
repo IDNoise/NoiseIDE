@@ -46,3 +46,24 @@ Traceback (most recent call last):
   File "C:\Programming\Python27\lib\site-packages\wx-2.9.3-msw\wx\_controls.py", line 304, in __init__
     _controls_.BitmapButton_swiginit(self,_controls_.new_BitmapButton(*args, **kwargs))
 wx._core.PyAssertionError: C++ assertion "id == wxID_ANY || (id >= 0 && id < 32767) || (id >= wxID_AUTO_LOWEST && id <= wxID_AUTO_HIGHEST)" failed at ..\..\src\common\wincmn.cpp(364) in wxWindowBase::CreateBase(): invalid id value
+
+***************************************************************************************************************************************
+***************************************************************************************************************************************
+***************************************************************************************************************************************
+***************************************************************************************************************************************
+
+C:\Programming\Python27\python.exe D:/Projects/NoiseIde/NoiseIDEPython/idn_mainframe.py
+Traceback (most recent call last):
+  File "C:\Programming\Python27\lib\site-packages\wx-2.9.3-msw\wx\_core.py", line 16768, in <lambda>
+    lambda event: event.callable(*event.args, **event.kw) )
+  File "D:\Projects\NoiseIde\NoiseIDEPython\idn_events.py", line 18, in __call__
+    handler(*args, **kwargs)
+  File "D:\Projects\NoiseIde\NoiseIDEPython\idn_projectexplorer.py", line 124, in OnFilesModified
+    self.ProjectFilesModifiedEvent(files)
+  File "D:\Projects\NoiseIde\NoiseIDEPython\idn_events.py", line 18, in __call__
+    handler(*args, **kwargs)
+  File "D:\Projects\NoiseIde\NoiseIDEPython\idn_erlang_project.py", line 531, in OnProjectFilesModified
+    editor.LoadFile(file)
+  File "C:\Programming\Python27\lib\site-packages\wx-2.9.3-msw\wx\_core.py", line 16713, in __getattr__
+    raise PyDeadObjectError(self.attrStr % self._name)
+wx._core.PyDeadObjectError: The C++ part of the ErlangSTC object has been deleted, attribute access no longer allowed.
