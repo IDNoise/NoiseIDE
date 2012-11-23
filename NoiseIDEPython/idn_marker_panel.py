@@ -34,9 +34,6 @@ class MarkerPanel(wx.Panel):
         width = self.Size[0]
         height = self.Size[1]
 
-        if self.Editor.GetUseVerticalScrollBar():
-            height -= self.Editor.GetScrollThumb(wx.VERTICAL)
-
         dc.SetPen(wx.Pen(self.backColor))
         dc.SetBrush(wx.Brush(self.backColor))
         dc.DrawRectangle(0, 0, width, height)
@@ -44,10 +41,7 @@ class MarkerPanel(wx.Panel):
         for type, markers in self.markers.items():
             color = self.markerColor[type]
             for marker in markers:
-
-
-
-                y = float(height) / float(self.Editor.LineCount) * float(marker.line)
+                y = float(height) / float(self.Editor.GetScrollRange(wx.VERTICAL)) * float(marker.line)
                 dc.SetPen(wx.Pen(color))
                 dc.SetBrush(wx.Brush(color))
                 dc.DrawRectangle(0, y, width, self.Height)
