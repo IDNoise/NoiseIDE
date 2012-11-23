@@ -299,7 +299,7 @@ class NoiseIDE(wx.Frame):
         if self.project:
             self.project.Close()
         #self.ClearLog()
-        projectFile = os.path.normcase(projectFile)
+        projectFile = os.path.normpath(projectFile)
         Config.SetProp("last_project", projectFile)
 
         projects = Config.LastProjects()

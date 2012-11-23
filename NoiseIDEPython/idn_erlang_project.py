@@ -260,9 +260,9 @@ class ErlangProject(Project):
     def GetApp(self, path):
         if os.path.isfile(path):
             path = os.path.dirname(path)
-        if not path.lower().startswith(self.AppsPath().lower()):
+        if not path.startswith(self.AppsPath()):
             return None
-        app = path.lower().replace(self.AppsPath().lower() + os.sep, "")
+        app = path.replace(self.AppsPath() + os.sep, "")
         if os.sep in app:
             return app[:app.index(os.sep)]
         return app
@@ -288,6 +288,7 @@ class ErlangProject(Project):
             toRemove = []
             for hrl in hrls:
                 self.GetShell().GenerateFileCache(hrl)
+               # print "hrl", hrl, os.path.basename(hrl), ErlangCache.GetDependentModules(os.path.basename(hrl))
                 dependent = ErlangCache.GetDependentModules(os.path.basename(hrl))
                 for d in dependent:
                     addByType(d)
@@ -340,8 +341,8 @@ class ErlangProject(Project):
     def SetupShellConsole(self):
         self.connected = False
         self.shellConsole = ErlangIDEConsole(self.window.ToolMgr, self.IDE_MODULES_DIR)
-        self.shellConsole.shell.SetProp("cache_dir", os.path.normcase(ErlangCache.CACHE_DIR))
-        self.shellConsole.shell.SetProp("project_dir", os.path.normcase(self.AppsPath()))
+        self.shellConsole.shell.SetProp("cache_dir", ErlangCache.CACHE_DIR)
+        self.shellConsole.shell.SetProp("project_dir", self.AppsPath())
         self.shellConsole.shell.SetProp("project_name", self.ProjectName())
         self.shellConsole.onlyHide = True
         self.ShowIDEConsole()
@@ -379,7 +380,7 @@ class ErlangProject(Project):
             errors = []
             for error in errorsData:
                 if error["line"] == "none":
-                    return
+                    continue
                 errors.append(CompileErrorInfo(path, error["type"], error["line"], error["msg"]))
                 #print "compile result: {} = {}".format(path, errors)
             self.AddErrors(path, errors)
@@ -515,7 +516,7 @@ class ErlangProject(Project):
         Project.Close(self)
 
     def OnProjectFilesModified(self, files):
-        #print "modified", files
+        #print "modified", files, self.window.TabMgr.OpenedFiles()
         toCompile = []
         for file in files:
             editor = self.window.TabMgr.FindPageByPath(file)
@@ -655,8 +656,8 @@ class ErlangProject(Project):
         errorCount = 0
         warningCount = 0
         pathErrors = {}
-        pathErrors[path] = False
         for (path, err) in self.errors.items():
+            pathErrors[path] = False
             for e in err:
                 if e.type == CompileErrorInfo.WARNING:
                     warningCount += 1
@@ -696,6 +697,7 @@ class ErlangProject(Project):
 
     def SetCompilerOptions(self):
         options = self.CompilerOptions().replace("\n", ", ")
-        self.shellConsole.shell.SetProp("compiler_options", options)
+        print options
+        self.shellConsole.shell.SetProp(CONFIG_COMPILER_OPTIONS, options)
         if self.CompilerOptions() != self.CompilerOptions(self.oldProjectData):
             self.CompileProject()

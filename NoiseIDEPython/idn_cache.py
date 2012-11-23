@@ -233,10 +233,10 @@ class ErlangCache:
             if 'nt' == os.name:
                 import win32api
                 try:
-                    data[FILE] = os.path.normcase(win32api.GetLongPathName(data[FILE]))
+                    data[FILE] = os.path.normpath(win32api.GetLongPathName(data[FILE]))
                 except Exception, e:
                     core.Log("error ", e, "on get long path name for ", data[FILE])
-            file = data[FILE]
+            file = data[FILE].replace("\\", "/")
             if (name in cls.modules and
                 not cls.moduleData[name].file.lower().startswith(cls.erlangDir) and
                 file.lower().startswith(cls.erlangDir)):
@@ -335,7 +335,7 @@ class ErlangCache:
         cls.TryLoad(include)
         for module in cls.moduleData:
             data = cls.moduleData[module]
-            if not data.file.startswith(cls.project.AppsPath()): continue
+            if not data.file.startswith(cls.project.AppsPath().replace("\\", "/")): continue
             if include in data.includes:
                 if IsModule(data.file):
                     result.append(data.file)

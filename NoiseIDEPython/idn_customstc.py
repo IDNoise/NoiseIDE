@@ -262,7 +262,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         )
 
     def LoadFile(self, filePath):
-        self.filePath = os.path.normcase(filePath)
+        self.filePath = os.path.normpath(filePath)
         #print filePath
         self.ClearAll()
         StyledTextCtrl.LoadFile(self, self.filePath)

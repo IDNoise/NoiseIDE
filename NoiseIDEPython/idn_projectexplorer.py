@@ -146,7 +146,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
             self.DirDeleted(dir)
 
     def SetRoot(self, root):
-        self.root = os.path.normcase(root)
+        self.root = os.path.normpath(root)
         self.paths = {}
         self.SetupChecker()
         rootNode = self.AddRoot(root)
@@ -200,7 +200,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
 
         files = os.listdir(dir)
         for f in files:
-            path = os.path.normcase(os.path.join(dir, f))
+            path = os.path.normpath(os.path.join(dir, f))
             if os.path.isdir(path):
                 self.AppendDir(node, path)
             else:

@@ -29,10 +29,13 @@ def extension(path):
     return ext
 
 def erlstr(str):
-    return os.path.normcase(str).replace(os.sep, "/")
+    if not str: return ""
+    return str.replace(os.sep, "/")
 
 def pystr(str):
-    return os.path.normcase(str).replace("/", os.sep)
+    if not str: return ""
+    str = os.path.normpath(str)
+    return str.replace("/", os.sep)
 
 class Timer(Thread):
     def __init__(self, interval, function):
