@@ -196,8 +196,8 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
     def AddPath(self, path):
         self._ExecRequest("add_path", '"{}"'.format(erlstr(path)))
 
-    def CompileOption(self, file, app, option):
-        self._ExecRequest("compile_option", '["{0}", "{1}", "{2}"]'.format(erlstr(file), app, option))
+    def CompileOption(self, file, option):
+        self._ExecRequest("compile_option", '["{0}", "{1}"]'.format(erlstr(file), option))
 
     def RemovePath(self, path):
         self._ExecRequest("add_path", '"{}"'.format(erlstr(path)))

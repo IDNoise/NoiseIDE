@@ -598,6 +598,11 @@ class ConsoleSTC(CustomSTC):
 
         self.SetToolTip(None)
 
+    def Clear(self):
+        self.SetReadOnly(False)
+        self.ClearAll()
+        self.SetReadOnly(True)
+
     def Save(self):
         pass
 
@@ -740,8 +745,6 @@ class STCContextToolTip:
     def HideToolTip(self):
         #self.tooltipWin.Hide()
         self.tooltipWin.FadeOut()
-
-
 
 class STCTooltip(wx.Frame):
     def __init__(self, parent):

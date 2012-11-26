@@ -3,11 +3,11 @@
 -include_lib("kernel/include/file.hrl").
 
 -export([
-    compile/1,
-    compile_file_fly/2,
+    compile/1, 
+    compile_file_fly/2, 
     generate_includes/0,
     compile_yecc/1,
-    compile_with_option/3
+    compile_with_option/2
 ]).  
 
 generate_includes() ->
@@ -42,16 +42,19 @@ compile(FileName) ->
     
 %d:/projects/noiseide/noiseidepython/data/erlang/modules/noiseide/src/eide_compiler.erl
 %eide_compiler:compile_with_option("d:/projects/noiseide/noiseidepython/data/erlang/modules/noiseide/src/eide_compiler.erl", "noiseide", 'S').
-compile_with_option(FileName, App, Option) -> 
+compile_with_option(FileName, Option) -> 
+    App = app_name(FileName),
     OutDir = eide_connect:prop(project_dir) ++ "/" ++ App ++ "/ebin",
     Includes = eide_connect:prop(includes),
     compile:file(FileName, [{outdir, OutDir}, Option | Includes]),
     File = OutDir ++ "/" ++ filename:rootname(filename:basename(FileName)) ++ "." ++ atom_to_list(Option),
     {ok, Data} = file:read_file(File),
+    %Data1 = unicode:characters_to_list(Data, utf8),
+    %io:format("After option~p~n~p~n**********~n", [File, unicode:bom_to_encoding(Data)]),
     mochijson2:encode({struct, [{response, compile_option},
                                 {option, Option},
                                 {path, iolist_to_binary(FileName)},
-                                {result, iolist_to_binary(Data)}]}).
+                                {result, Data}]}).
 
 compile_yecc(FileName) ->
     %ModuleName = filename:rootname(FileName) ++ ".erl",
@@ -123,8 +126,7 @@ create_response_fly(FilePath, Errors) ->
                                 {path, iolist_to_binary(FilePath)}]}).
 
 compile_file_fly(RealPath, NewPath) -> 
-    create_response_fly(RealPath, 
-                    compile_internal(NewPath, eide_connect:prop(includes), false, RealPath)).
+    create_response_fly(RealPath, compile_internal(NewPath, eide_connect:prop(includes), false, RealPath)).
 
 parse_term(String) when is_binary(String) ->
     parse_term(binary_to_list(String));
@@ -132,8 +134,6 @@ parse_term(String) when is_list(String) ->
     {ok, Tokens, _} = erl_scan:string(String),
     {ok, Term} = erl_parse:parse_term(Tokens),
     Term.
-
-
 
 compile_internal(FileName, Options) ->
     compile_internal(FileName, Options, true, FileName).
@@ -174,7 +174,9 @@ compile_internal(FileName, Options, ToBinary, RealPath) ->
                         "' has wrong name: '" ++ atom_to_list(MName) ++ "'.")}];
                 {Line, M, Error}  ->
                   Msg = iolist_to_binary(M:format_error(Error)),
-                  [{type, error}, {line, Line}, {msg, Msg}]
+                  [{type, error}, {line, Line}, {msg, Msg}];
+                _ ->
+                    []
             end 
           end || Er <- Err, element(1, Er) =/= none] 
          || {_File, Err} <- E],  
@@ -191,4 +193,4 @@ compile_internal(FileName, Options, ToBinary, RealPath) ->
 %            io:format("Errs~p~n~p~n", [Errs, {FileName, FileInfo#file_info.size, file:read_file(FileName)}])
 %    end,
     %io:format("~p~n",[lists:append(Errs) ++ lists:append(Warns)]),
-    lists:append(Errs) ++ lists:append(Warns).
+    lists:filter(fun(El) -> El =/= [] end, lists:append(Errs) ++ lists:append(Warns)).

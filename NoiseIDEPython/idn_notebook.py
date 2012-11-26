@@ -395,10 +395,10 @@ class EditorPanel(wx.Panel):
         self.editor.SetFocus()
 
 class ConsolePanel(EditorPanel):
-    def __init__(self, parent):
+    def __init__(self, parent, stcType = ConsoleSTC):
         wx.Panel.__init__(self, parent, style = wx.TAB_TRAVERSAL | wx.NO_BORDER)
         self.markPanel = MarkerPanel(self)
-        self.editor = ConsoleSTC(self, self.markPanel)
+        self.editor = stcType(self, self.markPanel)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.findPanel = FindInFilePanel(self, self.editor)
         self.sizer.Add(self.findPanel)#, 1, wx.EXPAND)

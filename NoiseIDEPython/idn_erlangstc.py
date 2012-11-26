@@ -1,3 +1,5 @@
+import re
+
 __author__ = 'Yaroslav'
 
 import os
@@ -6,7 +8,7 @@ from wx import stc
 from idn_cache import ErlangCache
 from idn_colorschema import ColorSchema
 from idn_connect import CompileErrorInfo
-from idn_customstc import CustomSTC
+from idn_customstc import CustomSTC, ConsoleSTC
 from idn_erlang_completer import ErlangCompleter
 from idn_erlang_constats import TYPE_MODULE, TYPE_UNKNOWN, TYPE_HRL
 from idn_erlang_lexer import ErlangLexer, IgorLexer
@@ -552,6 +554,111 @@ class ErlangSTCReadOnly(ErlangSTC):
             return True
         else:
             return False
+
+class ErlangConsoleSTC(ConsoleSTC):
+    erlangConsoleRe = re.compile(
+        r"""
+        (?P<reload>Module:.*?Reload\ssucceeded\.)|
+        (?P<check_cache>Checking\scache\sfor\serlang\slibs.*?$)|
+        (?P<custom_log>%[\+]{3}.*?[\+]{3}$)|
+        (?P<error_report>ERROR\sREPORT)|
+        (?P<crash_report>CRASH\sREPORT)|
+        (?P<module_fun_line>\{(?P<module>[a-zA-Z_]*)\,(?P<fun>[a-zA-Z_]*)\,(?P<arity>\d+)\,)|
+        (?P<file_line>\{file\,"(?P<file>.*?)"\}\,\s*\{line\,(?P<fline>\d+)\})
+        """,
+        re.VERBOSE | re.MULTILINE)
+
+    navigationData = {}
+
+    def Append(self, text):
+        text = text.rstrip()
+        text += "\n"
+        currentPos = self.Length
+        ConsoleSTC.Append(self, text)
+        self.ParseText(currentPos, text)
+        self.markerPanel.Paint()
+
+    def ParseText(self, lastPosition, text):
+        endPos = 0
+        while True:
+            m = self.erlangConsoleRe.search(text, endPos)
+            if not m: break
+            last = m.lastgroup
+            d = m.groupdict()
+            startPos = m.start()
+            endPos = m.end()
+            if last == "module_fun_line":
+                module = d["module"]
+                fun = d["fun"]
+                arity = int(d["arity"])
+                line = self.LineFromPosition(lastPosition + startPos)
+                navTo = ErlangCache.ModuleFunction(module, fun, arity)
+                if navTo:
+                    self.navigationData[line] = (navTo.file, navTo.line)
+                    self.SetIndicatorCurrent(1)
+                    self.IndicatorFillRange(lastPosition + startPos, endPos - startPos)
+
+            elif last == "file_line":
+                file = d["file"]
+                fline = int(d["fline"])
+                if not os.path.isfile(file):
+                    (module, _) = os.path.splitext(file)
+                    if module in ErlangCache.moduleData:
+                        file = ErlangCache.moduleData[module].file
+                    else:
+                        continue
+                startLine = self.LineFromPosition(lastPosition + startPos)
+                endLine = self.LineFromPosition(lastPosition + endPos)
+                for line in range (startLine, endLine + 1):
+                    self.navigationData[line] = (file, fline)
+                    self.SetIndicatorCurrent(1)
+                    self.IndicatorFillRange(lastPosition + startPos, endPos - startPos)
+            elif last == "custom_log":
+                self.StartStyling(lastPosition + startPos, 0x1f)
+                self.SetStyling(endPos - startPos, 2)
+            elif last in ["reload", 'check_cache']:
+                self.StartStyling(lastPosition + startPos, 0x1f)
+                self.SetStyling(endPos - startPos, 1)
+            elif last in ["error_report", "crash_report"]:
+                errorMarkers = self.markerPanel.markers["error"]
+                errorMarkers.append(Marker(self.LineFromPosition(lastPosition + startPos), last.replace("_", " ")))
+                self.markerPanel.SetMarkers("error", errorMarkers)
+
+    def OnInit(self):
+        self.markerPanel.SetMarkerColor("error", ColorSchema.codeEditor["error_marker_color"])
+
+        self.Bind(wx.EVT_MOTION, self.OnMouseMove)
+        self.Bind(wx.EVT_LEFT_DOWN, self.OnMouseClick)
+
+    def Clear(self):
+        ConsoleSTC.Clear(self)
+        self.markerPanel.SetMarkers("error", [])
+        self.navigationData = {}
+        self.ClearIndicator(1)
+
+    def OnMouseMove(self, event):
+        self.SetCursor(wx.StockCursor(wx.CURSOR_IBEAM))
+        pos = self.PositionFromPoint(event.GetPosition())
+        line = self.LineFromPosition(pos)
+        if line in self.navigationData and event.GetModifiers() == wx.MOD_CONTROL:
+            self.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
+        event.Skip()
+
+    def OnMouseClick(self, event):
+        pos = self.PositionFromPoint(event.GetPosition())
+        line = self.LineFromPosition(pos)
+        if line in self.navigationData:
+            (file, line) = self.navigationData[line]
+            if event.GetModifiers() == wx.MOD_CONTROL:
+                core.TabMgr.LoadFileLine(file, line - 1, False)
+                return
+        event.Skip()
+
+    def SetupLanguageStyles(self):
+        formats = ColorSchema.LanguageFormats("erlang")
+        self.StyleSetSpec(1, formats["module"])
+        self.StyleSetSpec(2, formats["string"])
+
 
 class IgorSTC(CustomSTC):
     def SetupLexer(self):

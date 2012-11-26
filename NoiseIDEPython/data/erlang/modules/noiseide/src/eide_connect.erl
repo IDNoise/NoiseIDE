@@ -167,8 +167,8 @@ execute_action(compile, PathBinary) ->
     %io:format("compile_file~p~n", [Path]),  
     eide_compiler:compile(Path);
 execute_action(compile_option, Data) ->
-    [FileName, App, Option] = Data,
-    eide_compiler:compile_with_option(binary_to_list(FileName), binary_to_list(App), binary_to_atom(Option, latin1));
+    [FileName, Option] = Data,
+    eide_compiler:compile_with_option(binary_to_list(FileName), binary_to_atom(Option, latin1));
 execute_action(xref_module, Binary) ->
     Module = 
         try 

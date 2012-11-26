@@ -43,6 +43,7 @@ class Function:
         self.exported = exported
         self.bif = bif
         self.comment = comment
+        self.file = moduleData.file
 
 class Record:
     def __init__(self, moduleData, module, name, fields, types, line):
@@ -52,6 +53,7 @@ class Record:
         self.fields = fields
         self.types = types
         self.line = line
+        self.file = moduleData.file
 
         self.fieldTypes = {}
         for i in range(len(self.fields)):
@@ -67,6 +69,7 @@ class Macros:
         self.name = name
         self.value = value
         self.line = line
+        self.file = moduleData.file
 
 class ExportedType:
     def __init__(self, moduleData, module, name, types, line):
@@ -75,6 +78,8 @@ class ExportedType:
         self.name = name
         self.types = types
         self.line = line
+        if moduleData:
+            self.file = moduleData.file
 
 class ModuleData:
     def __init__(self, module, data):

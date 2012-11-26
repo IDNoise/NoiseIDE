@@ -1,5 +1,6 @@
 from idn_colorschema import ColorSchema
 from idn_erlang_completer import ErlangSimpleCompleter
+from idn_erlangstc import ErlangConsoleSTC
 from idn_events import Event
 import core
 from idn_highlight import ErlangHighlighter
@@ -36,7 +37,7 @@ class ErlangConsole(wx.Panel):
         self.buttonSizer.AddStretchSpacer()
 
         splitter = wx.SplitterWindow(self)
-        self.consolePanel = ConsolePanel(splitter)
+        self.consolePanel = ConsolePanel(splitter, ErlangConsoleSTC)
        # self.consolePanel.SetMinSize((400, 100))
         self.consoleOut = self.consolePanel.editor
 
@@ -129,9 +130,7 @@ class ErlangConsole(wx.Panel):
             self.stopButton.Enabled = False
 
     def Clear(self):
-        self.consoleOut.SetReadOnly(False)
-        self.consoleOut.ClearAll()
-        self.consoleOut.SetReadOnly(True)
+        self.consoleOut.Clear()
 
     def Exec(self):
         cmd = self.commandText.GetValue()

@@ -306,10 +306,7 @@ class ErlangProject(Project):
 
     def CompileOption(self, path, option):
         if not IsModule(path): return
-        app = self.GetApp(path)
-        if app in self.projectData[CONFIG_EXCLUDED_DIRS]:
-            return
-        self.GetShell().CompileOption(path, app, option)
+        self.GetShell().CompileOption(path, option)
 
     def OnCompileOptionResult(self, path, option, data):
         for page in self.window.TabMgr.Pages():
