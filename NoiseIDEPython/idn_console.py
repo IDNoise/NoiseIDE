@@ -44,6 +44,7 @@ class ErlangConsole(wx.Panel):
         bottomPanel = wx.Panel(splitter)
         self.commandText = wx.TextCtrl(bottomPanel, wx.NewId(), size = (500, 25), style = wx.TE_MULTILINE | wx.TE_RICH)
         self.commandText.SetBackgroundColour(ColorSchema.codeEditor["background"])
+        self.commandText.SetDoubleBuffered(True)
         self.commandButton = CreateBitmapButton(bottomPanel, 'exec_command.png', lambda e: self.Exec())
         self.commandButton.SetToolTip( wx.ToolTip("Exec command") )
 
@@ -110,7 +111,7 @@ class ErlangConsole(wx.Panel):
             ErlangHighlightType.BRACKET: formats["bracket"],
             ErlangHighlightType.BIF: formats["bif"]
         }
-
+        self.defaultFormat = formats["default"]
         self.consolePanel.editor.Bind(wx.EVT_KEY_DOWN, self.OnEditorKeyDown)
 
 
@@ -214,12 +215,11 @@ class ErlangConsole(wx.Panel):
         text = self.commandText.Value
         tokens = self.highlighter.GetHighlightingTokens(text)
         for token in tokens:
-            self.commandText.SetStyle(0, len(text), wx.TextAttr())
             self.commandText.SetStyle(token.start, token.start + len(token.value), self._TokenTypeToTextAttr(token.type))
 
 
     def _TokenTypeToTextAttr(self, type):
-        format = self.typeToFormat.get(type, self.typeToFormat[ErlangHighlightType.DEFAULT])
+        format = self.typeToFormat.get(type, self.defaultFormat)
         color = format[5:12]
         attr = wx.TextAttr(colText = color)
         return attr
