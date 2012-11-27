@@ -120,14 +120,19 @@ class ErlangHighlighter:
         return result
 
 class IgorHighlightType:
-    DEFAULT, STRING, NUMBER, KEYWORD, TYPE, VALUE, SPECIAL_SYMBOL = range(1, 8)
+    DEFAULT, STRING, NUMBER, KEYWORD, TYPE, VALUE, \
+    SPECIAL_SYMBOL, COMMENT, ATTRIBUTE, BOOLEAN = range(1, 11)
 
 class IgorHighlighter:
+    keywords = ["import", "module", "record", "interface",
+                "enum", "variant", "exception", "define",
+                "service", "returns", "throws", "s->c",
+                "c->s", "schema", "ethereal", "tag"]
 
-    keywords = ["enum", "record", "variant", "service",
-                "module", "ethereal", "csharp", "erlang",
-                "import", "s->c", "c->s", "define",
-                "schema", "list", "dict", "tag"]
+#    keywords = ["enum", "record", "variant", "service",
+#                "module", "ethereal", "csharp", "erlang",
+#                "import", "s->c", "c->s", "define",
+#                "schema", "list", "dict", "tag"]
 
     RULES = {
         IgorTokenType.STRING: IgorHighlightType.STRING,
@@ -184,7 +189,7 @@ class IgorHighlighter:
                 else:
                     j = i
                     checkToken = tokens[j + 1]
-                    while checkToken.type == IgorTokenType.SPACE and len(tokens) > j:
+                    while checkToken.type == IgorTokenType.SPACE and len(tokens) > j + 2:
                         j += 1
                         checkToken = tokens[j + 1]
                     if checkToken.value in ["=", ";"]:

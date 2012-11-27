@@ -78,6 +78,14 @@ class IgorTokenType:
     BRACKET = "bracket"
     OTHER = "other"
 
+
+#Parse attributes: (?P<attribute>\[\s*(?P<akw1>[a-z]+)?:?(?P<akw2>[a-z]+)?\s*(?P<aawpairs>.*?)\s*\]$)
+#->parse attr key attr value: (?P<akey>[a-z]+)(=((?P<avalued>\d+)|(?P<avaluew>[a-z]+)|(?P<avalues>".*?")))?
+#Comment:(?P<comment>//.*?$|/\*.*?\*/) //dotall
+#Record: (?P<record>(record|variant)\s*(?P<rname>[A-Za-z0-9_\.]*)\s*\{(?P<rcontent>.*?)\}) //dotall
+#->record data: (\[(?P<atag>tag)\]|\s*(?P<ftype>.*?)\s*(?P<fname>[a-z]+)\s*(=\s*(?P<def_value>.*?))?;)
+#Enum (?P<enum>enum\s*(?P<ename>[A-Za-z0-9_\.]*)\s*\{(?P<econtent>.*?)\}) //dotall
+#->enum data: (\s*(?P<evalue>[a-z_]+)\s*;)
 class IgorTokenizer:
     def __init__(self):
         self.tokenRegexp = re.compile(

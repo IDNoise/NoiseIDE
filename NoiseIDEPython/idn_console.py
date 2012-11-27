@@ -3,7 +3,7 @@ from idn_erlang_completer import ErlangSimpleCompleter
 from idn_erlangstc import ErlangConsoleSTC
 from idn_events import Event
 import core
-from idn_highlight import ErlangHighlighter
+from idn_highlight import ErlangHighlighter, ErlangHighlightType
 from idn_notebook import ConsolePanel
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
@@ -43,6 +43,7 @@ class ErlangConsole(wx.Panel):
 
         bottomPanel = wx.Panel(splitter)
         self.commandText = wx.TextCtrl(bottomPanel, wx.NewId(), size = (500, 25), style = wx.TE_MULTILINE | wx.TE_RICH)
+        self.commandText.SetBackgroundColour(ColorSchema.codeEditor["background"])
         self.commandButton = CreateBitmapButton(bottomPanel, 'exec_command.png', lambda e: self.Exec())
         self.commandButton.SetToolTip( wx.ToolTip("Exec command") )
 
@@ -79,7 +80,7 @@ class ErlangConsole(wx.Panel):
         #font_name:  'courier new'
 #font_size:  10
         #int pointSize, int family, int style, int weight, face
-        #self.commandText.Bind(wx.EVT_TEXT, self.OnTextChanged)
+        self.commandText.Bind(wx.EVT_TEXT, self.OnTextChanged)
 
         self.CreateShell(cwd, params)
         self.promptRegexp = re.compile(r"(^|\(.*?\))\d*>")
@@ -88,6 +89,27 @@ class ErlangConsole(wx.Panel):
 
         self.highlighter = ErlangHighlighter()
         self.completer = ErlangSimpleCompleter(self.commandText)
+
+        formats = ColorSchema.LanguageFormats("erlang")
+        self.typeToFormat = {
+            ErlangHighlightType.DEFAULT: formats["default"],
+            ErlangHighlightType.STRING: formats["string"],
+            ErlangHighlightType.COMMENT: formats["comment"],
+            ErlangHighlightType.ARROW: formats["arrow"],
+            ErlangHighlightType.VAR: formats["variable"],
+            ErlangHighlightType.MACROS: formats["macros"],
+            ErlangHighlightType.ATOM: formats["atom"],
+            ErlangHighlightType.MODULE: formats["module"],
+            ErlangHighlightType.FUNCTION: formats["function"],
+            ErlangHighlightType.KEYWORD: formats["keyword"],
+            ErlangHighlightType.MODULEATTR: formats["moduleattr"],
+            ErlangHighlightType.RECORD: formats["record"],
+            ErlangHighlightType.RECORDDEF: formats["record"],
+            ErlangHighlightType.NUMBER: formats["number"],
+            ErlangHighlightType.FUNDEC: formats["fundec"],
+            ErlangHighlightType.BRACKET: formats["bracket"],
+            ErlangHighlightType.BIF: formats["bif"]
+        }
 
         self.consolePanel.editor.Bind(wx.EVT_KEY_DOWN, self.OnEditorKeyDown)
 
@@ -179,6 +201,7 @@ class ErlangConsole(wx.Panel):
                 self.Exec()
         else:
             event.Skip()
+        #self.OnTextChanged()
 
     def UpdateCompleter(self):
         text = self.commandText.Value[:self.commandText.GetInsertionPoint()]
@@ -186,13 +209,20 @@ class ErlangConsole(wx.Panel):
         x, y = self.commandText.PositionToXY(self.commandText.GetInsertionPoint())
         self.completer.UpdateCompleterPosition(wx.Point(x * (int(ColorSchema.codeEditor["command_text_font_size"]) - 3),y))
 
-    def OnTextChanged(self, event):
+    def OnTextChanged(self, event = None):
         event.Skip()
         text = self.commandText.Value
         tokens = self.highlighter.GetHighlightingTokens(text)
         for token in tokens:
-            self.commandText.SetStyle(0, len(text), None)
-            self.commandText.SetStyle(token.start, len(token.value), token.type)
+            self.commandText.SetStyle(0, len(text), wx.TextAttr())
+            self.commandText.SetStyle(token.start, token.start + len(token.value), self._TokenTypeToTextAttr(token.type))
+
+
+    def _TokenTypeToTextAttr(self, type):
+        format = self.typeToFormat.get(type, self.typeToFormat[ErlangHighlightType.DEFAULT])
+        color = format[5:12]
+        attr = wx.TextAttr(colText = color)
+        return attr
 
     def CreateShell(self, cwd, params):
         self.shell = connect.ErlangProcess(cwd, params)

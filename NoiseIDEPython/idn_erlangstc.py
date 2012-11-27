@@ -560,7 +560,7 @@ class ErlangConsoleSTC(ConsoleSTC):
         r"""
         (?P<reload>Module:.*?Reload\ssucceeded\.)|
         (?P<check_cache>Checking\scache\sfor\serlang\slibs.*?$)|
-        (?P<custom_log>%[\+]{3}.*?[\+]{3}$)|
+        (?P<custom_log>%Log:.*?$)|
         (?P<error_report>ERROR\sREPORT)|
         (?P<crash_report>CRASH\sREPORT)|
         (?P<module_fun_line>\{(?P<module>[a-zA-Z_]*)\,(?P<fun>[a-zA-Z_]*)\,(?P<arity>\d+)\,)|
