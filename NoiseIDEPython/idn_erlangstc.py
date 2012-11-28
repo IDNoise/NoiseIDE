@@ -564,7 +564,7 @@ class ErlangConsoleSTC(ConsoleSTC):
         (?P<error_report>ERROR\sREPORT)|
         (?P<crash_report>CRASH\sREPORT)|
         (?P<module_fun_line>\{(?P<module>[a-zA-Z_]*)\,(?P<fun>[a-zA-Z_]*)\,(?P<arity>\d+)\,)|
-        (?P<file_line>\{file\,"(?P<file>.*?)"\}\,\s*\{line\,(?P<fline>\d+)\})
+        (?P<file_line>\{file\,\s*"(?P<file>.*?)"\}\,\s*?\{line\,(?P<fline>\d+)\})
         """,
         re.VERBOSE | re.MULTILINE)
 
@@ -607,6 +607,7 @@ class ErlangConsoleSTC(ConsoleSTC):
                         file = ErlangCache.moduleData[module].file
                     else:
                         continue
+                file = os.path.normpath(file)
                 startLine = self.LineFromPosition(lastPosition + startPos)
                 endLine = self.LineFromPosition(lastPosition + endPos)
                 for line in range (startLine, endLine + 1):
