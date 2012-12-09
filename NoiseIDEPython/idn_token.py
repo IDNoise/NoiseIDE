@@ -118,98 +118,169 @@ class IgorTokenizer:
             pos = m.end()
         return tokens
 
-import pyparsing as pp
 
-L = pp.Literal
-S = pp.Suppress
+#from pyPEG2 import *
+#class Name:
+#    grammar = word
+#
+#class Identifier(Name):
+#    pass
+#
+#class RecordTag:
+#    grammar = "[", word, "]"
+#
+##inner_comma5 = pp.Suppress(pp.FollowedBy("{") | (L(",") + pp.NotAny(WS + L("{"))))
+#class Comma5:
+#    grammar = RegEx("\{|(\,\s*(?!\{))")
+#
+#class RecordImpls:
+#    grammar = ":", some(Identifier, Comma5)
+#
+#class Record:
+#    grammar = "record", optional(Identifier, "."), Name, optional(RecordTag), optional(RecordImpls)
+#
+#test_record = """record Record.Int[ololo]
+#{
+#   lalala lalalal;
+#}"""
+#print parse(test_record, Record)
 
-any = pp.Regex(r".")
-alpha = pp.Word(pp.alphas + "_")
-digit = pp.Word(pp.nums)
-NL = L("\r\n") | L("\n") | L("\r")
-comment = pp.Suppress(pp.Group('//' + pp.ZeroOrMore(pp.NotAny(NL) + any) + NL) |
-                      pp.Group('/*' + pp.ZeroOrMore(pp.NotAny("*/") + any) + '*/'))
 
-white_space = L(' ') | L('\t') | NL | comment
-WS = pp.ZeroOrMore(white_space) + pp.NotAny(white_space)
-WS.suppress()
 
-name = alpha + pp.ZeroOrMore(alpha + digit)
-identifier = name.copy()
-quoted_string = pp.QuotedString('"')
+#record_field = attributes + type + identifier + WS + pp.Optional(S("=") + WS + value + WS) + S(";")
+#record_fields = S("{") + WS + pp.ZeroOrMore(record_field + WS) + S("}")
+#record_tag = S("[") + WS + value + WS + S("]") + WS
+#record_impls = S(":") + pp.OneOrMore(WS + identifier + WS + inner_comma5) + WS
+#record_form = attributes + "record" + pp.Optional(identifier + ".") + name + WS + pp.Optional(record_tag) + pp.Optional(record_impls) + record_fields
 
-type = pp.Forward()
-primitive_type = (L("bool") | L("sbyte") | L("byte") | L("short") | L("ushort") | L("int") | L("uint") | L("long") |
-                 L("ulong") | L("float") | L("double") | L("string") | L("binary") | L("atom"))
-list_type = L("list") + WS + S('[') + WS + type + WS + S(']')
-dict_type = L("dict") + WS + S('[') + WS + type + WS + S(',') + WS + type + WS + S(']')
-custom_type = identifier.copy()
-optional_type = L('?') + WS + type
-type << pp.Group(primitive_type | list_type | dict_type | custom_type | optional_type)
 
-format = L(":") + WS + (L("igor") | L("json"))
-side = L("-") + WS + (L("client") | L("server"))
 
-attribute_language = pp.Optional(WS + name + pp.NotAny(alpha + digit) + WS)
-attribute_side = pp.Optional(side + pp.NotAny(alpha + digit) + WS)
-attribute_format = pp.Optional(format + pp.NotAny(alpha + digit) + WS)
-value = pp.Forward()
-attribute_value = pp.Optional(L("=") + WS + value + WS)
-attribute_list = pp.OneOrMore(WS + identifier + WS + attribute_value)
 
-attr = pp.Group(S("[") + attribute_language + attribute_side + attribute_format + attribute_list + S("]"))
-attr2 = pp.Group(S("[") + attribute_side + attribute_format + attribute_list + S("]"))
 
-attributes = pp.ZeroOrMore(pp.Or([attr, attr2]) + WS)
 
-int_value = pp.Forward()
-enum_field = attributes + identifier + WS + pp.ZeroOrMore(L("=") + WS + int_value + WS) + S(";")
-enum_form = attributes + "enum" + identifier + WS + S("{") + WS + pp.Group(pp.ZeroOrMore(enum_field + WS)) + S("}")
-enum_form.setResultsName("enum")
-inner_comma = pp.Suppress(pp.FollowedBy("]") | (L(",") + pp.NotAny(WS + L("]"))))
-inner_comma2 = pp.Suppress(pp.FollowedBy("}") | (L(",") + pp.NotAny(WS + L("}"))))
-inner_comma3 = pp.Suppress(pp.FollowedBy(")") | (L(",") + pp.NotAny(WS + L(")"))))
-inner_comma4 = pp.Suppress(pp.FollowedBy(";") | (L(",") + pp.NotAny(WS + L(";"))))
-inner_comma5 = pp.Suppress(pp.FollowedBy("{") | (L(",") + pp.NotAny(WS + L("{"))))
 
-bool_value = L("true") | L("false")
-int_value = pp.Optional(L('-')) + pp.OneOrMore(digit) + pp.NotAny(L("."))
-float_value = pp.Optional(L('-')) + pp.OneOrMore(digit) + L('.') + pp.OneOrMore(digit)
-string_value = quoted_string
-identifier_value = identifier
-list_value = S('[') + pp.ZeroOrMore(WS + value + WS + inner_comma ) + WS + S(']')
-dict_value = S('[') + pp.ZeroOrMore(WS + value + WS + S('=') + WS + value + WS + inner_comma) + WS + S(']')
-record_value = S('{') + pp.ZeroOrMore(WS + identifier + WS + S('=') + WS + value + WS + inner_comma2) + WS + S('}')
-value << (bool_value | int_value | float_value | string_value | identifier_value | list_value | dict_value | record_value)
 
-record_field = attributes + type + identifier + WS + pp.Optional(S("=") + WS + value + WS) + S(";")
-record_fields = S("{") + WS + pp.ZeroOrMore(record_field + WS) + S("}")
-record_tag = S("[") + WS + value + WS + S("]") + WS
-record_impls = S(":") + pp.OneOrMore(WS + identifier + WS + inner_comma5) + WS
-record_form = attributes + "record" + pp.Optional(identifier + ".") + name + WS + pp.Optional(record_tag) + pp.Optional(record_impls) + record_fields
-
-exception_form = attributes +"exception" + name + WS + record_fields
-variant_form = attributes + "variant" + name + WS + pp.Optional(record_impls) + record_fields
-interface_form = attributes + "interface" + name + WS + record_fields
-
-define_form = attributes + "define" + identifier + WS + type + WS + ';'
-
-direction = pp.Combine(L('c') + WS + L("->") + WS + L('s')) | pp.Combine(L('s') + WS + L("->") + WS + L('c'))
-arguments = S("(") + pp.ZeroOrMore(WS + pp.Group(type + identifier) + WS + inner_comma3) + WS + S(")")
-
-service_function = pp.Group(attributes + direction + identifier + WS + arguments + WS + pp.Optional(L("returns") + WS + arguments + WS) + \
-                   pp.Optional("throws" + pp.OneOrMore(identifier + WS + inner_comma4 + WS)) + S(';'))
-service_form = attributes + "service" + identifier + WS + S('{') + WS + pp.ZeroOrMore(service_function + WS) + S('}')
-
-form = enum_form | record_form | exception_form | variant_form | interface_form | define_form | service_form
-
-mod = attributes + "module" + name + WS + S('{') + WS + pp.Dict(pp.ZeroOrMore(form + WS)) + S('}')
-
-imp = attributes + "import" + quoted_string + WS + ';'
-
-file = WS + pp.ZeroOrMore(imp + WS) + pp.ZeroOrMore(mod + WS)# + pp.NotAny(any)
-
-simple_mod = "module" + name + WS + S('{') + WS + S('}')
+#
+#import pyparsing as pp
+#
+#L = pp.Literal
+#S = pp.Suppress
+#
+#any = pp.Regex(r".")
+#alpha = pp.Word(pp.alphas + "_")
+#digit = pp.Word(pp.nums)
+#NL = L("\r\n") | L("\n") | L("\r")
+#comment = pp.Suppress(pp.Group('//' + pp.ZeroOrMore(pp.NotAny(NL) + any) + NL) |
+#                      pp.Group('/*' + pp.ZeroOrMore(pp.NotAny("*/") + any) + '*/'))
+#
+#white_space = L(' ') | L('\t') | NL | comment
+#WS = pp.ZeroOrMore(white_space) + pp.NotAny(white_space)
+#WS.suppress()
+#
+#name = alpha + pp.ZeroOrMore(alpha + digit)
+#identifier = name.copy()
+#quoted_string = pp.QuotedString('"')
+#
+#type = pp.Forward()
+#primitive_type = (L("bool") | L("sbyte") | L("byte") | L("short") | L("ushort") | L("int") | L("uint") | L("long") |
+#                 L("ulong") | L("float") | L("double") | L("string") | L("binary") | L("atom"))
+#list_type = L("list") + WS + S('[') + WS + type + WS + S(']')
+#dict_type = L("dict") + WS + S('[') + WS + type + WS + S(',') + WS + type + WS + S(']')
+#custom_type = identifier.copy()
+#optional_type = L('?') + WS + type
+#type << (primitive_type | list_type | dict_type | custom_type | optional_type)
+#
+#format = L(":") + WS + (L("igor") | L("json"))
+#side = L("-") + WS + (L("client") | L("server"))
+#
+#attribute_language = pp.Optional(WS + name + pp.NotAny(alpha + digit) + WS)
+#attribute_side = pp.Optional(side + pp.NotAny(alpha + digit) + WS)
+#attribute_format = pp.Optional(format + pp.NotAny(alpha + digit) + WS)
+#value = pp.Forward()
+#attribute_value = pp.Optional(L("=") + WS + value + WS)
+#attribute_key_value = WS + identifier + WS + attribute_value
+#attribute_list = pp.OneOrMore(attribute_key_value)
+#
+#attr = S("[") + attribute_language + attribute_side + attribute_format + attribute_list + S("]")
+#attr2 = S("[") + attribute_side + attribute_format + attribute_list + S("]")
+#
+#attributes = pp.ZeroOrMore(pp.Or([attr, attr2]) + WS)
+#
+#class Attribute:
+#    def __init__(self, key, value = None):
+#        self.key = key
+#        self.value = value
+#
+#def HandleAttributeKeyValue(loc, tokens):
+#    print loc, tokens
+#    key = tokens[0]
+#    value = tokens[1] if len(tokens) > 0 else None
+#    return Attribute(key, value)
+#
+#class Attr():
+#    def __init__(self, tokens):
+#        self.attributes = tokens[0]
+#        self.format = tokens[1] if len(tokens) > 1 else None
+#        self.side = tokens[2] if len(tokens) > 2 else None
+#        self.language = tokens[3] if len(tokens) > 3 else None
+#
+#def ParseAttributes(loc, tokens):
+#    print loc, tokens
+#    #print tokens
+#    print list(reversed(tokens[0]))
+#    return Attr(list(reversed(tokens[0])))
+#attr.setParseAction(ParseAttributes)
+#attribute_key_value.setParseAction(HandleAttributeKeyValue)
+##attribute_language.setParseAction(ParseAttributes)
+#
+#int_value = pp.Forward()
+#enum_field = attributes + identifier + WS + pp.ZeroOrMore(L("=") + WS + int_value + WS) + S(";")
+#enum_form = attributes + "enum" + identifier + WS + S("{") + WS + pp.Group(pp.ZeroOrMore(enum_field + WS)) + S("}")
+#enum_form.setResultsName("enum")
+#inner_comma = pp.Suppress(pp.FollowedBy("]") | (L(",") + pp.NotAny(WS + L("]"))))
+#inner_comma2 = pp.Suppress(pp.FollowedBy("}") | (L(",") + pp.NotAny(WS + L("}"))))
+#inner_comma3 = pp.Suppress(pp.FollowedBy(")") | (L(",") + pp.NotAny(WS + L(")"))))
+#inner_comma4 = pp.Suppress(pp.FollowedBy(";") | (L(",") + pp.NotAny(WS + L(";"))))
+#inner_comma5 = pp.Suppress(pp.FollowedBy("{") | (L(",") + pp.NotAny(WS + L("{"))))
+#
+#bool_value = L("true") | L("false")
+#int_value = pp.Optional(L('-')) + pp.OneOrMore(digit) + pp.NotAny(L("."))
+#float_value = pp.Optional(L('-')) + pp.OneOrMore(digit) + L('.') + pp.OneOrMore(digit)
+#string_value = quoted_string
+#identifier_value = identifier
+#list_value = S('[') + pp.ZeroOrMore(WS + value + WS + inner_comma ) + WS + S(']')
+#dict_value = S('[') + pp.ZeroOrMore(WS + value + WS + S('=') + WS + value + WS + inner_comma) + WS + S(']')
+#record_value = S('{') + pp.ZeroOrMore(WS + identifier + WS + S('=') + WS + value + WS + inner_comma2) + WS + S('}')
+#value << (bool_value | int_value | float_value | string_value | identifier_value | list_value | dict_value | record_value)
+#
+#record_field = attributes + type + identifier + WS + pp.Optional(S("=") + WS + value + WS) + S(";")
+#record_fields = S("{") + WS + pp.ZeroOrMore(record_field + WS) + S("}")
+#record_tag = S("[") + WS + value + WS + S("]") + WS
+#record_impls = S(":") + pp.OneOrMore(WS + identifier + WS + inner_comma5) + WS
+#record_form = attributes + "record" + pp.Optional(identifier + ".") + name + WS + pp.Optional(record_tag) + pp.Optional(record_impls) + record_fields
+#
+#exception_form = attributes +"exception" + name + WS + record_fields
+#variant_form = attributes + "variant" + name + WS + pp.Optional(record_impls) + record_fields
+#interface_form = attributes + "interface" + name + WS + record_fields
+#
+#define_form = attributes + "define" + identifier + WS + type + WS + ';'
+#
+#direction = pp.Combine(L('c') + WS + L("->") + WS + L('s')) | pp.Combine(L('s') + WS + L("->") + WS + L('c'))
+#arguments = S("(") + pp.ZeroOrMore(WS + pp.Group(type + identifier) + WS + inner_comma3) + WS + S(")")
+#
+#service_function = pp.Group(attributes + direction + identifier + WS + arguments + WS + pp.Optional(L("returns") + WS + arguments + WS) + \
+#                   pp.Optional("throws" + pp.OneOrMore(identifier + WS + inner_comma4 + WS)) + S(';'))
+#service_form = attributes + "service" + identifier + WS + S('{') + WS + pp.ZeroOrMore(service_function + WS) + S('}')
+#
+#form = enum_form | record_form | exception_form | variant_form | interface_form | define_form | service_form
+#
+#mod = attributes + "module" + name + WS + S('{') + WS + pp.ZeroOrMore(form + WS) + S('}')
+#
+#imp = attributes + "import" + quoted_string + WS + ';'
+#
+#file = WS + pp.ZeroOrMore(imp + WS) + pp.ZeroOrMore(mod + WS)# + pp.NotAny(any)
+#
+#simple_mod = "module" + name + WS + S('{') + WS + S('}')
 
 temp_data = """[csharp namespace="Network"]
 module ProtocolLobby
@@ -284,26 +355,30 @@ module ProtocolLobby
     }
 }"""
 
-try:
-    print file.parseString(temp_data).asDict()#.items()
-    #print simple_mod.parseString(temp_data1)
-    #attributes.parseString("""[csharp namespace="Network"]""")
-    #print record_form.parseString(temp_data3)
-    #print record_field.parseString("LobbyPhase phase;")
-    #print service_function.parseString("c->s SelectCommando(CdbKey commando_key, xxx xxxxxx);")
-#    print enum_form.parseString("""
-#enum LobbyPhase
-#{
-#    start_wait;
-#    ban_gijoe;
-#    ban_cobra;
-#    select;
-#    end_wait;
-#}""")
-except pp.ParseException, err:
-    print err.line
-    print " " * (err.column-1) + "^"
-    print err
+#try:
+#    print file.parseString(temp_data)#.items()
+#    #print simple_mod.parseString(temp_data1)
+#    #attributes.parseString("""[csharp namespace="Network"]""")
+#    #print record_form.parseString(temp_data3)
+#    #print record_field.parseString("LobbyPhase phase;")
+#    #print service_function.parseString("c->s SelectCommando(CdbKey commando_key, xxx xxxxxx);")
+##    print enum_form.parseString("""
+##enum LobbyPhase
+##{
+##    start_wait;
+##    ban_gijoe;
+##    ban_cobra;
+##    select;
+##    end_wait;
+##}""")
+#except pp.ParseException, err:
+#    print err.line
+#    print " " * (err.column-1) + "^"
+#    print err
+
+
+
+
 #grammar {
 #    any = ['\u0000'..'\uFFFF'];
 #alpha = ['a'..'z','A'..'Z'] / '_';

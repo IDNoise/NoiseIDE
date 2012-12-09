@@ -42,7 +42,7 @@ class ErlangConsole(wx.Panel):
         self.consoleOut = self.consolePanel.editor
 
         bottomPanel = wx.Panel(splitter)
-        self.commandText = wx.TextCtrl(bottomPanel, wx.NewId(), size = (500, 25), style = wx.TE_MULTILINE | wx.TE_RICH)
+        self.commandText = wx.TextCtrl(bottomPanel, wx.ID_ANY, size = (500, 25), style = wx.TE_MULTILINE | wx.TE_RICH)
         self.commandText.SetBackgroundColour(ColorSchema.codeEditor["background"])
         self.commandText.SetDoubleBuffered(True)
         self.commandButton = CreateBitmapButton(bottomPanel, 'exec_command.png', lambda e: self.Exec())

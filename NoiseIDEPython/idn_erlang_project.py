@@ -70,7 +70,7 @@ class ErlangProject(Project):
         self.dialyzerMenu.AppendSeparator()
         self.dialyzerMenu.AppendMenuItem("Project", self.window, lambda e: self.DialyzeProject())
         self.dialyzerMenu.AppendMenuItem("Current module", self.window, self.OnDialyzerRunModule)
-        self.window.projectMenu.AppendMenu(wx.NewId(), "Dialyzer", self.dialyzerMenu)
+        self.window.projectMenu.AppendMenu(wx.ID_ANY, "Dialyzer", self.dialyzerMenu)
 
         self.window.erlangMenu.AppendMenuItem("Regenerate erlang cache", self.window, lambda e: self.RegenerateErlangCache())
         self.window.erlangMenu.AppendSeparator()
@@ -83,11 +83,11 @@ class ErlangProject(Project):
 
         self.consoleMenu = Menu()
 
-        self.window.viewMenu.AppendMenu(wx.NewId(), "Consoles", self.consoleMenu)
+        self.window.viewMenu.AppendMenu(wx.ID_ANY, "Consoles", self.consoleMenu)
 
         self.window.toolbar.AddSeparator()
-        self.rebuildT = self.window.toolbar.AddLabelTool(wx.NewId(), 'Rebuild project', GetImage('build.png'), shortHelp = 'Rebuild project')
-        self.xrefCheckT = self.window.toolbar.AddLabelTool(wx.NewId(), 'XRef check', GetImage('xrefCheck.png'), shortHelp = 'XRef check')
+        self.rebuildT = self.window.toolbar.AddLabelTool(wx.ID_ANY, 'Rebuild project', GetImage('build.png'), shortHelp = 'Rebuild project')
+        self.xrefCheckT = self.window.toolbar.AddLabelTool(wx.ID_ANY, 'XRef check', GetImage('xrefCheck.png'), shortHelp = 'XRef check')
 
         self.window.Bind(wx.EVT_TOOL, lambda e: self.CompileProject(), self.rebuildT)
         self.window.Bind(wx.EVT_TOOL, lambda e: self.StartXRef(), self.xrefCheckT)
@@ -268,6 +268,7 @@ class ErlangProject(Project):
         return app
 
     def Compile(self, path):
+        #print path
         hrls = set()
         erls = set()
         #yrls = set()
@@ -283,13 +284,14 @@ class ErlangProject(Project):
                 addByType(p)
         else:
             addByType(path)
-
+        #print hrls
         while len(hrls) > 0:
             toRemove = []
             for hrl in hrls:
                 self.GetShell().GenerateFileCache(hrl)
                # print "hrl", hrl, os.path.basename(hrl), ErlangCache.GetDependentModules(os.path.basename(hrl))
                 dependent = ErlangCache.GetDependentModules(os.path.basename(hrl))
+                #print dependent
                 for d in dependent:
                     addByType(d)
                 toRemove.append(hrl)
@@ -298,6 +300,7 @@ class ErlangProject(Project):
 
         #print "to compile: ", erls
         #self.GetShell().CompileYrls(yrls)
+        print erls
         for erl in erls:
             app = self.GetApp(erl)
             if app in self.projectData[CONFIG_EXCLUDED_DIRS]:

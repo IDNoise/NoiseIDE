@@ -71,9 +71,9 @@ def GetImage(image):
 
 def CreateBitmapButton(parent, image, handler, drawBorder = True):
     if drawBorder:
-        button = wx.BitmapButton(parent, wx.NewId(), bitmap = wx.Bitmap(GetImagePath(image)))
+        button = wx.BitmapButton(parent, wx.ID_ANY, bitmap = wx.Bitmap(GetImagePath(image)))
     else:
-        button = wx.BitmapButton(parent, wx.NewId(), bitmap = wx.Bitmap(GetImagePath(image)), style = wx.BORDER_NONE)
+        button = wx.BitmapButton(parent, wx.ID_ANY, bitmap = wx.Bitmap(GetImagePath(image)), style = wx.BORDER_NONE)
 
     button.Bind(wx.EVT_BUTTON, handler)
     return button
@@ -86,13 +86,13 @@ class Menu(wx.Menu):
         title = text
         if shortcut:
             title += "\t" + shortcut
-        item = self.Append(wx.NewId(), title, text)
+        item = self.Append(wx.ID_ANY, title, text)
         handlerObject.Connect(item.GetId(), -1, wx.wxEVT_COMMAND_MENU_SELECTED, handler)
 
         return item
 
     def AppendCheckMenuItem(self, text, handlerObject, handler, check = False):
-        item = self.Append(wx.NewId(), text, text, wx.ITEM_CHECK)
-        self.Check(item.Id, check)
+        item = self.Append(wx.ID_ANY, text, text, wx.ITEM_CHECK)
+        item.Check(check)
         handlerObject.Bind(wx.EVT_MENU, handler, item)
         return item

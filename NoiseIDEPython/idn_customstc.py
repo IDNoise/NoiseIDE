@@ -163,7 +163,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.Bind(stc.EVT_STC_CHARADDED, self.OnCharAdded)
         self.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
 
-        self.highlightTimer = wx.Timer(self, wx.NewId())
+        self.highlightTimer = wx.Timer(self, wx.ID_ANY)
         self.Bind(wx.EVT_TIMER, self.OnHighlightTimer, self.highlightTimer)
         self.highlightTimer.Start(400)
 

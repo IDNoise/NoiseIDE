@@ -116,13 +116,19 @@ class ModuleData:
             expData = data[EXPORTED_TYPES][expDype]
             self.exportedTypes.append(ExportedType(self, module, expDype, expData[TYPES], expData[LINE]))
 
+    def AllIncludes(self):
+        includes = list(self.includes)[:]
+        for include in self.includes:
+            if include in ErlangCache.moduleData and self.module != include:
+                includes += ErlangCache.moduleData[include].AllIncludes()
+        return set(includes)
 
     def AllRecords(self):
         records = self.records[:]
         for include in self.includes:
             if include in ErlangCache.moduleData and self.module != include:
                 records += ErlangCache.moduleData[include].AllRecords()
-        return records
+        return set(records)
 
     def AllMacroses(self):
         macroses = self.macroses[:]
@@ -130,7 +136,7 @@ class ModuleData:
         for include in self.includes:
             if include in ErlangCache.moduleData and self.module != include:
                 macroses += ErlangCache.moduleData[include].AllMacroses()
-        return macroses
+        return set(macroses)
 
     def Functions(self, exported = True):
         funs = [fun for fun in self.functions if (exported and fun.exported == exported) or not exported]
@@ -189,18 +195,19 @@ class ErlangCache:
         cls.includes = set()
         cls.moduleData = {}
 
-        cls.loadTimer = wx.Timer(core.MainFrame, wx.NewId())
+        cls.loadTimer = wx.Timer(core.MainFrame, wx.ID_ANY)
         cls.loadTimer.Start(100)
         core.MainFrame.Bind(wx.EVT_TIMER, cls.OnProgressTimer, cls.loadTimer)
 
     @classmethod
     def OnProgressTimer(cls, event):
-        for i in range(40):
-            try:
-                file = cls.toLoad.pop()
-                cls.LoadFile_(file)
-            except IndexError, e:
-                pass
+        if len(cls.toLoad) > 0:
+            for i in range(40):
+                try:
+                    file = cls.toLoad.pop()
+                    cls.LoadFile_(file)
+                except IndexError, e:
+                    pass
 
     @classmethod
     def AddToLoad(cls, file):
@@ -253,7 +260,7 @@ class ErlangCache:
 #                core.Log("Ignoring replace of cache for standard erlang " +
 #                    "module: {}\n\tPath:{}".format(name, file))
 #                return
-
+            #print "load",  name
             if name.endswith(".hrl"):
                 cls.includes.add(name)
             else:
@@ -270,7 +277,7 @@ class ErlangCache:
     def TryLoad(cls, module):
         if module in cls.moduleData:
             return True
-        for dir in [os.path.join("runtimes", cls.project.GetErlangRuntime()), cls.project.ProjectName()]:
+        for dir in [cls.project.ProjectName(), os.path.join("runtimes", cls.project.GetErlangRuntime())]:
             file = os.path.join(cls.CACHE_DIR, dir, module + ".cache")
             #print file
             if os.path.isfile(file):
@@ -338,14 +345,12 @@ class ErlangCache:
     def GetDependentModules(cls, include):
         result = []
         cls.TryLoad(include)
-        for module in cls.moduleData:
+        for module in cls.modules:
             data = cls.moduleData[module]
-            if not data.file.startswith(cls.project.AppsPath().replace("\\", "/")): continue
-            if include in data.includes:
-                if IsModule(data.file):
-                    result.append(data.file)
-                if IsInclude(data.file):
-                    result += cls.GetDependentModules(data.module)
+            if not data.file.startswith(cls.project.AppsPath()): continue
+            #print data.file
+            if include in data.AllIncludes():
+                result.append(data.file)
         return result
 
     @classmethod

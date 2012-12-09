@@ -92,12 +92,12 @@ class NoiseIDE(wx.Frame):
         projectsMenu = Menu()
         projectsMenu.AppendMenuItem('Erlang', self, self.OnNewErlangProject)
 
-        self.fileMenu.AppendMenu(wx.NewId(), "New project", projectsMenu)
+        self.fileMenu.AppendMenu(wx.ID_ANY, "New project", projectsMenu)
         self.fileMenu.AppendMenuItem('Open Project', self, self.OnOpenProject)
 
         if Config.LastProjects():
             lastProjects = Menu()
-            self.fileMenu.AppendMenu(wx.NewId(), "Recent projects", lastProjects)
+            self.fileMenu.AppendMenu(wx.ID_ANY, "Recent projects", lastProjects)
             def handler(p):
                 return lambda e: self.OpenProject(p)
             for p in Config.LastProjects():
@@ -114,7 +114,7 @@ class NoiseIDE(wx.Frame):
         languagesMenu = Menu()
         self.menubar.Append(languagesMenu, "&Languages")
         erlangMenu = Menu()
-        languagesMenu.AppendMenu(wx.NewId(), 'Erlang', erlangMenu)
+        languagesMenu.AppendMenu(wx.ID_ANY, 'Erlang', erlangMenu)
         erlangMenu.AppendMenuItem("Options", self, lambda e: self.SetupRuntimes())
 
         helpMenu = Menu()
@@ -131,12 +131,12 @@ class NoiseIDE(wx.Frame):
         projectsMenu = Menu()
         projectsMenu.AppendMenuItem('Erlang', self, self.OnNewErlangProject)
 
-        self.fileMenu.AppendMenu(wx.NewId(), "New project", projectsMenu)
+        self.fileMenu.AppendMenu(wx.ID_ANY, "New project", projectsMenu)
         self.fileMenu.AppendMenuItem('Open Project', self, self.OnOpenProject)
 
         if Config.LastProjects():
             lastProjects = Menu()
-            self.fileMenu.AppendMenu(wx.NewId(), "Recent projects", lastProjects)
+            self.fileMenu.AppendMenu(wx.ID_ANY, "Recent projects", lastProjects)
             def handler(p):
                 return lambda e: self.OpenProject(p)
             for p in Config.LastProjects():
@@ -158,7 +158,7 @@ class NoiseIDE(wx.Frame):
         languagesMenu = Menu()
         self.menubar.Append(languagesMenu, "&Languages")
         erlangMenu = Menu()
-        languagesMenu.AppendMenu(wx.NewId(), 'Erlang', erlangMenu)
+        languagesMenu.AppendMenu(wx.ID_ANY, 'Erlang', erlangMenu)
         erlangMenu.AppendMenuItem("Options", self, lambda e: self.SetupRuntimes())
         erlangMenu.AppendSeparator()
 
@@ -253,8 +253,8 @@ class NoiseIDE(wx.Frame):
 
     def CreateToolBar(self):
         self.toolbar = wx.Frame.CreateToolBar(self)
-        self.navBackT = self.toolbar.AddLabelTool(wx.NewId(), 'Navigate Back', GetImage('navigateBack.png'), shortHelp = 'Navigate Back')
-        self.navForwardT = self.toolbar.AddLabelTool(wx.NewId(), 'Navigate Forward', GetImage('navigateForward.png'), shortHelp = 'Navigate Forward')
+        self.navBackT = self.toolbar.AddLabelTool(wx.ID_ANY, 'Navigate Back', GetImage('navigateBack.png'), shortHelp = 'Navigate Back')
+        self.navForwardT = self.toolbar.AddLabelTool(wx.ID_ANY, 'Navigate Forward', GetImage('navigateForward.png'), shortHelp = 'Navigate Forward')
 
         self.Bind(wx.EVT_TOOL, lambda e: self.TabMgr.NavigateBack(), self.navBackT)
         self.Bind(wx.EVT_TOOL, lambda e: self.TabMgr.NavigateForward(), self.navForwardT)

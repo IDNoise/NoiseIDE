@@ -59,7 +59,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         self.navigateTo = None
 
         if self.ModuleType() == TYPE_MODULE:
-            self.flyTimer = wx.Timer(self, wx.NewId())
+            self.flyTimer = wx.Timer(self, wx.ID_ANY)
             self.Bind(wx.EVT_TIMER, self.OnFlyTimer, self.flyTimer)
             self.flyTimer.Start(500)
             self.flyCompileHash = None
@@ -109,7 +109,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         menu = Menu()
         if self.ModuleType() == TYPE_MODULE:
             compileOptionMenu = Menu()
-            menu.AppendMenu(wx.NewId(), "Compile Option", compileOptionMenu)
+            menu.AppendMenu(wx.ID_ANY, "Compile Option", compileOptionMenu)
             compileOptionMenu.AppendCheckMenuItem("With 'P' flag", self, lambda e: core.Project.CompileOption(self.filePath, "P"))
             compileOptionMenu.AppendCheckMenuItem("With 'E' flag", self, lambda e: core.Project.CompileOption(self.filePath, "E"))
             compileOptionMenu.AppendCheckMenuItem("With 'S' flag", self, lambda e: core.Project.CompileOption(self.filePath, "S"))

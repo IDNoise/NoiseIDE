@@ -297,7 +297,7 @@ class ErlangProcess(Process):
         self.processQueue = Queue()
         self.stopped = False
 
-        self.timer = wx.Timer(self, wx.NewId())
+        self.timer = wx.Timer(self, wx.ID_ANY)
         self.Bind(wx.EVT_TIMER, self.OnTimer, self.timer)
 
         self.DataReceivedEvent = idn_events.Event()

@@ -296,7 +296,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
             newMenu.AppendMenuItem("Dir", self, self.OnMenuNewDir)
             newMenu.AppendSeparator()
             menu.newMenu = newMenu
-            menu.AppendMenu(wx.NewId(), "New", newMenu)
+            menu.AppendMenu(wx.ID_ANY, "New", newMenu)
         elif self.GetRootItem() in self.selectedItems:
             pass
         else:
@@ -309,7 +309,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
                     newMenu.AppendMenuItem("Dir", self, self.OnMenuNewDir)
                     newMenu.AppendSeparator()
                     menu.newMenu = newMenu
-                    menu.AppendMenu(wx.NewId(), "New", newMenu)
+                    menu.AppendMenu(wx.ID_ANY, "New", newMenu)
 
 
                 if (self.IsExecutable(self.eventItem) and self.IsEditable(self.eventItem)):

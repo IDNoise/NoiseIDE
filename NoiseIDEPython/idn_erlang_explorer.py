@@ -18,7 +18,7 @@ class ErlangProjectExplorer(ProjectExplorer):
         self.pathErrors = {}
         self.needHighlight = True
 
-        self.highlightTimer = wx.Timer(self, wx.NewId())
+        self.highlightTimer = wx.Timer(self, wx.ID_ANY)
         self.highlightTimer.Start(250)
         self.Bind(wx.EVT_TIMER, self.OnHighlightTimer, self.highlightTimer)
 
@@ -43,13 +43,13 @@ class ErlangProjectExplorer(ProjectExplorer):
                 self.CreateFromTemplate("application.erl", "Application", "application_1"))
             tMenu.AppendMenuItem("App Src", self, lambda e:
                 self.CreateFromTemplate("app.src", "App Src", "application_1", ".app.src", "Enter application name:"))
-            newMenu.AppendMenu(wx.NewId(), "Template", tMenu)
+            newMenu.AppendMenu(wx.ID_ANY, "Template", tMenu)
 
         dialyzerMenu = Menu()
         dialyzerMenu.AppendMenuItem("Project", self, lambda e: self.project.DialyzeProject())
         if self.eventItem == self.GetRootItem():
             menu.AppendSeparator()
-            menu.AppendMenu(wx.NewId(), "Dialyzer", dialyzerMenu)
+            menu.AppendMenu(wx.ID_ANY, "Dialyzer", dialyzerMenu)
         elif self.GetRootItem() in self.selectedItems:
             pass
         else:
@@ -67,7 +67,7 @@ class ErlangProjectExplorer(ProjectExplorer):
             dialyzerMenu.AppendMenuItem("Apps", self, lambda e: self.project.DialyzeApps(paths))
             dialyzerMenu.AppendMenuItem("Modules", self, lambda e: self.project.DialyzeModules(allFiles))
             menu.AppendSeparator()
-            menu.AppendMenu(wx.NewId(), "Dialyzer", dialyzerMenu)
+            menu.AppendMenu(wx.ID_ANY, "Dialyzer", dialyzerMenu)
 
 
         return menu
