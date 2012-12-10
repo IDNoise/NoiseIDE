@@ -300,7 +300,7 @@ class ErlangProject(Project):
 
         #print "to compile: ", erls
         #self.GetShell().CompileYrls(yrls)
-        print erls
+        #print erls
         for erl in erls:
             app = self.GetApp(erl)
             if app in self.projectData[CONFIG_EXCLUDED_DIRS]:

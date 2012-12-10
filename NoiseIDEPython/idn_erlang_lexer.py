@@ -262,35 +262,6 @@ class RecordStart:
         self.record = record
         self.start = start
 
-#        self.starts = []
-#        self.lastClose
-#
-#    def AddRecordStart(self, record, start):
-#        self.starts.append(RecordStart(record, start))
-#
-#    def AddTupleStart(self, start):
-#        self.starts.append(start)
-#
-#    def AddEnd(self, end):
-
-
-#    def UpdateLineData(self, line, tokens):
-#        data = LineData()
-#        lineStart = self.stc.PositionFromLine(line)
-#        for i, token in enumerate(tokens):
-#            prevToken = tokens[i - 1] if i > 0 else None
-#            if token.type == ErlangHighlightType.BRACKET:
-#                if token.value == "{":
-#                    if prevToken and prevToken.type == ErlangHighlightType.RECORD:
-#                        data.AddRecordStart(prevToken.value, lineStart + token.start)
-#                    else:
-#                        data.AddTupleStart(lineStart + token.start)
-#                if token.value == "}":
-#                    if data.starts
-#
-#        self.lineData[line] = data
-
-
 class IgorLexer(BaseLexer):
     def __init__(self, stc):
         BaseLexer.__init__(self, stc)

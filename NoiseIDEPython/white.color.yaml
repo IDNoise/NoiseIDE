@@ -1,6 +1,7 @@
 code_editor:
   background: '#ffffff'
   foreground: '#000000'
+  selection_background:        '#C0C0C0'
   font_name:  'courier new'
   font_size:  10
   current_line_background:     '#eeeeff'
@@ -78,10 +79,16 @@ code_editor:
       string:     fore:#2200bb
       identifier: fore:#000000
     igor:
-      default:    fore:#000000
-      number:     fore:#0033cc
-      string:     fore:#bb7777
-      keyword:    fore:#a611bb,bold
-      type:       fore:#007777
-      value:      fore:#0033cc
-      special:    fore:#00aabb,bold
+      default:     fore:#DDDDDD
+      string:      fore:#65B042
+      number:      fore:#99CF50
+      keyword:     fore:#CF6A4C,bold
+      base_type:   fore:#555bc8
+      custom_type: fore:#758bc5
+      special:     fore:#BF62E8,bold
+      comment:     fore:#518576,italic
+      attribute:   fore:#99CF50
+      bracket:     fore:#DDDDDD
+      field:       fore:#99CF50
+      enum_field:  fore:#CF4B6F
+      function:    fore:#E9C062

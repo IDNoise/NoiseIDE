@@ -475,8 +475,8 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         self.SetTargetEnd(insertPos)
         pos = self.SearchInTarget(funStr)
         if pos >= 0:
-            self.SetAnchor(pos)
-            self.GotoPos(pos + len(funStr))
+            self.SetAnchor(pos + len(funStr))
+            self.GotoPos(pos)
 
     def GoToFun(self):
         pos = self.CurrentPos
@@ -672,6 +672,12 @@ class IgorSTC(CustomSTC):
         self.StyleSetSpec(IgorHighlightType.STRING, formats["string"])
         self.StyleSetSpec(IgorHighlightType.NUMBER, formats["number"])
         self.StyleSetSpec(IgorHighlightType.KEYWORD, formats["keyword"])
-        self.StyleSetSpec(IgorHighlightType.TYPE, formats["type"])
-        self.StyleSetSpec(IgorHighlightType.VALUE, formats["value"])
+        self.StyleSetSpec(IgorHighlightType.BASE_TYPE, formats["base_type"])
+        self.StyleSetSpec(IgorHighlightType.CUSTOM_TYPE, formats["custom_type"])
         self.StyleSetSpec(IgorHighlightType.SPECIAL_SYMBOL, formats["special"])
+        self.StyleSetSpec(IgorHighlightType.COMMENT, formats["comment"])
+        self.StyleSetSpec(IgorHighlightType.ATTRIBUTE, formats["attribute"])
+        self.StyleSetSpec(IgorHighlightType.BRACKET, formats["bracket"])
+        self.StyleSetSpec(IgorHighlightType.FIELD, formats["field"])
+        self.StyleSetSpec(IgorHighlightType.ENUM_FIELD, formats["enum_field"])
+        self.StyleSetSpec(IgorHighlightType.FUNCTION, formats["function"])
