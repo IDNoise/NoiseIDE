@@ -668,6 +668,7 @@ class IgorSTC(CustomSTC):
         self.StyleSetSpec(IgorHighlightType.SPECIAL_SYMBOL, formats["special"])
         self.StyleSetSpec(IgorHighlightType.COMMENT, formats["comment"])
         self.StyleSetSpec(IgorHighlightType.ATTRIBUTE, formats["attribute"])
+        self.StyleSetSpec(IgorHighlightType.ATTRIBUTE_TARGET, formats["attribute_t"])
         self.StyleSetSpec(IgorHighlightType.BRACKET, formats["bracket"])
         self.StyleSetSpec(IgorHighlightType.FIELD, formats["field"])
         self.StyleSetSpec(IgorHighlightType.ENUM_FIELD, formats["enum_field"])
@@ -714,6 +715,14 @@ class IgorSTC(CustomSTC):
                 fileName = fileName.replace("protocol_", "")
                 callbackModule = "handler_" + fileName
                 funName = "on_" + camelToLowerUnderscore(value)
+                navTo = ErlangCache.ModuleFunction(callbackModule, funName, None)
+                if navTo:
+                    self.navigateTo = (navTo.file, navTo.line)
+            elif lineData.startswith("s->c"):
+                fileName, ext = os.path.splitext(os.path.basename(self.filePath))
+                fileName = fileName.replace("protocol_", "")
+                callbackModule = "service_" + fileName
+                funName = camelToLowerUnderscore(value)
                 navTo = ErlangCache.ModuleFunction(callbackModule, funName, None)
                 if navTo:
                     self.navigateTo = (navTo.file, navTo.line)

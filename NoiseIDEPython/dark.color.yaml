@@ -87,7 +87,8 @@ code_editor:
       custom_type: fore:#758bc5
       special:     fore:#BF62E8,bold
       comment:     fore:#518576,italic
-      attribute:   fore:#99CF50
+      attribute:   fore:#758bc5
+      attribute_t: fore:#BF62E8
       bracket:     fore:#DDDDDD
       field:       fore:#99CF50
       enum_field:  fore:#CF4B6F

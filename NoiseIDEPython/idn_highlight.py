@@ -120,8 +120,8 @@ class ErlangHighlighter:
 
 class IgorHighlightType:
     DEFAULT, STRING, NUMBER, KEYWORD, BASE_TYPE, CUSTOM_TYPE, \
-    SPECIAL_SYMBOL, COMMENT, ATTRIBUTE, BRACKET, \
-    FIELD, ENUM_FIELD, FUNCTION = range(1, 14)
+    SPECIAL_SYMBOL, COMMENT, ATTRIBUTE, ATTRIBUTE_TARGET, BRACKET, \
+    FIELD, ENUM_FIELD, FUNCTION = range(1, 15)
 
 class IgorHighlighter:
     keywords = ["import", "module", "record", "interface",
@@ -159,6 +159,8 @@ class IgorHighlighter:
                 tokenType = self.RULES[token.type]
             elif token.value in ["?"]:
                 tokenType = IgorHighlightType.SPECIAL_SYMBOL
+            elif firstToken.value == "[" and i == 1:
+                tokenType = IgorHighlightType.ATTRIBUTE_TARGET
             elif firstToken.value == "[" and token.type == IgorTokenType.LOWER and tokens[i - 1].value != "=":
                 tokenType = IgorHighlightType.ATTRIBUTE
             elif token.type == IgorTokenType.UPPER:

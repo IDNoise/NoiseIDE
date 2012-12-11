@@ -497,6 +497,7 @@ class IgorCache:
             ((record|variant)\s+([a-zA-Z0-9_]+\.)?(?P<record>[a-zA-Z0-9_]+)\s*)
             |(enum\s+(?P<enum>[a-zA-Z0-9_]+)\s*)
             |(interface\s+(?P<interface>[a-zA-Z0-9_]+)\s*)
+            |(define\s+(?P<define>[a-zA-Z0-9_]+)\s*)
             """,
             re.VERBOSE | re.MULTILINE)
 

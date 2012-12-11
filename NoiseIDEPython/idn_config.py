@@ -88,7 +88,7 @@ class Config:
 
 class ConfigEditForm(wx.Dialog):
     def __init__(self):
-        wx.Dialog.__init__(self, core.MainFrame, size = (315, 120), title = "Edit config")
+        wx.Dialog.__init__(self, core.MainFrame, size = (290, 150), title = "Edit config")
 
         sizer = wx.GridBagSizer(2, 2)
         self.colorSchemas = []
@@ -101,7 +101,7 @@ class ConfigEditForm(wx.Dialog):
             style = wx.CB_READONLY
         )
         self.userNameTB = wx.TextCtrl(self, value = Config.UserName(), size = (180, 25))
-        self.tooltipDelayTB = wx.TextCtrl(self, value = Config.TooltipDelay(), size = (180, 25))
+        self.tooltipDelayTB = wx.TextCtrl(self, value = str(Config.TooltipDelay()), size = (180, 25))
         self.closeButton = CreateButton(self, "Close", self.OnClose)
         self.saveButton = CreateButton(self, "Save", self.OnSave)
 
@@ -113,8 +113,8 @@ class ConfigEditForm(wx.Dialog):
         sizer.Add(self.tooltipDelayTB, (2, 1), flag = wx.ALL | wx.wx.ALIGN_LEFT, border = 2)
 
 
-        sizer.Add(self.closeButton, (2, 0), flag = wx.ALL | wx.wx.ALIGN_LEFT, border = 2)
-        sizer.Add(self.saveButton, (2, 1), flag = wx.ALL | wx.wx.ALIGN_RIGHT, border = 2)
+        sizer.Add(self.closeButton, (3, 0), flag = wx.ALL | wx.wx.ALIGN_LEFT, border = 2)
+        sizer.Add(self.saveButton, (3, 1), flag = wx.ALL | wx.wx.ALIGN_RIGHT, border = 2)
 
         self.SetSizer(sizer)
         self.Layout()

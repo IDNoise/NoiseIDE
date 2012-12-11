@@ -79,16 +79,17 @@ code_editor:
       string:     fore:#2200bb
       identifier: fore:#000000
     igor:
-      default:     fore:#DDDDDD
-      string:      fore:#65B042
-      number:      fore:#99CF50
-      keyword:     fore:#CF6A4C,bold
-      base_type:   fore:#555bc8
-      custom_type: fore:#758bc5
-      special:     fore:#BF62E8,bold
-      comment:     fore:#518576,italic
-      attribute:   fore:#99CF50
-      bracket:     fore:#DDDDDD
-      field:       fore:#99CF50
-      enum_field:  fore:#CF4B6F
-      function:    fore:#E9C062
+      default:     fore:#000000
+      string:      fore:#bb7777
+      number:      fore:#0033cc
+      keyword:     fore:#a611bb,bold
+      base_type:   fore:#B8860B
+      custom_type: fore:#B8860B
+      special:     fore:#B8860B,bold
+      comment:     fore:#999999
+      attribute:   fore:#007777
+      attribute_t: fore:#00aabb
+      bracket:     fore:#000000
+      field:       fore:#000000
+      enum_field:  fore:#780EA6
+      function:    fore:#000000
