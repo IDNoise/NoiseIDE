@@ -94,11 +94,11 @@ class IgorTokenizer:
             (?P<string>"([^"\\]|\\.)*"|"[^"\\]*?$)
             |(?P<number>[0-9]{1,2}\#[0-9a-z]*|[0-9]*\.?[0-9]+)
             |(?P<comment>//.*$|/\*.*?\*/)
-            |(?P<bracket>\(|\[|\{|\)|\]|\})
-            |(?P<operator>\+|\-|/|\*|<=|>=|==|=|\?|:|\.|\,|;)
             |(?P<special>s\-\>c|c\-\>s)
             |(?P<lower>[a-z][a-z_0-9\.]*)
             |(?P<upper>[A-Z][a-z_0-9A-Z\.]*)
+            |(?P<bracket>\(|\[|\{|\)|\]|\})
+            |(?P<operator>\+|\-|/|\*|<=|>=|==|=|\?|:|\.|\,|;)
             """,
             re.VERBOSE | re.MULTILINE)
 

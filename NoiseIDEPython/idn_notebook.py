@@ -207,7 +207,6 @@ class EditorNotebook(aui.AuiNotebook):
     def ShowInProjectExplorer(self, path):
         core.Project.explorer.SelectPath(path)
 
-
     def __getitem__(self, index):
         if index < self.GetPageCount():
             return self.GetPage(index).editor
@@ -230,11 +229,13 @@ class EditorNotebook(aui.AuiNotebook):
             editor = self[id]
             self.SetSelection(id)
             editor.SetFocus()
+            self.EnsureVisible(self.FindPageIndexByEditor(editor))
             return editor
         else:
             editorPanel = EditorPanel(self, file)
             self.AddPage(editorPanel, editorPanel.editor.FileName(), True)
             editorPanel.editor.SetFocus()
+            self.EnsureVisible(self.FindPageIndexByEditor(editorPanel.editor))
             return  editorPanel.editor
 
     def LoadFileLine(self, file, line = 0, addToHistory = True, fromLine = 0):

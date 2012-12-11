@@ -16,7 +16,7 @@ import core
 from idn_highlight import ErlangHighlightType, IgorHighlightType
 from idn_marker_panel import Marker
 from idn_outline import ErlangOutline
-from idn_utils import Menu
+from idn_utils import Menu, camelToLowerUnderscore
 from idn_config import Config
 from idn_erlang_utils import IsModule
 
@@ -690,18 +690,35 @@ class IgorSTC(CustomSTC):
             self.SetCursor(wx.StockCursor(wx.CURSOR_IBEAM))
 
     def CheckNavigation(self, pos):
+        self.navigateTo = None
         style = self.GetStyleAt(pos)
-        if style not in [IgorHighlightType.CUSTOM_TYPE]:
+        if style not in [IgorHighlightType.CUSTOM_TYPE, IgorHighlightType.FUNCTION]:
             return False
         start = self.WordStartPosition(pos, True)
         end = self.WordEndPosition(pos, True)
         if start == end: return False
+        line = self.LineFromPosition(pos)
+        lineData = self.GetLine(line).strip()
         value = self.GetTextRange(start, end)
-        #print value
+        if style == IgorHighlightType.CUSTOM_TYPE:
+            if IgorCache.GetTypeOfEntry(value) == "record" and lineData.startswith("record"):
+                recordData = ErlangCache.AllRecordsData(camelToLowerUnderscore(value))
+                if recordData:
+                    self.navigateTo = (recordData.file, recordData.line)
+            else:
+                self.navigateTo = IgorCache.FindCustomType(value)
 
-        self.navigateTo = IgorCache.FindType(value)
+        elif style == IgorHighlightType.FUNCTION:
+            if lineData.startswith("c->s"):
+                fileName, ext = os.path.splitext(os.path.basename(self.filePath))
+                fileName = fileName.replace("protocol_", "")
+                callbackModule = "handler_" + fileName
+                funName = "on_" + camelToLowerUnderscore(value)
+                navTo = ErlangCache.ModuleFunction(callbackModule, funName, None)
+                if navTo:
+                    self.navigateTo = (navTo.file, navTo.line)
+
         if self.navigateTo:
-            line = self.LineFromPosition(pos)
             self.navigateTo += (line, )
             if self.navigateTo[0]:
                 self.SetCursor(wx.StockCursor(wx.CURSOR_HAND))

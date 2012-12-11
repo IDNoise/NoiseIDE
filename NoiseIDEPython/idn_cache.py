@@ -490,18 +490,20 @@ class IgorCache:
     def Init(cls, project):
         cls.project = project
         cls.entries = {}
+        cls.files = set()
 
         cls.entryRegex = re.compile(
             r"""
-            ((record|variant)\s+(?P<record>[a-zA-Z0-9_\.]+)\s*)
-            |(enum\s+(?P<enum>[a-zA-Z0-9_\.]+)\s*)
-            |(interface\s+(?P<interface>[a-zA-Z0-9_\.]+)\s*)
+            ((record|variant)\s+([a-zA-Z0-9_]+\.)?(?P<record>[a-zA-Z0-9_]+)\s*)
+            |(enum\s+(?P<enum>[a-zA-Z0-9_]+)\s*)
+            |(interface\s+(?P<interface>[a-zA-Z0-9_]+)\s*)
             """,
             re.VERBOSE | re.MULTILINE)
 
     @classmethod
     def GenerateForFile(cls, file):
         cls.ClearAllEntries(file)
+        cls.files.add(file)
         text = readFile(file)
         lines = text.splitlines()
         for lineNumber, line in enumerate(lines):
@@ -520,6 +522,13 @@ class IgorCache:
                 del cls.entries[entry]
 
     @classmethod
-    def FindType(cls, customType):
+    def FindCustomType(cls, customType):
         if customType in cls.entries:
             return (cls.entries[customType].file, cls.entries[customType].line)
+        return None
+
+    @classmethod
+    def GetTypeOfEntry(cls, customType):
+        if customType in cls.entries:
+            return cls.entries[customType].type
+        return None

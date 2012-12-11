@@ -1,3 +1,5 @@
+import re
+
 __author__ = 'Yaroslav'
 
 from threading import Thread, Event
@@ -23,6 +25,10 @@ def writeBinaryFile(file, data):
     f.write(data)
     f.flush()
     f.close()
+
+def camelToLowerUnderscore(name):
+    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
 
 def extension(path):
     name, ext = os.path.splitext(path)
