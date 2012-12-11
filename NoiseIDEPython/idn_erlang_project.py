@@ -311,6 +311,9 @@ class ErlangProject(Project):
         for igor in igors:
             IgorCache.GenerateForFile(igor)
 
+    def IsIgor(self, path):
+        return path.endswith(".igor")
+
     def CompileOption(self, path, option):
         if not IsModule(path): return
         self.GetShell().CompileOption(path, option)
