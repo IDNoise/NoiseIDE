@@ -4,7 +4,7 @@ __author__ = 'Yaroslav Nikityshev aka IDNoise'
 class BaseLexer:
     def __init__(self, stc):
         self.stc = stc
-        
+
     def StyleText(self, startPos, endPos):
         raise NotImplementedError
 

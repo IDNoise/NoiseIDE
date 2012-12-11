@@ -67,7 +67,7 @@ class ErlangHighlighter:
             if token.type in self.RULES:
                 tokenType = self.RULES[token.type]
 
-            elif token.type ==  ErlangTokenType.FUNDEC:
+            elif token.type == ErlangTokenType.FUNDEC:
                 result.append(Token(ErlangHighlightType.FUNDEC, token.value[:-1], token.start, token.end - 1, ))
                 result.append(Token(ErlangHighlightType.BRACKET, token.value[-1], token.end - 1, token.end))
                 continue
@@ -81,7 +81,6 @@ class ErlangHighlighter:
             elif token.type == ErlangTokenType.MODULEATTR:
                 tokenType = ErlangHighlightType.MODULEATTR
                 #if token.value in self.MODULEATTR:
-
 
             elif token.type == ErlangTokenType.ATOM:
                 if token.value in self.KEYWORDS:

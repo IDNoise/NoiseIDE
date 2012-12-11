@@ -84,7 +84,7 @@ class ErlangConsole(wx.Panel):
         self.commandText.Bind(wx.EVT_TEXT, self.OnTextChanged)
 
         self.CreateShell(cwd, params)
-        self.promptRegexp = re.compile(r"(^|\(.*?\))\d*>")
+        self.promptRegexp = re.compile(r"(^|\(.*?\))\d*>\s*")
 
         self.lastCommands = []
 
