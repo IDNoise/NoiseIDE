@@ -15,7 +15,7 @@ class ProgressTaskManagerDialog(wx.EvtHandler):
     def __init__(self):
         wx.EvtHandler.__init__(self)
         self.progressDialog = None
-        self.progressTimer = wx.Timer(self, wx.NewId())
+        self.progressTimer = wx.Timer(self, wx.ID_ANY)
         self.progressTimer.Start(250)
         self.Bind(wx.EVT_TIMER, self.OnProgressTimer, self.progressTimer)
         self.tasks = set()

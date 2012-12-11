@@ -1,0 +1,87 @@
+[csharp namespace="Network"]
+[:json enabled=true]
+module ProtocolNotification
+{
+    enum NotificationType
+    {
+        lvl_up;
+        new_friend;
+        recruitment_reward;
+        platinum_bonus;
+        gm_notification;
+        new_badge;
+        special_offer;
+        special_offer_end;
+        player_reward;
+        match_in_pogress;
+    }
+    
+    variant NotificationData
+    {
+        [tag]
+        NotificationType type;
+    }
+    
+    record NotificationData.NotificationDataLvlUp[lvl_up]
+    {
+        int new_rank;
+    }
+    
+    record NotificationData.NotificationDataNewFriend[new_friend]
+    {
+        uint friend_id;
+    }
+    
+    record NotificationData.NotificationDataRecruitmentReward[recruitment_reward]
+    {
+        uint recruits_count;
+    }
+
+    record NotificationData.NotificationDataPlatinumBonus[platinum_bonus]
+    {
+        float platinum_bonus;
+        float old_platinum_bonus;
+    }
+
+    record NotificationData.NotificationDataGMNotification[gm_notification]
+    {
+        string text;
+    }
+    
+    record NotificationData.NotificationDataNewBadge[new_badge]
+    {
+        CdbKey badge_key;
+        int new_level;
+        ?PlayerReward reward;
+    }
+    
+    record NotificationData.NotificationDataSpecialOffer[special_offer]
+    {
+        CdbKey offer_key;
+        int seconds_left;
+    }
+    
+    record NotificationData.NotificationDataSpecialOfferEnd[special_offer_end]
+    {
+    }
+
+    record NotificationData.NotificationDataPlayerReward[player_reward]
+    {
+        list[CdbKey] reward_key;
+    }
+    
+    record NotificationData.NotificationMatchInProgress[match_in_pogress]
+    {
+    }
+
+    
+    // ==========================================================================
+    
+    
+    [erlang-server dispatcher="player_igor"]
+    [erlang-client dispatcher="state_igor"]
+    service ServiceNotification
+    {
+        s->c Notify(NotificationData data);
+    }
+}

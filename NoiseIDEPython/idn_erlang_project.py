@@ -3,7 +3,8 @@ __author__ = 'Yaroslav'
 import os
 import operator
 import wx
-from idn_cache import ErlangCache
+import glob
+from idn_cache import ErlangCache, IgorCache
 from idn_colorschema import ColorSchema
 from idn_config import Config
 from idn_connect import CompileErrorInfo
@@ -38,6 +39,7 @@ class ErlangProject(Project):
         self.warningCount = 0
 
         ErlangCache.Init(self)
+        IgorCache.Init(self)
 
         self.SetupDirs()
         self.AddTabs()
@@ -70,7 +72,7 @@ class ErlangProject(Project):
         self.dialyzerMenu.AppendSeparator()
         self.dialyzerMenu.AppendMenuItem("Project", self.window, lambda e: self.DialyzeProject())
         self.dialyzerMenu.AppendMenuItem("Current module", self.window, self.OnDialyzerRunModule)
-        self.window.projectMenu.AppendMenu(wx.NewId(), "Dialyzer", self.dialyzerMenu)
+        self.window.projectMenu.AppendMenu(wx.ID_ANY, "Dialyzer", self.dialyzerMenu)
 
         self.window.erlangMenu.AppendMenuItem("Regenerate erlang cache", self.window, lambda e: self.RegenerateErlangCache())
         self.window.erlangMenu.AppendSeparator()
@@ -83,11 +85,11 @@ class ErlangProject(Project):
 
         self.consoleMenu = Menu()
 
-        self.window.viewMenu.AppendMenu(wx.NewId(), "Consoles", self.consoleMenu)
+        self.window.viewMenu.AppendMenu(wx.ID_ANY, "Consoles", self.consoleMenu)
 
         self.window.toolbar.AddSeparator()
-        self.rebuildT = self.window.toolbar.AddLabelTool(wx.NewId(), 'Rebuild project', GetImage('build.png'), shortHelp = 'Rebuild project')
-        self.xrefCheckT = self.window.toolbar.AddLabelTool(wx.NewId(), 'XRef check', GetImage('xrefCheck.png'), shortHelp = 'XRef check')
+        self.rebuildT = self.window.toolbar.AddLabelTool(wx.ID_ANY, 'Rebuild project', GetImage('build.png'), shortHelp = 'Rebuild project')
+        self.xrefCheckT = self.window.toolbar.AddLabelTool(wx.ID_ANY, 'XRef check', GetImage('xrefCheck.png'), shortHelp = 'XRef check')
 
         self.window.Bind(wx.EVT_TOOL, lambda e: self.CompileProject(), self.rebuildT)
         self.window.Bind(wx.EVT_TOOL, lambda e: self.StartXRef(), self.xrefCheckT)
@@ -268,9 +270,10 @@ class ErlangProject(Project):
         return app
 
     def Compile(self, path):
+        #print path
         hrls = set()
         erls = set()
-        #yrls = set()
+        igors = set()
         def addByType(file):
             if IsInclude(file):
                 hrls.add(file)
@@ -278,18 +281,21 @@ class ErlangProject(Project):
                 erls.add(file)
             elif IsYrl(file):
                 erls.add(file)
+            elif IsIgor(file):
+                igors.add(file)
         if isinstance(path, list):
             for p in path:
                 addByType(p)
         else:
             addByType(path)
-
+        #print hrls
         while len(hrls) > 0:
             toRemove = []
             for hrl in hrls:
                 self.GetShell().GenerateFileCache(hrl)
                # print "hrl", hrl, os.path.basename(hrl), ErlangCache.GetDependentModules(os.path.basename(hrl))
                 dependent = ErlangCache.GetDependentModules(os.path.basename(hrl))
+                #print dependent
                 for d in dependent:
                     addByType(d)
                 toRemove.append(hrl)
@@ -297,12 +303,13 @@ class ErlangProject(Project):
                 hrls.remove(h)
 
         #print "to compile: ", erls
-        #self.GetShell().CompileYrls(yrls)
         for erl in erls:
             app = self.GetApp(erl)
             if app in self.projectData[CONFIG_EXCLUDED_DIRS]:
                 continue
             self.GetShell().Compile(erl)
+        for igor in igors:
+            IgorCache.GenerateForFile(igor)
 
     def CompileOption(self, path, option):
         if not IsModule(path): return
@@ -589,6 +596,7 @@ class ErlangProject(Project):
         filesToCompile = set()
         filesToCache = set()
         yrlToCompile = set()
+        igorToCache = set()
         for app in self.GetApps():
             srcPath = os.path.join(os.path.join(self.AppsPath(), app), "src")
             testPath = os.path.join(os.path.join(self.AppsPath(), app), "test")
@@ -611,9 +619,16 @@ class ErlangProject(Project):
             if erl in filesToCompile:
                 filesToCompile.remove(erl)
 
+        for root, d, files in os.walk(self.projectDir):
+            for f in files:
+                if f.endswith(".igor"):
+                    igorToCache.add(os.path.join(root, f))
+
         filesToCompile = sorted(list(filesToCompile) + list(yrlToCompile))
         filesToCache = sorted(list(filesToCache))
 
+        for igor in igorToCache:
+            IgorCache.GenerateForFile(igor)
         #print "compile: ", filesToCompile
         #print "yrl compile: ", yrlToCompile
 #        print "cache: ", filesToCache

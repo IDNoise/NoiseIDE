@@ -156,6 +156,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.StyleSetForeground(stc.STC_STYLE_BRACELIGHT, ColorSchema.codeEditor["brace_foreground"])
         self.StyleSetBackground(stc.STC_STYLE_BRACEBAD, ColorSchema.codeEditor["brace_bad_background"])
         self.StyleSetForeground(stc.STC_STYLE_BRACEBAD, ColorSchema.codeEditor["brace_bad_foreground"])
+        self.SetSelBackground(True, ColorSchema.codeEditor["selection_background"])
 
         if hasattr(self, "lexer"):
             self.Bind(stc.EVT_STC_STYLENEEDED, self.OnStyleNeeded)
@@ -163,7 +164,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.Bind(stc.EVT_STC_CHARADDED, self.OnCharAdded)
         self.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
 
-        self.highlightTimer = wx.Timer(self, wx.NewId())
+        self.highlightTimer = wx.Timer(self, wx.ID_ANY)
         self.Bind(wx.EVT_TIMER, self.OnHighlightTimer, self.highlightTimer)
         self.highlightTimer.Start(400)
 
@@ -188,7 +189,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
 
         self.Bind(wx.EVT_RIGHT_UP, self.CreatePopupMenu)
 
-        self.customTooltip = STCContextToolTip(self, 750, self.OnRequestTooltipText)
+        self.customTooltip = STCContextToolTip(self, self.OnRequestTooltipText)
 
     def OnRequestTooltipText(self):
         return None
@@ -460,8 +461,13 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.SetIndicatorCurrent(incidc)
         self.IndicatorClearRange(incidc, self.Length)
 
-    def HighlightSelectedWord(self):
-        text = self.GetSelectedText()
+    def HighlightSelectedWord(self, text = None, start = 0):
+        goToFoundText = False
+        gotToFoundText = False
+        if not text:
+            text = self.GetSelectedText()
+        else:
+            goToFoundText = True
         if self.lastHighlightedWord != text:
             #print "clear selected word"
             self.ClearIndicator(0)
@@ -473,13 +479,17 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         if (text and True not in [c in text for c in [" ", "\n", "\r", ","]]):
             self.SetIndicatorCurrent(0)
             self.SetSearchFlags(stc.STC_FIND_MATCHCASE | stc.STC_FIND_WHOLEWORD)
-            self.SetTargetStart(0)
+            self.SetTargetStart(start)
             self.SetTargetEnd(self.Length)
             index = self.SearchInTarget(text)
 
             while (index != -1 and index < self.Length):
                 line = self.LineFromPosition(index)
                 self.IndicatorFillRange(index, len(text))
+                if goToFoundText and not gotToFoundText:
+                    self.GotoPos(index)
+                    self.SetAnchor(index + len(text))
+                    gotToFoundText = True
                 self.SetTargetStart(index + len(text))
                 self.SetTargetEnd(self.Length)
                 marker = Marker(line, self.GetLine(line), index, len(text))
@@ -488,13 +498,6 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.Refresh()
         if self.markerPanel:
             self.markerPanel.SetMarkers("selected_word", markers)
-
-    def ShowToolTip(self, msg):
-        self.tooltip.SetTip(msg)
-        self.tooltip.Enable(True)
-
-    def HideToolTip(self):
-        self.tooltip.Enable(False)
 
 class PythonSTC(CustomSTC):
     def SetupLexer(self):
@@ -626,9 +629,8 @@ class ConsoleSTC(CustomSTC):
             core.Log("append text error", e)
 
 class STCContextToolTip:
-    def __init__(self, stc, delay, handler):
+    def __init__(self, stc, handler):
         self.stc = stc
-        self.delay = delay
         self.handler = handler
         self.tooltipWin = None
         self.showPos = (0, 0)
@@ -725,7 +727,7 @@ class STCContextToolTip:
             self.lastPos = current
         else:
             self.counter += 50
-            if self.counter == self.delay:
+            if self.counter == Config.TooltipDelay():
                 text = self.handler()
                 if text:
                     self.showPos = wx.GetMousePosition()

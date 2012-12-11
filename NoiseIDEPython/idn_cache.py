@@ -1,5 +1,6 @@
 import os
 import json
+import re
 import shutil
 from idn_config import Config
 from idn_directoryinfo import DirectoryChecker
@@ -116,13 +117,19 @@ class ModuleData:
             expData = data[EXPORTED_TYPES][expDype]
             self.exportedTypes.append(ExportedType(self, module, expDype, expData[TYPES], expData[LINE]))
 
+    def AllIncludes(self):
+        includes = list(self.includes)[:]
+        for include in self.includes:
+            if include in ErlangCache.moduleData and self.module != include:
+                includes += ErlangCache.moduleData[include].AllIncludes()
+        return set(includes)
 
     def AllRecords(self):
         records = self.records[:]
         for include in self.includes:
             if include in ErlangCache.moduleData and self.module != include:
                 records += ErlangCache.moduleData[include].AllRecords()
-        return records
+        return set(records)
 
     def AllMacroses(self):
         macroses = self.macroses[:]
@@ -130,7 +137,7 @@ class ModuleData:
         for include in self.includes:
             if include in ErlangCache.moduleData and self.module != include:
                 macroses += ErlangCache.moduleData[include].AllMacroses()
-        return macroses
+        return set(macroses)
 
     def Functions(self, exported = True):
         funs = [fun for fun in self.functions if (exported and fun.exported == exported) or not exported]
@@ -189,18 +196,19 @@ class ErlangCache:
         cls.includes = set()
         cls.moduleData = {}
 
-        cls.loadTimer = wx.Timer(core.MainFrame, wx.NewId())
+        cls.loadTimer = wx.Timer(core.MainFrame, wx.ID_ANY)
         cls.loadTimer.Start(100)
         core.MainFrame.Bind(wx.EVT_TIMER, cls.OnProgressTimer, cls.loadTimer)
 
     @classmethod
     def OnProgressTimer(cls, event):
-        for i in range(40):
-            try:
-                file = cls.toLoad.pop()
-                cls.LoadFile_(file)
-            except IndexError, e:
-                pass
+        if len(cls.toLoad) > 0:
+            for i in range(40):
+                try:
+                    file = cls.toLoad.pop()
+                    cls.LoadFile_(file)
+                except IndexError, e:
+                    pass
 
     @classmethod
     def AddToLoad(cls, file):
@@ -253,7 +261,7 @@ class ErlangCache:
 #                core.Log("Ignoring replace of cache for standard erlang " +
 #                    "module: {}\n\tPath:{}".format(name, file))
 #                return
-
+            #print "load",  name
             if name.endswith(".hrl"):
                 cls.includes.add(name)
             else:
@@ -270,7 +278,7 @@ class ErlangCache:
     def TryLoad(cls, module):
         if module in cls.moduleData:
             return True
-        for dir in [os.path.join("runtimes", cls.project.GetErlangRuntime()), cls.project.ProjectName()]:
+        for dir in [cls.project.ProjectName(), os.path.join("runtimes", cls.project.GetErlangRuntime())]:
             file = os.path.join(cls.CACHE_DIR, dir, module + ".cache")
             #print file
             if os.path.isfile(file):
@@ -338,14 +346,12 @@ class ErlangCache:
     def GetDependentModules(cls, include):
         result = []
         cls.TryLoad(include)
-        for module in cls.moduleData:
+        for module in cls.modules:
             data = cls.moduleData[module]
-            if not data.file.startswith(cls.project.AppsPath().replace("\\", "/")): continue
-            if include in data.includes:
-                if IsModule(data.file):
-                    result.append(data.file)
-                if IsInclude(data.file):
-                    result += cls.GetDependentModules(data.module)
+            if not data.file.startswith(cls.project.AppsPath()): continue
+            #print data.file
+            if include in data.AllIncludes():
+                result.append(data.file)
         return result
 
     @classmethod
@@ -472,3 +478,57 @@ class ErlangCache:
             if cls.moduleData[inc].IsGlobalInclude():
                 result.append(cls.moduleData[inc].Application() + "/include/" + inc + "\").")
         return result
+
+class IgorEntryData:
+    def __init__(self, type, file, line):
+        self.type = type
+        self.file = file
+        self.line = line
+
+class IgorCache:
+    @classmethod
+    def Init(cls, project):
+        cls.project = project
+        cls.entries = {}
+        cls.files = set()
+
+        cls.entryRegex = re.compile(
+            r"""
+            ((record|variant)\s+([a-zA-Z0-9_]+\.)?(?P<record>[a-zA-Z0-9_]+)\s*)
+            |(enum\s+(?P<enum>[a-zA-Z0-9_]+)\s*)
+            |(interface\s+(?P<interface>[a-zA-Z0-9_]+)\s*)
+            """,
+            re.VERBOSE | re.MULTILINE)
+
+    @classmethod
+    def GenerateForFile(cls, file):
+        cls.ClearAllEntries(file)
+        cls.files.add(file)
+        text = readFile(file)
+        lines = text.splitlines()
+        for lineNumber, line in enumerate(lines):
+            m = cls.entryRegex.search(line)
+            if not m: continue
+            d = m.groupdict()
+            for g in d:
+                value = d[g]
+                if value != None:
+                    cls.entries[value] = IgorEntryData(g, file, lineNumber + 1)
+
+    @classmethod
+    def ClearAllEntries(cls, file):
+        for entry, entryData in cls.entries.copy().items():
+            if entryData.file == file:
+                del cls.entries[entry]
+
+    @classmethod
+    def FindCustomType(cls, customType):
+        if customType in cls.entries:
+            return (cls.entries[customType].file, cls.entries[customType].line)
+        return None
+
+    @classmethod
+    def GetTypeOfEntry(cls, customType):
+        if customType in cls.entries:
+            return cls.entries[customType].type
+        return None

@@ -119,85 +119,62 @@ class ErlangHighlighter:
         return result
 
 class IgorHighlightType:
-    DEFAULT, STRING, NUMBER, KEYWORD, TYPE, VALUE, \
-    SPECIAL_SYMBOL, COMMENT, ATTRIBUTE, BOOLEAN = range(1, 11)
+    DEFAULT, STRING, NUMBER, KEYWORD, BASE_TYPE, CUSTOM_TYPE, \
+    SPECIAL_SYMBOL, COMMENT, ATTRIBUTE, BRACKET, \
+    FIELD, ENUM_FIELD, FUNCTION = range(1, 14)
 
 class IgorHighlighter:
     keywords = ["import", "module", "record", "interface",
                 "enum", "variant", "exception", "define",
                 "service", "returns", "throws", "s->c",
-                "c->s", "schema", "ethereal", "tag"]
-
-#    keywords = ["enum", "record", "variant", "service",
-#                "module", "ethereal", "csharp", "erlang",
-#                "import", "s->c", "c->s", "define",
-#                "schema", "list", "dict", "tag"]
+                "c->s", "schema", "ethereal", "tag", "true", "false"]
 
     RULES = {
         IgorTokenType.STRING: IgorHighlightType.STRING,
         IgorTokenType.NUMBER: IgorHighlightType.NUMBER,
-        #IgorTokenType.TYPE: IgorHighlightType.TYPE,
-        IgorTokenType.VALUE: IgorHighlightType.VALUE
+        IgorTokenType.COMMENT: IgorHighlightType.COMMENT,
+        IgorTokenType.BRACKET: IgorHighlightType.BRACKET
     }
 
     def __init__(self):
         self.tokenizer = IgorTokenizer()
-
-    #define FieldId int;
-#    c->s Move(Action action);
-#    c->s Cast(Key spell_key, SpellTarget target);
-#    s->c AddUnit(Tick tick, UnitInfo info, Frame frame, bool is_me);
-
 
     def GetHighlightingTokens(self, text):
         result = []
         tokens = self.tokenizer.GetTokens(text)
         if not tokens: return result
         firstToken = tokens[0]
-        if firstToken.type == IgorTokenType.SPACE and len(tokens) > 1:
-            firstToken = tokens[1]
         for i in range(len(tokens)):
             token = tokens[:][i]
-
+#            print "==="
+#            print token.type
+#            print token.value
+#            print i
+#            print len(tokens)
             tokenType = IgorHighlightType.DEFAULT
+
             if token.value in self.keywords:
                 tokenType = IgorHighlightType.KEYWORD
-            elif token.value in ["?"]:
-                tokenType = IgorHighlightType.SPECIAL_SYMBOL
-            elif token.type == IgorTokenType.VALUE:
-                if firstToken.value in ["c->s", "s->c"]:
-                    checkToken = tokens[i - 1]
-                    if checkToken.type == IgorTokenType.SPACE:
-                        checkToken = tokens[i - 2]
-                    if checkToken.value in ["(", ","]:
-                        tokenType = IgorHighlightType.TYPE
-                    else:
-                        tokenType = IgorHighlightType.VALUE
-                elif firstToken.value == "define":
-                    if tokens[i + 1].value == ";":
-                        tokenType = IgorHighlightType.TYPE
-                    else:
-                        tokenType = IgorHighlightType.VALUE
-                elif (firstToken.value in ["record", "module", "enum", "variant", "service"] and
-                    tokens[i - 1].value != "["):
-                    tokenType = IgorHighlightType.TYPE
-                elif firstToken == token and tokens[i + 1].value == ";":
-                    tokenType = IgorHighlightType.VALUE
-                elif tokens[i - 1].value == "[" and tokens[i + 1].value == "]":
-                    tokenType = IgorHighlightType.VALUE
-                else:
-                    j = i
-                    checkToken = tokens[j + 1]
-                    while checkToken.type == IgorTokenType.SPACE and len(tokens) > j + 2:
-                        j += 1
-                        checkToken = tokens[j + 1]
-                    if checkToken.value in ["=", ";"]:
-                        tokenType = IgorHighlightType.VALUE
-                    else:
-                        tokenType = IgorHighlightType.TYPE
-
             elif token.type in self.RULES:
                 tokenType = self.RULES[token.type]
+            elif token.value in ["?"]:
+                tokenType = IgorHighlightType.SPECIAL_SYMBOL
+            elif firstToken.value == "[" and token.type == IgorTokenType.LOWER and tokens[i - 1].value != "=":
+                tokenType = IgorHighlightType.ATTRIBUTE
+            elif token.type == IgorTokenType.UPPER:
+                if firstToken.type == IgorTokenType.SPECIAL and i == 1:
+                    tokenType = IgorHighlightType.FUNCTION
+                else:
+                    tokenType = IgorHighlightType.CUSTOM_TYPE
+            elif token.type == IgorTokenType.LOWER:
+                if len(tokens) == 2 and tokens[1].value == ";":
+                    tokenType = IgorHighlightType.ENUM_FIELD
+                elif firstToken.value == "record" and tokens[i - 1].value == "[":
+                    tokenType = IgorHighlightType.ENUM_FIELD
+                elif token.value in ["bool", "sbyte", "byte", "short", "ushort", "int", "uint", "long", "ulong", "float", "double", "string", "binary", "atom", "dict", "list"]:
+                    tokenType = IgorHighlightType.BASE_TYPE
+                elif len(tokens) > i + 1 and tokens[i + 1].value in ["=", ";", ",", ")"]:
+                    tokenType = IgorHighlightType.FIELD
             result.append(Token(tokenType, token.value, token.start, token.end))
 
         return result

@@ -14,6 +14,9 @@ class Config:
     USER_NAME = "user_name"
     LAST_PROJECT_LIST = "last_project_list"
     RUNTIMES = "runtimes"
+    TOOLTIP_DELAY = "tooltip_delay"
+
+    DEFAULT_TOOLTIP_DELAY = 500
 
     @classmethod
     def load(cls):
@@ -70,9 +73,22 @@ class Config:
     def SetLastProjects(cls, projects):
         cls.data[cls.LAST_PROJECT_LIST] = projects
 
+    @classmethod
+    def TooltipDelay(cls):
+        return cls.data[cls.TOOLTIP_DELAY] if cls.TOOLTIP_DELAY in cls.data else cls.DEFAULT_TOOLTIP_DELAY
+
+    @classmethod
+    def SetTooltipDelay(cls, delay):
+        try:
+            delay = int(delay)
+        except:
+            delay = cls.DEFAULT_TOOLTIP_DELAY
+        finally:
+            cls.data[cls.TOOLTIP_DELAY] = delay
+
 class ConfigEditForm(wx.Dialog):
     def __init__(self):
-        wx.Dialog.__init__(self, core.MainFrame, size = (290, 120), title = "Edit config")
+        wx.Dialog.__init__(self, core.MainFrame, size = (315, 120), title = "Edit config")
 
         sizer = wx.GridBagSizer(2, 2)
         self.colorSchemas = []
@@ -85,6 +101,7 @@ class ConfigEditForm(wx.Dialog):
             style = wx.CB_READONLY
         )
         self.userNameTB = wx.TextCtrl(self, value = Config.UserName(), size = (180, 25))
+        self.tooltipDelayTB = wx.TextCtrl(self, value = Config.TooltipDelay(), size = (180, 25))
         self.closeButton = CreateButton(self, "Close", self.OnClose)
         self.saveButton = CreateButton(self, "Save", self.OnSave)
 
@@ -92,6 +109,10 @@ class ConfigEditForm(wx.Dialog):
         sizer.Add(self.colorSchemaCB, (0, 1), flag = wx.ALL | wx.wx.ALIGN_LEFT, border = 2)
         sizer.Add(wx.StaticText(self, label = "User name:"), (1, 0), flag = wx.ALL | wx.ALIGN_CENTER_VERTICAL, border = 2)
         sizer.Add(self.userNameTB, (1, 1), flag = wx.ALL | wx.wx.ALIGN_LEFT, border = 2)
+        sizer.Add(wx.StaticText(self, label = "Tooltip delay:"), (2, 0), flag = wx.ALL | wx.ALIGN_CENTER_VERTICAL, border = 2)
+        sizer.Add(self.tooltipDelayTB, (2, 1), flag = wx.ALL | wx.wx.ALIGN_LEFT, border = 2)
+
+
         sizer.Add(self.closeButton, (2, 0), flag = wx.ALL | wx.wx.ALIGN_LEFT, border = 2)
         sizer.Add(self.saveButton, (2, 1), flag = wx.ALL | wx.wx.ALIGN_RIGHT, border = 2)
 
@@ -106,4 +127,6 @@ class ConfigEditForm(wx.Dialog):
             Config.SetProp(Config.COLOR_SCHEMA, self.colorSchemaCB.Value)
         if self.userNameTB.Value:
             Config.SetProp(Config.USER_NAME, self.userNameTB.Value)
+        if self.tooltipDelayTB.Value:
+            Config.SetTooltipDelay(self.tooltipDelayTB.Value)
         self.Close()

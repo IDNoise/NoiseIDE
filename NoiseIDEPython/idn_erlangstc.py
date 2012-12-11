@@ -5,7 +5,7 @@ __author__ = 'Yaroslav'
 import os
 import wx
 from wx import stc
-from idn_cache import ErlangCache
+from idn_cache import ErlangCache, IgorCache
 from idn_colorschema import ColorSchema
 from idn_connect import CompileErrorInfo
 from idn_customstc import CustomSTC, ConsoleSTC
@@ -16,7 +16,7 @@ import core
 from idn_highlight import ErlangHighlightType, IgorHighlightType
 from idn_marker_panel import Marker
 from idn_outline import ErlangOutline
-from idn_utils import Menu
+from idn_utils import Menu, camelToLowerUnderscore
 from idn_config import Config
 from idn_erlang_utils import IsModule
 
@@ -59,7 +59,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         self.navigateTo = None
 
         if self.ModuleType() == TYPE_MODULE:
-            self.flyTimer = wx.Timer(self, wx.NewId())
+            self.flyTimer = wx.Timer(self, wx.ID_ANY)
             self.Bind(wx.EVT_TIMER, self.OnFlyTimer, self.flyTimer)
             self.flyTimer.Start(500)
             self.flyCompileHash = None
@@ -109,7 +109,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         menu = Menu()
         if self.ModuleType() == TYPE_MODULE:
             compileOptionMenu = Menu()
-            menu.AppendMenu(wx.NewId(), "Compile Option", compileOptionMenu)
+            menu.AppendMenu(wx.ID_ANY, "Compile Option", compileOptionMenu)
             compileOptionMenu.AppendCheckMenuItem("With 'P' flag", self, lambda e: core.Project.CompileOption(self.filePath, "P"))
             compileOptionMenu.AppendCheckMenuItem("With 'E' flag", self, lambda e: core.Project.CompileOption(self.filePath, "E"))
             compileOptionMenu.AppendCheckMenuItem("With 'S' flag", self, lambda e: core.Project.CompileOption(self.filePath, "S"))
@@ -220,30 +220,15 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         self.navigateTo = None
         pos = self.PositionFromPoint(event.GetPosition())
 
-#        def showErrorTooltip():
-#            line = self.LineFromPosition(pos)
-#            errs = list(filter(lambda e: e.line == line, self.lastErrors))
-#            if errs:
-#                msg = reduce(lambda msg, e: msg + e.msg + "\n", errs, "")
-#                self.ShowToolTip(msg)
-#            else:
-#                self.HideToolTip()
-
         if event.GetPosition()[0] < self.LineNumbersWidth() + self.FoldWidth + 10:
             self.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
-#            self.HideToolTip()
-#            if (event.GetPosition()[0] > self.LineNumbersWidth() and
-#                event.GetPosition()[0] < self.LineNumbersWidth() + 10):
-#                showErrorTooltip()
             return
 
-        #print event.GetModifiers() == wx.MOD_CONTROL,  self.HasFocus()
         if event.GetModifiers() == wx.MOD_CONTROL and self.HasFocus():
             if not self.CheckNavigation(pos):
                 self.SetCursor(wx.StockCursor(wx.CURSOR_IBEAM))
         elif self.HasFocus():
             self.SetCursor(wx.StockCursor(wx.CURSOR_IBEAM))
-#            showErrorTooltip()
 
     def OnRequestTooltipText(self):
         if wx.GetKeyState(wx.WXK_CONTROL):
@@ -452,7 +437,6 @@ class ErlangSTC(ErlangHighlightedSTCBase):
 
         funStr = "\n    {}/{}".format(fun, arity)
         (exports, startPos, insertPos) = self.lexer.GetAllExports()
-        exports = exports.strip()
         if funStr in exports:
             return
         if exports:
@@ -476,8 +460,8 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         self.SetTargetEnd(insertPos)
         pos = self.SearchInTarget(funStr)
         if pos >= 0:
-            self.SetAnchor(pos)
-            self.GotoPos(pos + len(funStr))
+            self.SetAnchor(pos + len(funStr))
+            self.GotoPos(pos)
 
     def GoToFun(self):
         pos = self.CurrentPos
@@ -663,6 +647,12 @@ class ErlangConsoleSTC(ConsoleSTC):
 
 
 class IgorSTC(CustomSTC):
+    def OnInit(self):
+        self.navigateTo = None
+
+        self.Bind(wx.EVT_MOTION, self.OnMouseMove)
+        self.Bind(wx.EVT_LEFT_DOWN, self.OnMouseClick)
+
     def SetupLexer(self):
         self.lexer = IgorLexer(self)
         self.SetLexer(stc.STC_LEX_CONTAINER)
@@ -673,6 +663,76 @@ class IgorSTC(CustomSTC):
         self.StyleSetSpec(IgorHighlightType.STRING, formats["string"])
         self.StyleSetSpec(IgorHighlightType.NUMBER, formats["number"])
         self.StyleSetSpec(IgorHighlightType.KEYWORD, formats["keyword"])
-        self.StyleSetSpec(IgorHighlightType.TYPE, formats["type"])
-        self.StyleSetSpec(IgorHighlightType.VALUE, formats["value"])
+        self.StyleSetSpec(IgorHighlightType.BASE_TYPE, formats["base_type"])
+        self.StyleSetSpec(IgorHighlightType.CUSTOM_TYPE, formats["custom_type"])
         self.StyleSetSpec(IgorHighlightType.SPECIAL_SYMBOL, formats["special"])
+        self.StyleSetSpec(IgorHighlightType.COMMENT, formats["comment"])
+        self.StyleSetSpec(IgorHighlightType.ATTRIBUTE, formats["attribute"])
+        self.StyleSetSpec(IgorHighlightType.BRACKET, formats["bracket"])
+        self.StyleSetSpec(IgorHighlightType.FIELD, formats["field"])
+        self.StyleSetSpec(IgorHighlightType.ENUM_FIELD, formats["enum_field"])
+        self.StyleSetSpec(IgorHighlightType.FUNCTION, formats["function"])
+
+    def OnMouseMove(self, event):
+        event.Skip()
+        self.ClearIndicator(1)
+        self.navigateTo = None
+        pos = self.PositionFromPoint(event.GetPosition())
+
+        if event.GetPosition()[0] < self.LineNumbersWidth() + self.FoldWidth + 10:
+            self.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+            return
+
+        if event.GetModifiers() == wx.MOD_CONTROL and self.HasFocus():
+            if not self.CheckNavigation(pos):
+                self.SetCursor(wx.StockCursor(wx.CURSOR_IBEAM))
+        elif self.HasFocus():
+            self.SetCursor(wx.StockCursor(wx.CURSOR_IBEAM))
+
+    def CheckNavigation(self, pos):
+        self.navigateTo = None
+        style = self.GetStyleAt(pos)
+        if style not in [IgorHighlightType.CUSTOM_TYPE, IgorHighlightType.FUNCTION]:
+            return False
+        start = self.WordStartPosition(pos, True)
+        end = self.WordEndPosition(pos, True)
+        if start == end: return False
+        line = self.LineFromPosition(pos)
+        lineData = self.GetLine(line).strip()
+        value = self.GetTextRange(start, end)
+        if style == IgorHighlightType.CUSTOM_TYPE:
+            if IgorCache.GetTypeOfEntry(value) == "record" and lineData.startswith("record"):
+                recordData = ErlangCache.AllRecordsData(camelToLowerUnderscore(value))
+                if recordData:
+                    self.navigateTo = (recordData.file, recordData.line)
+            else:
+                self.navigateTo = IgorCache.FindCustomType(value)
+
+        elif style == IgorHighlightType.FUNCTION:
+            if lineData.startswith("c->s"):
+                fileName, ext = os.path.splitext(os.path.basename(self.filePath))
+                fileName = fileName.replace("protocol_", "")
+                callbackModule = "handler_" + fileName
+                funName = "on_" + camelToLowerUnderscore(value)
+                navTo = ErlangCache.ModuleFunction(callbackModule, funName, None)
+                if navTo:
+                    self.navigateTo = (navTo.file, navTo.line)
+
+        if self.navigateTo:
+            self.navigateTo += (line, )
+            if self.navigateTo[0]:
+                self.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
+                self.SetIndicatorCurrent(1)
+                self.IndicatorFillRange(start, end - start)
+            return True
+        return False
+
+    def OnMouseClick(self, event):
+        if event.GetModifiers() == wx.MOD_CONTROL:
+            if self.navigateTo:
+                core.TabMgr.LoadFileLine(self.navigateTo[0], self.navigateTo[1] - 1, True, self.navigateTo[2])
+                return
+        event.Skip()
+
+    def OnFileSaved(self):
+        core.Project.FileSaved(self.filePath)

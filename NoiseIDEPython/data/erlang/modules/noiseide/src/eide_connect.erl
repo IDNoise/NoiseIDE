@@ -94,7 +94,7 @@ worker() ->
                 case Answer of
                     ?noreply -> ignore;
                     _ ->
-                        %io:format("Answer:~p~n", [byte_size(term_to_binary(Answer))]),
+                        %io:format("Answer:~p~n", [Answer]),
                         gen_tcp:send(Socket, Answer)
                 end
             catch Error:Reason -> 

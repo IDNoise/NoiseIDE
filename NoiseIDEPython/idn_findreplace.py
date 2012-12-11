@@ -192,7 +192,7 @@ class FindInProjectDialog(wx.Dialog):
         return FindInProjectDialog.dialog
 
     def __init__(self, parent):
-        wx.Dialog.__init__(self, parent, id = wx.NewId(), title = "Find / Replace in project", size = (500, 195))
+        wx.Dialog.__init__(self, parent, id = wx.ID_ANY, title = "Find / Replace in project", size = (500, 195))
 
         self.sizer = wx.GridBagSizer(2, 2)
         self.findTextLabel = wx.StaticText(self, label = "Find text:")
