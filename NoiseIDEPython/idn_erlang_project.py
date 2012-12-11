@@ -3,7 +3,8 @@ __author__ = 'Yaroslav'
 import os
 import operator
 import wx
-from idn_cache import ErlangCache
+import glob
+from idn_cache import ErlangCache, IgorCache
 from idn_colorschema import ColorSchema
 from idn_config import Config
 from idn_connect import CompileErrorInfo
@@ -38,6 +39,7 @@ class ErlangProject(Project):
         self.warningCount = 0
 
         ErlangCache.Init(self)
+        IgorCache.Init(self)
 
         self.SetupDirs()
         self.AddTabs()
@@ -271,7 +273,7 @@ class ErlangProject(Project):
         #print path
         hrls = set()
         erls = set()
-        #yrls = set()
+        igors = set()
         def addByType(file):
             if IsInclude(file):
                 hrls.add(file)
@@ -279,6 +281,8 @@ class ErlangProject(Project):
                 erls.add(file)
             elif IsYrl(file):
                 erls.add(file)
+            elif IsIgor(file):
+                igors.add(file)
         if isinstance(path, list):
             for p in path:
                 addByType(p)
@@ -299,13 +303,13 @@ class ErlangProject(Project):
                 hrls.remove(h)
 
         #print "to compile: ", erls
-        #self.GetShell().CompileYrls(yrls)
-        #print erls
         for erl in erls:
             app = self.GetApp(erl)
             if app in self.projectData[CONFIG_EXCLUDED_DIRS]:
                 continue
             self.GetShell().Compile(erl)
+        for igor in igors:
+            IgorCache.GenerateForFile(igor)
 
     def CompileOption(self, path, option):
         if not IsModule(path): return
@@ -592,6 +596,7 @@ class ErlangProject(Project):
         filesToCompile = set()
         filesToCache = set()
         yrlToCompile = set()
+        igorToCache = set()
         for app in self.GetApps():
             srcPath = os.path.join(os.path.join(self.AppsPath(), app), "src")
             testPath = os.path.join(os.path.join(self.AppsPath(), app), "test")
@@ -614,9 +619,16 @@ class ErlangProject(Project):
             if erl in filesToCompile:
                 filesToCompile.remove(erl)
 
+        for root, d, files in os.walk(self.projectDir):
+            for f in files:
+                if f.endswith(".igor"):
+                    igorToCache.add(os.path.join(root, f))
+
         filesToCompile = sorted(list(filesToCompile) + list(yrlToCompile))
         filesToCache = sorted(list(filesToCache))
 
+        for igor in igorToCache:
+            IgorCache.GenerateForFile(igor)
         #print "compile: ", filesToCompile
         #print "yrl compile: ", yrlToCompile
 #        print "cache: ", filesToCache

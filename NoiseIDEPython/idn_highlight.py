@@ -156,6 +156,8 @@ class IgorHighlighter:
 
             if token.value in self.keywords:
                 tokenType = IgorHighlightType.KEYWORD
+            elif token.type in self.RULES:
+                tokenType = self.RULES[token.type]
             elif token.value in ["?"]:
                 tokenType = IgorHighlightType.SPECIAL_SYMBOL
             elif firstToken.value == "[" and token.type == IgorTokenType.LOWER and tokens[i - 1].value != "=":
@@ -172,10 +174,8 @@ class IgorHighlighter:
                     tokenType = IgorHighlightType.ENUM_FIELD
                 elif token.value in ["bool", "sbyte", "byte", "short", "ushort", "int", "uint", "long", "ulong", "float", "double", "string", "binary", "atom", "dict", "list"]:
                     tokenType = IgorHighlightType.BASE_TYPE
-                elif tokens[i + 1].value in ["=", ";", ",", ")"]:
+                elif len(tokens) > i + 1 and tokens[i + 1].value in ["=", ";", ",", ")"]:
                     tokenType = IgorHighlightType.FIELD
-            elif token.type in self.RULES:
-                tokenType = self.RULES[token.type]
             result.append(Token(tokenType, token.value, token.start, token.end))
 
         return result

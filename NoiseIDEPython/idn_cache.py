@@ -1,5 +1,6 @@
 import os
 import json
+import re
 import shutil
 from idn_config import Config
 from idn_directoryinfo import DirectoryChecker
@@ -477,3 +478,48 @@ class ErlangCache:
             if cls.moduleData[inc].IsGlobalInclude():
                 result.append(cls.moduleData[inc].Application() + "/include/" + inc + "\").")
         return result
+
+class IgorEntryData:
+    def __init__(self, type, file, line):
+        self.type = type
+        self.file = file
+        self.line = line
+
+class IgorCache:
+    @classmethod
+    def Init(cls, project):
+        cls.project = project
+        cls.entries = {}
+
+        cls.entryRegex = re.compile(
+            r"""
+            ((record|variant)\s+(?P<record>[a-zA-Z0-9_\.]+)\s*)
+            |(enum\s+(?P<enum>[a-zA-Z0-9_\.]+)\s*)
+            |(interface\s+(?P<interface>[a-zA-Z0-9_\.]+)\s*)
+            """,
+            re.VERBOSE | re.MULTILINE)
+
+    @classmethod
+    def GenerateForFile(cls, file):
+        cls.ClearAllEntries(file)
+        text = readFile(file)
+        lines = text.splitlines()
+        for lineNumber, line in enumerate(lines):
+            m = cls.entryRegex.search(line)
+            if not m: continue
+            d = m.groupdict()
+            for g in d:
+                value = d[g]
+                if value != None:
+                    cls.entries[value] = IgorEntryData(g, file, lineNumber + 1)
+
+    @classmethod
+    def ClearAllEntries(cls, file):
+        for entry, entryData in cls.entries.copy().items():
+            if entryData.file == file:
+                del cls.entries[entry]
+
+    @classmethod
+    def FindType(cls, customType):
+        if customType in cls.entries:
+            return (cls.entries[customType].file, cls.entries[customType].line)

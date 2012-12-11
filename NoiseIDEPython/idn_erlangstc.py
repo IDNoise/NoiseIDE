@@ -5,7 +5,7 @@ __author__ = 'Yaroslav'
 import os
 import wx
 from wx import stc
-from idn_cache import ErlangCache
+from idn_cache import ErlangCache, IgorCache
 from idn_colorschema import ColorSchema
 from idn_connect import CompileErrorInfo
 from idn_customstc import CustomSTC, ConsoleSTC
@@ -220,30 +220,15 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         self.navigateTo = None
         pos = self.PositionFromPoint(event.GetPosition())
 
-#        def showErrorTooltip():
-#            line = self.LineFromPosition(pos)
-#            errs = list(filter(lambda e: e.line == line, self.lastErrors))
-#            if errs:
-#                msg = reduce(lambda msg, e: msg + e.msg + "\n", errs, "")
-#                self.ShowToolTip(msg)
-#            else:
-#                self.HideToolTip()
-
         if event.GetPosition()[0] < self.LineNumbersWidth() + self.FoldWidth + 10:
             self.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
-#            self.HideToolTip()
-#            if (event.GetPosition()[0] > self.LineNumbersWidth() and
-#                event.GetPosition()[0] < self.LineNumbersWidth() + 10):
-#                showErrorTooltip()
             return
 
-        #print event.GetModifiers() == wx.MOD_CONTROL,  self.HasFocus()
         if event.GetModifiers() == wx.MOD_CONTROL and self.HasFocus():
             if not self.CheckNavigation(pos):
                 self.SetCursor(wx.StockCursor(wx.CURSOR_IBEAM))
         elif self.HasFocus():
             self.SetCursor(wx.StockCursor(wx.CURSOR_IBEAM))
-#            showErrorTooltip()
 
     def OnRequestTooltipText(self):
         if wx.GetKeyState(wx.WXK_CONTROL):
@@ -662,6 +647,12 @@ class ErlangConsoleSTC(ConsoleSTC):
 
 
 class IgorSTC(CustomSTC):
+    def OnInit(self):
+        self.navigateTo = None
+
+        self.Bind(wx.EVT_MOTION, self.OnMouseMove)
+        self.Bind(wx.EVT_LEFT_DOWN, self.OnMouseClick)
+
     def SetupLexer(self):
         self.lexer = IgorLexer(self)
         self.SetLexer(stc.STC_LEX_CONTAINER)
@@ -681,3 +672,50 @@ class IgorSTC(CustomSTC):
         self.StyleSetSpec(IgorHighlightType.FIELD, formats["field"])
         self.StyleSetSpec(IgorHighlightType.ENUM_FIELD, formats["enum_field"])
         self.StyleSetSpec(IgorHighlightType.FUNCTION, formats["function"])
+
+    def OnMouseMove(self, event):
+        event.Skip()
+        self.ClearIndicator(1)
+        self.navigateTo = None
+        pos = self.PositionFromPoint(event.GetPosition())
+
+        if event.GetPosition()[0] < self.LineNumbersWidth() + self.FoldWidth + 10:
+            self.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+            return
+
+        if event.GetModifiers() == wx.MOD_CONTROL and self.HasFocus():
+            if not self.CheckNavigation(pos):
+                self.SetCursor(wx.StockCursor(wx.CURSOR_IBEAM))
+        elif self.HasFocus():
+            self.SetCursor(wx.StockCursor(wx.CURSOR_IBEAM))
+
+    def CheckNavigation(self, pos):
+        style = self.GetStyleAt(pos)
+        if style not in [IgorHighlightType.CUSTOM_TYPE]:
+            return False
+        start = self.WordStartPosition(pos, True)
+        end = self.WordEndPosition(pos, True)
+        if start == end: return False
+        value = self.GetTextRange(start, end)
+        #print value
+
+        self.navigateTo = IgorCache.FindType(value)
+        if self.navigateTo:
+            line = self.LineFromPosition(pos)
+            self.navigateTo += (line, )
+            if self.navigateTo[0]:
+                self.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
+                self.SetIndicatorCurrent(1)
+                self.IndicatorFillRange(start, end - start)
+            return True
+        return False
+
+    def OnMouseClick(self, event):
+        if event.GetModifiers() == wx.MOD_CONTROL:
+            if self.navigateTo:
+                core.TabMgr.LoadFileLine(self.navigateTo[0], self.navigateTo[1] - 1, True, self.navigateTo[2])
+                return
+        event.Skip()
+
+    def OnFileSaved(self):
+        core.Project.FileSaved(self.filePath)
