@@ -36,8 +36,6 @@ class ErlangSocketConnection(asyncore.dispatcher):
     def __init__(self):
         asyncore.dispatcher.__init__(self)
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
-        #self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        #self.socket.setsockopt( socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
         self.socketQueue = Queue()
         self.socketHandler = None
         self.port = self.PickUnusedPort()
@@ -65,30 +63,24 @@ class ErlangSocketConnection(asyncore.dispatcher):
     def Stop(self):
         self.asyncoreThread.Stop()
         self.close()
-        #print "stop connection"
 
     def handle_connect(self):
-        #print "connect"
         self.OnConnect()
 
     def writable(self):
         return not self.socketQueue.empty()
 
     def handle_close(self):
-        #print "close"
         self.close()
 
     def handle_write(self):
-        #print 'handle_write'
         cmd = self.socketQueue.get()
         if cmd:
             msgLen = struct.pack('>L', len(cmd))
             msg = msgLen + cmd
-            #print msg
             self.send(msg)
 
     def handle_read(self):
-        #print 'handle_read'
         recv = self.socket.recv(4)
         if recv:
             msgLen = struct.unpack('>L', recv)[0]
@@ -106,7 +98,6 @@ class ErlangSocketConnection(asyncore.dispatcher):
 
     def _ExecRequest(self, action, data):
         request = '{' + '"action": "{}", "data": {}'.format(action, data) + '}'
-        #core.Log("request", request)
         self.socketQueue.put(request)
 
     def OnClosed(self):
@@ -122,7 +113,6 @@ class CompileErrorInfo:
         self.msg = msg
         self.line = line - 1
         self.path = path
-        #print type, line, msg
 
     def TypeToStr(self):
         if self.type == self.WARNING:
@@ -203,8 +193,6 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
         self._ExecRequest("add_path", '"{}"'.format(erlstr(path)))
 
     def _HandleSocketResponse(self, text):
-        #core.Log("response", text)
-
         self.lastTaskDone = None
         try:
             js = json.loads(text)
@@ -216,75 +204,6 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
         except Exception, e:
 
             core.Log("===== connection exception ", text, e)
-
-
-
-#class ErlangNodeProtocol(protocol.ProcessProtocol):
-#    def __init__(self, parent):
-#        self.parent = parent
-#
-#    def connectionMade(self):
-#        print "connectionMade!"
-##        for i in range(self.verses):
-##            self.transport.write("Aleph-null bottles of beer on the wall,\n" +
-##                                 "Aleph-null bottles of beer,\n" +
-##                                 "Take one down and pass it around,\n" +
-##                                 "Aleph-null bottles of beer on the wall.\n")
-#        #self.transport.closeStdin() # tell them we're done
-#    def outReceived(self, data):
-#        self.parent.DataReceived(data)
-#        print "outReceived! {}".format(data)
-#        #self.data = self.data + data
-#    def errReceived(self, data):
-#        print "errReceived! with %d bytes!" % len(data)
-#    def inConnectionLost(self):
-#        print "inConnectionLost! stdin is closed! (we probably did it)"
-#    def outConnectionLost(self):
-#        print "outConnectionLost! The child closed their stdout!"
-#    def errConnectionLost(self):
-#        print "errConnectionLost! The child closed their stderr."
-#    def processExited(self, reason):
-#        print "processExited, status %d" % (reason.value.exitCode,)
-#    def processEnded(self, reason):
-#        print "processEnded, status %d" % (reason.value.exitCode,)
-#        print "quitting"
-#        reactor.stop()
-#    def Write(self, cmd):
-#        self.transport.write(cmd)
-#        #self.transport.flush()
-#
-#
-#class ErlangProcess():
-#    def __init__(self, cwd, params = []):
-#        self.cwd = cwd
-#
-#        self.protocol = ErlangNodeProtocol(self)
-#        self.SetParams(params)
-#        self.DataReceivedEvent = idn_events.Event()
-#        self.stopped = False
-#        #print self.DataReceivedEvent
-#
-#    def SendCommandToProcess(self, cmd):
-#        self.protocol.Write(cmd)
-#
-#    def SetParams(self, params):
-#        self.cmd = core.Project.GetErlangPath()
-#        self.params = ' '.join(params + ["-s reloader"])
-#        self.program = "erlang"
-#
-#    def Start(self):
-#        self.stopped = False
-#        reactor.callFromThread(reactor.spawnProcess, self.protocol, self.cmd, [self.program, self.params])
-#        #reactor.spawnProcess(self.protocol, self.cmd, [self.program, self.params])
-#        print "xx"
-#
-#    def DataReceived(self, data):
-#        self.DataReceivedEvent(data)
-#
-#    def Stop(self):
-#        pass
-#        #reactor.stop()
-
 
 class ErlangProcess(Process):
     def __init__(self, cwd = os.getcwd(), params = []):
@@ -354,7 +273,6 @@ class ErlangProcessWithConnection(ErlangProcess, ErlangIDEConnectAPI):
     def Start(self):
         ErlangProcess.Start(self)
         self.SendCommandToProcess("eide_connect:start({}).".format(self.port))
-        #time.sleep(1)
 
     def Stop(self):
         ErlangSocketConnection.Stop(self)

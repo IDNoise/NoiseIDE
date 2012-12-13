@@ -80,7 +80,6 @@ class ErlangHighlighter:
 
             elif token.type == ErlangTokenType.MODULEATTR:
                 tokenType = ErlangHighlightType.MODULEATTR
-                #if token.value in self.MODULEATTR:
 
             elif token.type == ErlangTokenType.ATOM:
                 if token.value in self.KEYWORDS:
@@ -99,8 +98,6 @@ class ErlangHighlighter:
                     tokenType = ErlangHighlightType.MODULE
 
                 elif i + 1 < len(tokens) and tokens[i + 1].value == "(":
-                    #if token.value in self.BIF: tokenType = ErlangHighlightType.BIF
-                    #else: tokenType = ErlangHighlightType.FUNCTION
                     tokenType = ErlangHighlightType.FUNCTION
 
                 elif ((i - 2 >= 0 and tokens[i - 2].value == self.FUN
@@ -146,11 +143,6 @@ class IgorHighlighter:
         firstToken = tokens[0]
         for i in range(len(tokens)):
             token = tokens[:][i]
-#            print "==="
-#            print token.type
-#            print token.value
-#            print i
-#            print len(tokens)
             tokenType = IgorHighlightType.DEFAULT
 
             if token.value in self.keywords:

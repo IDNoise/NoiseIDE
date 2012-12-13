@@ -64,7 +64,7 @@ class ErlangProject(Project):
         Project.SetupMenu(self)
 
         self.window.projectMenu.AppendSeparator()
-        self.window.projectMenu.AppendMenuItem("Rebuild project", self.window, lambda e: self.CompileProject())
+        self.window.projectMenu.AppendMenuItem("Rebuild project", self.window, lambda e: self.CompileProject(), "F7")
         self.window.projectMenu.AppendMenuItem("XRef check", self.window, lambda e: self.StartXRef())
 
         self.dialyzerMenu = Menu()
@@ -165,7 +165,6 @@ class ErlangProject(Project):
         return True
 
     def DialyzeApps(self, paths):
-        #print paths
         if not self.CheckPlt(): return
         apps = set()
         for path in paths:
@@ -175,7 +174,6 @@ class ErlangProject(Project):
         if len(apps) == 0:
             wx.MessageBox("No app to dialyze.")
             return
-        #print apps
         self.GetShell().DialyzeApps(list(apps))
 
     def DialyzeProject(self):
@@ -235,7 +233,6 @@ class ErlangProject(Project):
         self.GenerateErlangCache()
 
     def GenerateErlangCache(self):
-        #print "generate erlang cache"
         self.GetShell().GenerateErlangCache(self.GetErlangRuntime())
 
     def StartXRef(self):
@@ -252,9 +249,7 @@ class ErlangProject(Project):
             module = os.path.basename(file)[:-4]
             self.GetShell().XRef(module)
             self.xrefModules.add(module)
-        #print "start xref", self.xrefModules
         self.xrefTable.Clear()
-        #self.ShowXrefTable()
 
     def GetShell(self):
         return self.shellConsole.shell
@@ -270,7 +265,6 @@ class ErlangProject(Project):
         return app
 
     def Compile(self, path):
-        #print path
         hrls = set()
         erls = set()
         igors = set()
@@ -288,21 +282,17 @@ class ErlangProject(Project):
                 addByType(p)
         else:
             addByType(path)
-        #print hrls
         while len(hrls) > 0:
             toRemove = []
             for hrl in hrls:
                 self.GetShell().GenerateFileCache(hrl)
-               # print "hrl", hrl, os.path.basename(hrl), ErlangCache.GetDependentModules(os.path.basename(hrl))
                 dependent = ErlangCache.GetDependentModules(os.path.basename(hrl))
-                #print dependent
                 for d in dependent:
                     addByType(d)
                 toRemove.append(hrl)
             for h in toRemove:
                 hrls.remove(h)
 
-        #print "to compile: ", erls
         for erl in erls:
             app = self.GetApp(erl)
             if app in self.projectData[CONFIG_EXCLUDED_DIRS]:
@@ -325,13 +315,10 @@ class ErlangProject(Project):
                     page.SetNewText(data)
                     return
         title = "'{}' {}".format(option, os.path.basename(path))
-       # Log(title)
         panel = ErlangCompileOptionPanel(self.window.TabMgr, path, option, data)
         self.window.TabMgr.AddCustomPage(panel, title)
 
     def AddConsoles(self):
-        #self.shellConsole = ErlangIDEConsole(self.window, self.IDE_MODULES_DIR)
-        #self.shellConsole.Hide()
         self.SetupShellConsole()
 
         self.UpdatePaths()
@@ -365,14 +352,11 @@ class ErlangProject(Project):
             self.shellConsole.shell.ConnectToSocket()
 
     def OnTaskAdded(self, task):
-        #print task
         self.AddTask(task)
 
     def OnSocketDataReceived(self, response, js):
-        #print response
         if response == "connect":
             self.connected = True
-            #self.shellConsole.shell.SocketDataReceivedEvent -= self.OnSocketDataReceived
             self.OnSocketConnected()
         elif response == "compile" or response == "compile_fly":
             errorsData = js["errors"]
@@ -389,7 +373,6 @@ class ErlangProject(Project):
                 if error["line"] == "none":
                     continue
                 errors.append(CompileErrorInfo(path, error["type"], error["line"], error["msg"]))
-                #print "compile result: {} = {}".format(path, errors)
             self.AddErrors(path, errors)
 
         elif response == "xref_module":
@@ -399,9 +382,7 @@ class ErlangProject(Project):
             if not module in ErlangCache.moduleData: return
             undefined = [((u["where_m"], u["where_f"], u["where_a"]),
                           (u["what_m"], u["what_f"], u["what_a"])) for u in js["undefined"]]
-            #print "xref result", module, undefined
             self.AddXRefErrors(ErlangCache.moduleData[module].file, undefined)
-            #print "result", module, self.xrefModules
             if len(self.xrefModules) == 0:
                 self.ShowXrefTable()
         elif response == "dialyzer":
@@ -425,7 +406,6 @@ class ErlangProject(Project):
         self.CreateProgressDialog("Compiling project")
         self.CompileProject()
         self.GenerateErlangCache()
-        #print 'on connected ..'
 
     def UpdatePaths(self):
         dirs = ""
@@ -435,7 +415,6 @@ class ErlangProject(Project):
             self.shellConsole.shell.AddPath(ebinDir)
             dirs += ' "{}"'.format(ebinDir)
         dirs += ' "{}"'.format(self.IDE_MODULES_DIR)
-        #print "new dirs", dirs
         self.dirs = dirs
 
     def AddXRefErrors(self, path, errors):
@@ -482,7 +461,6 @@ class ErlangProject(Project):
                 self.consoles[title].SetStartCommand(data[CONFIG_CONSOLE_COMMAND])
                 self.consoleTabs[title] = self.consoles[title]
                 self.ShowConsole(title, self.consoles[title])
-                #self.window.ToolMgr.AddPage(self.consoles[title], 'Console <{}>'.format(title))
 
             def showConsole(title):
                 return lambda e: self.ShowConsole(title, self.consoleTabs[title])
@@ -523,7 +501,6 @@ class ErlangProject(Project):
         Project.Close(self)
 
     def OnProjectFilesModified(self, files):
-        #print "modified", files, self.window.TabMgr.OpenedFiles()
         toCompile = []
         for file in files:
             editor = self.window.TabMgr.FindPageByPath(file)
@@ -544,7 +521,6 @@ class ErlangProject(Project):
 
 
     def FileSaved(self, file):
-        #core.Log("saved", file)
         self.Compile(file)
 
     def OnProjectFilesDeleted(self, files):
@@ -570,7 +546,6 @@ class ErlangProject(Project):
                     editor.Changed()
 
     def OnProjectFilesCreated(self, files):
-        #print "created", files
         self.Compile(files)
 
     def OnProjectDirsCreated(self, dirs):
@@ -593,7 +568,6 @@ class ErlangProject(Project):
                 ".app": ErlangHighlightedSTCBase}
 
     def CompileProject(self):
-        #print "compile project"
         self.CreateProgressDialog("Compiling project")
         ErlangCache.CleanDir(self.ProjectName())
         filesToCompile = set()
@@ -605,7 +579,6 @@ class ErlangProject(Project):
             testPath = os.path.join(os.path.join(self.AppsPath(), app), "test")
             includePath = os.path.join(os.path.join(self.AppsPath(), app), "include")
             for path in [srcPath, includePath, testPath]:
-                #if not os.path.isdir(path): continue
                 for root, _, files in os.walk(path):
                     for file in files:
                         file = os.path.join(root, file)
@@ -632,9 +605,6 @@ class ErlangProject(Project):
 
         for igor in igorToCache:
             IgorCache.GenerateForFile(igor)
-        #print "compile: ", filesToCompile
-        #print "yrl compile: ", yrlToCompile
-#        print "cache: ", filesToCache
 
         self.GetShell().GenerateFileCaches(filesToCache)
         self.GetShell().CompileProjectFiles(filesToCompile)
@@ -681,7 +651,6 @@ class ErlangProject(Project):
                     pathErrors[path] = True
         pathErrors = sorted(pathErrors.iteritems(), key = operator.itemgetter(1))
         self.explorer.SetPathErrors(pathErrors)
-        #wx.CallAfter(self.window.TabMgr.HighlightErrorPaths, pathErrors)
         self.window.TabMgr.HighlightErrorPaths(pathErrors)
         index = self.window.ToolMgr.FindPageIndexByWindow(self.errorsTable)
         self.errorCount = errorCount
@@ -712,7 +681,6 @@ class ErlangProject(Project):
 
     def SetCompilerOptions(self):
         options = self.CompilerOptions().replace("\n", ", ")
-        print options
         self.shellConsole.shell.SetProp(CONFIG_COMPILER_OPTIONS, options)
         if self.CompilerOptions() != self.CompilerOptions(self.oldProjectData):
             self.CompileProject()

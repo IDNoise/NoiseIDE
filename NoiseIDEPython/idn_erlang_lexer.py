@@ -41,7 +41,6 @@ class ErlangLexer(BaseLexer):
                     self.stc.SetStyling(start - lastEnd, defaultStyle)
                 self.stc.SetStyling(len(token.value), token.type)
                 lastEnd  = lineStart + token.end
-#            self.UpdateLineData(startLine, tokens)
                 if token.type == ErlangHighlightType.FUNDEC:
                     if tokens[0].value == "-spec":
                         lineData.specName = token.value
@@ -53,7 +52,6 @@ class ErlangLexer(BaseLexer):
                         while line > 0:
                             if self.linesData[line].functionName == token.value:
                                 self.linesData[line].functionEnd = self.stc.GetLineEndPosition(startLine - 1)
-                                #print "dec", line, self.linesData[line].functionName, self.linesData[line].functionStart, self.linesData[line].functionEnd
                                 break
                             line -= 1
                 elif token.type == ErlangHighlightType.FULLSTOP:
@@ -115,7 +113,6 @@ class ErlangLexer(BaseLexer):
         caretPos = self.stc.GetCurrentPos()
         while line > 0:
             data = self.linesData[line]
-            #print line, data.functionName, data.functionEnd
             if data.functionEnd and caretPos > data.functionEnd: return False
             if data.functionName: return not data.functionEnd or data.functionEnd >= caretPos
             line -= 1
@@ -147,7 +144,6 @@ class ErlangLexer(BaseLexer):
         caretPos = self.stc.GetCurrentPos()
         while line > 0:
             data = self.linesData[line]
-            #print line, data.specName, data.specStart, data.specEnd
             if data.specEnd: return data.specEnd > caretPos
             line -= 1
         return False
@@ -163,24 +159,18 @@ class ErlangLexer(BaseLexer):
         stateEnd = 1
         stateClosed = 2
         caretPos = self.stc.GetCurrentPos()
-        #print caretPos
         if self.IsInFunction():
-            #print "in func"
             funData = self.GetCurrentFunction()
             text = funData[3]
             text = text[:caretPos - funData[1]]
         else:
-            #print "not in func"
             line = self.stc.GetCurrentLine()
             text = self.stc.GetTextRange(self.stc.PositionFromLine(line - 10), caretPos)
-        #print text
         tokens = self.highlighter.GetHighlightingTokens(text)
         tokens.reverse()
         tokens  = [token for token in tokens if token.type not in [ErlangHighlightType.COMMENT]]
         result = False
-        open = 0
         record = ""
-        #print(tokens)
         prefix = ""
         if len(tokens) > 1 and tokens[0].type == ErlangHighlightType.ATOM and tokens[1].value in [comma, recordOpenBracket]:
             prefix = tokens[0].value
@@ -191,9 +181,7 @@ class ErlangLexer(BaseLexer):
         state = None
         first = None
         lastBracket = None
-        #print("start -----------------------")
         for i, token in enumerate(tokens):
-            #print("state:{}, token:{}, lastBracket:{}".format(state, (token.type, token.value), lastBracket))
             if not state:
                 if token.value == comma:
                     first = comma
@@ -224,7 +212,6 @@ class ErlangLexer(BaseLexer):
                     lastBracket = lastBracket[1]
                 else:
                     state = None
-            #print("end -----------------------")
         return (result, record, prefix)
 
     def GetAllExports(self):

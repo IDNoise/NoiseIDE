@@ -18,9 +18,6 @@ class DirectoryInfo:
         self.excludeDirs = excludeDirs
         self.excludePaths = excludePaths
         self.GatherDirInfo(root)
-        #print fileMask, " ", excludeDirs, " ", excludePaths
-        #print self.files
-        #print self.dirs
 
     def GatherDirInfo(self, root):
         files = os.listdir(root)

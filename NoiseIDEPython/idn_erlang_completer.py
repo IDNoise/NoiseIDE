@@ -87,7 +87,6 @@ class ErlangCompleter(wx.Frame):
 
     def Update(self, text, nextChar = None):
         if self.lastText == text: return
-        #print "update", text
         self.lastText = text
         tokens = self.tokenizer.GetTokens(text)
         tokens.reverse()
@@ -104,7 +103,6 @@ class ErlangCompleter(wx.Frame):
                 (len(tokens) == 1 and fIsAtom) or
                 (fIsAtom and tokens[1].type == ErlangTokenType.SPACE) or
                 (fIsAtom and tokens[1].value in self.separators) or
-                #(fIsAtom and nextChar == "/") or
                 fValue in self.separators):
                 if fValue in self.separators or fType == ErlangTokenType.SPACE:
                     self.prefix = ""
@@ -125,10 +123,7 @@ class ErlangCompleter(wx.Frame):
                 onlyExported = True
                 if moduleName == "?MODULE":
                     moduleName = self.module
-                    #onlyExported = False mb make it show all funs
                 self.prefix = "" if fValue == ":" else fValue
-                #print self.stc.lexer.IsInFunction()
-                #print self.stc.lexer.IsInSpec()
                 if self.stc.lexer.IsInSpec():
                     data += ErlangCache.ModuleExportedTypes(moduleName)
                 else:
@@ -319,12 +314,10 @@ class ErlangCompleter(wx.Frame):
                 module += prefix[i]
                 i -= 1
             module = module[::-1]
-            #print module
             if not module.islower():
                 module = self.module
         else:
             module = self.module
-            # print "show fun help", module, fun, arity
         data = ErlangCache.ModuleFunction(module, fun, arity)
         if not data:
             data = ErlangCache.ModuleExportedData(module, fun)
@@ -341,7 +334,6 @@ class ErlangCompleter(wx.Frame):
                 help = self._ExportedTypeHelp(data)
         else:
             help = self._FunctionHelp(data)
-            #print "fun help", fun, prefix, pos,  help
         file = data.moduleData.file if data.moduleData else None
         return ((file, data.line), help)
 
@@ -372,7 +364,6 @@ class ErlangCompleter(wx.Frame):
         if self.stc.GetCharAt(pos) != "(": return 0
         sF = pos + 1 if pos + 1 < self.stc.GetLength() else self.stc.GetLength() - 1
         sT = pos + 6 if pos + 6 < self.stc.GetLength() else self.stc.GetLength() - 1
-        #print pos, self.stc.GetLength(), sF, sT
         postfix = self.stc.GetText()[sF : sT].strip()
         if self.stc.GetCharAt(pos) == "(" and postfix and postfix[0] == ")":
             return 0
@@ -479,7 +470,6 @@ class ErlangSimpleCompleter(wx.Frame):
             fType = fToken.type
             fValue = fToken.value
             fIsAtom = fType == ErlangTokenType.ATOM
-            #print fValue, fIsAtom
             if (fType == ErlangTokenType.SPACE or
                 (len(tokens) == 1 and fIsAtom) or
                 (fIsAtom and tokens[1].type == ErlangTokenType.SPACE) or
@@ -527,7 +517,6 @@ class ErlangSimpleCompleter(wx.Frame):
             if text.startswith(self.prefix):
                 self.lastData.append(d)
                 self.list.Append(text)
-        #print self.list.Items
         self.ValidateCompleter()
 
     def OnItemDoubleClick(self, event):

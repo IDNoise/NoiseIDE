@@ -25,9 +25,7 @@ class ErrorsTableGrid(wx.grid.Grid):
         self.DisableCellEditControl()
         self.DisableDragCell()
         self.DisableDragColMove()
-        #self.DisableDragColSize()
         self.DisableDragGridSize()
-        #self.DisableDragRowSize()
 
         self.SetDefaultRenderer(CutomGridCellAutoWrapStringRenderer())
 
@@ -193,7 +191,6 @@ class DialyzerTableGrid(ErrorsTableGrid):
         self.EnableDragColSize()
         self.EnableDragRowSize()
         self.EnableGridLines()
-        #self.SetM#
 
     def SetColSizes(self):
         self.SetColSize(0, 350)
@@ -212,9 +209,7 @@ class DialyzerTableGrid(ErrorsTableGrid):
         currentRows = len(self.table.data)
         data = []
         for warning in warnings:
-           # print warning
             warningData = warning.split(":")
-            #print data
             module = warningData[0]
             line = int(warningData[1])
             msg = ':'.join(warningData[2:])

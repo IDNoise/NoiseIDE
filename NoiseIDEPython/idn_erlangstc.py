@@ -103,7 +103,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
             foreground = ColorSchema.codeEditor["warning_marker_color"],
             background = ColorSchema.codeEditor["warning_marker_color"])
 
-        self.SetMarginMask(2, ~stc.STC_MASK_FOLDERS)#self.MARKER_ERROR_CIRCLE | self.MARKER_WARNING_CIRCLE)
+        self.SetMarginMask(2, ~stc.STC_MASK_FOLDERS)
 
     def CreatePopupMenu(self, event):
         menu = Menu()
@@ -131,9 +131,6 @@ class ErlangSTC(ErlangHighlightedSTCBase):
 
     def OnAutoComplete(self):
         self.UpdateCompleter()
-        #print len(self.completer.list.Items) == 1
-        #print isinstance(self.completer.lastData[0], unicode)
-        #print self.completer.lastData[0], type(self.completer.lastData[0])
         if len(self.completer.list.Items) == 1 and isinstance(self.completer.lastData[0], unicode):
             self.completer.AutoComplete(self.completer.list.Items[0])
         else:
@@ -152,13 +149,11 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         else:
             line = self.GetCurrentLine()
             prefix = self.GetTextRange(self.PositionFromLine(line), caretPos)
-           # self.completer.Update(prefix, self.GetCharAt(caretPos + 1))
             self.completer.Update(prefix)
         self.completer.UpdateCompleterPosition(self.PointFromPosition(caretPos))
 
     def HandleKeyDownEvent(self, event):
         keyCode = event.GetKeyCode()
-        #print keyCode
         result = CustomSTC.HandleKeyDownEvent(self, event)
         if result: return result
 
@@ -278,18 +273,15 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         style = self.GetStyleAt(pos)
         if style not in [ErlangHighlightType.ATOM,
                          ErlangHighlightType.FUNCTION,
-                         #ErlangHighlightType.FUNDEC,
                          ErlangHighlightType.MACROS,
                          ErlangHighlightType.MODULE,
                          ErlangHighlightType.RECORD,
                          ErlangHighlightType.MODULEATTR,
                          ErlangHighlightType.STRING]:
-            #print "wrong style", style
             return False
         start = self.WordStartPosition(pos, True)
         end = self.WordEndPosition(pos, True)
         if start == end:
-            #print "same pos"
             return False
 
 
@@ -300,7 +292,6 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         prefix = self.GetTextRange(lineStart, start)
         value = self.GetTextRange(start, end)
         postfix = self.GetTextRange(end, lineEnd)
-        #print value, prefix
         data = None
         if style == ErlangHighlightType.FUNCTION:
             data = self.completer.GetFunctionNavAndHelp(value, prefix, end)
@@ -325,7 +316,6 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                     self.navigateTo = (ErlangCache.moduleData[include].file, 0)
                     start = lineStart
                     end = lineEnd
-        #print self.navigateTo
         if style in [ErlangHighlightType.FUNCTION, ErlangHighlightType.RECORD, ErlangHighlightType.MACROS]:
             if data:
                 self.navigateTo = data[0]
@@ -344,16 +334,11 @@ class ErlangSTC(ErlangHighlightedSTCBase):
     def OnMouseClick(self, event):
         if event.GetModifiers() == wx.MOD_CONTROL:
             if self.navigateTo:
-                #editor =
                 core.TabMgr.LoadFileLine(self.navigateTo[0], self.navigateTo[1] - 1, True, self.navigateTo[2])
                 return
         event.Skip()
 
     def OnMiddleMouseClick(self, event):
-#        if event.GetModifiers() == wx.MOD_CONTROL:
-#            if self.navigateTo:
-#                #self.completer.helpWindow.SetFocus()
-#                return
         event.Skip()
 
     def OnFlyTimer(self, event):
@@ -388,7 +373,6 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                 indic_margin = self.MARKER_ERROR_CIRCLE
                 self.MarkerDelete(e.line, self.MARKER_WARNING)
                 self.MarkerDelete(e.line, self.MARKER_WARNING_CIRCLE)
-            #print highlightLine, e.line, indic_line, indic_margin
             if highlightLine:
                 self.MarkerAdd(e.line, indic_line)
             self.MarkerAdd(e.line, indic_margin)
@@ -397,7 +381,6 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         self.Refresh()
 
     def OnFileSaved(self):
-        #core.Log("saved stc", self.filePath)
         core.Project.FileSaved(self.filePath)
 
     def DoIndent(self):
@@ -409,8 +392,6 @@ class ErlangSTC(ErlangHighlightedSTCBase):
             text.endswith("||") or
             text.endswith("=") or
             text.endswith("begin") or
-            #text.endswith("andalso") or
-            #text.endswith("orelse") or
             text.endswith("when") or
             text.endswith("of") or
             text.endswith("->") or
@@ -447,14 +428,12 @@ class ErlangSTC(ErlangHighlightedSTCBase):
 
     def GoToExport(self):
         funData = self.lexer.GetCurrentFunction()
-        #print funData
         if not funData: return
 
         fun = funData[0]
         arity = self.completer.GetFunArity(funData[1] + len(fun))
         funStr = "{}/{}".format(fun, arity)
         (exports, startPos, insertPos) = self.lexer.GetAllExports()
-        #print funStr
         if funStr not in exports: return
         self.SetTargetStart(startPos)
         self.SetTargetEnd(insertPos)

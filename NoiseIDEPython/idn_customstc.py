@@ -90,8 +90,7 @@ class EditorLineMarginMixin:
 
 class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
     def __init__(self, parent, markerPanel, filePath = None):
-        #style = wx.MAXIMIZE_BOX|wx.RESIZE_BORDER|wx.SYSTEM_MENU|wx.CAPTION|wx.CLOSE_BOX
-        StyledTextCtrl.__init__(self, parent, style = wx.NO_BORDER)#, style = style)
+        StyledTextCtrl.__init__(self, parent, style = wx.NO_BORDER)
         EditorFoldMixin.__init__(self)
         EditorLineMarginMixin.__init__(self)
 
@@ -113,7 +112,6 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.SetCaretLineBackground(ColorSchema.codeEditor["current_line_background"])
         self.SetCaretLineVisible(True)
 
-        #self.SetUseHorizontalScrollBar(True)
         self.SetEndAtLastLine(False)
         self.SetScrollWidthTracking(True)
         self.SetScrollWidth(140)
@@ -131,7 +129,6 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.SetMargins(5, 5)
 
         self.SetMarginType(2, stc.STC_MARGIN_SYMBOL)
-        #self.SetMarginMask(2, stc.STC_MAS)
         self.SetMarginSensitive(2, True)
         self.SetMarginWidth(2, 10)
 
@@ -139,7 +136,6 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.IndicatorSetForeground(0, ColorSchema.codeEditor["highlighted_word"])
 
         self.SetVisiblePolicy(stc.STC_CARET_STRICT | stc.STC_CARET_EVEN, 0)
-        #self.SetYCaretPolicy(stc.STC_CARET_STRICT | stc.STC_CARET_EVEN, 0)
         self.SetYCaretPolicy(stc.STC_CARET_JUMPS | stc.STC_CARET_EVEN, 0)
 
         self.font = wx.Font(ColorSchema.codeEditor["font_size"],
@@ -231,7 +227,6 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         dialog.Show()
         if self.SelectedText:
             dialog.findText.Value = self.SelectedText
-           # dialog.findText.SetSelection(-1, -1)
             dialog.findText.SetInsertionPointEnd()
         dialog.findText.SetFocus()
 
@@ -264,7 +259,6 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
 
     def LoadFile(self, filePath):
         self.filePath = os.path.normpath(filePath)
-        #print filePath
         self.ClearAll()
         StyledTextCtrl.LoadFile(self, self.filePath)
         self.savedText = self.GetText()
@@ -286,7 +280,6 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.HighlightSelectedWord()
 
     def OnDocumentChanged(self, event):
-        #if self.GetText() != self.
         self.Changed()
         event.Skip()
 
@@ -323,13 +316,11 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
 
     def HandleKeyDownEvent(self, event):
         keyCode = event.GetKeyCode()
-        #print keyCode
         brKey = (keyCode, event.GetModifiers())
         if brKey in self.bracketQuoteKeyMap:
             bracketQuote = self.bracketQuoteKeyMap[brKey]
         else:
             bracketQuote = None
-        #print bracketQuote
         if keyCode in [wx.WXK_DOWN, wx.WXK_UP] and event.GetModifiers() == wx.MOD_CONTROL | wx.MOD_SHIFT:
             offset = -1 if keyCode == wx.WXK_UP else 1
             startLine = self.LineFromPosition(self.GetSelectionStart())
@@ -446,7 +437,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         char = self.GetCharAt(pos)
         self.BraceBadLight(-1)
         if not char in "()[]{}<>":
-            self.BraceBadLight(-1) #clear
+            self.BraceBadLight(-1)
             return
         otherPos = self.BraceMatch(pos)
         if otherPos > 0:
@@ -469,13 +460,11 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         else:
             goToFoundText = True
         if self.lastHighlightedWord != text:
-            #print "clear selected word"
             self.ClearIndicator(0)
             self.lastHighlightedWord = text
         else:
             return
         markers = []
-        #print text
         if (text and True not in [c in text for c in [" ", "\n", "\r", ","]]):
             self.SetIndicatorCurrent(0)
             self.SetSearchFlags(stc.STC_FIND_MATCHCASE | stc.STC_FIND_WHOLEWORD)
@@ -677,7 +666,6 @@ class STCContextToolTip:
                 return
 
         self.tooltipWin.Hide()
-        #print "hide on leave"
         self.showtime.Stop()
         event.Skip()
 
@@ -688,13 +676,10 @@ class STCContextToolTip:
         event.Skip()
 
     def OnMotion(self, event):
-        #print "==="
-        #print not self.tooltipWin
         event.Skip()
         if not self.tooltipWin.IsShown():
             return
         currentPos = wx.GetMousePosition()
-        #print self.tooltipWin, self.tooltipWin.Shown, wx.FindWindowAtPoint(currentPos), self.tooltipWin == wx.FindWindowAtPoint(currentPos)
         if self.tooltipWin.Shown:
 
             pos = wx.GetMousePosition()
@@ -706,13 +691,9 @@ class STCContextToolTip:
             rect.Right += 10
             if rect.Contains(realPos):
                 return
-            #if self.tooltipWin == wx.FindWindowAtPoint(currentPos):
-            #    return
-            #print self.showPos, currentPos
             if (abs(self.showPos[0] - currentPos[0]) < 15 and
                 abs(self.showPos[1] - currentPos[1]) < 15):
                 return
-            #print "hide on motion", self.showPos, currentPos
             self.HideToolTip()
 
 
@@ -736,16 +717,10 @@ class STCContextToolTip:
                     self.tooltipWin.FadeIn()
                     self.stc.SetFocus()
                 else:
-                    #print "no text hide"
                     self.HideToolTip()
-        #print "show timer"
-        #text = "xad asdasd asd asd asd " * 1000#self.handler()
-
-        #print text
 
 
     def HideToolTip(self):
-        #self.tooltipWin.Hide()
         self.tooltipWin.FadeOut()
 
 class STCTooltip(wx.Frame):
@@ -761,15 +736,6 @@ class STCTooltip(wx.Frame):
         self.Layout()
 
         self.transp = 255
-
-#        self.stc.Bind(wx.EVT_KEY_DOWN, self.OnKey)
-#        self.stc.Bind(wx.EVT_KEY_UP, self.OnKey)
-#        self.stc.Bind(wx.EVT_CHAR, self.OnKey)
-
-
-        #self.fadeTimer = wx.PyTimer(self.Fade)
-        #self.Bind(wx.EVT_LEAVE_WINDOW, lambda e: self.Hide())
-        #self.Bind(wx.EVT_KILL_FOCUS, lambda e: self.Hide())
 
     def FadeOut(self):
         def handler():
@@ -805,14 +771,3 @@ class STCTooltip(wx.Frame):
             height += self.helpWindow.GetCharHeight() / 2
             height = min(height, 400)
         self.SetSize((550, height))
-
-#if wx.Platform == "__WXMAC__":
-#    class STCTooltip(wx.Frame, STCTooltipBase):
-#        def __init__(self, parent):
-#            wx.Frame.__init__(self, parent, style=wx.NO_BORDER|wx.FRAME_FLOAT_ON_PARENT|wx.FRAME_NO_TASKBAR|wx.POPUP_WINDOW)
-#            STCTooltipBase.__init__(self, parent)
-#else:
-#    class STCTooltip(STCTooltipBase, wx.PopupWindow):
-#       def __init__(self, parent):
-#            wx.PopupWindow.__init__(self, parent)
-#            STCTooltipBase.__init__(self, parent)

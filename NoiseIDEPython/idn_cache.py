@@ -133,7 +133,6 @@ class ModuleData:
 
     def AllMacroses(self):
         macroses = self.macroses[:]
-        #print "module", self.module, "inc", self.includes
         for include in self.includes:
             if include in ErlangCache.moduleData and self.module != include:
                 macroses += ErlangCache.moduleData[include].AllMacroses()
@@ -216,13 +215,10 @@ class ErlangCache:
 
     @classmethod
     def LoadCacheFromDir(cls, dir):
-        #core.Log("loading cache from", dir)
         dir = os.path.join(cls.CACHE_DIR, dir)
         for file in os.listdir(dir):
             file = os.path.join(dir, file)
             cls.AddToLoad(file)
-            #cls.LoadFile(file)
-        #core.Log("end loading cache from", dir)
 
     @classmethod
     def CleanDir(cls, dir):
@@ -254,25 +250,14 @@ class ErlangCache:
                 not cls.moduleData[name].file.lower().startswith(cls.erlangDir) and
                 file.lower().startswith(cls.erlangDir)):
                 return
-            #core.Log("loading cache for", file)
-#            if (name in cls.modules and name in cls.moduleData and
-#                cls.moduleData[name].file.lower().startswith(cls.erlangDir) and
-#                file != cls.moduleData[name].file):
-#                core.Log("Ignoring replace of cache for standard erlang " +
-#                    "module: {}\n\tPath:{}".format(name, file))
-#                return
-            #print "load",  name
             if name.endswith(".hrl"):
                 cls.includes.add(name)
             else:
                 cls.modules.add(name)
 
             cls.moduleData[name] = ModuleData(name, data)
-
-            #core.Log("Loaded cache for", file)
         except  Exception, e:
             core.Log("load cache file error", e)
-        #core.Log("Cache:", file)
 
     @classmethod
     def TryLoad(cls, module):
@@ -289,7 +274,7 @@ class ErlangCache:
     @classmethod
     def UnloadFile(cls, file):
         if not os.path.isfile(file): return
-        if not fileName.endswith(".cache"): return
+        if not file.endswith(".cache"): return
         name = os.path.basename(file)[:-6]
         if not name in cls.moduleData: return
         del cls.moduleData[name]
@@ -349,7 +334,6 @@ class ErlangCache:
         for module in cls.modules:
             data = cls.moduleData[module]
             if not data.file.startswith(cls.project.AppsPath()): continue
-            #print data.file
             if include in data.AllIncludes():
                 result.append(data.file)
         return result

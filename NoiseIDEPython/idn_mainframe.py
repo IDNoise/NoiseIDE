@@ -67,7 +67,6 @@ class NoiseIDE(wx.Frame):
         core.TabMgr = self.TabMgr
         core.ToolMgr = self.ToolMgr
         core.WinMgr = self.WinMgr
-        #self.WinMgr.MaximizePane()
 
         self.WinMgr.Update()
 
@@ -298,7 +297,6 @@ class NoiseIDE(wx.Frame):
     def OpenProject(self, projectFile):
         if self.project:
             self.project.Close()
-        #self.ClearLog()
         projectFile = os.path.normpath(projectFile)
         Config.SetProp("last_project", projectFile)
 
@@ -311,7 +309,6 @@ class NoiseIDE(wx.Frame):
         self.SetupProjectMenu()
         self.project = self.LoadProject(projectFile)
 
-        #self.project.mEditProject.Enable(True)
         self.SetTitle(self.project.ProjectName() + " - " + "Noise IDE")
 
 
@@ -362,11 +359,6 @@ if __name__ == '__main__':
         app = App()
         app.MainLoop()
 
-    #import cProfile
-    #cProfile.run('main()', 'ideprof')
-    #import pstats
-    #p = pstats.Stats('ideprof')
-    #p.strip_dirs().sort_stats(-1).print_stats()
     try:
         import shutil
         installerPath = os.path.join(os.path.curdir, "installer")

@@ -111,13 +111,11 @@ class FindInFilePanel(wx.Panel):
                 else:
                     return self.editor.SearchPrev(findOptions, text)
             pos = search()
-            #print pos, startPos, caretPosition
             if pos == startPos:
                 caretPosition += 1 if searchDown else -1
                 self.editor.SetCurrentPos(caretPosition)
                 self.editor.SearchAnchor()
                 pos = search()
-            #print pos, caretPosition
             if pos >= 0:
                 if select:
                     self.editor.GotoPos(pos)
@@ -290,7 +288,6 @@ class FindInProjectDialog(wx.Dialog):
             pattern = r"\b" + pattern + r"\b"
         if not matchCase:
             flags |= re.IGNORECASE
-        #print "search", pattern
         return re.compile(pattern, flags)
 
     def FillFindResultsTable(self, results, filesCount, regexp, openNewTab):
@@ -429,8 +426,6 @@ class ErrorsTree(IDNCustomTreeCtrl):
         if data.lineNumber:
             editor.GotoLine(data.lineNumber)
             pos = editor.PositionFromLine(data.lineNumber)
-            #core.Log(data.lineNumber, pos, data.start, data.end)
-           # editor.SetSelection(pos, pos + 1)
             editor.SetSelection(pos + data.start, pos + data.end)
 
 class ErrorsTreeItemPyData:

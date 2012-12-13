@@ -40,11 +40,10 @@ def GetSTCTypeByExt(file):
 
 class Notebook(aui.AuiNotebook):
     def __init__(self, parent):
-        agwStyle = aui.AUI_NB_DEFAULT_STYLE | aui.AUI_NB_CLOSE_ON_ALL_TABS# aui.AUI_NB_CLOSE_ON_ACTIVE_TAB
+        agwStyle = aui.AUI_NB_DEFAULT_STYLE | aui.AUI_NB_CLOSE_ON_ALL_TABS
         aui.AuiNotebook.__init__(self, parent, agwStyle = agwStyle)
 
         self.Bind(aui.EVT_AUINOTEBOOK_TAB_DCLICK, self.OnTabDClick)
-        #self.Bind(aui.EVT_AUINOTEBOOK_PAGE_CLOSED, self.OnPageClosed)
 
 
     def DeletePage(self, page_idx, permanent = False):
@@ -168,8 +167,6 @@ class EditorNotebook(aui.AuiNotebook):
             oldEditor = self[event.GetOldSelection()]
             if hasattr(oldEditor, "completer"):
                 oldEditor.completer.HideCompleter()
-#        print "add to history from page changed", self.GetActiveEditor().filePath, oldEditor.filePath if oldEditor else ""
-#        self._AddToHistory(self.GetActiveEditor(), oldEditor)
 
     def OnTabDClick(self, event):
         if core.MainFrame.TabMgrPaneInfo.IsMaximized():
@@ -244,7 +241,6 @@ class EditorNotebook(aui.AuiNotebook):
         editor.GotoLine(line)
 
         if addToHistory:
-            #print "add to history from Load From Line", file, line, "from", fromLine
             self._AddToHistory(editor, prevEditor, fromLine)
         self.UpdateNavToolbar()
         editor.EnsureVisibleEnforcePolicy(line)
@@ -253,12 +249,8 @@ class EditorNotebook(aui.AuiNotebook):
 
     def AddCustomPage(self, page, title):
         self.AddPage(page, title, True)
-        #self._AddToHistory(editor, prevEditor, fromLine)
 
     def _AddToHistory(self, new, prev = None, prevLine = 0):
-        #print "current: ", self.navigationHistory
-        #print "index: ", self.navigationHistoryIndex
-        #self.navigationHistory = self.navigationHistory[:self.navigationHistoryIndex + 1]
         self.navigationHistory = self.navigationHistory[:self.navigationHistoryIndex + 1]
         if prev:
             prevFile = prev.filePath
@@ -271,9 +263,6 @@ class EditorNotebook(aui.AuiNotebook):
         if not self.navigationHistory or self.navigationHistory[-1] != (file, line):
             self.navigationHistory.append((file, line))
             self.navigationHistoryIndex = len(self.navigationHistory) - 1
-        #print "after add", self.navigationHistory
-        #print " after add index: ", self.navigationHistoryIndex
-        #print "=" * 20
 
     def FindPageIndexByPath(self, path):
         for index in range(self.GetPageCount()):
@@ -327,7 +316,6 @@ class EditorNotebook(aui.AuiNotebook):
         self.UpdateNavToolbar()
 
     def UpdateNavToolbar(self):
-        #print self.navigationHistoryIndex
         self.Parent.toolbar.EnableTool(self.Parent.navBackT.GetId(), (self.navigationHistory != [] and self.navigationHistoryIndex > 0))
         self.Parent.toolbar.EnableTool(self.Parent.navForwardT.GetId(),  (self.navigationHistory != [] and self.navigationHistoryIndex < (len(self.navigationHistory) - 1)))
 
@@ -347,7 +335,7 @@ class EditorPanel(wx.Panel):
         self.editor = stcType(self, self.markPanel, file)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.findPanel = FindInFilePanel(self, self.editor)
-        self.sizer.Add(self.findPanel)#, 1, wx.EXPAND)
+        self.sizer.Add(self.findPanel)
         self.HideFind()
         hSizer = wx.BoxSizer(wx.HORIZONTAL)
         hSizer.Add(self.editor, 1, wx.EXPAND)
@@ -362,14 +350,12 @@ class EditorPanel(wx.Panel):
 
     def OnKeyDown(self, event):
         keyCode = event.GetKeyCode()
-        #print "kd", keyCode
         if keyCode == ord('F') and event.GetModifiers() == wx.MOD_CONTROL:
             self.ShowFind()
         elif keyCode == ord('F') and event.GetModifiers() == wx.MOD_ALT:
             self.ShowFind(True)
         elif keyCode == wx.WXK_ESCAPE and self.findVisible:
             self.HideFind()
-            #event.Skip()
         elif keyCode == wx.WXK_F3 and self.findVisible:
             self.findPanel.OnFind()
         elif keyCode == ord('W') and event.GetModifiers() == wx.MOD_CONTROL:
@@ -384,7 +370,6 @@ class EditorPanel(wx.Panel):
         self.Layout()
         if self.editor.SelectedText:
             self.findPanel.findText.Value = self.editor.SelectedText
-            #self.findPanel.findText.SetSelection(-1, -1)
             self.findPanel.findText.SetInsertionPointEnd()
         self.findPanel.findText.SetFocus()
         self.findVisible = True
@@ -402,7 +387,7 @@ class ConsolePanel(EditorPanel):
         self.editor = stcType(self, self.markPanel)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.findPanel = FindInFilePanel(self, self.editor)
-        self.sizer.Add(self.findPanel)#, 1, wx.EXPAND)
+        self.sizer.Add(self.findPanel)
         self.HideFind()
         hSizer = wx.BoxSizer(wx.HORIZONTAL)
         hSizer.Add(self.editor, 1, wx.EXPAND)
@@ -421,7 +406,7 @@ class ErlangCompileOptionPanel(EditorPanel):
         self.editor = ErlangSTCReadOnly(self, self.markPanel, filePath, option, text)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.findPanel = FindInFilePanel(self, self.editor)
-        self.sizer.Add(self.findPanel)#, 1, wx.EXPAND)
+        self.sizer.Add(self.findPanel)
         self.HideFind()
         hSizer = wx.BoxSizer(wx.HORIZONTAL)
         hSizer.Add(self.editor, 1, wx.EXPAND)
@@ -433,8 +418,3 @@ class ErlangCompileOptionPanel(EditorPanel):
 
         self.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
 
-
-#
-#
-#
-#

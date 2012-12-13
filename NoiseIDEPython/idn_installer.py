@@ -12,7 +12,6 @@ def Decompress(installerFile):
         newName = os.path.join("installer", name)
         try:
             (dirname, filename) = os.path.split(newName)
-            print "Decompressing " + filename + " on " + dirname
             if dirname and not os.path.exists(dirname):
                 os.mkdir(dirname)
             if filename:
@@ -23,7 +22,6 @@ def Decompress(installerFile):
             print e
     zfile.close()
     os.remove(installerFile)
-    #writeFile("C:/install_log.txt", logData)
 
 def CreateInstallArchive():
     pass

@@ -207,7 +207,6 @@ class ProjectExplorer(IDNCustomTreeCtrl):
                 self.AppendFile(node, path)
 
     def GetIconIndex(self, fileName):
-        #return self.iconIndex[self.FILE]
         ext = extension(fileName)
         wx.Log.EnableLogging(False)
         noLog = wx.LogNull()
@@ -232,7 +231,6 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         del noLog
         wx.Log.EnableLogging(True)
         return result
-#        #wx.Log_GetActiveTarget()
 
     def StopTrackingProject(self):
         self.dirChecker.Stop()
@@ -245,11 +243,9 @@ class ProjectExplorer(IDNCustomTreeCtrl):
             self.SortChildren(id)
 
     def FileModified(self, file):
-        #print "file mod", file
         if self.mask and extension(file) not in self.mask: return
 
     def FileDeleted(self, file):
-        #print "file del", file
         if self.mask and extension(file) not in self.mask: return
         id = self.FindItemByPath(file)
         if id:
@@ -257,18 +253,15 @@ class ProjectExplorer(IDNCustomTreeCtrl):
             self.Delete(id)
 
     def DirCreated(self, dir):
-        #print "dir created", dir
         id = self.FindItemByPath(os.path.dirname(dir))
         if id:
             self.AppendDir(id, dir)
             self.SortChildren(id)
 
     def DirModified(self, dir):
-        #print "dir mod", dir
         pass
 
     def DirDeleted(self, dir):
-        #print "dir del", dir
         id = self.FindItemByPath(dir)
         if id:
             del self.paths[self.GetPyData(id)]
@@ -281,7 +274,6 @@ class ProjectExplorer(IDNCustomTreeCtrl):
     def FindItemByPath(self, path):
         if path in self.paths:
             return self.paths[path]
-        #print "not found", path
         return None
 
     def CreateMenu(self):
@@ -371,7 +363,6 @@ class ProjectExplorer(IDNCustomTreeCtrl):
     def OnMenuPaste(self, event):
         if not self.tempData: return
         toPath = self.GetPyData(self.eventItem)
-        #print self.cut, "to", toPath
 
         if os.path.isfile(toPath):
             toPath = os.path.dirname(toPath)
@@ -390,7 +381,6 @@ class ProjectExplorer(IDNCustomTreeCtrl):
             if not os.path.exists(what): continue
             name = os.path.join(toPath, os.path.basename(what))
             newName = self.GetNewIfExists(name)
-            #print  what, " -> ", newName
 
             if self.cut:
                 shutil.move(what, newName)
@@ -442,7 +432,6 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         import subprocess
         import sys
         path = self.GetPyData(self.eventItem)
-        #print path, sys.platform
         if sys.platform == 'darwin':
             subprocess.call(['open', '--', path])
         elif sys.platform == 'linux2':
@@ -480,7 +469,6 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         self.SetItemItalic(id, False)
 
     def OnMenuShowHide(self, event):
-        #print "on show hide all"
         if self.showHidden == True:
             self.showHidden = False
             for path in self.hiddenPaths:
@@ -488,7 +476,6 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         else:
             self.showHidden = True
             for path in sorted(self.hiddenPaths):
-                #print "hidden", path
                 if os.path.dirname(path) in self.hiddenPaths: continue
                 id = self.FindItemByPath(os.path.dirname(path))
                 if id:
@@ -621,8 +608,6 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         self.selectedItems = self.GetSelections()
         self.eventItem = self.selectedItems[0] if self.selectedItems else None
 
-        #print event.GetItem()
-
         rootInSelection = self.GetRootItem() in self.selectedItems
         if not self.eventItem or not self.selectedItems or rootInSelection:
             return
@@ -661,7 +646,7 @@ class PythonProjectExplorer(ProjectExplorer):
         return [".py", ".yaml"]
 
     def OnMenuNewFile(self, event):
-        print "on menu new file", self.GetPyData(self.eventItem)
+        pass
 
 
 class MaskEditor(wx.Dialog):

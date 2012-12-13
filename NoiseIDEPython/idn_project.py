@@ -23,7 +23,6 @@ class ProgressTaskManagerDialog(wx.EvtHandler):
 
 
     def AddTask(self, task):
-        #print "add task", task
         self.tasks.add(task)
 
     def UpdatePulse(self, description):
@@ -31,15 +30,10 @@ class ProgressTaskManagerDialog(wx.EvtHandler):
             self.progressDialog.UpdatePulse(description)
 
     def TaskDone(self, description, task = None):
-        #self.UpdatePulse(description)
-        #print "done", task
         if task:
             if task in self.tasks:
                 self.lastTaskTime = time.time()
-                #print "done", task
                 self.tasks.remove(task)
-            #else:
-            #    print "task not in tasks", task
         if len(self.tasks) == 0:
             self.DestroyDialog()
 
@@ -67,7 +61,6 @@ class ProgressTaskManagerDialog(wx.EvtHandler):
             self.progressDialog.ReenableOtherWindows()
             self.progressDialog.Destroy()
             self.progressDialog = None
-        #self.window.SetFocus()
 
 class Project(ProgressTaskManagerDialog):
 
@@ -159,7 +152,6 @@ class Project(ProgressTaskManagerDialog):
             .MinimizeButton().CloseButton(False).BestSize2(300, 600).MinSize(100, 100)
             .MinimizeMode(aui.AUI_MINIMIZE_POS_LEFT | aui.AUI_MINIMIZE_CAPT_SMART))
         self.window.WinMgr.Update()
-        #print "create explorer"
 
     def GetMask(self):
         if self.CONFIG_MASK in self.userData:
@@ -177,7 +169,6 @@ class Project(ProgressTaskManagerDialog):
             self.window.projectMenu.Remove(item.GetId())
 
     def SaveUserData(self):
-        #print "save user data"
         openedFiles = []
         for path in core.TabMgr.OpenedFiles():
             if path.lower().startswith(self.projectDir.lower()):
@@ -185,39 +176,18 @@ class Project(ProgressTaskManagerDialog):
         self.userData[self.CONFIG_LAST_OPENED_FILES] = openedFiles
         self.userData[self.CONFIG_HIDDEN_PATHS] = self.explorer.hiddenPaths
         self.userData[self.CONFIG_MASK] = self.explorer.GetCustomMask()
-
-        #self.userData[self.CONFIG_TAB_PERSP] = core.TabMgr.SavePerspective()
-        #self.userData[self.CONFIG_TOOL_PERSP] = core.ToolMgr.SavePerspective()
-        #self.userData[self.CONFIG_GLOBAL_PERSP] = core.WinMgr.SavePerspective()
-
-        #print(self.userData[self.CONFIG_MASK])
-        #print(self.userData[self.CONFIG_HIDDEN_PATHS])
         yaml.dump(self.userData, open(self.userDataFile, 'w'))
 
     def GetEditorTypes(self): return []
 
     def SetupPerspective(self):
         pass
-        #if self.CONFIG_TAB_PERSP in self.userData:
-         #   core.TabMgr.LoadPerspective(self.userData[self.CONFIG_TAB_PERSP])
-        #    core.TabMgr.Update()
-        #if self.CONFIG_TOOL_PERSP in self.userData:
-        #    core.ToolMgr.LoadPerspective(self.userData[self.CONFIG_TOOL_PERSP])
-        #    core.ToolMgr.Update()
-#        if self.CONFIG_GLOBAL_PERSP in self.userData:
-#            core.WinMgr.LoadPerspective(self.userData[self.CONFIG_GLOBAL_PERSP])
-#            core.WinMgr.Update()
 
     def SaveData(self):
         stream = file(self.projectFilePath, 'w')
         yaml.dump(self.projectData, stream)
 
     def OnKeyDown(self, event):
-#        if event.GetKeyCode() == ord('O') and event.ControlDown():
-#            self.ShowFastOpen()
-#        elif event.GetKeyCode() == ord('F') and event.ControlDown() and event.ShiftDown():
-#            self.ShowFindInProject()
-#        else:
         event.Skip()
 
     def ShowFastOpen(self):
