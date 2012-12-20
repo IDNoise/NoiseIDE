@@ -47,7 +47,7 @@ class ErlangTokenizer:
             |(?P<number>[0-9]{1,2}\#[0-9a-z]*|[0-9]*\.?[0-9]+)
             |(?P<record>\#[a-z][a-z_]*)
             |(?P<macros>\?[a-zA-Z][a-zA-Z_0-9]*)
-            |(?P<atom>'.+?'|[a-z][a-zA-Z_0-9]*)
+            |(?P<atom>'.+?'|[a-z][a-zA-Z_0-9@]*)
             |(?P<ob>\(|\[|{)
             |(?P<cb>\)|\]|})
             |(?P<operator>\+|\-|/|\*|<=|=<|>=|==|=/=|=:=|<-|!)
@@ -59,7 +59,6 @@ class ErlangTokenizer:
 
     def GetTokens(self, text):
         tokens = []
-        lastValue = None
         pos = 0
         while True:
             m = self.tokenRegexp.search(text, pos)
@@ -87,7 +86,7 @@ class IgorTokenizer:
             |(?P<number>[0-9]{1,2}\#[0-9a-z]*|[0-9]*\.?[0-9]+)
             |(?P<comment>//.*$|/\*.*?\*/)
             |(?P<special>s\-\>c|c\-\>s)
-            |(?P<lower>[a-z][a-z_0-9\.]*)
+            |(?P<lower>[a-z][a-zA-Z_0-9\.]*)
             |(?P<upper>[A-Z][a-z_0-9A-Z\.]*)
             |(?P<bracket>\(|\[|\{|\)|\]|\})
             |(?P<operator>\+|\-|/|\*|<=|>=|==|=|\?|:|\.|\,|;)

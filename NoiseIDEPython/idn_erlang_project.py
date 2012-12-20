@@ -19,7 +19,7 @@ import core
 from idn_notebook import ErlangCompileOptionPanel
 from idn_project import Project
 from idn_utils import readFile, writeFile, pystr, Menu, GetImage
-from idn_erlang_utils import IsBeam, IsInclude, IsYrl, IsModule
+from idn_erlang_utils import IsBeam, IsInclude, IsYrl, IsModule, IsIgor
 
 class ErlangProject(Project):
     IDE_MODULES_DIR = os.path.join(os.getcwd(), 'data', 'erlang', 'modules', 'noiseide', 'ebin')
@@ -300,9 +300,6 @@ class ErlangProject(Project):
             self.GetShell().Compile(erl)
         for igor in igors:
             IgorCache.GenerateForFile(igor)
-
-    def IsIgor(self, path):
-        return path.endswith(".igor")
 
     def CompileOption(self, path, option):
         if not IsModule(path): return

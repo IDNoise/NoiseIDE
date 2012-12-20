@@ -11,3 +11,6 @@ def IsInclude(file):
 
 def IsYrl(file):
     return file.endswith(".yrl")
+
+def IsIgor(self, path):
+    return path.endswith(".igor")

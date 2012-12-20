@@ -326,7 +326,10 @@ class ErlangCompleter(wx.Frame):
                 if not data:
                     data = ErlangCache.Bif(fun, arity)
                     if not data:
-                        return (None, None)
+                        fun = fun.replace("@", "")
+                        data = ErlangCache.ModuleFunction(module, fun, arity)
+                        if not data:
+                            return (None, None)
                     help = self._FunctionHelp(data)
                 else:
                     help = self._ExportedTypeHelp(data)

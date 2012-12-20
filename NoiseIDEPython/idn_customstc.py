@@ -698,10 +698,15 @@ class STCContextToolTip:
 
 
     def ShowTimer(self):
-        if self.tooltipWin.IsShown(): return
-        if not core.TabMgr.GetActiveEditor() == self.stc: return
+        if self.tooltipWin.isFadingOut: return
+        if self.tooltipWin.isFadingIn: return
         if not self.stc.HasFocus(): return
-        if not wx.GetApp().IsActive(): return
+        if (core.TabMgr.GetActiveEditor() != self.stc or
+            not wx.GetApp().IsActive()):
+            if self.tooltipWin.Shown:
+                self.HideToolTip()
+            return
+        if self.tooltipWin.Shown: return
         current = wx.GetMousePosition()
         if current != self.lastPos:
             self.counter = 0
@@ -737,6 +742,9 @@ class STCTooltip(wx.Frame):
 
         self.transp = 255
 
+        self.isFadingOut = False
+        self.isFadingIn = False
+
     def FadeOut(self):
         def handler():
             self.transp -= 25
@@ -745,9 +753,12 @@ class STCTooltip(wx.Frame):
             if self.transp == 0:
                 self.fadeTimer.Stop()
                 self.Hide()
+                self.isFadingOut = False
             self.Parent.SetFocus()
         self.fadeTimer = wx.PyTimer(handler)
         self.fadeTimer.Start(5)
+        self.isFadingOut = True
+        self.isFadingIn = False
 
     def FadeIn(self):
         def handler():
@@ -758,8 +769,11 @@ class STCTooltip(wx.Frame):
             self.SetTransparent(self.transp)
             if self.transp == 255:
                 self.fadeTimer.Stop()
+                self.isFadingIn = False
         self.fadeTimer = wx.PyTimer(handler)
         self.fadeTimer.Start(5)
+        self.isFadingIn = True
+        self.isFadingOut = False
 
     def SetText(self, text):
         self.helpWindow.SetPage(text)
