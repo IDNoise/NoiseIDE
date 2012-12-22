@@ -565,6 +565,7 @@ class ErlangProject(Project):
                 ".app": ErlangHighlightedSTCBase}
 
     def CompileProject(self):
+        ErlangCache.CleanDir(self.ProjectName())
         self.CompileSubset(self.GetApps(True))
 
     def RemoveUnusedBeams(self):
@@ -644,7 +645,7 @@ class ErlangProject(Project):
 
     def CompileSubset(self, apps):
         self.CreateProgressDialog("Compiling project")
-        ErlangCache.CleanDir(self.ProjectName())
+
         filesToCompile = set()
         filesToCache = set()
         yrlToCompile = set()
@@ -662,10 +663,13 @@ class ErlangProject(Project):
                                 filesToCache.add(file)
                             else:
                                 filesToCompile.add(file)
-                        if IsYrl(file):
-                            yrlToCompile.add(file)
-                        elif IsInclude(file):
-                            filesToCache.add(file)
+                        else:
+                            if IsInclude(file):
+                                filesToCache.add(file)
+                            elif app in self.projectData[CONFIG_EXCLUDED_DIRS]:
+                                continue
+                            elif IsYrl(file):
+                                yrlToCompile.add(file)
 
         for file in list(yrlToCompile):
             (path, ext) = os.path.splitext(file)
@@ -675,7 +679,7 @@ class ErlangProject(Project):
 
         for root, d, files in os.walk(self.projectDir):
             for f in files:
-                if f.endswith(".igor"):
+                if IsIgor(f):
                     igorToCache.add(os.path.join(root, f))
 
         filesToCompile = sorted(list(filesToCompile) + list(yrlToCompile))

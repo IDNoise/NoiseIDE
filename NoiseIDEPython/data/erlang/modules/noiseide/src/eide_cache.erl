@@ -7,8 +7,6 @@
 -define(VAR, "Var"). 
   
 -export([ 
-    %generate/2,
-    generate/3,
     create_cache/2,
     create_cache/4, 
     create_cache_for_erlang_libs/2,
@@ -16,7 +14,7 @@
     generate_file/4,
     %generate_html_file/3,  
     ignores/0,
-    gen_file_cache/1,
+    gen_file_cache/1, 
     gen_erlang_cache/1, 
     gen_project_cache/0,
     get_app_name_from_path/1   
@@ -100,9 +98,7 @@ gen_file_cache(File) ->
 gen_erlang_cache(Runtime) ->
     Dir = eide_connect:prop(cache_dir) ++ "/runtimes/" ++ Runtime,
     io:format("Checking cache for erlang libs ~p~n", [Dir]),
-    %file:make_dir(Dir),
     filelib:ensure_dir(Dir),
-    %io:format("Create cache dir:~p~n", []),
     create_cache_for_erlang_libs(Dir, ignores()),
     io:format("Checking cache for erlang libs......Done~n").
 
@@ -146,7 +142,7 @@ create_cache_file_fly(FlyFile, RealFile) ->
     ModuleName = module_name(FlyFile),    
     CacheFileName = get_cache_file_name(CacheDir, RealModuleName),
     try 
-       Data = generate(ModuleName, FlyFile, undefined), 
+       Data = generate(ModuleName, FlyFile, undefined, RealModuleName), 
        dump_data_to_file(RealModuleName, CacheDir, RealFile, CacheFileName, Data, FlyFile),
        send_answer(CacheFileName, RealFile)
     catch _:_ -> ok
@@ -216,27 +212,21 @@ get_cache_file_name(CacheDir, Name) ->
     CacheDir ++ "/" ++ Name ++ ".cache".
 
 generate_file(CacheDir, ModuleName, FilePath, DocsFilePath) ->
-    %io:format("generate_file:~p~n", [{CacheDir, ModuleName, FilePath, DocsFilePath}]),
     try
         CacheFileName = get_cache_file_name(CacheDir, ModuleName),
         case filelib:last_modified(FilePath) < filelib:last_modified(CacheFileName) of
             true -> 
                 ignore;
             _ -> 
-                Data = generate(ModuleName, FilePath, DocsFilePath),
-                %io:format("~p~n", [Data]),
+                Data = generate(ModuleName, FilePath, DocsFilePath, ModuleName),
                 dump_data_to_file(ModuleName, CacheDir, FilePath, CacheFileName, Data)
         end, 
-        %io:format("cache answer:~p~n", [{CacheDir, CacheFileName, FilePath}]),
-        send_answer(CacheFileName, FilePath)
-    %catch _:_ ->  
+        send_answer(CacheFileName, FilePath) 
     catch 
         exit:{ucs, {bad_utf8_character_code}} ->
             ok;
         Error:Reason ->
-            %ok
             io:format("File:~p Error:~p, ~p~n~p~n", [FilePath, Error, Reason, erlang:get_stacktrace()])
-            %file:write_file(CacheFileName ++ ".error", [Error, Reason])
     end,
     ok.
 
@@ -258,13 +248,12 @@ dump_data_to_file(ModuleName, CacheDir, FilePath, CFile, Content, FlyFileName) -
              macros = Macs, 
              includes = Incs,
              exported_types = ExpTypes} = Content, 
-    %io:format("Data:~p~n", [{FlyFileName, Recs}]),
     Props = [ 
         {name, list_to_binary(ModuleName)},
         {file, list_to_binary(FilePath)},
         {funs, funs_to_json(MN, CacheDir, Funs)},
         {macros, {struct, macros_to_json(Macs, FlyFileName)}},
-        {includes, includes_to_json(Incs, FlyFileName)},
+        {includes, includes_to_json(sets:to_list(sets:from_list(Incs)), FlyFileName)},
         {records_data, {struct, recs_data_to_json(Recs, FlyFileName)}},
         {exported_types, {struct, exp_types_to_json(ExpTypes)}},
         {application, list_to_binary(get_app_name_from_path(FilePath))}
@@ -367,7 +356,7 @@ rec_field_types_to_json(Fields) ->
 includes_to_json(Incs, File) ->
     [iolist_to_binary(filename:basename(I)) || I <- Incs, string:to_lower(I) =/= string:to_lower(File)].
 
-generate(ModuleName, FilePath, DocsFilePath) -> 
+generate(ModuleName, FilePath, DocsFilePath, RealModuleName) -> 
     {StartContent, SyntaxTree} = 
         case filename:extension(FilePath) of
             ".erl" ->
@@ -379,33 +368,23 @@ generate(ModuleName, FilePath, DocsFilePath) ->
         end,
     Comments = erl_comment_scan:file(FilePath),
     {SyntaxTree1, _} = erl_recomment:recomment_tree(SyntaxTree, Comments),
-    %io:format("SyntaxTree~p~n", [SyntaxTree1]),
-      
-    %io:format("types:~p~n", [catch dialyzer_utils:get_record_and_type_info(dialyzer_utils:get_abstract_code_from_src(FilePath))]),
-     
     Content = parse_tree(SyntaxTree1, StartContent),
     Content1 = case DocsFilePath of
                    undefined -> Content;
                    _ -> merge_with_docs(Content, DocsFilePath)
                end,
-    %io:format("~p~n", [Content]), 
     Incls = sets:to_list(sets:from_list(Content1#content.includes)),
-    Content1#content{includes = Incls, file = FilePath, module_name = ModuleName}.
+    BeamTree = get_tree_from_beam(RealModuleName),
+    Content2 = case BeamTree of
+        undefined -> Content1;
+        _ -> parse_beam_tree(BeamTree, Content1)
+    end,
+    Content2#content{includes = Incls, file = FilePath, module_name = ModuleName}.
 
-
-    %io:format("props:~p~n", [eide_connect:prop(flat_includes, [])]),
-    %io:format("props:~p~n", [eide_connect:prop(includes, [])]),
-    %io:format("epp_dodger:~p~n", [SourceMacros]),
-    %io:format("SyntaxTree~p~n~n~n", [erl_syntax:form_list(Source)]),
-    %io:format("SyntaxTree Macros~p~n", [erl_syntax:form_list(SourceMacros)]),
 generate_from_source(Path) -> 
-    %{ok, Source} = epp_dodger:parse_file(Path),
     {ok, Source} = epp:parse_file(Path, eide_connect:prop(flat_includes, []), []),
     {ok, SourceMacros}  = epp_dodger:parse_file(Path),
     Content = parse_tree_simple(erl_syntax:form_list(SourceMacros), #content{file = Path, last_file_attr = Path}),
-    %io:format("Content:~p~n", [Content]),
-    %io:format("Source:~p~n", [Source]),
-    %io:format("SourceMacros:~p~n", [SourceMacros]),
     {#content{ 
             file = Path,  
             last_file_attr = Path, 
@@ -413,6 +392,23 @@ generate_from_source(Path) ->
             includes = Content#content.includes
         }, 
         erl_syntax:form_list(Source)}.
+
+    
+get_tree_from_beam(ModuleName) ->
+    case code:where_is_file(ModuleName ++ ".beam") of
+        non_existing -> 
+            undefined;
+        BeamPath -> 
+            case beam_lib:chunks(BeamPath, [abstract_code]) of
+                {ok, {_,[{abstract_code,{_, AbstractCode}}]}} -> 
+                    erl_syntax:form_list(AbstractCode);
+                _ -> 
+                    undefined
+            end
+    end.
+    
+%generate_from_beam(ModuleName, Beam) ->
+    
 
 parse_tree_simple(Node, Content) ->
     case erl_syntax:type(Node) of
@@ -432,7 +428,42 @@ parse_tree_simple(Node, Content) ->
             Content
     end.
 
-parse_tree(Node, Content) ->
+parse_beam_tree(Node, Content) ->
+    case erl_syntax:type(Node) of
+        form_list -> 
+            lists:foldl(fun parse_beam_tree/2, Content,
+                        erl_syntax:form_list_elements(Node));
+        attribute ->
+            Name = erl_syntax:attribute_name(Node),
+            case erl_syntax:type(Name) of 
+                atom ->
+                    parse_atom_beam(Node, erl_syntax:atom_literal(Name), Content);
+                _ ->
+                    Content
+            end;
+        function ->
+            NameInfo = erl_syntax:function_name(Node),
+            Name = erl_syntax:atom_literal(NameInfo),
+            Arity = erl_syntax:function_arity(Node), 
+            %io:format("~p. find result:~p~n", [{Name, Arity}, lists:keyfind({Name, Arity}, #function.name, Content#content.functions)]), 
+            case lists:keyfind({Name, Arity}, #function.name, Content#content.functions) of
+                false ->
+                    Function = parse_erlang_function(Node, Content, erl_syntax:get_precomments(Node)),
+                    Exported = 
+                        case Content#content.exports of
+                            all -> true;
+                            _ -> lists:member({Name, Arity}, Content#content.exports)
+                        end,
+                    Functions = [Function#function{exported = Exported}|Content#content.functions],
+                    Content#content{functions = Functions};
+                _ ->
+                    Content
+            end;
+        _ ->
+            Content
+    end.
+
+parse_tree(Node, Content) -> 
     case erl_syntax:type(Node) of
         form_list -> 
             lists:foldl(fun parse_tree/2, Content,
@@ -450,7 +481,7 @@ parse_tree(Node, Content) ->
         function ->
             Function = parse_erlang_function(Node, Content, erl_syntax:get_precomments(Node)),
             NameInfo = erl_syntax:function_name(Node),
-            Name = erl_syntax:atom_value(NameInfo),
+            Name = erl_syntax:atom_literal(NameInfo),
             Arity = erl_syntax:function_arity(Node),
             Exported = 
                 case Content#content.exports of
@@ -538,8 +569,23 @@ parse_atom_simple(Node, "include_lib", Content) ->
 parse_atom_simple(_, _, Content) ->
     Content.
     
+parse_atom_beam(Node, "export", Content) -> 
+    case Content#content.exports of
+        all ->
+            Content;
+        _ ->
+            [ExportAttrs] = erl_syntax:attribute_arguments(Node),
+            Exports = lists:map(fun (Export) ->
+                                   parse_export(Export)
+                                end,
+                      erl_syntax:list_elements(ExportAttrs)),
+            Content#content{exports = Content#content.exports ++ Exports}
+    end;
+parse_atom_beam(_, _, Content) ->
+    Content.
+    
 parse_export(Export) ->
-    {erl_syntax:atom_value(erl_syntax:arity_qualifier_body(Export)),
+    {erl_syntax:atom_literal(erl_syntax:arity_qualifier_body(Export)),
      erl_syntax:integer_value(erl_syntax:arity_qualifier_argument(Export))}.
 
 parse_include(Node) ->
@@ -547,7 +593,6 @@ parse_include(Node) ->
     erl_syntax:string_value(Arg).       
 
 parse_erlang_function(Node, Content, Comments) ->
-    %io:format("fun:~p~n", [Node]),
     NameInfo = erl_syntax:function_name(Node),
     Name = erl_syntax:atom_literal(NameInfo),
     Line = erl_syntax:get_pos(NameInfo),
@@ -590,7 +635,6 @@ parse_erlang_function(Node, Content, Comments) ->
                 C = lists:last(Comments),
                 erl_prettypr:format(C)
         end,
-    %io:format("~p > ~p~n", [Name, Comments]),
     #function{name = {Name, Arity},
               line = Line,
               params = Params1,
@@ -628,20 +672,17 @@ parse_spec(Node) ->
     try
         parse_spec_internal(Node, 1)
     catch 
-        %Error:Reason -> io:format("Error:~p~n. Reason:~p~n parsing spec for:~p~n", [Error, Reason, erlang:get_stacktrace()]),
         _Error:_Reason -> none
     end.
 
 parse_spec_internal(Node, Clause) ->
     Spec = edoc_specs:spec(Node, Clause),
     {_, _, _, _, TSpec} = Spec,
-    %io:format("Spec:~p~n", [TSpec]),
     #t_spec{name = Name, type = Type, defs = Defs} = TSpec,
     #t_name{name = FunName} = Name,
     #t_fun{args = Args, range = Range} = Type, 
     {Vars, Types} = get_var_types(Args, Defs),
     Result = parse_t_type_res(Range, Defs),  
-    %io:format("V, T, R:~p~n", [{Vars, Types, Result}]),
     #spec{name = {atom_to_list(FunName), length(Args)}, vars = Vars, result = Result, types = Types}.
 
 get_var_types(Args, Defs) ->
@@ -684,10 +725,8 @@ parse_t_type_var(#t_var{name = Names}) ->
                       _ -> Names
                  end);
 parse_t_type_var(#t_type{name = Name, a = Args}) when is_atom(Name) ->
-    %io:format("1Name:~p, Args:~p~n", [Name, Args]),
     {atom_to_list(Name) ++ "()", args_to_name(Args)}; 
 parse_t_type_var(#t_type{name = Name, a = Args}) when is_record(Name, t_name) ->
-    %io:format("2Name:~p, Args:~p~n", [Name, Args]),
     {_, Type} = parse_t_type_var(Name),
     {Type ++ "()", args_to_name(Args)}; 
 parse_t_type_var(_) -> 
@@ -818,24 +857,18 @@ parse_opaque(Node, Content) ->
     [Args|_] = erl_syntax:attribute_arguments(Node), 
     [Name, Type | _] = erl_syntax:tuple_elements(Args),
     ExportedTypes = {atom_to_list(element(4,Name)), parse_types(Type), erl_syntax:get_pos(Node)},
-    %io:format("data:~p~n", [ExportedTypes]),
     Content#content{exported_types = [ExportedTypes | Content#content.exported_types]}.
 
 parse_types(Node, Content) ->
-    %io:format("parse type:~p~n", [Node]),
     try
         [Args|_] = erl_syntax:attribute_arguments(Node),
         
         TE = erl_syntax:tuple_elements(Args),
-        %io:format("data:~p~n", [TE]),
         [TypeData, Data| _] = TE,
-        %io:format("type:~p~n", [TypeData]), 
         case TypeData of 
             TypeData when element(2, TypeData) == tuple ->
                 [_, RecordNameNode] = erl_syntax:tuple_elements(TypeData),
                 RecordName = erl_syntax:atom_name(RecordNameNode),
-                %io:format("record name:~p~n", [RecordName]),
-                %io:format("elements name:~p~n", [erl_syntax:list_elements(TypeData)]),
                 
                 FieldTypes = lists:foldl(fun(E, Acc) -> [get_field_type(E)| Acc] end, [], erl_syntax:list_elements(Data)),
                 Records = Content#content.records,
@@ -847,7 +880,6 @@ parse_types(Node, Content) ->
                     end, Fields),
                 Record1 = Record#record{fields = NewFields},
                 Content1 = Content#content{records = lists:keystore(RecordName, #record.name, Records, Record1)},
-                %io:format("new C:~p~n", [Content1]),
                 Content1;
             TypeData when element(2, TypeData) == atom ->
                 ExportedTypes = {atom_to_list(element(4,TypeData)), parse_types(Data), erl_syntax:get_pos(Node)},
@@ -855,8 +887,7 @@ parse_types(Node, Content) ->
             _ ->
                 Content
         end
-    catch Error:Reason ->
-        %io:format("Types parse error:~p~nNode:~p~n", [{Error, Reason, erlang:get_stacktrace()}, Node]),
+    catch _Error:_Reason ->
         Content
     end.
 
@@ -885,7 +916,6 @@ get_record_field_name(Data) ->
     atom_to_list(FieldName).
 
 parse_types(TData) ->
-    %io:format("~p~n", [TData]),
     {tree,tuple,  
        {attr,0,[],none}, 
        [{tree,atom,{attr,0,[],none},TType},
