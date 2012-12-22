@@ -402,7 +402,7 @@ class ErlangProject(Project):
         self.SetCompilerOptions()
         self.CreateProgressDialog("Compiling project")
         self.CompileProject()
-        self.GenerateErlangCache()
+        #self.GenerateErlangCache()
 
     def UpdatePaths(self):
         dirs = ""
@@ -565,7 +565,7 @@ class ErlangProject(Project):
                 ".app": ErlangHighlightedSTCBase}
 
     def CompileProject(self):
-        ErlangCache.CleanDir(self.ProjectName())
+        #ErlangCache.CleanDir(self.ProjectName())
         self.CompileSubset(self.GetApps(True))
 
     def RemoveUnusedBeams(self):

@@ -17,7 +17,7 @@
     gen_file_cache/1, 
     gen_erlang_cache/1, 
     gen_project_cache/0,
-    get_app_name_from_path/1   
+    get_app_name_from_path/1    
 ]).
 
 -record(function, {  
@@ -25,7 +25,7 @@
     line = 0 :: integer(), 
     params = [],  
     types = [],  
-    result,
+    result, 
     exported,
     doc,
     bif = false,    
@@ -85,7 +85,6 @@
 %eide_cache:generate_file("D:/temp/erlang_cache", "unit_building", "d:/Projects/GIJoe/server/apps/gamelib/src/units/unit_building.erl", undefined, []).
 %ololololo comment
 gen_file_cache(File) -> 
-    %io:format("gen cache:~p~n", [File]),
     case eide_connect:prop(project_dir) of
         undefined -> create_cache(eide_connect:prop(cache_dir) ++ "/other", File);
         Dir ->  
@@ -95,7 +94,7 @@ gen_file_cache(File) ->
             end
     end.  
 
-gen_erlang_cache(Runtime) ->
+gen_erlang_cache(Runtime) -> 
     Dir = eide_connect:prop(cache_dir) ++ "/runtimes/" ++ Runtime,
     io:format("Checking cache for erlang libs ~p~n", [Dir]),
     filelib:ensure_dir(Dir),
@@ -300,7 +299,7 @@ fun_to_json(ModuleName, CacheDir, Fun) ->
                 FileName = ModuleName ++ "_" ++ Name ++ "-" ++ integer_to_list(Arity) ++ ".fun",
                 FullPath = CacheDir ++ "/" ++ FileName,
                 file:write_file(FullPath, iolist_to_binary(Text)),
-                FileName
+                FullPath
         end, 
     Data =  
     [
@@ -369,19 +368,23 @@ generate(ModuleName, FilePath, DocsFilePath, RealModuleName) ->
     Comments = erl_comment_scan:file(FilePath),
     {SyntaxTree1, _} = erl_recomment:recomment_tree(SyntaxTree, Comments),
     Content = parse_tree(SyntaxTree1, StartContent),
-    Content1 = case DocsFilePath of
-                   undefined -> Content;
-                   _ -> merge_with_docs(Content, DocsFilePath)
+    Content1 = case {DocsFilePath, filename:extension(FilePath), RealModuleName == ModuleName} of
+%                   {undefined, ".erl", true} ->
+%                       merge_with_edoc(Content, FilePath);
+                   {File, ".erl", true} when File =/= undefined -> 
+                       merge_with_docs_file(Content, DocsFilePath);
+                   _ ->
+                       Content
                end,
     Incls = sets:to_list(sets:from_list(Content1#content.includes)),
-    BeamTree = get_tree_from_beam(RealModuleName),
+    BeamTree = get_tree_from_beam(RealModuleName), 
     Content2 = case BeamTree of
         undefined -> Content1;
         _ -> parse_beam_tree(BeamTree, Content1)
     end,
     Content2#content{includes = Incls, file = FilePath, module_name = ModuleName}.
 
-generate_from_source(Path) -> 
+generate_from_source(Path) ->  
     {ok, Source} = epp:parse_file(Path, eide_connect:prop(flat_includes, []), []),
     {ok, SourceMacros}  = epp_dodger:parse_file(Path),
     Content = parse_tree_simple(erl_syntax:form_list(SourceMacros), #content{file = Path, last_file_attr = Path}),
@@ -997,12 +1000,28 @@ parse_erlang_macro(Node) ->
     Value = erl_prettypr:format(Def),
     #macro{name = Macro, value = Value, line = erl_syntax:get_pos(Node)}.
 
-merge_with_docs(Content, DocsFilePath) ->
-    Functions = get_functions_data_from_html(DocsFilePath),
-    lists:foldl(fun add_data_from_html_fun/2, Content, Functions).
+%merge_with_edoc(Content, FilePath) ->
+%    try
+%        Docs = lists:flatten(edoc:read(FilePath)),
+%        Functions = get_functions_data_from_edoc(Docs),
+%        lists:foldl(fun add_data_from_edoc_fun/2, Content, Functions)
+%    catch E:R ->
+%        io:format("merge with docs error:~p~n", [{E, R}]),
+%        Content
+%    end.
+    
 
-get_functions_data_from_html(File) ->
-    {ok, Data} = file:read_file(File),
+merge_with_docs_file(Content, DocsFilePath) ->
+    try
+        {ok, Docs} = file:read_file(DocsFilePath),
+        Functions = get_functions_data_from_html(Docs),
+        lists:foldl(fun add_data_from_html_fun/2, Content, Functions)
+    catch E:R ->
+        io:format("merge with docs file error:~p~n", [{E, R}]),
+        Content 
+    end. 
+
+get_functions_data_from_html(Data) ->
     Result = re:run(Data, eide_connect:prop(doc_re), [global, {capture, [1], list}]),
     PartDocRe = eide_connect:prop(part_doc_re),
     case Result of
@@ -1020,7 +1039,7 @@ get_functions_data_from_html(File) ->
         _ -> []
     end.
 
-add_data_from_html_fun({[FunName, Arity, SpecName, Params, _Result], Text}, Content) ->
+add_data_from_html_fun({[FunName, Arity, SpecName, Params, _Result], Text}, Content) -> 
     Arity1 = list_to_integer(Arity),
     SimpleParams = re:run(Params, eide_connect:prop(simple_param_re)),
     case lists:keyfind({FunName, Arity1}, #function.name, Content#content.functions) of
@@ -1036,4 +1055,33 @@ add_data_from_html_fun({[FunName, Arity, SpecName, Params, _Result], Text}, Cont
             NewFun = #function{name = {FunName, Arity1}, params = [Params], result = ?TERM, doc = Text, bif = IsBif, exported = true},
             Content#content{functions = [NewFun|Content#content.functions]}
     end.
+
+%get_functions_data_from_edoc(Data) ->
+%    Result = re:run(Data, eide_connect:prop(edoc_re), [global, {capture, [1], list}]),
+%    PartDocRe = eide_connect:prop(part_edoc_re),
+%    case Result of
+%        {match, Captured} ->
+%            FunsData =
+%                [begin
+%                     FunsResult = re:run(Text, PartDocRe, [global, {capture, [1, 2], list}]),
+%                     case FunsResult of
+%                         {match, Funs} ->
+%                             [{F, Text} || F <- Funs];
+%                         _ -> []
+%                     end
+%                 end || [Text] <- Captured],
+%            lists:append(FunsData);
+%        _ -> []
+%    end.
+
+%add_data_from_edoc_fun({[FunName, Arity], Text}, Content) ->
+%    Arity1 = list_to_integer(Arity),
+%    case lists:keyfind({FunName, Arity1}, #function.name, Content#content.functions) of
+%        false ->
+%            Content;
+%        Fun ->
+%            NewFun = Fun#function{doc = Text},
+%            Content#content{functions = lists:keyreplace({FunName, Arity1}, #function.name, Content#content.functions, NewFun)}
+%    end.
+
 

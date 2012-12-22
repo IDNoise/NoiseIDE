@@ -201,7 +201,7 @@ class ErlangCompleter(wx.Frame):
         return "?{} -> {}<br/><br/>{}:{}".format(macros.name, macros.value, macros.module, macros.line)
 
     def _FunctionHelp(self, fun):
-        if not fun.docref:
+        if not fun.docref or not os.path.isfile(fun.docref):
             p = fun.params[:]
             t = p[:]
             if fun.types and not fun.docref:
@@ -218,8 +218,7 @@ class ErlangCompleter(wx.Frame):
             if comment:
                 help += "<br/>{}".format(comment)
         else:
-            path = os.path.join(ErlangCache.ERLANG_LIBS_CACHE_DIR, fun.docref)
-            help = readFile(path)
+            help = readFile(fun.docref)
         return help
 
     def GetVars(self):
