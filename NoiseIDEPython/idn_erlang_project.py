@@ -565,47 +565,7 @@ class ErlangProject(Project):
                 ".app": ErlangHighlightedSTCBase}
 
     def CompileProject(self):
-        self.CreateProgressDialog("Compiling project")
-        ErlangCache.CleanDir(self.ProjectName())
-        filesToCompile = set()
-        filesToCache = set()
-        yrlToCompile = set()
-        igorToCache = set()
-        for app in self.GetApps():
-            srcPath = os.path.join(os.path.join(self.AppsPath(), app), "src")
-            testPath = os.path.join(os.path.join(self.AppsPath(), app), "test")
-            includePath = os.path.join(os.path.join(self.AppsPath(), app), "include")
-            for path in [srcPath, includePath, testPath]:
-                for root, _, files in os.walk(path):
-                    for file in files:
-                        file = os.path.join(root, file)
-                        if IsModule(file):
-                            filesToCompile.add(file)
-                        if IsYrl(file):
-                            yrlToCompile.add(file)
-                        elif IsInclude(file):
-                            filesToCache.add(file)
-
-        for file in list(yrlToCompile):
-            (path, ext) = os.path.splitext(file)
-            erl = path + ".erl"
-            if erl in filesToCompile:
-                filesToCompile.remove(erl)
-
-        for root, d, files in os.walk(self.projectDir):
-            for f in files:
-                if f.endswith(".igor"):
-                    igorToCache.add(os.path.join(root, f))
-
-        filesToCompile = sorted(list(filesToCompile) + list(yrlToCompile))
-        filesToCache = sorted(list(filesToCache))
-
-        for igor in igorToCache:
-            IgorCache.GenerateForFile(igor)
-
-        self.GetShell().GenerateFileCaches(filesToCache)
-        self.GetShell().CompileProjectFiles(filesToCompile)
-        self.RemoveUnusedBeams()
+        self.CompileSubset(self.GetApps(True))
 
     def RemoveUnusedBeams(self):
         srcFiles = set()
@@ -681,3 +641,49 @@ class ErlangProject(Project):
         self.shellConsole.shell.SetProp(CONFIG_COMPILER_OPTIONS, options)
         if self.CompilerOptions() != self.CompilerOptions(self.oldProjectData):
             self.CompileProject()
+
+    def CompileSubset(self, apps):
+        self.CreateProgressDialog("Compiling project")
+        ErlangCache.CleanDir(self.ProjectName())
+        filesToCompile = set()
+        filesToCache = set()
+        yrlToCompile = set()
+        igorToCache = set()
+        for app in apps:
+            srcPath = os.path.join(os.path.join(self.AppsPath(), app), "src")
+            testPath = os.path.join(os.path.join(self.AppsPath(), app), "test")
+            includePath = os.path.join(os.path.join(self.AppsPath(), app), "include")
+            for path in [srcPath, includePath, testPath]:
+                for root, _, files in os.walk(path):
+                    for file in files:
+                        file = os.path.join(root, file)
+                        if IsModule(file):
+                            if app in self.projectData[CONFIG_EXCLUDED_DIRS]:
+                                filesToCache.add(file)
+                            else:
+                                filesToCompile.add(file)
+                        if IsYrl(file):
+                            yrlToCompile.add(file)
+                        elif IsInclude(file):
+                            filesToCache.add(file)
+
+        for file in list(yrlToCompile):
+            (path, ext) = os.path.splitext(file)
+            erl = path + ".erl"
+            if erl in filesToCompile:
+                filesToCompile.remove(erl)
+
+        for root, d, files in os.walk(self.projectDir):
+            for f in files:
+                if f.endswith(".igor"):
+                    igorToCache.add(os.path.join(root, f))
+
+        filesToCompile = sorted(list(filesToCompile) + list(yrlToCompile))
+        filesToCache = sorted(list(filesToCache))
+
+        for igor in igorToCache:
+            IgorCache.GenerateForFile(igor)
+
+        self.GetShell().GenerateFileCaches(filesToCache)
+        self.GetShell().CompileProjectFiles(filesToCompile)
+        self.RemoveUnusedBeams()
