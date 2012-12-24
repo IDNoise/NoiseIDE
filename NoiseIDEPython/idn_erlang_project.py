@@ -61,7 +61,7 @@ class ErlangProject(Project):
         Project.SetupMenu(self)
 
         self.window.projectMenu.AppendSeparator()
-        self.window.projectMenu.AppendMenuItem("Rebuild project", self.window, lambda e: self.CompileProject(), "F7")
+        self.window.projectMenu.AppendMenuItem("Rebuild project", self.window, lambda e: self.RecompileProject(), "F7")
         self.window.projectMenu.AppendMenuItem("XRef check", self.window, lambda e: self.StartXRef())
 
         self.dialyzerMenu = Menu()
@@ -88,7 +88,7 @@ class ErlangProject(Project):
         self.rebuildT = self.window.toolbar.AddLabelTool(wx.ID_ANY, 'Rebuild project', GetImage('build.png'), shortHelp = 'Rebuild project')
         self.xrefCheckT = self.window.toolbar.AddLabelTool(wx.ID_ANY, 'XRef check', GetImage('xrefCheck.png'), shortHelp = 'XRef check')
 
-        self.window.Bind(wx.EVT_TOOL, lambda e: self.CompileProject(), self.rebuildT)
+        self.window.Bind(wx.EVT_TOOL, lambda e: self.RecompileProject(), self.rebuildT)
         self.window.Bind(wx.EVT_TOOL, lambda e: self.StartXRef(), self.xrefCheckT)
 
         self.window.toolbar.Realize()
@@ -584,8 +584,11 @@ class ErlangProject(Project):
                 ".app": ErlangHighlightedSTCBase}
 
     def CompileProject(self):
-        #ErlangCache.CleanDir(self.ProjectName())
         self.CompileSubset(self.GetApps(True))
+
+    def RecompileProject(self):
+        ErlangCache.CleanDir(self.ProjectName())
+        self.CompileProject()
 
     def RemoveUnusedBeams(self):
         srcFiles = set()

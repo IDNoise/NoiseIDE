@@ -13,7 +13,7 @@ from idn_erlang_dialogs import ErlangOptionsDialog
 from idn_erlang_project import ErlangProject
 from idn_erlang_project_form import ErlangProjectFrom
 import idn_installer
-from idn_utils import Menu, GetImage, readFile, writeFile, writeBinaryFile
+from idn_utils import Menu, GetImage, readFile, writeFile, writeBinaryFile, Timer
 import os
 import wx
 from wx.lib.agw import aui
@@ -77,14 +77,11 @@ class NoiseIDE(wx.Frame):
 
         self.WinMgr.Update()
 
-        self.autoVersionCheck = True
         def newVersionChecker():
-            while self.autoVersionCheck:
-                self.OnHelpCheckForUpdates(None, False)
-                time.sleep(600)
+            self.OnHelpCheckForUpdates(None, False)
 
-        thread = threading.Thread(target = newVersionChecker)
-        thread.start()
+        self.autoCheckTimer = Timer(600, newVersionChecker)
+        self.autoCheckTimer.Start()
         args = sys.argv[1:]
         if args:
             path = args[0]
@@ -211,7 +208,7 @@ class NoiseIDE(wx.Frame):
             dir = os.path.join(self.cwd, "installer")
             if not os.path.isdir(dir):
                 os.mkdir(dir)
-            self.autoVersionCheck = False
+            self.autoCheckTimer.Stop()
             if newVersion != version:
                 dial = MultiMessageDialog(self,
                     'There is new version {} available. Current version is {}. Do you want to update after exit?'.format(newVersion, version),
@@ -337,6 +334,7 @@ class NoiseIDE(wx.Frame):
         if self.project:
             self.project.Close()
         Config.save()
+        self.autoCheckTimer.Stop()
         event.Skip()
 
     def OnQuit(self, event):
