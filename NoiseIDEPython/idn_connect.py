@@ -137,6 +137,14 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
         self.TaskAddedEvent((TASK_COMPILE, file.lower()))
         self._ExecRequest("compile", '"{}"'.format(erlstr(file)))
 
+    def CompileApp(self, path):
+        self.TaskAddedEvent((TASK_COMPILE_APP, path.lower()))
+        self._ExecRequest("compile_app", '"{}"'.format(erlstr(path)))
+
+    def CacheApp(self, path):
+        self.TaskAddedEvent((TASK_CACHE_APP, path.lower()))
+        self._ExecRequest("cache_app", '"{}"'.format(erlstr(path)))
+
     def CompileFileFly(self, realPath, flyPath):
         self.TaskAddedEvent((TASK_COMPILE_FLY, realPath.lower()))
         self._ExecRequest("compile_file_fly", '["{0}", "{1}"]'.format(erlstr(realPath), erlstr(flyPath)))

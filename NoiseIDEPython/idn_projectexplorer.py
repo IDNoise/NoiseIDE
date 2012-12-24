@@ -549,10 +549,10 @@ class ProjectExplorer(IDNCustomTreeCtrl):
             return True
         return False
 
-    def GetAllFiles(self):
+    def GetAllFiles(self, selectAll = False):
         result = []
         for file in self.dirChecker.files:
-            if self.mask and extension(file) not in self.mask:
+            if not selectAll and self.mask and extension(file) not in self.mask:
                 continue
             result.append(file)
         return result

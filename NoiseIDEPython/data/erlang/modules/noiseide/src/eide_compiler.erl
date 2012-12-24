@@ -7,7 +7,8 @@
     compile_file_fly/2, 
     generate_includes/0,
     compile_yecc/1,
-    compile_with_option/2
+    compile_with_option/2,
+    compile_app/1
 ]).  
 
 generate_includes() ->
@@ -22,7 +23,7 @@ generate_includes() ->
                      Ai = AppsPath ++ "/"++ A ++"/" ++ End,
                      filelib:is_dir(AppsPath ++ "/"++ A) 
                  end]]
-    end, 
+    end,  
     %io:format("includes:~p~n", [Includes]),
     eide_connect:set_prop(includes, Includes),
     FlatIncludes = lists:map(fun({i, F}) -> F end, Includes),
@@ -39,6 +40,64 @@ compile(FileName) ->
             compile_yecc(FileName),
             create_response(FileName, [])
     end.
+    
+compile_app(AppPath) ->
+    App = filename:basename(AppPath),
+    OutDir = AppPath ++ "/ebin",
+    SrcDir = AppPath ++ "/src",
+    HrlDir = AppPath ++ "/include",
+    TestDir = AppPath ++ "/test",
+    Includes = eide_connect:prop(includes),
+    {Modules, LocalHrls, Yrls, AppSrcFile} = filelib:fold_files(SrcDir, ".*\.(erl|hrl|yrl|src)$", true, 
+        fun(File, {M, H, Y, ASF}) ->
+           case filename:extension(File) of
+               ".erl" -> {[File|M], H, Y, ASF};
+               ".hrl" -> {M, [File|H], Y, ASF};
+               ".yrl" -> {M, H, [File|Y], ASF};
+               ".src" -> {M, H, Y, File}
+           end
+        end, {[], [], [], undefined}), 
+    IncludeHrls = filelib:fold_files(HrlDir, ".*\.hrl$", true, 
+        fun(File, H) ->
+           case filename:extension(File) of
+               ".hrl" -> [File|H];
+               _ -> H
+           end
+        end, []), 
+    ModuleNames = [filename:rootname(filename:basename(M)) || M <- Modules],
+    filelib:fold_files(OutDir, ".*\.(beam|app)$", true, 
+        fun(File, _) -> 
+            case lists:member(filename:rootname(filename:basename(File)), ModuleNames) of
+                true -> ok;
+                false -> file:delete(File) 
+            end
+        end, undefined),
+    [eide_cache:gen_file_cache(H) || H <- IncludeHrls ++ LocalHrls],
+    Modules1 = Modules ++ [filename:rootname(Y) ++ ".erl" || Y <- Yrls, compile_yecc(Y) == ok],
+    SrcResult = [{struct, 
+                    [{path, iolist_to_binary(SrcDir ++ "/" ++ filename:basename(M))}, 
+                     {errors, compile_internal(M, [{outdir, OutDir} | Includes])}
+                    ]} || M <- Modules1],
+    
+    case AppSrcFile of
+        undefined -> ignore;
+        _ ->
+            {ok, SrcData} = file:read_file(AppSrcFile),
+            Beams = filelib:fold_files(OutDir, ".*\.beam$", true, 
+                fun(File, B) -> 
+                    [list_to_atom(filename:basename(filename:rootname(File)))| B] 
+                end, []),
+            SrcData1 = re:replace(SrcData, "{modules,.*?}", io_lib:format("{modules, ~p}", [Beams])),
+            file:write_file(OutDir ++ "/" ++ App ++ ".app", SrcData1)
+    end,
+    TestResult = filelib:fold_files(TestDir, ".*\.erl$", true, 
+        fun(File, R) ->
+           [{struct, 
+                [{path, iolist_to_binary(TestDir ++ "/" ++ filename:basename(File))}, 
+                 {errors, compile_internal(File, [{outdir, OutDir} | Includes])}
+                ]} | R]
+        end, []), 
+    SrcResult ++ TestResult.
     
 %d:/projects/noiseide/noiseidepython/data/erlang/modules/noiseide/src/eide_compiler.erl
 %eide_compiler:compile_with_option("d:/projects/noiseide/noiseidepython/data/erlang/modules/noiseide/src/eide_compiler.erl", "noiseide", 'S').
@@ -58,28 +117,26 @@ compile_with_option(FileName, Option) ->
 
 compile_yecc(FileName) ->
     %ModuleName = filename:rootname(FileName) ++ ".erl",
-    Result = yecc:file(FileName, [report]),
+    Result = yecc:file(FileName, []),
     %io:format("yecc result ~p~n", [Result]),
     case Result of
         {ok, ModuleName} ->
             Response = eide_compiler:compile(ModuleName),
             eide_connect:send(Response), 
 			send_yecc_response(FileName, warning, []),
-			noreply;
+			ok;
         {ok, ModuleName, Warnings} ->
             Response = eide_compiler:compile(ModuleName),
             eide_connect:send(Response),
             send_yecc_errors(warning, Warnings), 
-            noreply;
+            ok;
         {error, Warnings, Errors} ->
             send_yecc_errors(warning, Warnings),
             send_yecc_errors(error, Errors),
-            noreply;
+            error;
         _ ->
-            mochijson2:encode({struct, [{response, compile}, 
-										{errors, [[{type, error}, {line, 0}, 
-												   {msg, iolist_to_binary("Unknown compilation error")}]]}, 
-										{path, iolist_to_binary(FileName)}]})
+            io:format("Unknown yrl compilation error~n"),
+            error
     end.
  
 app_name(ModuleName) ->

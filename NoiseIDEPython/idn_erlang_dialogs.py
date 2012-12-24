@@ -171,11 +171,11 @@ class ErlangDialyzerDialog(wx.Dialog):
         home = self.homeTB.Value
 
         if home and not os.path.isdir(home):
-            wx.MessageBox("Home dir {} doesn't exist.".format(home))
+            wx.MessageBox("Home dir {} doesn't exist.".format(home), "Dialyzer")
             return
 
         if not os.path.isfile(plt):
-            wx.MessageBox("Plt file {} doesn't exist".format(plt))
+            wx.MessageBox("Plt file {} doesn't exist".format(plt), "Dialyzer")
             return
 
         self.project.SetHomeDir(home)

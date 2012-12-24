@@ -3,9 +3,7 @@ __author__ = 'Yaroslav'
 import os
 import operator
 import wx
-import glob
 from idn_cache import ErlangCache, IgorCache
-from idn_colorschema import ColorSchema
 from idn_config import Config
 from idn_connect import CompileErrorInfo
 from idn_console import ErlangIDEConsole, ErlangProjectConsole
@@ -15,7 +13,6 @@ from idn_erlang_explorer import ErlangProjectExplorer
 from idn_erlang_project_form import ErlangProjectFrom
 from idn_erlangstc import ErlangHighlightedSTCBase, ErlangSTCReadOnly
 from idn_errors_table import ErrorsTableGrid, XrefTableGrid, DialyzerTableGrid
-import core
 from idn_notebook import ErlangCompileOptionPanel
 from idn_project import Project
 from idn_utils import readFile, writeFile, pystr, Menu, GetImage
@@ -135,10 +132,10 @@ class ErlangProject(Project):
     def OnDialyzerRunModule(self, event):
         editor = self.window.TabMgr.GetActiveEditor()
         if not editor:
-            wx.MessageBox("No modules opened.")
+            wx.MessageBox("No modules opened.", "Dialyzer")
             return
         if not IsModule(editor.filePath):
-            wx.MessageBox("Current file is not erlang module.")
+            wx.MessageBox("Current file is not erlang module.", "Dialyzer")
             return
         self.DialyzeModules(editor.filePath)
 
@@ -160,7 +157,7 @@ class ErlangProject(Project):
 
     def CheckPlt(self):
         if not self.PltPath():
-            wx.MessageBox("Please specify plt for dialyzer. Project -> Dialyzer -> Edit Options.")
+            wx.MessageBox("Please specify plt for dialyzer. Project -> Dialyzer -> Edit Options.", "Dialyzer")
             return False
         return True
 
@@ -172,7 +169,7 @@ class ErlangProject(Project):
             if not app: continue
             apps.add(self.EbinDirForApp(app))
         if len(apps) == 0:
-            wx.MessageBox("No app to dialyze.")
+            wx.MessageBox("No app to dialyze.", "Dialyzer")
             return
         self.GetShell().DialyzeApps(list(apps))
 
@@ -195,7 +192,7 @@ class ErlangProject(Project):
             if not beamPath: continue
             beams.add(beamPath)
         if len(beams) == 0:
-            wx.MessageBox("No modules to dialyze.")
+            wx.MessageBox("No modules to dialyze.", "Dialyzer")
             return
         self.GetShell().DialyzeModules(list(beams))
 
@@ -237,6 +234,7 @@ class ErlangProject(Project):
 
     def StartXRef(self):
         filesForXref = set()
+        self.xrefProblemsCount = 0
         for app in self.GetApps():
             path = os.path.join(os.path.join(self.AppsPath(), app), "src")
             for root, _, files in os.walk(path):
@@ -372,6 +370,23 @@ class ErlangProject(Project):
                 errors.append(CompileErrorInfo(path, error["type"], error["line"], error["msg"]))
             self.AddErrors(path, errors)
 
+        elif response == "compile_app":
+            resultData = js["result"]
+            path = pystr(js["path"])
+            self.TaskDone("App compiled {}".format(path), (TASK_COMPILE_APP, path.lower()))
+            for eRec in resultData:
+                p = pystr(eRec["path"])
+                errors = []
+                for error in eRec["errors"]:
+                    if error["line"] == "none":
+                        continue
+                    errors.append(CompileErrorInfo(p, error["type"], error["line"], error["msg"]))
+                self.AddErrors(p, errors)
+
+        elif response == "cache_app":
+            path = pystr(js["path"])
+            self.TaskDone("App cached {}".format(path), (TASK_CACHE_APP, path.lower()))
+
         elif response == "xref_module":
             module = pystr(js["module"])
             if module in self.xrefModules:
@@ -380,8 +395,12 @@ class ErlangProject(Project):
             undefined = [((u["where_m"], u["where_f"], u["where_a"]),
                           (u["what_m"], u["what_f"], u["what_a"])) for u in js["undefined"]]
             self.AddXRefErrors(ErlangCache.moduleData[module].file, undefined)
+            self.xrefProblemsCount += len(undefined)
             if len(self.xrefModules) == 0:
-                self.ShowXrefTable()
+                if self.xrefProblemsCount == 0:
+                    wx.MessageBox("XRef check succeeded.", "XRef")
+                else:
+                    self.ShowXrefTable()
         elif response == "dialyzer":
             warnings = js["warnings"]
             self.ShowDialyzerResult(warnings)
@@ -592,7 +611,7 @@ class ErlangProject(Project):
     def AddErrors(self, path, errors):
         self.errors[path] = errors
         editor = self.window.TabMgr.FindPageByPath(path)
-        if editor:
+        if editor and hasattr(editor, 'HighlightErrors'):
             editor.HighlightErrors(errors)
 
         self.errorsTable.AddErrors(path, errors)
@@ -645,49 +664,12 @@ class ErlangProject(Project):
 
     def CompileSubset(self, apps):
         self.CreateProgressDialog("Compiling project")
-
-        filesToCompile = set()
-        filesToCache = set()
-        yrlToCompile = set()
-        igorToCache = set()
         for app in apps:
-            srcPath = os.path.join(os.path.join(self.AppsPath(), app), "src")
-            testPath = os.path.join(os.path.join(self.AppsPath(), app), "test")
-            includePath = os.path.join(os.path.join(self.AppsPath(), app), "include")
-            for path in [srcPath, includePath, testPath]:
-                for root, _, files in os.walk(path):
-                    for file in files:
-                        file = os.path.join(root, file)
-                        if IsModule(file):
-                            if app in self.projectData[CONFIG_EXCLUDED_DIRS]:
-                                filesToCache.add(file)
-                            else:
-                                filesToCompile.add(file)
-                        else:
-                            if IsInclude(file):
-                                filesToCache.add(file)
-                            elif app in self.projectData[CONFIG_EXCLUDED_DIRS]:
-                                continue
-                            elif IsYrl(file):
-                                yrlToCompile.add(file)
+            if not app in self.projectData[CONFIG_EXCLUDED_DIRS]:
+                self.GetShell().CompileApp(os.path.join(self.AppsPath(), app))
+            else:
+                self.GetShell().CacheApp(os.path.join(self.AppsPath(), app))
 
-        for file in list(yrlToCompile):
-            (path, ext) = os.path.splitext(file)
-            erl = path + ".erl"
-            if erl in filesToCompile:
-                filesToCompile.remove(erl)
+        for f in self.explorer.GetAllFiles():
+            if IsIgor(f): IgorCache.GenerateForFile(f)
 
-        for root, d, files in os.walk(self.projectDir):
-            for f in files:
-                if IsIgor(f):
-                    igorToCache.add(os.path.join(root, f))
-
-        filesToCompile = sorted(list(filesToCompile) + list(yrlToCompile))
-        filesToCache = sorted(list(filesToCache))
-
-        for igor in igorToCache:
-            IgorCache.GenerateForFile(igor)
-
-        self.GetShell().GenerateFileCaches(filesToCache)
-        self.GetShell().CompileProjectFiles(filesToCompile)
-        self.RemoveUnusedBeams()

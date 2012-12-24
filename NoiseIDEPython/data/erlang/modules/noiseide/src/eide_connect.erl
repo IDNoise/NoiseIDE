@@ -54,7 +54,6 @@ send(Data) ->
     ?MODULE ! {send, Data}.
     
 loop(State) ->
-    %io:format("loop~n"),
     inet:setopts(State#state.socket, [{active,once}]),
     receive
         {send, Data} ->
@@ -123,8 +122,7 @@ done(Type) -> done(Type, []).
 done(Type, Params) -> iolist_to_binary(lists:flatten(mochijson2:encode({struct, [{response, Type}|Params]}))).
 
 execute_instant_action(add_path, PathBinary) ->
-    Path = binary_to_list(PathBinary),
-    %io:format("add path~p~n", [Path]), 
+    Path = binary_to_list(PathBinary), 
     code:add_patha(Path),
     eide_compiler:generate_includes(); 
 execute_instant_action(remove_path, PathBinary) ->
@@ -135,7 +133,6 @@ execute_instant_action(set_prop, Binary) ->
     Key = binary_to_atom(Prop, latin1),
     Val = binary_to_list(Value),
     set_prop(Key, Val), 
-    %io:format("set p~p~n", [{Key, Val}]), 
     eide_compiler:generate_includes();
 execute_instant_action(set_home, Binary) ->
     Path = binary_to_list(Binary),
@@ -143,7 +140,6 @@ execute_instant_action(set_home, Binary) ->
 execute_instant_action(remove_prop, Binary) ->
     Key = binary_to_list(Binary),
     ets:delete(props, Key).
-
 
 execute_action(gen_erlang_cache, RuntimeBinary) ->
     eide_cache:gen_erlang_cache(binary_to_list(RuntimeBinary)),
@@ -155,21 +151,26 @@ execute_action(rpc, Binary) ->
     Module:Fun(),
     ?noreply;
 execute_action(compile_file_fly, Binary) -> 
-    [RealPath, NewPath] = Binary,
-    %io:format("compile_file_fly~p~n", [RealPath]), 
+    [RealPath, NewPath] = Binary, 
     eide_compiler:compile_file_fly(binary_to_list(RealPath), binary_to_list(NewPath));   
 execute_action(gen_project_cache, _Binary) ->
     eide_cache:gen_project_cache(),
     done(gen_project_cache);
 execute_action(gen_file_cache, Binary) ->
     File = binary_to_list(Binary),
-    %io:format("gen file cache action:~p~n", [File]),
     eide_cache:gen_file_cache(File),
     ?noreply;
 execute_action(compile, PathBinary) ->
-    Path = binary_to_list(PathBinary),
-    %io:format("compile_file~p~n", [Path]),  
+    Path = binary_to_list(PathBinary), 
     eide_compiler:compile(Path);
+execute_action(compile_app, PathBinary) ->
+    Path = binary_to_list(PathBinary),
+    CompileResults = eide_compiler:compile_app(Path),
+    done(compile_app, [{path, PathBinary}, {result, CompileResults}]);
+execute_action(cache_app, PathBinary) ->
+    Path = binary_to_list(PathBinary),
+    eide_cache:cache_app(Path),
+    done(cache_app, [{path, PathBinary}]);
 execute_action(compile_option, Data) ->
     [FileName, Option] = Data,
     eide_compiler:compile_with_option(binary_to_list(FileName), binary_to_atom(Option, latin1));
@@ -224,7 +225,6 @@ xref_module(Module) ->
     mochijson2:encode(Response).
 
 dialyze(Type, FilesApps) ->
-    %io:format("dialyze ~p: ~p~n", [Type, FilesApps]),
     Plt = prop(plt),
     case os:getenv("HOME") of
         false ->

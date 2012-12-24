@@ -1,3 +1,6 @@
+import threading
+from time import sleep
+import time
 from idn_shortcut_window import ShortcutWindow
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
@@ -74,6 +77,14 @@ class NoiseIDE(wx.Frame):
 
         self.WinMgr.Update()
 
+        self.autoVersionCheck = True
+        def newVersionChecker():
+            while self.autoVersionCheck:
+                self.OnHelpCheckForUpdates(None, False)
+                time.sleep(600)
+
+        thread = threading.Thread(target = newVersionChecker)
+        thread.start()
         args = sys.argv[1:]
         if args:
             path = args[0]
@@ -190,7 +201,7 @@ class NoiseIDE(wx.Frame):
             version = float(data.split("\n")[0].split(":")[1].strip())
         return version
 
-    def OnHelpCheckForUpdates(self, event):
+    def OnHelpCheckForUpdates(self, event, notifyAboutLastVersion = True):
         try:
             self.SetCursor(wx.StockCursor(wx.CURSOR_WAIT))
             version = self.GetCurrentVersion()
@@ -200,6 +211,7 @@ class NoiseIDE(wx.Frame):
             dir = os.path.join(self.cwd, "installer")
             if not os.path.isdir(dir):
                 os.mkdir(dir)
+            self.autoVersionCheck = False
             if newVersion != version:
                 dial = MultiMessageDialog(self,
                     'There is new version {} available. Current version is {}. Do you want to update after exit?'.format(newVersion, version),
@@ -233,11 +245,11 @@ class NoiseIDE(wx.Frame):
                     installNewVersion = True
                     self.Enable()
                     self.SetFocus()
-            else:
-                wx.MessageBox("You have last version", "Check result")
+            elif notifyAboutLastVersion:
+                wx.MessageBox("You have last version", "Check new version result")
         except Exception, e:
             core.Log("Update error", e)
-            wx.MessageBox("Update check error. Check log for info", "Check result")
+            wx.MessageBox("Update check error. Check log for info", "Check new version result")
         self.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
 
     def TryLoadLastProject(self):
@@ -277,7 +289,7 @@ class NoiseIDE(wx.Frame):
         form.ShowModal()
 
     def OnHelpAbout(self, event):
-        wx.MessageBox("IDE with good functionality for Erlang programming language.\nMade by Yaroslav 'IDNoise' Nikityshev.", "Noise IDE v {}".format(self.GetCurrentVersion()))
+        wx.MessageBox("IDE for Erlang programming language.\nMade by Yaroslav 'IDNoise' Nikityshev.", "Noise IDE v {}".format(self.GetCurrentVersion()))
 
     def MenuBar(self):
         return self.menubar

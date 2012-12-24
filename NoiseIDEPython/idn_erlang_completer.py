@@ -317,6 +317,7 @@ class ErlangCompleter(wx.Frame):
                 module = self.module
         else:
             module = self.module
+        #print module, fun, arity
         data = ErlangCache.ModuleFunction(module, fun, arity)
         if not data:
             data = ErlangCache.ModuleExportedData(module, fun)
@@ -363,7 +364,11 @@ class ErlangCompleter(wx.Frame):
             return int(arity)
 
         arity = 0
-        if self.stc.GetCharAt(pos) != "(": return 0
+        if self.stc.GetCharAt(pos) != "(":
+            if self.stc.GetCharAt(pos + 1) == "(":
+                pos += 1
+            else:
+                return arity
         sF = pos + 1 if pos + 1 < self.stc.GetLength() else self.stc.GetLength() - 1
         sT = pos + 6 if pos + 6 < self.stc.GetLength() else self.stc.GetLength() - 1
         postfix = self.stc.GetText()[sF : sT].strip()

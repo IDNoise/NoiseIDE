@@ -392,12 +392,16 @@ class ErlangSTC(ErlangHighlightedSTCBase):
             text.endswith("||") or
             text.endswith("=") or
             text.endswith("begin") or
+            text.endswith("try") or
+            text.endswith("catch") or
             text.endswith("when") or
             text.endswith("of") or
             text.endswith("->") or
             text.endswith("(")):
             indent += 4
-        elif (text.endswith(".")):
+        elif text.endswith("."):
+            indent = 0
+        elif text.endswith(";"):
             indent -= 4
         else:
             for (op, cl) in [("(", ")"), ("{", "}"), ("[", "]")]:
@@ -416,7 +420,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         fun = funData[0]
         arity = self.completer.GetFunArity(funData[1] + len(fun))
 
-        funStr = "\n    {}/{}".format(fun, arity)
+        funStr = "    {}/{}".format(fun, arity)
         (exports, startPos, insertPos) = self.lexer.GetAllExports()
         if funStr in exports:
             return

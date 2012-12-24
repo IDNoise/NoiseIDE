@@ -17,7 +17,8 @@
     gen_file_cache/1, 
     gen_erlang_cache/1, 
     gen_project_cache/0,
-    get_app_name_from_path/1    
+    get_app_name_from_path/1,
+    cache_app/1    
 ]).
 
 -record(function, {  
@@ -105,6 +106,15 @@ gen_project_cache() ->
     io:format("Checking cache for project..."),
     create_cache(eide_connect:prop(cache_dir) ++ "/" ++ eide_connect:prop(project_name), eide_connect:prop(project_dir), undefined, ignores()),
     io:format("...Done").
+
+cache_app(AppPath) ->
+    SrcDir = AppPath ++ "/src",
+    HrlDir = AppPath ++ "/include",
+    ModulesAndHrls = filelib:fold_files(SrcDir, ".*\.(erl|hrl)$", true, 
+        fun(File, F) -> [File|F]  end, []), 
+    IncludeHrls = filelib:fold_files(HrlDir, ".*\.hrl$", true, 
+        fun(File, H) -> [File|H] end, []), 
+    [gen_file_cache(F) || F <- ModulesAndHrls ++ IncludeHrls].
 
 ignores() ->
     [appmon, asn, cosEvent, cosEventDomain, 
