@@ -11,7 +11,7 @@
     compile_app/1
 ]).  
 
-generate_includes() ->
+generate_includes() -> 
     Includes = 
         case eide_connect:prop(project_dir) of
             undefined -> 
@@ -82,13 +82,30 @@ compile_app(AppPath) ->
     case AppSrcFile of
         undefined -> ignore;
         _ ->
+            AppFile = OutDir ++ "/" ++ App ++ ".app",
+            CurrentModules = 
+                case filelib:is_file(AppFile) of
+                    true ->
+                        try
+                            {ok, [AppFileData]} = file:consult(AppFile),
+                            proplists:get_value(modules, element(3, AppFileData), [])
+                        catch _:_ ->
+                            []
+                        end;
+                    _ ->
+                        []
+                end,
             {ok, SrcData} = file:read_file(AppSrcFile),
             Beams = filelib:fold_files(OutDir, ".*\.beam$", true, 
                 fun(File, B) -> 
                     [list_to_atom(filename:basename(filename:rootname(File)))| B] 
                 end, []),
-            SrcData1 = re:replace(SrcData, "{modules,.*?}", io_lib:format("{modules, ~p}", [Beams])),
-            file:write_file(OutDir ++ "/" ++ App ++ ".app", SrcData1)
+            case lists:usort(Beams) == lists:usort(CurrentModules) of
+                true -> ok;
+                _ ->  
+                    SrcData1 = re:replace(SrcData, "{modules,.*?}", io_lib:format("{modules,~p}", [Beams])),
+                    file:write_file(AppFile, SrcData1)
+            end
     end,
     TestResult = filelib:fold_files(TestDir, ".*\.erl$", true, 
         fun(File, R) ->
