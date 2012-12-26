@@ -86,10 +86,10 @@
 %eide_cache:generate_file("D:/temp/erlang_cache", "unit_building", "d:/Projects/GIJoe/server/apps/gamelib/src/units/unit_building.erl", undefined, []).
 %ololololo comment
 gen_file_cache(File) -> 
-    case eide_connect:prop(project_dir) of
+    case eide_connect:prop(project_dir) of 
         undefined -> create_cache(eide_connect:prop(cache_dir) ++ "/other", File);
         Dir ->  
-            case lists:prefix(Dir, File) of 
+            case lists:prefix(string:to_lower(Dir), string:to_lower(File)) of  
                 false -> create_cache(eide_connect:prop(cache_dir) ++ "/other", File);
                 _ -> create_cache(eide_connect:prop(cache_dir) ++ "/" ++ eide_connect:prop(project_name), File)
             end

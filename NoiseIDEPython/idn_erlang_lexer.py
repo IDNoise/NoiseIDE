@@ -227,8 +227,11 @@ class ErlangLexer(BaseLexer):
             if not match:
                 if not result:
                     mre = re.compile("^-module\(.*?\)\.", re.MULTILINE | re.DOTALL)
-                    match = mre.search(text, pos)
-                    end = match.end()
+                    match = mre.search(text, 0)
+                    if match:
+                        end = match.end()
+                    else:
+                        end = 0
                     self.stc.InsertText(end, "\n-export([]).")
                     return self.GetAllExports()
                 else:

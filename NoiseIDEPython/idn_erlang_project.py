@@ -419,7 +419,6 @@ class ErlangProject(Project):
 
     def OnSocketConnected(self):
         self.SetCompilerOptions()
-        self.CreateProgressDialog("Compiling project")
         self.CompileProject()
         #self.GenerateErlangCache()
 
@@ -666,7 +665,6 @@ class ErlangProject(Project):
             self.CompileProject()
 
     def CompileSubset(self, apps):
-        self.CreateProgressDialog("Compiling project")
         for app in apps:
             if not app in self.projectData[CONFIG_EXCLUDED_DIRS]:
                 self.GetShell().CompileApp(os.path.join(self.AppsPath(), app))
@@ -675,4 +673,7 @@ class ErlangProject(Project):
 
         for f in self.explorer.GetAllFiles():
             if IsIgor(f): IgorCache.GenerateForFile(f)
+
+        if len(self.tasks) > 0:
+            self.CreateProgressDialog("Compiling...")
 

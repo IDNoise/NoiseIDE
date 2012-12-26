@@ -342,7 +342,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         event.Skip()
 
     def OnFlyTimer(self, event):
-        if core.Project.IsFlyCompileEnabled() and self.changed:
+        if core.Project.IsFlyCompileEnabled() and self.changed and os.path.exists(self.filePath):
             currentHash = hash(self.GetText())
             if currentHash == self.flyCompileHash: return
             self.flyCompileHash = currentHash
