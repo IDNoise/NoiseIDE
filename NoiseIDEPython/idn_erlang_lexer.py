@@ -215,24 +215,23 @@ class ErlangLexer(BaseLexer):
         return (result, record, prefix)
 
     def GetAllExports(self):
-        regexp = "^-export\(\[(.*?)\s*\]\)\."
-        r = re.compile(regexp, re.MULTILINE | re.DOTALL)
+        r = re.compile("^-export\(\[\s*(.*?)\s*\]\)\.", re.MULTILINE | re.DOTALL)
         text = self.stc.GetText()
         pos = 0
-        result = ""
+        result = None
         lastInsertPosition = None
         start = None
         while True:
             match = r.search(text, pos)
             if not match:
-                if not result:
+                if result is None:
                     mre = re.compile("^-module\(.*?\)\.", re.MULTILINE | re.DOTALL)
                     match = mre.search(text, 0)
                     if match:
                         end = match.end()
                     else:
                         end = 0
-                    self.stc.InsertText(end, "\n-export([]).")
+                    self.stc.InsertText(end, "\n-export([\n]).")
                     return self.GetAllExports()
                 else:
                     break
@@ -240,7 +239,11 @@ class ErlangLexer(BaseLexer):
                 start = match.start()
             pos = match.end(0)
             lastInsertPosition = match.end(1)
+            if result is None:
+                result = ""
             result += match.group(1)
+        if result is None:
+            result = ""
         return (result.strip(), start, lastInsertPosition)
 
 

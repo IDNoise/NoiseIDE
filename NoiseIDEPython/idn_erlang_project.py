@@ -356,11 +356,11 @@ class ErlangProject(Project):
         elif response == "compile" or response == "compile_fly":
             errorsData = js["errors"]
             path = pystr(js["path"])
-
             if response == "compile":
                 done = (TASK_COMPILE, path.lower())
             else:
                 done = (TASK_COMPILE_FLY, path.lower())
+            if not self.explorer.FindItemByPath(path): return
             self.TaskDone("Compiled {}".format(path), done)
 
             errors = []
@@ -376,6 +376,9 @@ class ErlangProject(Project):
             self.TaskDone("App compiled {}".format(path), (TASK_COMPILE_APP, path.lower()))
             for eRec in resultData:
                 p = pystr(eRec["path"])
+                if 'nt' == os.name:
+                    p = p[0].upper() + p[1:]
+                if not self.explorer.FindItemByPath(p): continue
                 errors = []
                 for error in eRec["errors"]:
                     if error["line"] == "none":
@@ -615,7 +618,6 @@ class ErlangProject(Project):
         editor = self.window.TabMgr.FindPageByPath(path)
         if editor and hasattr(editor, 'HighlightErrors'):
             editor.HighlightErrors(errors)
-
         self.errorsTable.AddErrors(path, errors)
         errorCount = 0
         warningCount = 0

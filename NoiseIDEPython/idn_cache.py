@@ -265,7 +265,6 @@ class ErlangCache:
             return True
         for dir in [cls.project.ProjectName(), os.path.join("runtimes", cls.project.GetErlangRuntime())]:
             file = os.path.join(cls.CACHE_DIR, dir, module + ".cache")
-            #print file
             if os.path.isfile(file):
                 cls.LoadFile_(file)
                 return module in cls.moduleData

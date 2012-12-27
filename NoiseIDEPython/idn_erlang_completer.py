@@ -317,7 +317,6 @@ class ErlangCompleter(wx.Frame):
                 module = self.module
         else:
             module = self.module
-        #print module, fun, arity
         data = ErlangCache.ModuleFunction(module, fun, arity)
         if not data:
             data = ErlangCache.ModuleExportedData(module, fun)

@@ -75,7 +75,7 @@ compile_app(AppPath) ->
     [eide_cache:gen_file_cache(H) || H <- IncludeHrls ++ LocalHrls],
     Modules1 = Modules ++ [filename:rootname(Y) ++ ".erl" || Y <- Yrls, compile_yecc(Y) == ok],
     SrcResult = [{struct, 
-                    [{path, iolist_to_binary(SrcDir ++ "/" ++ filename:basename(M))}, 
+                    [{path, iolist_to_binary(M)}, 
                      {errors, compile_internal(M, [{outdir, OutDir} | Includes])}
                     ]} || M <- Modules1],
     
@@ -110,7 +110,7 @@ compile_app(AppPath) ->
     TestResult = filelib:fold_files(TestDir, ".*\.erl$", true, 
         fun(File, R) ->
            [{struct, 
-                [{path, iolist_to_binary(TestDir ++ "/" ++ filename:basename(File))}, 
+                [{path, iolist_to_binary(File)}, 
                  {errors, compile_internal(File, [{outdir, OutDir} | Includes])}
                 ]} | R]
         end, []), 
