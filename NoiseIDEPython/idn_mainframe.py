@@ -1,8 +1,3 @@
-import threading
-from time import sleep
-import time
-from idn_shortcut_window import ShortcutWindow
-
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 import sys
@@ -13,7 +8,8 @@ from idn_erlang_dialogs import ErlangOptionsDialog
 from idn_erlang_project import ErlangProject
 from idn_erlang_project_form import ErlangProjectFrom
 import idn_installer
-from idn_utils import Menu, GetImage, readFile, writeFile, writeBinaryFile, Timer
+from idn_utils import Menu, GetImage, readFile, writeBinaryFile, Timer, CreateButton, CreateLabel
+from idn_shortcut_window import ShortcutWindow
 import os
 import wx
 from wx.lib.agw import aui
@@ -38,6 +34,10 @@ class NoiseIDE(wx.Frame):
         self.Maximize()
         Config.load()
         ColorSchema.load(Config.ColorSchema())
+
+        projects = Config.LastProjects()
+        newProjects = [p for p in projects if os.path.isfile(p)]
+        Config.SetLastProjects(newProjects)
 
         icon = wx.Icon('data/images/icon.png', wx.BITMAP_TYPE_PNG, 16, 16)
         self.SetIcon(icon)
@@ -108,8 +108,8 @@ class NoiseIDE(wx.Frame):
             def handler(p):
                 return lambda e: self.OpenProject(p)
             for p in Config.LastProjects():
-                if os.path.isfile(p):
-                    lastProjects.AppendMenuItem(os.path.basename(p), self, handler(p))
+                projectData = yaml.load(file(p, 'r'))
+                lastProjects.AppendMenuItem(projectData[Project.CONFIG_PROJECT_NAME], self, handler(p))
 
         self.fileMenu.AppendSeparator()
         self.fileMenu.AppendMenuItem('User Settings', self, self.OnEditOptions)
@@ -147,8 +147,8 @@ class NoiseIDE(wx.Frame):
             def handler(p):
                 return lambda e: self.OpenProject(p)
             for p in Config.LastProjects():
-                if os.path.isfile(p):
-                    lastProjects.AppendMenuItem(os.path.basename(p), self, handler(p))
+                projectData = yaml.load(file(p, 'r'))
+                lastProjects.AppendMenuItem(projectData[Project.CONFIG_PROJECT_NAME], self, handler(p))
 
         self.fileMenu.AppendSeparator()
         self.fileMenu.AppendMenuItem('User Settings', self, self.OnEditOptions)
@@ -250,14 +250,17 @@ class NoiseIDE(wx.Frame):
         self.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
 
     def TryLoadLastProject(self):
-        lastProject = Config.GetProp("last_project")
-        if lastProject and os.path.isfile(lastProject):
-            dial = wx.MessageDialog(None,
-                'Do you want to open last project {}?'.format(os.path.basename(lastProject)),
-                'Last project',
-                wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
-            if dial.ShowModal() == wx.ID_YES:
-                self.OpenProject(lastProject)
+        dialog = HelloDialog(self)
+        dialog.Show()
+
+        #lastProject = Config.GetProp("last_project")
+        #if lastProject and os.path.isfile(lastProject):
+            #dial = wx.MessageDialog(None,
+                #'Do you want to open last project {}?'.format(os.path.basename(lastProject)),
+                #'Last project',
+                #wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
+            #if dial.ShowModal() == wx.ID_YES:
+                #self.OpenProject(lastProject)
 
     def CreateToolBar(self):
         self.toolbar = wx.Frame.CreateToolBar(self)
@@ -357,6 +360,47 @@ class NoiseIDE(wx.Frame):
         dlg = ErlangOptionsDialog(self)
         dlg.ShowModal()
 
+class HelloDialog(wx.Dialog):
+    def __init__(self, parent):
+        wx.Dialog.__init__(self, parent, title = "Hello, " + Config.GetProp(Config.USER_NAME),
+            style = wx.DEFAULT_DIALOG_STYLE, size = (330, 265))
+
+        self.recentLB = wx.ListCtrl(self, -1, style = wx.LC_REPORT | wx.LC_NO_HEADER | wx.LC_ALIGN_LEFT)
+        self.recentLB.SetMinSize((200, 200))
+        self.recentLB.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self.OnClickRecent)
+
+        self.recentLB.InsertColumn(0, "data")
+        self.recentLB.SetColumnWidth(0, 200)
+        i = 0
+        self.navigation = {}
+        for p in Config.LastProjects():
+            projectData = yaml.load(file(p, 'r'))
+            self.recentLB.InsertStringItem(i, projectData[Project.CONFIG_PROJECT_NAME])
+            self.navigation[i] = p
+            i += 1
+
+        self.createNewB = CreateButton(self, "New Project", self.OnCreateNew)
+        self.createNewB.MinSize = (100, 30)
+
+        gSizer = wx.GridBagSizer(2, 2)
+
+        gSizer.Add(CreateLabel(self, "Open recent:"), (0, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
+        gSizer.Add(self.recentLB, (1, 0), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
+
+        gSizer.Add(CreateLabel(self, "or Create new:"), (0, 1), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
+        gSizer.Add(self.createNewB, (1, 1), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
+
+        self.SetSizer(gSizer)
+        self.Layout()
+
+    def OnCreateNew(self, event):
+        self.Close()
+        self.Parent.OnNewErlangProject(None)
+
+    def OnClickRecent(self, event):
+        project = self.navigation[event.GetIndex()]
+        self.Parent.OpenProject(project)
+        self.Close()
 
 class App(wx.App):
     def __init__(self):
