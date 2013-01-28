@@ -35,10 +35,6 @@ class NoiseIDE(wx.Frame):
         Config.load()
         ColorSchema.load(Config.ColorSchema())
 
-        projects = Config.LastProjects()
-        newProjects = [p for p in projects if os.path.isfile(p)]
-        Config.SetLastProjects(newProjects)
-
         icon = wx.Icon('data/images/icon.png', wx.BITMAP_TYPE_PNG, 16, 16)
         self.SetIcon(icon)
 
@@ -311,13 +307,11 @@ class NoiseIDE(wx.Frame):
             self.project.Close()
         projectFile = os.path.normpath(projectFile)
         Config.SetProp("last_project", projectFile)
-
         projects = Config.LastProjects()
         if projectFile in projects:
             projects.remove(projectFile)
         projects.append(projectFile)
         Config.SetLastProjects(projects)
-
         self.SetupProjectMenu()
         self.project = self.LoadProject(projectFile)
 
@@ -373,7 +367,7 @@ class HelloDialog(wx.Dialog):
         self.recentLB.SetColumnWidth(0, 200)
         i = 0
         self.navigation = {}
-        for p in Config.LastProjects():
+        for p in reversed(Config.LastProjects()):
             projectData = yaml.load(file(p, 'r'))
             self.recentLB.InsertStringItem(i, projectData[Project.CONFIG_PROJECT_NAME])
             self.navigation[i] = p

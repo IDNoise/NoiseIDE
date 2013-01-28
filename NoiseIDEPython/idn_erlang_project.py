@@ -247,8 +247,6 @@ class ErlangProject(Project):
             module = os.path.basename(file)[:-4]
             self.GetShell().XRef(module)
             self.xrefModules.add(module)
-            if len(filesForXref) > 0:
-                self.window.toolbar.SetGetImage('xrefCheck.png')
         self.xrefTable.Clear()
 
     def GetShell(self):

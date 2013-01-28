@@ -534,7 +534,7 @@ class ErlangConsoleSTC(ConsoleSTC):
         (?P<reload>Module:.*?Reload\ssucceeded\.)|
         (?P<check_cache>Checking\scache\sfor\serlang\slibs.*?$)|
         (?P<custom_log>%Log:.*?$)|
-        (?P<error_report>ERROR\sREPORT)|
+        (?P<error_report>Error|error|ERROR)|
         (?P<crash_report>CRASH\sREPORT)|
         (?P<module_fun_line>\{(?P<module>[a-zA-Z_]*)\,(?P<fun>[a-zA-Z_]*)\,(?P<arity>\d+)\,)|
         (?P<file_line>\{file\,\s*"(?P<file>.*?)"\}\,\s*?\{line\,(?P<fline>\d+)\})

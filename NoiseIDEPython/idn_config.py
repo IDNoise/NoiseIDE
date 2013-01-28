@@ -63,7 +63,7 @@ class Config:
 
     @classmethod
     def LastProjects(cls):
-        projects = set((cls.data[cls.LAST_PROJECT_LIST] if cls.LAST_PROJECT_LIST in cls.data else []))
+        projects = (cls.data[cls.LAST_PROJECT_LIST] if cls.LAST_PROJECT_LIST in cls.data else [])
         projects = [p for p in projects if os.path.isfile(p)]
 
         cls.data[cls.LAST_PROJECT_LIST] = projects
@@ -72,6 +72,7 @@ class Config:
     @classmethod
     def SetLastProjects(cls, projects):
         cls.data[cls.LAST_PROJECT_LIST] = projects
+        cls.save()
 
     @classmethod
     def TooltipDelay(cls):
@@ -85,6 +86,7 @@ class Config:
             delay = cls.DEFAULT_TOOLTIP_DELAY
         finally:
             cls.data[cls.TOOLTIP_DELAY] = delay
+            cls.save()
 
 class ConfigEditForm(wx.Dialog):
     def __init__(self):
