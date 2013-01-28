@@ -209,7 +209,6 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.editorMenu.AppendMenuItem('Find in file', core.MainFrame, self.ShowFindInFile)
         self.editorMenu.AppendMenuItem('Incremental find in file', core.MainFrame, self.ShowIncrementalFindInFile)
         self.editorMenu.AppendMenuItem('Go to line', core.MainFrame, lambda e: self.ShowGoToLineDialog())
-        self.editorMenu.AppendMenuItem('Find/Replace in project', core.MainFrame, lambda e: self.ShowFindInProject(), "Ctrl-Shift-F")
         self.editorMenu.AppendSeparator()
         self.editorMenu.AppendCheckMenuItem('Close brackets/quotes', core.MainFrame, self.OnMenuCloseBracketsQuotes, Config.GetProp("close_brackets_quotes", False))
         self.editorMenu.AppendCheckMenuItem('Put brackets/quotes around selected text', core.MainFrame, self.OnMenuPutBracketsQuotesAround, Config.GetProp("put_brackets_quotes_around", False))
@@ -221,14 +220,6 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
     def OnMenuPutBracketsQuotesAround(self, event):
         newValue = not Config.GetProp("put_brackets_quotes_around", False)
         Config.SetProp("put_brackets_quotes_around", newValue)
-
-    def ShowFindInProject(self):
-        dialog = FindInProjectDialog.GetDialog(core.TabMgr)
-        dialog.Show()
-        if self.SelectedText:
-            dialog.findText.Value = self.SelectedText
-            dialog.findText.SetInsertionPointEnd()
-        dialog.findText.SetFocus()
 
     def ShowFindInFile(self, event):
         if not self.HasFocus():
@@ -258,6 +249,8 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         )
 
     def LoadFile(self, filePath):
+        if 'nt' == os.name:
+            filePath = filePath[0].upper() + filePath[1:]
         self.filePath = os.path.normpath(filePath)
         self.ClearAll()
         StyledTextCtrl.LoadFile(self, self.filePath)

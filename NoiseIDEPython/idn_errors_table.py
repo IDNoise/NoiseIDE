@@ -162,12 +162,19 @@ class XrefTableGrid(ErrorsTableGrid):
         data = list(filter(lambda x: x[0] != newPath, self.table.data))
         for ((wm, wf, wa), (m, f, a)) in errors:
             funData = ErlangCache.ModuleFunction(wm, wf, wa)
-
             data.append((newPath, funData.line, "{}:{}/{}".format(wm, wf, wa), "{}:{}/{}".format(m, f, a)))
         data = sorted(data, key = operator.itemgetter(0))
         self.table.data = data
         self.table.ResetView(self, currentRows)
         self.pathErrors[path] = errors
+
+    def PrepareResult(self):
+        self.Unbind(wx.grid.EVT_GRID_CELL_LEFT_DCLICK)
+        if len(self.table.data) == 0:
+            self.table.data = [("Project", 0, "No problems found")]
+            self.table.ResetView(self, 0)
+        else:
+            self.Bind(wx.grid.EVT_GRID_CELL_LEFT_DCLICK, self.OnLeftDClick)
 
     def OnLeftDClick(self, event):
         row = event.GetRow()

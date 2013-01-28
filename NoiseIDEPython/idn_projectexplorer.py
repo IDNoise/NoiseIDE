@@ -351,6 +351,8 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         (_, dir) = self.RequestName("New Directory", "Enter dir name", "new_dir")
         if dir and not os.path.isdir(dir):
             os.mkdir(dir)
+        else:
+            wx.MessageBox("Dir {} already exists.".format(dir), "Error")
 
     def OnMenuCut(self, event):
         self.cut = True

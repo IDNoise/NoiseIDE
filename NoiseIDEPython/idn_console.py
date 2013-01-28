@@ -143,6 +143,7 @@ class ErlangConsole(wx.Panel):
         self.stopButton.Enabled = True
 
     def Stop(self):
+        noLog = wx.LogNull()
         try:
             self.shell.Stop()
         except Exception, e:
@@ -151,6 +152,7 @@ class ErlangConsole(wx.Panel):
             self.WriteToConsoleOut("\n\nSTOPPED\n\n")
             self.startButton.Enabled = True
             self.stopButton.Enabled = False
+            del noLog
 
     def Clear(self):
         self.consoleOut.Clear()

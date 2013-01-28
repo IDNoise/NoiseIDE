@@ -1,7 +1,7 @@
 %% @author: Yaroslav 'IDNoise' Nikityshev
 %% @date: 09.09.2012
 
--module(test_cache_module).
+-module(test_cache_module1).
 
 %% Include files
 -include_lib("noiseide/include/sample.hrl").

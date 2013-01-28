@@ -47,6 +47,9 @@ class ErlangHighlightedSTCBase(CustomSTC):
         self.StyleSetSpec(ErlangHighlightType.BIF, formats["bif"])
         self.StyleSetSpec(ErlangHighlightType.FULLSTOP, formats["fullstop"])
 
+    def OnFileSaved(self):
+        core.Project.FileSaved(self.filePath)
+
 
 class ErlangSTC(ErlangHighlightedSTCBase):
     MARKER_ERROR_CIRCLE, MARKER_WARNING_CIRCLE, MARKER_ERROR, MARKER_WARNING = (18, 19, 20, 21)
@@ -190,14 +193,16 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         end = self.GetSelectionEnd()
         startLine = self.LineFromPosition(start)
         endLine = self.LineFromPosition(end)
-
-        lines = range(startLine, endLine + 1)
+        if self.PositionFromLine(endLine) != end:
+            endLine += 1
+        lines = range(startLine, endLine)
         allComments = True
         for line in lines:
             text = self.GetLine(line).strip()
             if text and not text.startswith('%'):
                 allComments = False
                 break
+        self.BeginUndoAction()
         for line in lines:
             text = self.GetLine(line).rstrip()
             if not text: continue
@@ -208,6 +213,9 @@ class ErlangSTC(ErlangHighlightedSTCBase):
             self.SetTargetStart(self.PositionFromLine(line))
             self.SetTargetEnd(self.GetLineEndPosition(line))
             self.ReplaceTarget(text)
+        self.SetSelectionStart(self.PositionFromLine(startLine))
+        self.SetSelectionEnd(self.PositionFromLine(endLine))
+        self.EndUndoAction()
 
     def OnMouseMove(self, event):
         event.Skip()
@@ -379,9 +387,6 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         self.markerPanel.SetMarkers("warning", wMarkers)
         self.markerPanel.SetMarkers("error", eMarkers)
         self.Refresh()
-
-    def OnFileSaved(self):
-        core.Project.FileSaved(self.filePath)
 
     def DoIndent(self):
         text = self.GetLine(self.CurrentLine - 1).strip()

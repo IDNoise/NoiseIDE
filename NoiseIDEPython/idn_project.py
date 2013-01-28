@@ -1,4 +1,5 @@
 import time
+from idn_findreplace import FindInProjectDialog
 from idn_project_dialogs import FastProjectFileOpenDialog
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
@@ -111,6 +112,17 @@ class Project(ProgressTaskManagerDialog):
     def SetupMenu(self):
         self.window.projectMenu.AppendMenuItem('Project Settings', self.window, self.OnEditProject)
         self.window.projectMenu.AppendMenuItem('Go to file', self.window, lambda e: self.ShowFastOpen(), "Ctrl-O")
+        self.window.projectMenu.AppendMenuItem('Find/Replace in project', self.window, lambda e: self.ShowFindInProject(), "Ctrl-Shift-F")
+
+    def ShowFindInProject(self):
+        dialog = FindInProjectDialog.GetDialog(core.TabMgr)
+        dialog.Show()
+        stc = core.TabMgr.GetActiveEditor()
+        if stc:
+            if stc.SelectedText:
+                dialog.findText.Value = stc.SelectedText
+                dialog.findText.SetInsertionPointEnd()
+        dialog.findText.SetFocus()
 
     def OnEditProject(self, event):
         pass

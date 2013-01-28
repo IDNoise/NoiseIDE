@@ -14,3 +14,6 @@ def IsYrl(file):
 
 def IsIgor(file):
     return file.endswith(".igor")
+
+def IsAppSrc(file):
+    return file.endswith(".app.src")

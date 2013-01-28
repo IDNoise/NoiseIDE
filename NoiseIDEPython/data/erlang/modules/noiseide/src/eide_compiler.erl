@@ -30,20 +30,25 @@ generate_includes() ->
     eide_connect:set_prop(flat_includes, FlatIncludes). 
   
 compile(FileName) -> 
+    %io:format("compile: ~p, ext: ~p~n", [FileName, filename:extension(FileName)]),
     case filename:extension(FileName) of
         ".erl" -> 
             OutDir = eide_connect:prop(project_dir) ++ "/" ++ app_name(FileName) ++ "/ebin",
             Includes = eide_connect:prop(includes),
-            catch file:make_dir(OutDir),  
+            catch file:make_dir(OutDir), 
             create_response(FileName, compile_internal(FileName, [{outdir, OutDir} | Includes]));
         ".yrl" -> 
             compile_yecc(FileName),
+            create_response(FileName, []);
+        ".src" -> 
+            compile_appsrc(FileName),
             create_response(FileName, [])
     end.
     
 compile_app(AppPath) ->
-    App = filename:basename(AppPath),
+    %App = filename:basename(AppPath),
     OutDir = AppPath ++ "/ebin",
+    catch file:make_dir(OutDir),
     SrcDir = AppPath ++ "/src",
     HrlDir = AppPath ++ "/include",
     TestDir = AppPath ++ "/test",
@@ -74,53 +79,62 @@ compile_app(AppPath) ->
         end, undefined),
     [eide_cache:gen_file_cache(H) || H <- IncludeHrls ++ LocalHrls],
     Modules1 = Modules ++ [filename:rootname(Y) ++ ".erl" || Y <- Yrls, compile_yecc(Y) == ok],
-    SrcResult = [{struct, 
-                    [{path, iolist_to_binary(M)}, 
-                     {errors, compile_internal(M, [{outdir, OutDir} | Includes])}
-                    ]} || M <- Modules1],
+    SrcResult = [compile_result(M, Includes, OutDir) || M <- Modules1],
     
     case AppSrcFile of
         undefined -> ignore;
-        _ ->
-            AppFile = OutDir ++ "/" ++ App ++ ".app",
-            CurrentModules = 
-                case filelib:is_file(AppFile) of
-                    true ->
-                        try
-                            {ok, [AppFileData]} = file:consult(AppFile),
-                            proplists:get_value(modules, element(3, AppFileData), [])
-                        catch _:_ ->
-                            []
-                        end;
-                    _ ->
-                        []
-                end,
-            {ok, SrcData} = file:read_file(AppSrcFile),
-            Beams = filelib:fold_files(OutDir, ".*\.beam$", true, 
-                fun(File, B) -> 
-                    [list_to_atom(filename:basename(filename:rootname(File)))| B] 
-                end, []),
-            case lists:usort(Beams) == lists:usort(CurrentModules) of
-                true -> ok;
-                _ ->  
-                    SrcData1 = re:replace(SrcData, "{modules,.*?}", io_lib:format("{modules,~p}", [Beams])),
-                    file:write_file(AppFile, SrcData1)
-            end
+        _ -> compile_appsrc(AppSrcFile)
     end,
     TestResult = filelib:fold_files(TestDir, ".*\.erl$", true, 
         fun(File, R) ->
-           [{struct, 
-                [{path, iolist_to_binary(File)}, 
-                 {errors, compile_internal(File, [{outdir, OutDir} | Includes])}
-                ]} | R]
+           [compile_result(File, Includes, OutDir) | R]
         end, []), 
     SrcResult ++ TestResult.
+ 
+compile_result(File, Includes, OutDir) ->
+    catch file:make_dir(OutDir),
+    {struct, 
+        [{path, iolist_to_binary(File)}, 
+         {errors, compile_internal(File, [{outdir, OutDir} | Includes])}
+        ]}.
+
+
+ 
+compile_appsrc(AppSrcFile) ->
+    App = app_name(AppSrcFile),
+    OutDir = eide_connect:prop(project_dir) ++ "/" ++ App ++ "/ebin",
+    catch file:make_dir(OutDir),
+    AppFile = OutDir ++ "/" ++ App ++ ".app",
+    CurrentModules = 
+        case filelib:is_file(AppFile) of
+            true ->
+                try
+                    {ok, [AppFileData]} = file:consult(AppFile),
+                    proplists:get_value(modules, element(3, AppFileData), [])
+                catch _:_ ->
+                    []
+                end;
+            _ ->
+                []
+        end,
+    {ok, SrcData} = file:read_file(AppSrcFile),
+    Beams = filelib:fold_files(OutDir, ".*\.beam$", true, 
+        fun(File, B) -> 
+            [list_to_atom(filename:basename(filename:rootname(File)))| B] 
+        end, []),
+    case lists:usort(Beams) == lists:usort(CurrentModules) of
+        true -> ok;
+        _ ->  
+            SrcData1 = re:replace(SrcData, "{modules,.*?}", io_lib:format("{modules,~p}", [Beams])),
+            file:write_file(AppFile, SrcData1)
+    end.
     
 %d:/projects/noiseide/noiseidepython/data/erlang/modules/noiseide/src/eide_compiler.erl
 %eide_compiler:compile_with_option("d:/projects/noiseide/noiseidepython/data/erlang/modules/noiseide/src/eide_compiler.erl", "noiseide", 'S').
 compile_with_option(FileName, Option) -> 
     App = app_name(FileName),
     OutDir = eide_connect:prop(project_dir) ++ "/" ++ App ++ "/ebin",
+    catch file:make_dir(OutDir),
     Includes = eide_connect:prop(includes),
     compile:file(FileName, [{outdir, OutDir}, Option | Includes]),
     File = OutDir ++ "/" ++ filename:rootname(filename:basename(FileName)) ++ "." ++ atom_to_list(Option),

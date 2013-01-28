@@ -16,7 +16,7 @@ from idn_errors_table import ErrorsTableGrid, XrefTableGrid, DialyzerTableGrid
 from idn_notebook import ErlangCompileOptionPanel
 from idn_project import Project
 from idn_utils import readFile, writeFile, pystr, Menu, GetImage
-from idn_erlang_utils import IsBeam, IsInclude, IsYrl, IsModule, IsIgor
+from idn_erlang_utils import IsBeam, IsInclude, IsYrl, IsModule, IsIgor, IsAppSrc
 
 class ErlangProject(Project):
     IDE_MODULES_DIR = os.path.join(os.getcwd(), 'data', 'erlang', 'modules', 'noiseide', 'ebin')
@@ -247,6 +247,8 @@ class ErlangProject(Project):
             module = os.path.basename(file)[:-4]
             self.GetShell().XRef(module)
             self.xrefModules.add(module)
+            if len(filesForXref) > 0:
+                self.window.toolbar.SetGetImage('xrefCheck.png')
         self.xrefTable.Clear()
 
     def GetShell(self):
@@ -272,6 +274,8 @@ class ErlangProject(Project):
             elif IsModule(file):
                 erls.add(file)
             elif IsYrl(file):
+                erls.add(file)
+            elif IsAppSrc(file):
                 erls.add(file)
             elif IsIgor(file):
                 igors.add(file)
@@ -360,6 +364,7 @@ class ErlangProject(Project):
                 done = (TASK_COMPILE, path.lower())
             else:
                 done = (TASK_COMPILE_FLY, path.lower())
+            #print path, self.explorer.FindItemByPath(path)
             if not self.explorer.FindItemByPath(path): return
             self.TaskDone("Compiled {}".format(path), done)
 
@@ -378,6 +383,7 @@ class ErlangProject(Project):
                 p = pystr(eRec["path"])
                 if 'nt' == os.name:
                     p = p[0].upper() + p[1:]
+                #print p, self.explorer.FindItemByPath(p)
                 if not self.explorer.FindItemByPath(p): continue
                 errors = []
                 for error in eRec["errors"]:
@@ -400,10 +406,11 @@ class ErlangProject(Project):
             self.AddXRefErrors(ErlangCache.moduleData[module].file, undefined)
             self.xrefProblemsCount += len(undefined)
             if len(self.xrefModules) == 0:
-                if self.xrefProblemsCount == 0:
-                    wx.MessageBox("XRef check succeeded.", "XRef")
-                else:
-                    self.ShowXrefTable()
+#                if self.xrefProblemsCount == 0:
+#                    wx.MessageBox("XRef check succeeded.", "XRef")
+#                else:
+                self.xrefTable.PrepareResult()
+                self.ShowXrefTable()
         elif response == "dialyzer":
             warnings = js["warnings"]
             self.ShowDialyzerResult(warnings)

@@ -243,6 +243,7 @@ class ErlangCache:
                 import win32api
                 try:
                     data[FILE] = os.path.normpath(win32api.GetLongPathName(data[FILE]))
+                    data[FILE] = data[FILE][0].upper() + data[FILE][1:]
                 except Exception, e:
                     core.Log("error ", e, "on get long path name for ", data[FILE])
             file = data[FILE].replace("\\", "/")
