@@ -388,7 +388,7 @@ class HelloDialog(wx.Dialog):
         gSizer.Add(self.recentLB, (1, 0), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
 
         gSizer.Add(CreateLabel(self, "or Create new:"), (0, 1), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
-        gSizer.Add(self.createNewB, (1, 1), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
+        gSizer.Add(self.createNewB, (1, 1), flag = wx.ALL | wx.ALIGN_TOP, border = 4)
 
         self.SetSizer(gSizer)
         self.Layout()
