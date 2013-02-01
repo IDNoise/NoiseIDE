@@ -264,8 +264,7 @@ dump_data_to_file(ModuleName, CacheDir, FilePath, CFile, Content, FlyFileName) -
         {macros, {struct, macros_to_json(Macs, FlyFileName)}},
         {includes, includes_to_json(sets:to_list(sets:from_list(Incs)), FlyFileName)},
         {records_data, {struct, recs_data_to_json(Recs, FlyFileName)}},
-        {exported_types, {struct, exp_types_to_json(ExpTypes)}},
-        {application, list_to_binary(get_app_name_from_path(FilePath))}
+        {exported_types, {struct, exp_types_to_json(ExpTypes)}}
     ],
     Dirname = filename:basename(filename:dirname(FilePath)),
     Extension = filename:extension(FilePath),

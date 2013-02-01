@@ -146,7 +146,8 @@ class ModuleData:
         return self.exportedTypes
 
     def Application(self):
-        return self.data["application"] if "application" in self.data else "123123123"
+        core.Project.GetApp(self.file)
+        return core.Project.GetApp(self.file)
 
     def IsGlobalInclude(self):
         return "is_global_include" in self.data and self.data["is_global_include"]
@@ -176,7 +177,9 @@ class ErlangCache:
     }
 
     toLoad = []
-
+    moduleData = {}
+    modules = set()
+    includes = set()
     @classmethod
     def Init(cls, project):
         cls.project = project
@@ -191,9 +194,6 @@ class ErlangCache:
         cls.erlangDir = os.path.dirname(os.path.dirname(project.GetErlangPath()))
 
         cls.checkers = {}
-        cls.modules = set()
-        cls.includes = set()
-        cls.moduleData = {}
 
         cls.loadTimer = wx.Timer(core.MainFrame, wx.ID_ANY)
         cls.loadTimer.Start(100)
