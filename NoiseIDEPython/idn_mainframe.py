@@ -376,13 +376,19 @@ class HelloDialog(wx.Dialog):
         self.createNewB = CreateButton(self, "New Project", self.OnCreateNew)
         self.createNewB.MinSize = (100, 30)
 
+        self.openOtherB = CreateButton(self, "Open Project", self.OnOpenOther)
+        self.openOtherB.MinSize = (100, 30)
+
         gSizer = wx.GridBagSizer(2, 2)
 
         gSizer.Add(CreateLabel(self, "Open recent:"), (0, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
-        gSizer.Add(self.recentLB, (1, 0), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
+        gSizer.Add(self.recentLB, (1, 0), (4, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
 
-        gSizer.Add(CreateLabel(self, "or Create new:"), (0, 1), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
+        gSizer.Add(CreateLabel(self, "Create new:"), (0, 1), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
         gSizer.Add(self.createNewB, (1, 1), flag = wx.ALL | wx.ALIGN_TOP, border = 4)
+
+        gSizer.Add(CreateLabel(self, "Open other:"), (2, 1), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
+        gSizer.Add(self.openOtherB, (3, 1), flag = wx.ALL | wx.ALIGN_TOP, border = 4)
 
         self.SetSizer(gSizer)
         self.Layout()
@@ -395,6 +401,10 @@ class HelloDialog(wx.Dialog):
         project = self.navigation[event.GetIndex()]
         self.Parent.OpenProject(project)
         self.Close()
+
+    def OnOpenOther(self, event):
+        self.Close()
+        self.Parent.OnOpenProject(None)
 
 class App(wx.App):
     def __init__(self):
