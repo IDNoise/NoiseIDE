@@ -8,10 +8,11 @@
     generate_includes/0,
     compile_yecc/1,
     compile_with_option/2,
-    compile_app/1
+    compile_app/1,
+    app_out_dir/1
 ]).  
 
-generate_includes() -> 
+generate_includes() ->
     Includes = 
         case eide_connect:prop(project_dir) of
             undefined -> 
@@ -24,16 +25,14 @@ generate_includes() ->
                      filelib:is_dir(AppsPath ++ "/"++ A) 
                  end]]
     end,  
-    %io:format("includes:~p~n", [Includes]),
     eide_connect:set_prop(includes, Includes),
     FlatIncludes = lists:map(fun({i, F}) -> F end, Includes),
     eide_connect:set_prop(flat_includes, FlatIncludes). 
   
 compile(FileName) -> 
-    %io:format("compile: ~p, ext: ~p~n", [FileName, filename:extension(FileName)]),
     case filename:extension(FileName) of
         ".erl" -> 
-            OutDir = eide_connect:prop(project_dir) ++ "/" ++ app_name(FileName) ++ "/ebin",
+            OutDir = app_out_dir(FileName),
             Includes = eide_connect:prop(includes),
             catch file:make_dir(OutDir), 
             create_response(FileName, compile_internal(FileName, [{outdir, OutDir} | Includes]));
@@ -46,7 +45,6 @@ compile(FileName) ->
     end.
     
 compile_app(AppPath) ->
-    %App = filename:basename(AppPath),
     OutDir = AppPath ++ "/ebin",
     catch file:make_dir(OutDir),
     SrcDir = AppPath ++ "/src",
@@ -97,14 +95,11 @@ compile_result(File, Includes, OutDir) ->
         [{path, iolist_to_binary(File)}, 
          {errors, compile_internal(File, [{outdir, OutDir} | Includes])}
         ]}.
-
-
  
 compile_appsrc(AppSrcFile) ->
-    App = app_name(AppSrcFile),
-    OutDir = eide_connect:prop(project_dir) ++ "/" ++ App ++ "/ebin",
+    OutDir = app_out_dir(AppSrcFile),
     catch file:make_dir(OutDir),
-    AppFile = OutDir ++ "/" ++ App ++ ".app",
+    AppFile = OutDir ++ "/" ++ filename:basename(AppSrcFile, ".app.src") ++ ".app",
     CurrentModules = 
         case filelib:is_file(AppFile) of
             true ->
@@ -129,27 +124,20 @@ compile_appsrc(AppSrcFile) ->
             file:write_file(AppFile, SrcData1)
     end.
     
-%d:/projects/noiseide/noiseidepython/data/erlang/modules/noiseide/src/eide_compiler.erl
-%eide_compiler:compile_with_option("d:/projects/noiseide/noiseidepython/data/erlang/modules/noiseide/src/eide_compiler.erl", "noiseide", 'S').
-compile_with_option(FileName, Option) -> 
-    App = app_name(FileName),
-    OutDir = eide_connect:prop(project_dir) ++ "/" ++ App ++ "/ebin",
+compile_with_option(FileName, Option) ->
+    OutDir = app_out_dir(FileName),
     catch file:make_dir(OutDir),
     Includes = eide_connect:prop(includes),
     compile:file(FileName, [{outdir, OutDir}, Option | Includes]),
     File = OutDir ++ "/" ++ filename:rootname(filename:basename(FileName)) ++ "." ++ atom_to_list(Option),
     {ok, Data} = file:read_file(File),
-    %Data1 = unicode:characters_to_list(Data, utf8),
-    %io:format("After option~p~n~p~n**********~n", [File, unicode:bom_to_encoding(Data)]),
     mochijson2:encode({struct, [{response, compile_option},
                                 {option, Option},
                                 {path, iolist_to_binary(FileName)},
                                 {result, Data}]}).
 
 compile_yecc(FileName) ->
-    %ModuleName = filename:rootname(FileName) ++ ".erl",
     Result = yecc:file(FileName, []),
-    %io:format("yecc result ~p~n", [Result]),
     case Result of
         {ok, ModuleName} ->
             Response = eide_compiler:compile(ModuleName),
@@ -170,9 +158,25 @@ compile_yecc(FileName) ->
             error
     end.
  
-app_name(ModuleName) ->
-    AppsDirLen = length(eide_connect:prop(project_dir) ++ "/"),
-    hd(filename:split(lists:nthtail(AppsDirLen, ModuleName))).
+app_name(File) -> 
+    lists:last(lists:takewhile(
+        fun(I) -> 
+            I =/= "src" andalso I =/= "include" andalso I =/= "test" 
+        end, 
+        filename:split(File))
+    ).
+    
+app_path(File) ->
+    filename:join(lists:takewhile(
+        fun(I) -> 
+            I =/= "src" andalso I =/= "include" andalso I =/= "test" 
+        end, 
+        filename:split(File))
+    ).
+
+app_out_dir(File) ->
+    Path = app_path(File),
+    Path ++ "/ebin". 
     
 send_yecc_errors(Type, Errors) ->
     [send_yecc_response(File, Type, ErrorsInfo) || {File, ErrorsInfo} <- Errors].
@@ -192,7 +196,6 @@ send_yecc_response(File, Type, ErrorsInfo) ->
 default_options() ->
     [ 
      warn_obsolete_guard, 
-     %warn_unused_import,
      warn_shadow_vars, 
      warn_export_vars, 
      debug_info,
@@ -244,20 +247,16 @@ compile_internal(FileName, Options, ToBinary, RealPath) ->
                  {error, Errors, Warnings} ->
                      {Errors, Warnings}
              end,
-    %io:format("Spawn~p~n", [FileName == RealPath]),
     case FileName == RealPath of
         true -> spawn(eide_cache, gen_file_cache, [FileName]);
         _ -> spawn(eide_cache, create_cache_file_fly, [FileName, RealPath])
     end,
-%    [[io:format("Error on compile ~p: ~p~n", [FileName, Er])|| Er <- Err, element(1, Er) == none]|| {_File, Err} <- E],
-    %io:format("Error on compile ~p: ~p~n", [FileName, {E, W}]),
     Errs = 
         [[begin
             case Er of
                 {compile, write_error} ->
                     [{type, error}, {line, 0}, {msg, iolist_to_binary("Error with writing file.")}];
                 {compile,{module_name, MName, FName}} ->
-%                    io:format("mn~p~n", [{MName, FName, FileName, file:read_file(FileName)}]),
                     [{type, error}, {line, 2}, {msg, iolist_to_binary("Module in file '" ++ FName ++ 
                         "' has wrong name: '" ++ atom_to_list(MName) ++ "'.")}];
                 {Line, M, Error}  ->
@@ -275,10 +274,4 @@ compile_internal(FileName, Options, ToBinary, RealPath) ->
               [{type, warning}, {line, Line}, {msg, Msg}]
           end || Wa <- War] 
          || {_File, War} <- W],
-%    case Errs of
-%        [] -> ok;
-%        _ ->
-%            io:format("Errs~p~n~p~n", [Errs, {FileName, FileInfo#file_info.size, file:read_file(FileName)}])
-%    end,
-    %io:format("~p~n",[lists:append(Errs) ++ lists:append(Warns)]),
     lists:filter(fun(El) -> El =/= [] end, lists:append(Errs) ++ lists:append(Warns)).

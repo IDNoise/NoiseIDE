@@ -7,17 +7,13 @@
 -define(VAR, "Var"). 
   
 -export([ 
-    create_cache/2,
-    create_cache/4, 
-    create_cache_for_erlang_libs/2,
+    create_cache_for_erlang_libs/1,
     create_cache_file_fly/2,
-    generate_file/4,
-    %generate_html_file/3,  
+    generate_file/4, 
     ignores/0,
     gen_file_cache/1, 
     gen_erlang_cache/1, 
     gen_project_cache/0,
-    get_app_name_from_path/1,
     cache_app/1    
 ]).
 
@@ -85,26 +81,18 @@
 %eide_cache:generate_file("D:/temp/erlang_cache", "eide_cache", "d:/Projects/noiseide/noiseidepython/data/erlang/modules/noiseide/src/eide_cache.erl", undefined, []).
 %eide_cache:generate_file("D:/temp/erlang_cache", "unit_building", "d:/Projects/GIJoe/server/apps/gamelib/src/units/unit_building.erl", undefined, []).
 %ololololo comment
-gen_file_cache(File) -> 
-    case eide_connect:prop(project_dir) of 
-        undefined -> create_cache(eide_connect:prop(cache_dir) ++ "/other", File);
-        Dir ->  
-            case lists:prefix(string:to_lower(Dir), string:to_lower(File)) of  
-                false -> create_cache(eide_connect:prop(cache_dir) ++ "/other", File);
-                _ -> create_cache(eide_connect:prop(cache_dir) ++ "/" ++ eide_connect:prop(project_name), File)
-            end
-    end.  
+gen_file_cache(File) -> create_cache(eide_connect:prop(cache_dir) ++ "/" ++ eide_connect:prop(project_name), File).  
 
 gen_erlang_cache(Runtime) -> 
     Dir = eide_connect:prop(cache_dir) ++ "/runtimes/" ++ Runtime,
     io:format("Checking cache for erlang libs ~p~n", [Dir]),
     filelib:ensure_dir(Dir),
-    create_cache_for_erlang_libs(Dir, ignores()),
+    create_cache_for_erlang_libs(Dir),
     io:format("Checking cache for erlang libs......Done~n").
 
 gen_project_cache() ->
     io:format("Checking cache for project..."),
-    create_cache(eide_connect:prop(cache_dir) ++ "/" ++ eide_connect:prop(project_name), eide_connect:prop(project_dir), undefined, ignores()),
+    create_cache(eide_connect:prop(cache_dir) ++ "/" ++ eide_connect:prop(project_name), eide_connect:prop(project_dir), []),
     io:format("...Done").
 
 cache_app(AppPath) ->
@@ -125,28 +113,18 @@ ignores() ->
      otpmibs, runtimetools, testserver, toolbar, 
      tv, webtool, wx]. 
 
-prepare_ignores(AppsPath, IgnoreApps) ->
-    Dir = case AppsPath == code:root_dir() of true -> "/lib/"; _ -> "/" end,
-    [ AppsPath ++ Dir ++ atom_to_list(A) ++ "-" || A <- IgnoreApps].
+prepare_ignores() ->
+    [ code:root_dir() ++ "/lib/" ++ atom_to_list(A) ++ "-" || A <- ignores()].
 
-create_cache_for_erlang_libs(CacheDir, IgnoreApps) ->
-    create_cache(CacheDir, code:root_dir(), undefined, IgnoreApps).
+create_cache_for_erlang_libs(CacheDir) ->
+    create_cache(CacheDir, code:root_dir(), prepare_ignores()).
 
 create_cache(CacheDir, File) ->
     generate_file(CacheDir, module_name(File), File, undefined),
     ok.
 
 create_cache_file_fly(FlyFile, RealFile) ->
-    CacheDir =  
-        case eide_connect:prop(project_dir) of
-            undefined -> eide_connect:prop(cache_dir) ++ "/other";
-            Dir -> 
-                case lists:prefix(Dir, RealFile) of 
-                    false -> eide_connect:prop(cache_dir) ++ "/other";
-                    _ -> eide_connect:prop(cache_dir) ++ "/" ++ eide_connect:prop(project_name)
-                end
-                
-        end,
+    CacheDir = eide_connect:prop(cache_dir) ++ "/" ++ eide_connect:prop(project_name),
     RealModuleName = module_name(RealFile),    
     ModuleName = module_name(FlyFile),    
     CacheFileName = get_cache_file_name(CacheDir, RealModuleName),
@@ -158,26 +136,11 @@ create_cache_file_fly(FlyFile, RealFile) ->
     end,    
     ok.
 
-add_paths(AppsPath) ->
-    {ok, Apps} = file:list_dir(AppsPath),
-    [code:add_patha(Ai) || A <- Apps,
-     begin
-         Ai = AppsPath ++ "/"++A++"/ebin",
-         filelib:is_dir(Ai)
-     end].
-
-create_cache(CacheDir, AppsPath, App, IgnoreApps) ->
-    LibDir = 
-        case App of 
-            undefined -> AppsPath;
-            _ -> AppsPath ++ "/" ++ App
-        end,
-    add_paths(AppsPath),
-    Ignores = prepare_ignores(AppsPath, IgnoreApps),
+create_cache(CacheDir, AppsPath, Ignores) ->
     {ok, Re} = re:compile("(^.*?/(src|include)/.*\.(erl|hrl)$|^.*?/html/.*\.html$)"),
     IsInIgnoreFun = fun(File) -> lists:any(fun(IApp) -> lists:prefix(IApp, File) end, Ignores) end,
     IsInWrongFolder = fun(File) -> re:run(File, Re) == nomatch end,
-    Files = filelib:fold_files(LibDir, ".*\.(erl|hrl|html)$", true, 
+    Files = filelib:fold_files(AppsPath, ".*\.(erl|hrl|html)$", true, 
                                fun(File, A) ->
                                    case IsInIgnoreFun(File) orelse IsInWrongFolder(File) of
                                        true -> 
@@ -224,8 +187,7 @@ generate_file(CacheDir, ModuleName, FilePath, DocsFilePath) ->
     try
         CacheFileName = get_cache_file_name(CacheDir, ModuleName),
         case filelib:last_modified(FilePath) < filelib:last_modified(CacheFileName) of
-            true -> 
-                ignore;
+            true -> ignore;
             _ -> 
                 Data = generate(ModuleName, FilePath, DocsFilePath, ModuleName),
                 dump_data_to_file(ModuleName, CacheDir, FilePath, CacheFileName, Data)
@@ -244,7 +206,7 @@ send_answer(CacheFile, File) ->
         {response, gen_file_cache},   
         {path, iolist_to_binary(File)},     
         {cache_path, iolist_to_binary(CacheFile)}]
-        }), 
+    }), 
     eide_connect:send(Response).
 
 dump_data_to_file(ModuleName, CacheDir, FilePath, CFile, Content) ->
@@ -277,20 +239,6 @@ dump_data_to_file(ModuleName, CacheDir, FilePath, CFile, Content, FlyFileName) -
         end,
     JsonStruct =  {struct, Props1},
     write_json(CFile, JsonStruct).
-
-get_app_name_from_path(File) ->
-    ProjectDir = eide_connect:prop(project_dir) ++ "/",
-    ErlangLibsDir = code:lib_dir() ++ "/",
-    case lists:prefix(ProjectDir, File) of
-        true -> lists:takewhile(fun(E) -> E =/= $/ end, File -- ProjectDir);
-        _ ->
-            case lists:prefix(ErlangLibsDir, File) of
-                true -> lists:takewhile(
-                    fun(E) -> E =/= $/ andalso E =/= $- end,
-                    File -- ErlangLibsDir);
-                _ -> ""
-            end
-    end.
 
 write_json(File, Json) ->
     StringData = iolist_to_binary(lists:flatten(mochijson2:encode(Json))),
