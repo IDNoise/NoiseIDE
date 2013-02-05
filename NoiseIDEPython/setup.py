@@ -12,8 +12,7 @@ includefiles = ['dark.color.yaml',
                 'rev.cfg', 
                 'noiseide.template.yaml', 
                 'data/images',
-                'data/erlang/modules/noiseide/ebin',
-                'data/erlang/modules/noiseide/ebin',
+                'data/erlang/modules/apps/noiseide/ebin',
                 'data/erlang/templates']
     
 build_exe_options = {'include_files':includefiles, 'build_exe' : 'noiseide'}
