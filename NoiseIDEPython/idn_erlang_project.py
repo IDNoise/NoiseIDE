@@ -19,7 +19,7 @@ from idn_utils import readFile, writeFile, pystr, Menu, GetImage
 from idn_erlang_utils import IsBeam, IsInclude, IsYrl, IsModule, IsIgor, IsAppSrc
 
 class ErlangProject(Project):
-    IDE_MODULES_DIR = os.path.join(os.getcwd(), 'data', 'erlang', 'modules', 'noiseide', 'ebin')
+    IDE_MODULES_DIR = os.path.join(os.getcwd(), 'data', 'erlang', 'modules', 'apps', 'noiseide', 'ebin')
     EXPLORER_TYPE = ErlangProjectExplorer
 
     def OnLoadProject(self):
@@ -27,6 +27,12 @@ class ErlangProject(Project):
 
         if not self.GetErlangRuntime() or self.GetErlangRuntime() not in Config.Runtimes():
             self.userData[CONFIG_ERLANG_RUNTIME] = Config.Runtimes().keys()[0]
+            self.SaveData()
+
+        if not CONFIG_DEPS_DIR in self.projectData:
+            self.projectData[CONFIG_DEPS_DIR] = "deps"
+            if not os.path.isdir(self.DepsPath()):
+                os.mkdir(self.DepsPath())
             self.SaveData()
 
         self.errors = {}
@@ -181,7 +187,7 @@ class ErlangProject(Project):
         self.GetShell().DialyzeApps(list(apps))
 
     def EbinDirForApp(self, app):
-        return os.path.join(self.AppsPath(), app, "ebin")
+        return os.path.join(self.GetAppPath(app), "ebin")
 
     def DialyzeModules(self, files):
         if not self.CheckPlt(): return
@@ -203,9 +209,12 @@ class ErlangProject(Project):
         return os.path.join(self.EbinDirForApp(app), os.path.splitext(os.path.basename(path))[0] + ".beam")
 
     def AppsPath(self):
-        if not CONFIG_APPS_DIR in self.projectData or not self.projectData[CONFIG_APPS_DIR]:
-            return self.projectDir
         return os.path.join(self.projectDir, self.projectData[CONFIG_APPS_DIR])
+
+
+    def DepsPath(self):
+        return os.path.join(self.projectDir, self.projectData[CONFIG_DEPS_DIR])
+
 
     def GetErlangRuntime(self):
         return None if not CONFIG_ERLANG_RUNTIME in self.userData else self.userData[CONFIG_ERLANG_RUNTIME]
@@ -236,7 +245,7 @@ class ErlangProject(Project):
         filesForXref = set()
         self.xrefProblemsCount = 0
         for app in self.GetApps():
-            path = os.path.join(os.path.join(self.AppsPath(), app), "src")
+            path = os.path.join(self.GetAppPath(app), "src")
             for root, _, files in os.walk(path):
                 for file in files:
                     file = os.path.join(root, file)
@@ -255,9 +264,12 @@ class ErlangProject(Project):
     def GetApp(self, path):
         if os.path.isfile(path):
             path = os.path.dirname(path)
-        if not path.startswith(self.AppsPath()):
+        if path.startswith(self.AppsPath()):
+            app = path.replace(self.AppsPath() + os.sep, "")
+        elif path.startswith(self.DepsPath()):
+            app = path.replace(self.DepsPath() + os.sep, "")
+        else:
             return None
-        app = path.replace(self.AppsPath() + os.sep, "")
         if os.sep in app:
             return app[:app.index(os.sep)]
         return app
@@ -333,7 +345,9 @@ class ErlangProject(Project):
         self.connected = False
         self.shellConsole = ErlangIDEConsole(self.window.ToolMgr, self.IDE_MODULES_DIR)
         self.shellConsole.shell.SetProp("cache_dir", ErlangCache.CACHE_DIR)
-        self.shellConsole.shell.SetProp("project_dir", self.AppsPath())
+        self.shellConsole.shell.SetProp("project_dir", self.projectDir)
+        self.shellConsole.shell.SetProp("apps_dir", self.AppsPath())
+        self.shellConsole.shell.SetProp("deps_dir", self.DepsPath())
         self.shellConsole.shell.SetProp("project_name", self.ProjectName())
         self.shellConsole.onlyHide = True
         self.ShowIDEConsole()
@@ -432,9 +446,8 @@ class ErlangProject(Project):
 
     def UpdatePaths(self):
         dirs = ""
-        for app in self.GetApps(True):
-            appPath = os.path.join(self.AppsPath(), app)
-            ebinDir = os.path.join(appPath, "ebin")
+        for app in self.GetAppsAndDeps(True):
+            ebinDir = os.path.join(self.GetAppPath(app), "ebin")
             self.shellConsole.shell.AddPath(ebinDir)
             dirs += ' "{}"'.format(ebinDir)
         dirs += ' "{}"'.format(self.IDE_MODULES_DIR)
@@ -491,7 +504,7 @@ class ErlangProject(Project):
 
     def GetApps(self, all = False):
         apps = []
-        for app in os.listdir(self.AppsPath()):
+        for app in os.listdir(self.AppsPath()) + os.listdir(self.DepsPath()):
             if not all and app in self.projectData[CONFIG_EXCLUDED_DIRS]:
                 continue
             appPath = os.path.join(self.AppsPath(), app)
@@ -499,6 +512,18 @@ class ErlangProject(Project):
                 continue
             apps.append(app)
         return apps
+
+    def GetDeps(self):
+        apps = []
+        for app in os.listdir(self.DepsPath()):
+            appPath = os.path.join(self.DepsPath(), app)
+            if not os.path.isdir(appPath):
+                continue
+            apps.append(app)
+        return apps
+
+    def GetAppsAndDeps(self, all = False):
+        return self.GetApps(all) + self.GetDeps()
 
     def AddTabs(self):
         self.errorsTable = ErrorsTableGrid(self.window.ToolMgr, self)
@@ -575,7 +600,7 @@ class ErlangProject(Project):
         for dir in dirs:
             appPath = dir
             (root, app) = os.path.split(appPath)
-            if root == self.AppsPath():
+            if root == self.AppsPath() or root == self.DepsPath():
                 self.UpdatePaths()
                 self.UpdateProjectConsoles()
 
@@ -600,7 +625,7 @@ class ErlangProject(Project):
     def RemoveUnusedBeams(self):
         srcFiles = set()
         for app in self.GetApps(True):
-            path = os.path.join(self.AppsPath(), app, "src")
+            path = os.path.join(self.GetAppPath(app), "src")
             for root, _, files in os.walk(path):
                 for fileName in files:
                     (file, ext) = os.path.splitext(fileName)
@@ -674,9 +699,9 @@ class ErlangProject(Project):
     def CompileSubset(self, apps):
         for app in apps:
             if not app in self.projectData[CONFIG_EXCLUDED_DIRS]:
-                self.GetShell().CompileApp(os.path.join(self.AppsPath(), app))
+                self.GetShell().CompileApp(self.GetAppPath(app))
             else:
-                self.GetShell().CacheApp(os.path.join(self.AppsPath(), app))
+                self.GetShell().CacheApp(self.GetAppPath(app))
 
         for f in self.explorer.GetAllFiles():
             if IsIgor(f): IgorCache.GenerateForFile(f)
@@ -684,3 +709,11 @@ class ErlangProject(Project):
         if len(self.tasks) > 0:
             self.CreateProgressDialog("Compiling...")
 
+    def GetAppPath(self, app):
+        path = os.path.join(self.AppsPath(), app)
+        if os.path.isdir(path):
+            return path
+        dpath = os.path.join(self.DepsPath(), app)
+        if os.path.isdir(dpath):
+            return dpath
+        return ""

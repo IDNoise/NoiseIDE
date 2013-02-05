@@ -35,9 +35,12 @@ class ErlangProjectFrom(wx.Dialog):
         self.projectPathButton = CreateButton(self, "...", self.OnSelectProjectPath)
         self.projectPathButton.MinSize = (25, 25)
 
-        self.appsDirTB = wx.TextCtrl(self, value = "apps", size = (300, 20))
+        self.appsDirTB = wx.TextCtrl(self, value = "apps", size = (300, 20), validator = NotEmptyTextValidator("Apps dir"))
         self.appsDirTB.SetToolTipString("Apps folder name")
         self.appsDirTB.Bind(wx.EVT_TEXT, self.OnPathChanged)
+
+        self.depsDirTB = wx.TextCtrl(self, value = "deps", size = (300, 20), validator = NotEmptyTextValidator("Deps dir"))
+        self.depsDirTB.SetToolTipString("Deps folder name")
 
         self.compilerOptionsTB = wx.TextCtrl(self, value = "", size = (300, 60), style = wx.TE_MULTILINE)
         self.compilerOptionsTB.SetToolTipString("Compiler options in form: \n{d, Macro} or {d, Macro, Value}")
@@ -71,11 +74,14 @@ class ErlangProjectFrom(wx.Dialog):
         gSizer.Add(CreateLabel(self, "Apps dir:"), (2, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
         gSizer.Add(self.appsDirTB, (2, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
 
-        gSizer.Add(CreateLabel(self, "Erlang runtime:"), (3, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
-        gSizer.Add(self.erlangCMB, (3, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
+        gSizer.Add(CreateLabel(self, "Deps dir:"), (3, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
+        gSizer.Add(self.depsDirTB, (3, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
 
-        gSizer.Add(CreateLabel(self, "Compiler options:"), (4, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
-        gSizer.Add(self.compilerOptionsTB, (4, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
+        gSizer.Add(CreateLabel(self, "Erlang runtime:"), (4, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
+        gSizer.Add(self.erlangCMB, (4, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
+
+        gSizer.Add(CreateLabel(self, "Compiler options:"), (5, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
+        gSizer.Add(self.compilerOptionsTB, (5, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
 
         sizer.AddSizer(gSizer)
 
@@ -113,6 +119,7 @@ class ErlangProjectFrom(wx.Dialog):
         self.projectPathTB.Disable()
         self.projectPathButton.Disable()
         self.appsDirTB.Value = self.project.projectData[CONFIG_APPS_DIR]
+        self.depsDirTB.Value = self.project.projectData[CONFIG_DEPS_DIR]
 
         runtime = self.project.GetErlangRuntime()
         if runtime:
@@ -169,6 +176,7 @@ class ErlangProjectFrom(wx.Dialog):
         title = self.projectNameTB.Value
         path = self.projectPathTB.Value
         apps = self.appsDirTB.Value
+        deps = self.depsDirTB.Value
         erlang = self.erlangCMB.Value
         compilerOptions = self.compilerOptionsTB.Value
         excludedDirs = list(self.excludedDirList.GetCheckedStrings())
@@ -188,10 +196,14 @@ class ErlangProjectFrom(wx.Dialog):
         pFile = os.path.join(path, title + ".noiseide")
         if not os.path.isdir(path):
             os.makedirs(path)
-        if apps:
-            appsPath = os.path.join(path, apps)
-            if not os.path.isdir(appsPath):
-                os.mkdir(appsPath)
+
+        appsPath = os.path.join(path, apps)
+        if not os.path.isdir(appsPath):
+            os.mkdir(appsPath)
+
+        depsPath = os.path.join(path, deps)
+        if not os.path.isdir(depsPath):
+            os.mkdir(depsPath)
 
         stream = file(pFile, 'w')
         yaml.dump(data, stream)

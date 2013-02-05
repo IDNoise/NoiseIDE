@@ -13,21 +13,21 @@
 ]).  
 
 generate_includes() ->
-    Includes = 
-        case eide_connect:prop(project_dir) of
-            undefined -> 
-                [];
-            AppsPath ->
-                {ok, Apps} = file:list_dir(AppsPath),
-                [{i, "../include"}| [{i,Ai} || A <- Apps, End <- ["include"],
-                 begin
-                     Ai = AppsPath ++ "/"++ A ++"/" ++ End,
-                     filelib:is_dir(AppsPath ++ "/"++ A) 
-                 end]]
-    end,  
-    eide_connect:set_prop(includes, Includes),
-    FlatIncludes = lists:map(fun({i, F}) -> F end, Includes),
+    Includes = includes(eide_connect:prop(apps_dir)),
+    Includes1 = Includes ++ includes(eide_connect:prop(deps_dir)),
+    eide_connect:set_prop(includes, Includes1),
+    FlatIncludes = lists:map(fun({i, F}) -> F end, Includes1),
     eide_connect:set_prop(flat_includes, FlatIncludes). 
+
+includes(undefined) -> [];
+includes(Path) ->
+    {ok, Apps} = file:list_dir(Path),
+    [{i, "../include"}| [{i,Ai} || A <- Apps, End <- ["include"],
+     begin
+         Ai = Path ++ "/"++ A ++"/" ++ End,
+         filelib:is_dir(Path ++ "/"++ A) 
+     end]].
+
   
 compile(FileName) -> 
     case filename:extension(FileName) of

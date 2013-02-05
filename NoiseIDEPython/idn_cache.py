@@ -146,7 +146,6 @@ class ModuleData:
         return self.exportedTypes
 
     def Application(self):
-        core.Project.GetApp(self.file)
         return core.Project.GetApp(self.file)
 
     def IsGlobalInclude(self):
@@ -333,7 +332,7 @@ class ErlangCache:
         cls.TryLoad(include)
         for module in cls.modules:
             data = cls.moduleData[module]
-            if not data.file.startswith(cls.project.AppsPath()): continue
+            if not data.file.startswith(cls.project.projectDir): continue
             if include in data.AllIncludes():
                 result.append(data.file)
         return result

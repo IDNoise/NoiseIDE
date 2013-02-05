@@ -30,6 +30,7 @@ class ErrorsTableGrid(wx.grid.Grid):
         self.SetDefaultRenderer(CutomGridCellAutoWrapStringRenderer())
 
         self.Bind(wx.grid.EVT_GRID_CELL_LEFT_DCLICK, self.OnLeftDClick)
+        self.pathDict = {}
 
     def SetColSizes(self):
         self.SetColSize(0, 350)
@@ -43,13 +44,14 @@ class ErrorsTableGrid(wx.grid.Grid):
     def OnLeftDClick(self, event):
         row = event.GetRow()
         rowData = self.table.data[row]
-        file = os.path.join(self.project.AppsPath(), rowData[0])
+        file = os.path.join(self.project.projectDir, rowData[0])
         line = rowData[1] - 1
         core.TabMgr.LoadFileLine(file, line)
 
     def AddErrors(self, path, errors):
         currentRows = len(self.table.data)
-        newPath = path.replace(self.project.AppsPath() + os.sep, "")
+        newPath = path.replace(self.project.projectDir + os.sep, "")
+        self.pathDict[newPath] = path
         data = list(filter(lambda x: x[0] != newPath, self.table.data))
         for e in errors:
             data.append((newPath, e.line + 1, e.TypeToStr(), e.msg))
@@ -158,7 +160,8 @@ class XrefTableGrid(ErrorsTableGrid):
         if path not in self.pathErrors and not errors:
             return
         currentRows = len(self.table.data)
-        newPath = path.replace(self.project.AppsPath() + os.sep, "")
+        newPath = path.replace(self.project.projectDir + os.sep, "")
+        self.pathDict[newPath] = path
         data = list(filter(lambda x: x[0] != newPath, self.table.data))
         for ((wm, wf, wa), (m, f, a)) in errors:
             funData = ErlangCache.ModuleFunction(wm, wf, wa)
@@ -179,7 +182,7 @@ class XrefTableGrid(ErrorsTableGrid):
     def OnLeftDClick(self, event):
         row = event.GetRow()
         rowData = self.table.data[row]
-        file = os.path.join(self.project.AppsPath(), rowData[0])
+        file = os.path.join(self.project.projectDir, rowData[0])
         line = rowData[1] - 1
         stc = core.TabMgr.LoadFileLine(file, line)
         fun, arity = rowData[3].split("/")
@@ -189,8 +192,6 @@ class DialyzerTable(ErrorsTable):
     def __init__(self, data):
         ErrorsTable.__init__(self, data)
         self.colLabels = ["File", "Line", "Data"]
-
-
 
 class DialyzerTableGrid(ErrorsTableGrid):
     def __init__(self, parent, project):
@@ -222,7 +223,8 @@ class DialyzerTableGrid(ErrorsTableGrid):
             msg = ':'.join(warningData[2:])
 
             path = ErlangCache.moduleData[os.path.splitext(module)[0]].file
-            newPath = path.replace(self.project.AppsPath() + os.sep, "")
+            newPath = path.replace(self.project.projectDir + os.sep, "")
+            self.pathDict[newPath] = path
             data.append((newPath, line, msg))
 
         data = sorted(data, key = operator.itemgetter(0))
