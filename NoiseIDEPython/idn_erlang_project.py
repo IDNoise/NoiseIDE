@@ -31,9 +31,10 @@ class ErlangProject(Project):
 
         if not CONFIG_DEPS_DIR in self.projectData:
             self.projectData[CONFIG_DEPS_DIR] = "deps"
-            if not os.path.isdir(self.DepsPath()):
-                os.mkdir(self.DepsPath())
             self.SaveData()
+
+        if not os.path.isdir(self.DepsPath()):
+            os.mkdir(self.DepsPath())
 
         self.errors = {}
         self.consoleTabs = {}
@@ -67,7 +68,8 @@ class ErlangProject(Project):
         Project.SetupMenu(self)
 
         self.window.projectMenu.AppendSeparator()
-        self.window.projectMenu.AppendMenuItem("Rebuild project", self.window, lambda e: self.RecompileProject(), "F7")
+        self.window.projectMenu.AppendMenuItem("Rebuild apps", self.window, lambda e: self.RecompileApps(), "F7")
+        self.window.projectMenu.AppendMenuItem("Rebuild deps", self.window, lambda e: self.RecompileDeps(), "F8")
         self.window.projectMenu.AppendMenuItem("XRef check", self.window, lambda e: self.StartXRef())
 
         self.dialyzerMenu = Menu()
@@ -91,10 +93,10 @@ class ErlangProject(Project):
         self.window.viewMenu.AppendMenu(wx.ID_ANY, "Consoles", self.consoleMenu)
 
         self.window.toolbar.AddSeparator()
-        self.rebuildT = self.window.toolbar.AddLabelTool(wx.ID_ANY, 'Rebuild project', GetImage('build.png'), shortHelp = 'Rebuild project')
+        self.rebuildT = self.window.toolbar.AddLabelTool(wx.ID_ANY, 'Rebuild apps', GetImage('build.png'), shortHelp = 'Rebuild apps')
         self.xrefCheckT = self.window.toolbar.AddLabelTool(wx.ID_ANY, 'XRef check', GetImage('xrefCheck.png'), shortHelp = 'XRef check')
 
-        self.window.Bind(wx.EVT_TOOL, lambda e: self.RecompileProject(), self.rebuildT)
+        self.window.Bind(wx.EVT_TOOL, lambda e: self.RecompileApps(), self.rebuildT)
         self.window.Bind(wx.EVT_TOOL, lambda e: self.StartXRef(), self.xrefCheckT)
 
         self.window.toolbar.Realize()
@@ -441,7 +443,7 @@ class ErlangProject(Project):
 
     def OnSocketConnected(self):
         self.SetCompilerOptions()
-        self.CompileProject()
+        self.RecompileApps()
         #self.GenerateErlangCache()
 
     def UpdatePaths(self):
@@ -504,7 +506,7 @@ class ErlangProject(Project):
 
     def GetApps(self, all = False):
         apps = []
-        for app in os.listdir(self.AppsPath()) + os.listdir(self.DepsPath()):
+        for app in os.listdir(self.AppsPath()):
             if not all and app in self.projectData[CONFIG_EXCLUDED_DIRS]:
                 continue
             appPath = os.path.join(self.AppsPath(), app)
@@ -523,7 +525,7 @@ class ErlangProject(Project):
         return apps
 
     def GetAppsAndDeps(self, all = False):
-        return self.GetApps(all) + self.GetDeps()
+        return list(set(self.GetApps(all) + self.GetDeps()))
 
     def AddTabs(self):
         self.errorsTable = ErrorsTableGrid(self.window.ToolMgr, self)
@@ -616,11 +618,15 @@ class ErlangProject(Project):
                 ".app": ErlangHighlightedSTCBase}
 
     def CompileProject(self):
+        self.RecompileApps()
+        #self.CompileSubset(self.GetAppsAndDeps(True))
+
+    def RecompileApps(self):
+        #ErlangCache.CleanDir(self.ProjectName())
         self.CompileSubset(self.GetApps(True))
 
-    def RecompileProject(self):
-        ErlangCache.CleanDir(self.ProjectName())
-        self.CompileProject()
+    def RecompileDeps(self):
+        self.CompileSubset(self.GetDeps())
 
     def RemoveUnusedBeams(self):
         srcFiles = set()
@@ -694,7 +700,8 @@ class ErlangProject(Project):
         options = self.CompilerOptions().replace("\n", ", ")
         self.shellConsole.shell.SetProp(CONFIG_COMPILER_OPTIONS, options)
         if self.CompilerOptions() != self.CompilerOptions(self.oldProjectData):
-            self.CompileProject()
+            self.RecompileApps()
+            self.RecompileDeps()
 
     def CompileSubset(self, apps):
         for app in apps:

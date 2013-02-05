@@ -83,7 +83,8 @@ class ExportedType:
             self.file = moduleData.file
 
 class ModuleData:
-    def __init__(self, module, data):
+    def __init__(self, module, data, srcFile):
+        self.srcFile = srcFile
         self.file = data[FILE]
         self.module = module
 
@@ -198,6 +199,10 @@ class ErlangCache:
         cls.loadTimer.Start(100)
         core.MainFrame.Bind(wx.EVT_TIMER, cls.OnProgressTimer, cls.loadTimer)
 
+        cls.fileCheckTimer = wx.Timer(core.MainFrame, wx.ID_ANY)
+        cls.fileCheckTimer.Start(20000)
+        core.MainFrame.Bind(wx.EVT_TIMER, cls.OnFileCheckTimer, cls.fileCheckTimer)
+
     @classmethod
     def OnProgressTimer(cls, event):
         if len(cls.toLoad) > 0:
@@ -207,6 +212,12 @@ class ErlangCache:
                     cls.LoadFile_(file)
                 except IndexError, e:
                     pass
+
+    @classmethod
+    def OnFileCheckTimer(cls, event):
+        for m, data in cls.moduleData.items():
+            if not os.path.exists(data.srcFile):
+                cls.UnloadFile(data.srcFile)
 
     @classmethod
     def AddToLoad(cls, file):
@@ -245,17 +256,17 @@ class ErlangCache:
                     data[FILE] = data[FILE][0].upper() + data[FILE][1:]
                 except Exception, e:
                     core.Log("error ", e, "on get long path name for ", data[FILE])
-            file = data[FILE].replace("\\", "/")
+            srcFile = data[FILE].replace("\\", "/")
             if (name in cls.modules and
                 not cls.moduleData[name].file.lower().startswith(cls.erlangDir) and
-                file.lower().startswith(cls.erlangDir)):
+                srcFile.lower().startswith(cls.erlangDir)):
                 return
             if name.endswith(".hrl"):
                 cls.includes.add(name)
             else:
                 cls.modules.add(name)
 
-            cls.moduleData[name] = ModuleData(name, data)
+            cls.moduleData[name] = ModuleData(name, data, file)
         except  Exception, e:
             core.Log("load cache file error", e)
 

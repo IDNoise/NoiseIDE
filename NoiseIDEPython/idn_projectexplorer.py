@@ -150,6 +150,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         self.paths = {}
         self.SetupChecker()
         rootNode = self.AddRoot(root)
+        self.paths[root] = rootNode
         self.SetItemHasChildren(rootNode, True)
         self.SetItemImage(rootNode, self.iconIndex[self.DIRECTORY_CLOSED], wx.TreeItemIcon_Normal)
         self.SetItemImage(rootNode, self.iconIndex[self.DIRECTORY_OPEN], wx.TreeItemIcon_Expanded)

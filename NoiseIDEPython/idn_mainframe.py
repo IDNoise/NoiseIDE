@@ -103,7 +103,7 @@ class NoiseIDE(wx.Frame):
             self.fileMenu.AppendMenu(wx.ID_ANY, "Recent projects", lastProjects)
             def handler(p):
                 return lambda e: self.OpenProject(p)
-            for p in Config.LastProjects():
+            for p in reversed(Config.LastProjects()):
                 projectData = yaml.load(file(p, 'r'))
                 lastProjects.AppendMenuItem(projectData[Project.CONFIG_PROJECT_NAME], self, handler(p))
 
