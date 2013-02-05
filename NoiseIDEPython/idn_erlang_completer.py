@@ -146,7 +146,7 @@ class ErlangCompleter(wx.Frame):
             elif fType == ErlangTokenType.VAR:
                 self.prefix = fValue
                 data = self.GetVars()
-            elif fType == ErlangTokenType.MODULEATTR and fValue.startswith("-inc"):
+            elif fType == ErlangTokenType.MODULEATTR and fValue.startswith("-i"):
                 self.prefix = fValue
                 data = ["-include(\"", "-include_lib(\""]
             elif (len(tokens) == 3 and fType == ErlangTokenType.STRING and tokens[2].value == "-include" and
