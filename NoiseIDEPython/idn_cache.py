@@ -245,9 +245,6 @@ class ErlangCache:
             if not os.path.isfile(file): return
             if not file.endswith(".cache"): return
             data = json.loads(readFile(file))
-            if not os.path.isfile(data[FILE]):
-                os.remove(file)
-                return
             name = os.path.basename(file)[:-6]
             if 'nt' == os.name:
                 import win32api
@@ -257,6 +254,9 @@ class ErlangCache:
                 except Exception, e:
                     core.Log("error ", e, "on get long path name for ", data[FILE])
             srcFile = data[FILE].replace("\\", "/")
+            if not os.path.isfile(srcFile):
+                os.remove(file)
+                return
             if (name in cls.modules and
                 not cls.moduleData[name].file.lower().startswith(cls.erlangDir) and
                 srcFile.lower().startswith(cls.erlangDir)):

@@ -12,6 +12,7 @@ from idn_utils import CreateButton
 class Config:
     COLOR_SCHEMA = "color_schema"
     USER_NAME = "user_name"
+    OPEN_LAST_FILES = "open_last_files"
     LAST_PROJECT_LIST = "last_project_list"
     RUNTIMES = "runtimes"
     TOOLTIP_DELAY = "tooltip_delay"
@@ -90,7 +91,7 @@ class Config:
 
 class ConfigEditForm(wx.Dialog):
     def __init__(self):
-        wx.Dialog.__init__(self, core.MainFrame, size = (290, 150), title = "Edit config")
+        wx.Dialog.__init__(self, core.MainFrame, size = (300, 180), title = "Edit config")
 
         sizer = wx.GridBagSizer(2, 2)
         self.colorSchemas = []
@@ -104,6 +105,8 @@ class ConfigEditForm(wx.Dialog):
         )
         self.userNameTB = wx.TextCtrl(self, value = Config.UserName(), size = (180, 25))
         self.tooltipDelayTB = wx.TextCtrl(self, value = str(Config.TooltipDelay()), size = (180, 25))
+        self.openLastFilesCb = wx.CheckBox(self, label = "Open last files")
+        self.openLastFilesCb.SetValue(True)
         self.closeButton = CreateButton(self, "Close", self.OnClose)
         self.saveButton = CreateButton(self, "Save", self.OnSave)
 
@@ -113,10 +116,10 @@ class ConfigEditForm(wx.Dialog):
         sizer.Add(self.userNameTB, (1, 1), flag = wx.ALL | wx.wx.ALIGN_LEFT, border = 2)
         sizer.Add(wx.StaticText(self, label = "Tooltip delay:"), (2, 0), flag = wx.ALL | wx.ALIGN_CENTER_VERTICAL, border = 2)
         sizer.Add(self.tooltipDelayTB, (2, 1), flag = wx.ALL | wx.wx.ALIGN_LEFT, border = 2)
+        sizer.Add(self.openLastFilesCb, (3, 0), flag = wx.ALL | wx.ALIGN_LEFT, border = 2)
 
-
-        sizer.Add(self.closeButton, (3, 0), flag = wx.ALL | wx.wx.ALIGN_LEFT, border = 2)
-        sizer.Add(self.saveButton, (3, 1), flag = wx.ALL | wx.wx.ALIGN_RIGHT, border = 2)
+        sizer.Add(self.closeButton, (4, 0), flag = wx.ALL | wx.wx.ALIGN_LEFT, border = 2)
+        sizer.Add(self.saveButton, (4, 1), flag = wx.ALL | wx.wx.ALIGN_RIGHT, border = 2)
 
         self.SetSizer(sizer)
         self.Layout()
@@ -131,4 +134,5 @@ class ConfigEditForm(wx.Dialog):
             Config.SetProp(Config.USER_NAME, self.userNameTB.Value)
         if self.tooltipDelayTB.Value:
             Config.SetTooltipDelay(self.tooltipDelayTB.Value)
+        Config.SetProp(Config.OPEN_LAST_FILES, self.openLastFilesCb.Value)
         self.Close()

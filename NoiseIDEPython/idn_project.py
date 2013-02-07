@@ -1,4 +1,5 @@
 import time
+from idn_config import Config
 from idn_findreplace import FindInProjectDialog
 from idn_project_dialogs import FastProjectFileOpenDialog
 
@@ -72,6 +73,7 @@ class Project(ProgressTaskManagerDialog):
     USER_DATA_FOLDER = os.path.join(os.getcwd(), 'userdata')
 
     CONFIG_LAST_OPENED_FILES = "last_opened_files"
+    CONFIG_EXPANDED_PATHS = "expanded_paths"
     CONFIG_HIDDEN_PATHS = "hidden_paths"
     CONFIG_MASK = "mask"
     CONFIG_PROJECT_NAME = "project_name"
@@ -143,6 +145,7 @@ class Project(ProgressTaskManagerDialog):
             return set()
 
     def OpenLastFiles(self):
+        if not Config.GetProp(Config.OPEN_LAST_FILES, True): return
         removedFiles = []
         for file in self.LastOpenedFiles():
             if not os.path.isfile(file):
@@ -159,6 +162,8 @@ class Project(ProgressTaskManagerDialog):
     def CreateExplorer(self):
         self.explorer = self.EXPLORER_TYPE(self.window, self)
         self.explorer.SetRoot(self.projectDir)
+        if self.CONFIG_EXPANDED_PATHS in self.userData:
+            self.explorer.ExpandPaths(self.userData[self.CONFIG_EXPANDED_PATHS])
         self.explorer.SetHiddenList(self.HiddenPathsList())
         self.window.WinMgr.AddPane1(self.explorer, aui.AuiPaneInfo().Left().Layer(1).Caption("Project Explorer")
             .MinimizeButton().CloseButton(False).BestSize2(300, 600).MinSize(100, 100)
@@ -188,6 +193,7 @@ class Project(ProgressTaskManagerDialog):
         self.userData[self.CONFIG_LAST_OPENED_FILES] = openedFiles
         self.userData[self.CONFIG_HIDDEN_PATHS] = self.explorer.hiddenPaths
         self.userData[self.CONFIG_MASK] = self.explorer.GetCustomMask()
+        self.userData[self.CONFIG_EXPANDED_PATHS] = self.explorer.ExpandedPaths()
         yaml.dump(self.userData, open(self.userDataFile, 'w'))
 
     def GetEditorTypes(self): return []

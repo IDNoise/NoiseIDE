@@ -41,6 +41,7 @@ class ErlangProjectFrom(wx.Dialog):
 
         self.depsDirTB = wx.TextCtrl(self, value = "deps", size = (300, 20), validator = NotEmptyTextValidator("Deps dir"))
         self.depsDirTB.SetToolTipString("Deps folder name")
+        self.depsDirTB.Bind(wx.EVT_TEXT, self.OnPathChanged)
 
         self.compilerOptionsTB = wx.TextCtrl(self, value = "", size = (300, 60), style = wx.TE_MULTILINE)
         self.compilerOptionsTB.SetToolTipString("Compiler options in form: \n{d, Macro} or {d, Macro, Value}")
@@ -135,6 +136,7 @@ class ErlangProjectFrom(wx.Dialog):
 
 
     def OnPathChanged(self, event):
+        dirs = []
         dir = self.projectPathTB.Value
         if dir and os.path.isdir(dir):
             apps = self.appsDirTB.Value
@@ -142,8 +144,15 @@ class ErlangProjectFrom(wx.Dialog):
             if apps and os.path.isdir(appsDir):
                 dir = appsDir
 
-            allDirs = [d for d in os.listdir(dir) if os.path.isdir(os.path.join(dir, d))]
-            self.excludedDirList.SetItems(allDirs)
+            dirs = [d for d in os.listdir(dir) if os.path.isdir(os.path.join(dir, d))]
+
+            deps = self.appsDirTB.Value
+            depsDir = os.path.join(dir, deps)
+            if deps and os.path.isdir(depsDir):
+                dir = depsDir
+            dirs += [d for d in os.listdir(dir) if os.path.isdir(os.path.join(dir, d))]
+
+        self.excludedDirList.SetItems(dirs)
 
     def OnSelectProjectPath(self, event):
         dlg = wx.DirDialog(self, defaultPath = self.projectPathTB.Value)

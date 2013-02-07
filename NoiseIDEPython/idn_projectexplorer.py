@@ -161,6 +161,14 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         self.SortChildren(rootNode)
         self.Expand(rootNode)
 
+    def ExpandPaths(self, paths):
+        for path in paths:
+            if path in self.paths:
+                self.Expand(self.paths[path])
+
+    def ExpandedPaths(self):
+        return sorted([path for path in self.paths.keys() if self.IsExpanded(self.paths[path])])
+
     def AddMask(self, mask):
         if not mask in self.mask:
             self.mask.append(mask)
@@ -473,11 +481,11 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         self.UpdateRoot()
 
     def UpdateRoot(self):
-        expanded = sorted([path for path in self.paths.keys() if self.IsExpanded(self.paths[path])])
+        expanded = self.ExpandedPaths()
         self.DeleteAllItems()
         self.SetRoot(self.root)
-        for exp in expanded:
-            self.Expand(self.paths[exp])
+        self.ExpandPaths(expanded)
+
 
     def OnMenuShowHide(self, event):
         if self.showHidden == True:
@@ -569,7 +577,6 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         return result
 
     def _GetFiles(self, item):
-        #self.SelectAll()
         result = []
         if item:
             if item.HasChildren():
