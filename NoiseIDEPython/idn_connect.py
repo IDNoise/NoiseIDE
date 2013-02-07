@@ -234,7 +234,10 @@ class ErlangProcess(Process):
 
     def SetParams(self, params):
         erlang = core.Project.GetErlangPath()
-        self.cmd = "{} {} {}".format(erlang, self.GetSMPData(), ' '.join(params + ["-s reloader"]))
+        self.cmd = "{} {} {}".format(erlang, self.GetSMPData(), ' '.join(params + ["-run reloader"] + self.GetAdditionalParams()))
+
+    def GetAdditionalParams(self):
+        return []
 
     def SendCommandToProcess(self, cmd):
         cmd += '\n'
@@ -270,17 +273,20 @@ class ErlangProcess(Process):
 
 class ErlangProcessWithConnection(ErlangProcess, ErlangIDEConnectAPI):
     def __init__(self, cwd):
-        ErlangProcess.__init__(self, cwd)
         ErlangIDEConnectAPI.__init__(self)
+        ErlangProcess.__init__(self, cwd)
 
         self.ClosedConnectionEvent = idn_events.Event()
 
     def GetSMPData(self):
         return "-smp enable +sbt db +S3:3"
 
+    def GetAdditionalParams(self):
+        return ["-noiseide port {}".format(self.port), "-run noiseide_app"]
+
     def Start(self):
         ErlangProcess.Start(self)
-        self.SendCommandToProcess("eide_connect:start({}).".format(self.port))
+        #self.SendCommandToProcess("eide_connect:start({}).".format(self.port))
 
     def Stop(self):
         ErlangSocketConnection.Stop(self)

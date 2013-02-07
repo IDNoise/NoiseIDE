@@ -35,6 +35,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         self.tempData = []
         self.cut = False
         self.paths = {}
+        self.showAllFiles = False
 
         self.SetupIcons()
 
@@ -81,7 +82,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         children = [self.GetPyData(c) for c in self.GetItemChildren(parentNode)]
         if (path in self.excludePaths or
             (not self.showHidden and path in self.hiddenPaths) or
-            (self.mask and "*" not in self.mask and extension(file) not in self.mask) or
+            (self.mask and not self.showAllFiles and extension(file) not in self.mask) or
             path in children):
             return False
         icon = self.GetIconIndex(path)
@@ -160,27 +161,22 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         self.SortChildren(rootNode)
         self.Expand(rootNode)
 
-    def UpdateMask(self):
-        self.DeleteAllItems()
-        self.SetRoot(self.root)
-
     def AddMask(self, mask):
         if not mask in self.mask:
             self.mask.append(mask)
-            self.UpdateMask()
+            self.UpdateRoot()
 
     def RemoveMask(self, mask):
         if mask in self.mask:
             self.mask.remove(mask)
-            self.UpdateMask()
+            self.UpdateRoot()
 
     def GetCustomMask(self):
         return self.mask
 
     def SetHiddenList(self, list):
         self.hiddenPaths = list
-        self.DeleteAllItems()
-        self.SetRoot(self.root)
+        self.UpdateRoot()
 
     def AddIcon(self, id, path):
         try:
@@ -226,7 +222,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
                             key = self.imageList.AddIcon(icon)
                             self.iconIndex[ext] = key
                             self.SetImageList(self.imageList)
-                            result = iconkey
+                            result = key
             except:
                 pass
         del noLog
@@ -283,6 +279,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         if self.eventItem == self.GetRootItem():
             menu.AppendMenuItem("Setup masks", self, self.OnMenuSetupMasks)
             menu.AppendCheckMenuItem("Show hidden", self, self.OnMenuShowHide, self.showHidden)
+            menu.AppendCheckMenuItem("Show all files", self, self.OnMenuShowAllFiles, self.showAllFiles)
             menu.AppendSeparator()
             newMenu = Menu()
             newMenu.AppendMenuItem("File", self, self.OnMenuNewFile)
@@ -471,6 +468,17 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         self.SetItemTextColour(id, wx.NullColour)
         self.SetItemItalic(id, False)
 
+    def OnMenuShowAllFiles(self, event):
+        self.showAllFiles = not self.showAllFiles
+        self.UpdateRoot()
+
+    def UpdateRoot(self):
+        expanded = sorted([path for path in self.paths.keys() if self.IsExpanded(self.paths[path])])
+        self.DeleteAllItems()
+        self.SetRoot(self.root)
+        for exp in expanded:
+            self.Expand(self.paths[exp])
+
     def OnMenuShowHide(self, event):
         if self.showHidden == True:
             self.showHidden = False
@@ -651,10 +659,9 @@ class PythonProjectExplorer(ProjectExplorer):
     def OnMenuNewFile(self, event):
         pass
 
-
 class MaskEditor(wx.Dialog):
     def __init__(self, parent):
-        wx.Dialog.__init__(self, parent)
+        wx.Dialog.__init__(self, parent, title = "Masks", size = (180, 400))
         self.explorer = parent
         self.sizer = wx.BoxSizer()
         buttonSizer = wx.BoxSizer(wx.VERTICAL)
@@ -670,8 +677,7 @@ class MaskEditor(wx.Dialog):
         self.Layout()
 
     def OnAddMask(self, event):
-        dlg = wx.TextEntryDialog(self, 'Mask:', 'Add Mask',
-                    style = wx.OK | wx.CANCEL)
+        dlg = wx.TextEntryDialog(self, 'Mask:', 'Add Mask', style = wx.OK | wx.CANCEL)
         dlg.SetValue("")
         if dlg.ShowModal() == wx.ID_OK:
             self.explorer.AddMask(dlg.Value)

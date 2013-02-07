@@ -62,7 +62,8 @@ class ErlangOptionsPanel(wx.Panel):
 class RuntimeCreateEditDialog(wx.Dialog):
     def __init__(self, parent, runtime = None):
         wx.Dialog.__init__(self, parent, title = "Runtime props",
-            style = wx.DEFAULT_DIALOG_STYLE | wx.WS_EX_VALIDATE_RECURSIVELY)
+            style = wx.DEFAULT_DIALOG_STYLE | wx.WS_EX_VALIDATE_RECURSIVELY,
+            size = (390, 120))
 
         self.currentRuntime = runtime
 

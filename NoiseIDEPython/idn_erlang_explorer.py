@@ -83,8 +83,11 @@ class ErlangProjectExplorer(ProjectExplorer):
             core.TabMgr.LoadFileLine(path)
 
     def OnMenuNewApplication(self, event):
-        (name, path) = self.RequestName("New Application", "Enter application name", "new_application")
-        if not path or os.path.exists(path):
+        result = self.RequestName("New Application", "Enter application name", "new_application")
+        if not result: return
+        (name, path) = result
+        if not path: return
+        if os.path.exists(path):
             wx.MessageBox("Folder {} exists.".format(path), "Error")
             return
         os.mkdir(path)

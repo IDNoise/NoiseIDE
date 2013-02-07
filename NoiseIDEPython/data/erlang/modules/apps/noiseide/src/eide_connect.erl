@@ -35,7 +35,8 @@ start(Port) ->
     {ok, EDocRe} = re:compile(<<"(<h3 class=\"function\"><a name=.*?</div>(?=\n\n<h3 class=\"function\"><a name=|\n<hr>))">>, [multiline, dotall]),
     eide_connect:set_prop(edoc_re, EDocRe),
     {ok, PartEDocRe} = re:compile(<<"<h3 class=\"function\"><a name=\"([A-Za-z_:]*?)-([0-9]?)\">">>),
-    eide_connect:set_prop(part_edoc_re, PartEDocRe).  
+    eide_connect:set_prop(part_edoc_re, PartEDocRe),
+    Pid.  
 
 accept(LS) ->
     gen_tcp:controlling_process(LS, self()),

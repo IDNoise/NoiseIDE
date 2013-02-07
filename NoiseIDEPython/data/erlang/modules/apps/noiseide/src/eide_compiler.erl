@@ -27,7 +27,7 @@ includes(Path) ->
          Ai = Path ++ "/"++ A ++"/" ++ End,
          filelib:is_dir(Path ++ "/"++ A) 
      end]].
-
+ 
   
 compile(FileName) -> 
     case filename:extension(FileName) of
@@ -100,29 +100,25 @@ compile_appsrc(AppSrcFile) ->
     OutDir = app_out_dir(AppSrcFile),
     catch file:make_dir(OutDir),
     AppFile = OutDir ++ "/" ++ filename:basename(AppSrcFile, ".app.src") ++ ".app",
-    CurrentModules = 
-        case filelib:is_file(AppFile) of
-            true ->
-                try
-                    {ok, [AppFileData]} = file:consult(AppFile),
-                    proplists:get_value(modules, element(3, AppFileData), [])
-                catch _:_ ->
-                    []
-                end;
-            _ ->
-                []
-        end,
+%    CurrentModules =
+%        case filelib:is_file(AppFile) of
+%            true ->
+%                try
+%                    {ok, [AppFileData]} = file:consult(AppFile),
+%                    proplists:get_value(modules, element(3, AppFileData), [])
+%                catch _:_ ->
+%                    []
+%                end;
+%            _ ->
+%                []
+%        end,
     {ok, SrcData} = file:read_file(AppSrcFile),
     Beams = filelib:fold_files(OutDir, ".*\.beam$", true, 
         fun(File, B) -> 
             [list_to_atom(filename:basename(filename:rootname(File)))| B] 
         end, []),
-    case lists:usort(Beams) == lists:usort(CurrentModules) of
-        true -> ok;
-        _ ->  
-            SrcData1 = re:replace(SrcData, "{modules,.*?}", io_lib:format("{modules,~p}", [Beams])),
-            file:write_file(AppFile, SrcData1)
-    end.
+    SrcData1 = re:replace(SrcData, "{modules,.*?}", io_lib:format("{modules,~p}", [Beams])),
+    file:write_file(AppFile, SrcData1).
     
 compile_with_option(FileName, Option) ->
     OutDir = app_out_dir(FileName),
