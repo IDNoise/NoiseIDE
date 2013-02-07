@@ -128,7 +128,7 @@ class ErlangProjectFrom(wx.Dialog):
 
         self.compilerOptionsTB.Value = self.project.CompilerOptions()
 
-        self.excludedDirList.SetItems(self.project.projectData[CONFIG_EXCLUDED_DIRS] + self.project.GetApps())
+        self.excludedDirList.SetItems(self.project.projectData[CONFIG_EXCLUDED_DIRS] + self.project.GetAppsAndDeps())
         self.excludedDirList.SetCheckedStrings(self.project.projectData[CONFIG_EXCLUDED_DIRS])
 
         self.consoles = self.project.projectData[CONFIG_CONSOLES]

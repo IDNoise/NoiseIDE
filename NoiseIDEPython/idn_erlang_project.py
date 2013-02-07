@@ -516,9 +516,11 @@ class ErlangProject(Project):
             apps.append(app)
         return apps
 
-    def GetDeps(self):
+    def GetDeps(self, all = False):
         apps = []
         for app in os.listdir(self.DepsPath()):
+            if not all and app in self.projectData[CONFIG_EXCLUDED_DIRS]:
+                continue
             appPath = os.path.join(self.DepsPath(), app)
             if not os.path.isdir(appPath):
                 continue
@@ -526,7 +528,7 @@ class ErlangProject(Project):
         return apps
 
     def GetAppsAndDeps(self, all = False):
-        return list(set(self.GetApps(all) + self.GetDeps()))
+        return list(set(self.GetApps(all) + self.GetDeps(all)))
 
     def AddTabs(self):
         self.errorsTable = ErrorsTableGrid(self.window.ToolMgr, self)
