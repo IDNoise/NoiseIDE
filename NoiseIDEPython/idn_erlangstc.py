@@ -288,11 +288,15 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                          ErlangHighlightType.MODULEATTR,
                          ErlangHighlightType.STRING]:
             return False
-        start = self.WordStartPosition(pos, True)
-        end = self.WordEndPosition(pos, True)
+        start = pos
+        end = pos
+        while self.GetStyleAt(start - 1) == style:
+            start -= 1
+        while self.GetStyleAt(end + 1) == style:
+            end += 1
         if start == end:
             return False
-
+        end += 1
 
         line = self.LineFromPosition(pos)
         lineText = self.GetLine(line).strip()
