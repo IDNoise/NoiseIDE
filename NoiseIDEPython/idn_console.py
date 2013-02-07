@@ -124,17 +124,19 @@ class ErlangConsole(wx.Panel):
             face = ColorSchema.codeEditor["command_text_font_name"])
         self.commandText.SetFont(font)
 
-
     def OnEditorKeyDown(self, event):
         event.Skip()
         if event.GetKeyCode() in [wx.WXK_SHIFT, wx.WXK_CONTROL] or event.ControlDown() or event.AltDown():
             return
-        ch = chr(event.GetKeyCode())
-        if ch.isalpha() or ch.isdigit() or ch.isspace():
-            if event.ShiftDown(): ch = ch.upper()
-            else: ch = ch.lower()
-            self.commandText.AppendText(ch)
-        self.commandText.SetFocus()
+        try:
+            ch = chr(event.GetKeyCode())
+            if ch.isalpha() or ch.isdigit() or ch.isspace():
+                if event.ShiftDown(): ch = ch.upper()
+                else: ch = ch.lower()
+                self.commandText.AppendText(ch)
+            self.commandText.SetFocus()
+        except Exception, e:
+            core.Log("OnEditorKeyDown", e)
 
     def Start(self):
         self.Clear()

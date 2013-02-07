@@ -70,6 +70,8 @@ class ErlangProject(Project):
         self.window.projectMenu.AppendSeparator()
         self.window.projectMenu.AppendMenuItem("Rebuild apps", self.window, lambda e: self.RecompileApps(), "F7")
         self.window.projectMenu.AppendMenuItem("Rebuild deps", self.window, lambda e: self.RecompileDeps(), "F8")
+        self.window.projectMenu.AppendMenuItem("Recache apps", self.window, lambda e: self.RecacheApps(), "Shift+F7")
+        self.window.projectMenu.AppendMenuItem("Recache deps", self.window, lambda e: self.RecacheDeps(), "Shift+F8")
         self.window.projectMenu.AppendMenuItem("XRef check", self.window, lambda e: self.StartXRef())
 
         self.dialyzerMenu = Menu()
@@ -620,16 +622,18 @@ class ErlangProject(Project):
                 ".src": ErlangHighlightedSTCBase,
                 ".app": ErlangHighlightedSTCBase}
 
-    def CompileProject(self):
-        self.RecompileApps()
-        #self.CompileSubset(self.GetAppsAndDeps(True))
-
     def RecompileApps(self):
-        #ErlangCache.CleanDir(self.ProjectName())
-        self.CompileSubset(self.GetApps(True))
+        self.CompileSubset(self.GetApps())
 
     def RecompileDeps(self):
         self.CompileSubset(self.GetDeps())
+
+    def RecacheApps(self):
+        #ErlangCache.CleanDir(self.ProjectName())
+        self.CacheSubset(self.GetApps(True))
+
+    def RecacheDeps(self):
+        self.CompileSubset(self.GetDeps(True))
 
     def RemoveUnusedBeams(self):
         srcFiles = set()
@@ -708,13 +712,18 @@ class ErlangProject(Project):
 
     def CompileSubset(self, apps):
         [self.GetShell().CompileApp(self.GetAppPath(app)) for app in apps if app not in self.projectData[CONFIG_EXCLUDED_DIRS]]
-        [self.GetShell().CacheApp(self.GetAppPath(app)) for app in apps if app in self.projectData[CONFIG_EXCLUDED_DIRS]]
+
+        if len(self.tasks) > 0:
+            self.CreateProgressDialog("Compiling...")
+
+    def CacheSubset(self, apps):
+        [self.GetShell().CacheApp(self.GetAppPath(app)) for app in apps]
 
         for f in self.explorer.GetAllFiles():
             if IsIgor(f): IgorCache.GenerateForFile(f)
 
         if len(self.tasks) > 0:
-            self.CreateProgressDialog("Compiling...")
+            self.CreateProgressDialog("Caching...")
 
     def GetAppPath(self, app):
         path = os.path.join(self.AppsPath(), app)
