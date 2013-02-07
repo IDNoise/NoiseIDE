@@ -142,7 +142,7 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
         self._ExecRequest("compile_app", '"{}"'.format(erlstr(path)))
 
     def CacheApp(self, path):
-        self.TaskAddedEvent((TASK_CACHE_APP, path.lower()))
+        #self.TaskAddedEvent((TASK_CACHE_APP, path.lower()))
         self._ExecRequest("cache_app", '"{}"'.format(erlstr(path)))
 
     def CompileFileFly(self, realPath, flyPath):

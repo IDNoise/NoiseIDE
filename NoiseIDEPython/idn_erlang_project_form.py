@@ -185,6 +185,7 @@ class ErlangProjectFrom(wx.Dialog):
         data[Project.CONFIG_PROJECT_NAME] = title
         data[Project.CONFIG_PROJECT_TYPE] = "erlang"
         data[CONFIG_APPS_DIR] = apps
+        data[CONFIG_DEPS_DIR] = deps
         data[CONFIG_EXCLUDED_DIRS] = excludedDirs
         data[CONFIG_COMPILER_OPTIONS] = compilerOptions
 

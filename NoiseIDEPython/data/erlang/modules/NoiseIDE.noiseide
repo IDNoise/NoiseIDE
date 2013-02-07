@@ -1,7 +1,7 @@
 apps_dir: !!python/unicode 'apps'
 compiler_options: !!python/unicode ''
 consoles: {}
-deps_dir: deps
+deps_dir: !!python/unicode 'deps'
 excluded_dirs: []
 project_name: !!python/unicode 'NoiseIDE'
 project_type: erlang

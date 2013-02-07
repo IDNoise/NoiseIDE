@@ -390,6 +390,7 @@ class ErlangProject(Project):
             self.AddErrors(path, errors)
 
         elif response == "compile_app":
+            #print response
             resultData = js["result"]
             path = pystr(js["path"])
             self.TaskDone("App compiled {}".format(path), (TASK_COMPILE_APP, path.lower()))
@@ -407,9 +408,9 @@ class ErlangProject(Project):
                 self.AddErrors(p, errors)
 
         elif response == "cache_app":
+            #print response
             path = pystr(js["path"])
             self.TaskDone("App cached {}".format(path), (TASK_CACHE_APP, path.lower()))
-
         elif response == "xref_module":
             module = pystr(js["module"])
             if module in self.xrefModules:
@@ -704,11 +705,8 @@ class ErlangProject(Project):
             self.RecompileDeps()
 
     def CompileSubset(self, apps):
-        for app in apps:
-            if not app in self.projectData[CONFIG_EXCLUDED_DIRS]:
-                self.GetShell().CompileApp(self.GetAppPath(app))
-            else:
-                self.GetShell().CacheApp(self.GetAppPath(app))
+        [self.GetShell().CompileApp(self.GetAppPath(app)) for app in apps if app not in self.projectData[CONFIG_EXCLUDED_DIRS]]
+        [self.GetShell().CacheApp(self.GetAppPath(app)) for app in apps if app in self.projectData[CONFIG_EXCLUDED_DIRS]]
 
         for f in self.explorer.GetAllFiles():
             if IsIgor(f): IgorCache.GenerateForFile(f)

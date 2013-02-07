@@ -170,7 +170,7 @@ execute_action(compile_app, PathBinary) ->
 execute_action(cache_app, PathBinary) ->
     Path = binary_to_list(PathBinary),
     eide_cache:cache_app(Path),
-    done(cache_app, [{path, PathBinary}]);
+    ?noreply;%done(cache_app, [{path, PathBinary}]);
 execute_action(compile_option, Data) ->
     [FileName, Option] = Data,
     eide_compiler:compile_with_option(binary_to_list(FileName), binary_to_atom(Option, latin1));
