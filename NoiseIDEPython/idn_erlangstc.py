@@ -193,7 +193,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         end = self.GetSelectionEnd()
         startLine = self.LineFromPosition(start)
         endLine = self.LineFromPosition(end)
-        if self.PositionFromLine(endLine) != end:
+        if not(abs(endLine - startLine) > 1 and end == self.PositionFromLine(endLine)):
             endLine += 1
         lines = range(startLine, endLine)
         allComments = True
@@ -213,8 +213,9 @@ class ErlangSTC(ErlangHighlightedSTCBase):
             self.SetTargetStart(self.PositionFromLine(line))
             self.SetTargetEnd(self.GetLineEndPosition(line))
             self.ReplaceTarget(text)
-        self.SetSelectionStart(self.PositionFromLine(startLine))
-        self.SetSelectionEnd(self.PositionFromLine(endLine))
+        if start - end != 0:
+            self.SetSelectionStart(self.PositionFromLine(startLine))
+            self.SetSelectionEnd(self.GetLineEndPosition(endLine - 1))
         self.EndUndoAction()
 
     def OnMouseMove(self, event):
