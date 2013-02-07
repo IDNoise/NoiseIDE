@@ -306,7 +306,7 @@ class ErlangCache:
     def StartCheckingFolder(cls, folder):
         if folder in cls.checkers:
             cls.checkers[folder].Stop()
-        checker = DirectoryChecker(1, os.path.join(cls.CACHE_DIR, folder), False, [".cache"])
+        checker = DirectoryChecker(5, os.path.join(cls.CACHE_DIR, folder), False, [".cache"])
         checker.FilesCreatedEvent += cls.OnFilesCreated
         checker.FilesModifiedEvent += cls.OnFilesCreated
         checker.FilesDeletedEvent += cls.OnFilesDeleted

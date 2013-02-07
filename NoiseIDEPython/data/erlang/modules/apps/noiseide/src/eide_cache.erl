@@ -1006,7 +1006,9 @@ add_data_from_html_fun({[FunName, Arity, SpecName, Params, _Result], Text}, Cont
                     true -> Fun#function{params = [Params], result = ?TERM, doc = Text};
                     _ -> Fun#function{doc = Text}
                 end, 
-            Content#content{functions = lists:keyreplace({FunName, Arity1}, #function.name, Content#content.functions, NewFun)};
+            IsBif = case SpecName of "erlang:" ++ _ -> false; _ -> true end,
+            NewFun1 = NewFun#function{bif = IsBif},
+            Content#content{functions = lists:keyreplace({FunName, Arity1}, #function.name, Content#content.functions, NewFun1)};
         _ -> 
             IsBif = case SpecName of "erlang:" ++ _ -> false; _ -> true end,
             NewFun = #function{name = {FunName, Arity1}, params = [Params], result = ?TERM, doc = Text, bif = IsBif, exported = true},
