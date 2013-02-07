@@ -243,7 +243,9 @@ class FindInProjectDialog(wx.Dialog):
             if file in core.TabMgr.OpenedFiles():
                 fileText = core.TabMgr.FindPageByPath(file).GetText().split("\n")
             else:
-                fileText = open(file, "r")
+                file = open(file, "r")
+                fileText = file.readlines()
+                file.close()
             for lineText in fileText:
                 end = 0
                 while True:
@@ -295,16 +297,18 @@ class FindInProjectDialog(wx.Dialog):
         resultsTable = None
         if not openNewTab:
             for page in reversed(core.ToolMgr.Pages()):
-                if isinstance(page, ErrorsTree):
+                if isinstance(page, FindResultsTree):
                     id = core.ToolMgr.FindPageIndexByWindow(page)
                     resultsTable = page
                     core.ToolMgr.SetPageText(id, title)
                     break
         if not resultsTable:
-            resultsTable = ErrorsTree(core.ToolMgr)
+            resultsTable = FindResultsTree(core.ToolMgr)
             core.ToolMgr.AddPage(resultsTable, title, True)
         resultsTable.SetResults(results, filesCount, regexp)
         core.ToolMgr.FocusOnWidget(resultsTable)
+
+
 
     def OnKeyDown(self, event):
         keyCode = event.GetKeyCode()
@@ -340,7 +344,7 @@ def ReplaceInFile(file, regexp, replacement):
     except Exception, e:
         core.Log("replace in project error: '", file, e)
 
-class ErrorsTree(IDNCustomTreeCtrl):
+class FindResultsTree(IDNCustomTreeCtrl):
     def __init__(self, parent):
         IDNCustomTreeCtrl.__init__(self, parent)
         self.results = []
@@ -388,18 +392,23 @@ class ErrorsTree(IDNCustomTreeCtrl):
             if self.GetPyData(node).file in expanded:
                 self.Expand(node)
 
+    def CleanUp(self):
+        self.results = []
+        self.DeleteAllItems()
+
     def SetResults(self, results, filesCount, regexp):
         self.results = results
         self.filesCount = filesCount
         self.regexp = regexp
         self.DeleteAllItems()
         rootNode = self.AddRoot("0 results in {0} files".format(filesCount))
-        self.SetPyData(rootNode, ErrorsTreeItemPyData())
+        self.SetPyData(rootNode, FindResultsTreeItemPyData())
         if not results:
             return
 
         self.SetItemHasChildren(rootNode, True)
         resultsCount = 0
+
         for (file, res) in results.items():
             if not res or len(res) == 0:
                 continue
@@ -407,14 +416,15 @@ class ErrorsTree(IDNCustomTreeCtrl):
             fileLabel = file.replace(core.Project.projectDir + os.sep, "")
             fileNode = self.AppendItem(rootNode, "{0}: {1} results".format(fileLabel, len(res)))
 
-            self.SetPyData(fileNode, ErrorsTreeItemPyData(file))
+            self.SetPyData(fileNode, FindResultsTreeItemPyData(file))
             self.SetItemHasChildren(fileNode, True)
             for result in res:
                 resultNode = self.AppendItem(fileNode,
                     '{0:{fill}{align}14} {1}'.format('Line: ' + str(result.lineNumber + 1),
                         result.lineText.replace("\n", "").strip(), fill=" ", align="<"))
                 self.SetPyData(resultNode,
-                    ErrorsTreeItemPyData(file, result.lineNumber, result.start, result.end))
+                    FindResultsTreeItemPyData(file, result.lineNumber, result.start, result.end))
+
         self.SetItemText(rootNode, "{0} results in {1} files".format(resultsCount, filesCount))
         self.Expand(rootNode)
         self.SortChildren(rootNode)
@@ -428,7 +438,7 @@ class ErrorsTree(IDNCustomTreeCtrl):
             pos = editor.PositionFromLine(data.lineNumber)
             editor.SetSelection(pos + data.start, pos + data.end)
 
-class ErrorsTreeItemPyData:
+class FindResultsTreeItemPyData:
     def __init__(self, file = None, lineNumber = 0, start = None, end = None):
         self.file = file
         self.lineNumber = lineNumber

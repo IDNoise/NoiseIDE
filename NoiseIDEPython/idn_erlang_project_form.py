@@ -230,7 +230,7 @@ class ConsoleCreateEditDialog(wx.Dialog):
     def __init__(self, parent, console = None):
         wx.Dialog.__init__(self, parent, title = "Console props",
             style = wx.DEFAULT_DIALOG_STYLE | wx.WS_EX_VALIDATE_RECURSIVELY,
-            size = (300, 130))
+            size = (370, 210))
 
         self.currentConsole = console
 

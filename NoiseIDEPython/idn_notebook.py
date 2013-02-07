@@ -52,6 +52,8 @@ class Notebook(aui.AuiNotebook):
             self.RemovePage(page_idx)
             widget.Hide()
         else:
+            if hasattr(widget, "CleanUp"):
+                widget.CleanUp()
             aui.AuiNotebook.DeletePage(self, page_idx)
 
     def OnTabDClick(self, event):
