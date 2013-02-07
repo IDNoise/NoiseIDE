@@ -136,22 +136,18 @@ class ErlangProjectFrom(wx.Dialog):
 
 
     def OnPathChanged(self, event):
-        dirs = []
-        dir = self.projectPathTB.Value
-        if dir and os.path.isdir(dir):
+        dirs = set()
+        if self.projectPathTB.Value and os.path.isdir(self.projectPathTB.Value):
             apps = self.appsDirTB.Value
-            appsDir = os.path.join(dir, apps)
+            appsDir = os.path.join(self.projectPathTB.Value, apps)
             if apps and os.path.isdir(appsDir):
-                dir = appsDir
+                [dirs.add(d) for d in os.listdir(appsDir) if os.path.isdir(os.path.join(appsDir, d))]
 
-            dirs = [d for d in os.listdir(dir) if os.path.isdir(os.path.join(dir, d))]
-
-            deps = self.appsDirTB.Value
-            depsDir = os.path.join(dir, deps)
+            deps = self.depsDirTB.Value
+            depsDir = os.path.join(self.projectPathTB.Value, deps)
             if deps and os.path.isdir(depsDir):
-                dir = depsDir
-            dirs += [d for d in os.listdir(dir) if os.path.isdir(os.path.join(dir, d))]
-
+                [dirs.add(d) for d in os.listdir(depsDir) if os.path.isdir(os.path.join(depsDir, d))]
+        dirs = list(sorted(list(dirs)))
         self.excludedDirList.SetItems(dirs)
 
     def OnSelectProjectPath(self, event):
@@ -233,7 +229,8 @@ class ErlangProjectFrom(wx.Dialog):
 class ConsoleCreateEditDialog(wx.Dialog):
     def __init__(self, parent, console = None):
         wx.Dialog.__init__(self, parent, title = "Console props",
-            style = wx.DEFAULT_DIALOG_STYLE | wx.WS_EX_VALIDATE_RECURSIVELY)
+            style = wx.DEFAULT_DIALOG_STYLE | wx.WS_EX_VALIDATE_RECURSIVELY,
+            size = (300, 130))
 
         self.currentConsole = console
 

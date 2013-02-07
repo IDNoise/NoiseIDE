@@ -106,7 +106,7 @@ class ConfigEditForm(wx.Dialog):
         self.userNameTB = wx.TextCtrl(self, value = Config.UserName(), size = (180, 25))
         self.tooltipDelayTB = wx.TextCtrl(self, value = str(Config.TooltipDelay()), size = (180, 25))
         self.openLastFilesCb = wx.CheckBox(self, label = "Open last files")
-        self.openLastFilesCb.SetValue(True)
+        self.openLastFilesCb.SetValue(Config.GetProp(Config.OPEN_LAST_FILES, True))
         self.closeButton = CreateButton(self, "Close", self.OnClose)
         self.saveButton = CreateButton(self, "Save", self.OnSave)
 

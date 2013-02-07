@@ -247,6 +247,7 @@ class ErlangProcess(Process):
     def Start(self):
         cwd = os.getcwd()
         os.chdir(self.cwd)
+        #print self.cmd
         self.pid = wx.Execute(self.cmd, wx.EXEC_ASYNC | wx.EXEC_HIDE_CONSOLE, self)
         os.chdir(cwd)
         self.timer.Start(100)
