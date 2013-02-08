@@ -163,6 +163,8 @@ class IgorHighlighter:
             elif token.type == IgorTokenType.LOWER:
                 if len(tokens) == 2 and tokens[1].value == ";":
                     tokenType = IgorHighlightType.ENUM_FIELD
+                elif len(tokens) == 4 and tokens[3].value == ";" and tokens[1].value == "=" and tokens[2].value.isdigit():
+                    tokenType = IgorHighlightType.ENUM_FIELD
                 elif firstToken.value == "record" and tokens[i - 1].value == "[":
                     tokenType = IgorHighlightType.ENUM_FIELD
                 elif token.value in ["bool", "sbyte", "byte", "short", "ushort", "int", "uint", "long", "ulong", "float", "double", "string", "binary", "atom", "dict", "list"]:
