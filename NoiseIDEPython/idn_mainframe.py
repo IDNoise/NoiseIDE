@@ -74,7 +74,7 @@ class NoiseIDE(wx.Frame):
         self.WinMgr.Update()
 
         def newVersionChecker():
-            self.OnHelpCheckForUpdates(None, False)
+            self.OnHelpCheckForUpdates(None, True)
 
         self.autoCheckTimer = Timer(600, newVersionChecker)
         self.autoCheckTimer.Start()
@@ -194,7 +194,7 @@ class NoiseIDE(wx.Frame):
             version = float(data.split("\n")[0].split(":")[1].strip())
         return version
 
-    def OnHelpCheckForUpdates(self, event, notifyAboutLastVersion = True):
+    def OnHelpCheckForUpdates(self, event, auto = False):
         try:
             self.SetCursor(wx.StockCursor(wx.CURSOR_WAIT))
             version = self.GetCurrentVersion()
@@ -238,11 +238,12 @@ class NoiseIDE(wx.Frame):
                     installNewVersion = True
                     self.Enable()
                     self.SetFocus()
-            elif notifyAboutLastVersion:
+            elif not auto:
                 wx.MessageBox("You have last version", "Check new version result")
         except Exception, e:
             core.Log("Update error", e)
-            wx.MessageBox("Update check error. Check log for info", "Check new version result")
+            if not auto:
+                wx.MessageBox("Update check error. Check log for info", "Check new version result")
         self.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
 
     def TryLoadLastProject(self):
