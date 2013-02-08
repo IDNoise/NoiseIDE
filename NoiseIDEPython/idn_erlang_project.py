@@ -55,6 +55,8 @@ class ErlangProject(Project):
         self.explorer.ProjectFilesDeletedEvent += self.OnProjectFilesDeleted
         self.explorer.ProjectDirsCreatedEvent += self.OnProjectDirsCreated
 
+        ErlangCache.LoadCacheFromDir(self.ProjectName())
+
     def SetupProps(self):
         if self.PltPath():
             self.GetShell().SetProp("plt", self.PltPath())
@@ -69,9 +71,10 @@ class ErlangProject(Project):
 
         self.window.projectMenu.AppendSeparator()
         self.window.projectMenu.AppendMenuItem("Rebuild apps", self.window, lambda e: self.RecompileApps(), "F7")
-        self.window.projectMenu.AppendMenuItem("Rebuild deps", self.window, lambda e: self.RecompileDeps(), "F8")
         self.window.projectMenu.AppendMenuItem("Recache apps", self.window, lambda e: self.RecacheApps(), "Shift+F7")
-        self.window.projectMenu.AppendMenuItem("Recache deps", self.window, lambda e: self.RecacheDeps(), "Shift+F8")
+        if self.AppsPath() != self.DepsPath():
+            self.window.projectMenu.AppendMenuItem("Rebuild deps", self.window, lambda e: self.RecompileDeps(), "F8")
+            self.window.projectMenu.AppendMenuItem("Recache deps", self.window, lambda e: self.RecacheDeps(), "Shift+F8")
         self.window.projectMenu.AppendMenuItem("XRef check", self.window, lambda e: self.StartXRef())
 
         self.dialyzerMenu = Menu()

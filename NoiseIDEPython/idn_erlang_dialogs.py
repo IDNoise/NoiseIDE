@@ -8,14 +8,14 @@ __author__ = 'Yaroslav'
 import wx
 
 class ErlangOptionsDialog(wx.Dialog):
-    def __init__(self, parent):
+    def __init__(self, parent, atLeastOneRequired):
         wx.Dialog.__init__(self, parent, size = (320, 150), title = "Erlang options")
-        self.panel = ErlangOptionsPanel(self)
+        self.panel = ErlangOptionsPanel(self, atLeastOneRequired)
 
 class ErlangOptionsPanel(wx.Panel):
-    def __init__(self, parent):
+    def __init__(self, parent, atLeastOneRequired = False):
         wx.Panel.__init__(self, parent)
-
+        self.atLeastOneRequired = atLeastOneRequired
         self.runtimes = Config.Runtimes().copy()
 
         self.runtimesList = wx.ListBox(self, size = (200, 60), choices = self.runtimes.keys())
@@ -58,6 +58,8 @@ class ErlangOptionsPanel(wx.Panel):
         for runtime in self.runtimes:
             self.runtimesList.Append(runtime)
         Config.SetProp(Config.RUNTIMES, self.runtimes)
+        if self.atLeastOneRequired and len(self.runtimes) > 0:
+            self.Parent.Close()
 
 class RuntimeCreateEditDialog(wx.Dialog):
     def __init__(self, parent, runtime = None):

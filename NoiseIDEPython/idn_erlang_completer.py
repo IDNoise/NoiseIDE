@@ -131,6 +131,9 @@ class ErlangCompleter(wx.Frame):
             elif (fValue == "?" or fType == ErlangTokenType.MACROS):
                 self.prefix = "" if fValue == "?" else fValue[1:]
                 data = ErlangCache.Macroses(self.module)
+            elif fType == ErlangTokenType.RECORD or fValue == "#":
+                self.prefix = "" if fValue == "#" else fValue[1:]
+                data = ErlangCache.ModuleRecords(self.module)
             elif (len(tokens) > 2 and fIsAtom and tokens[1].value == "."
                   and tokens[2].type == ErlangTokenType.RECORD):
                 self.prefix = fValue
@@ -140,9 +143,6 @@ class ErlangCompleter(wx.Frame):
                 self.prefix = ""
                 record = tokens[1].value[1:]
                 data = ErlangCache.RecordFields(self.module, record)
-            elif fType == ErlangTokenType.RECORD or fValue == "#":
-                self.prefix = "" if fValue == "#" else fValue[1:]
-                data = ErlangCache.ModuleRecords(self.module)
             elif fType == ErlangTokenType.VAR:
                 self.prefix = fValue
                 data = self.GetVars()

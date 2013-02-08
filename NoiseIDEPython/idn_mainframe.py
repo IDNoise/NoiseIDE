@@ -348,10 +348,10 @@ class NoiseIDE(wx.Frame):
 
         while not Config.Runtimes():
             wx.MessageBox("Add at least one erlang runtime!", "Error")
-            self.SetupRuntimes()
+            self.SetupRuntimes(True)
 
-    def SetupRuntimes(self):
-        dlg = ErlangOptionsDialog(self)
+    def SetupRuntimes(self, atLeastOneRequired):
+        dlg = ErlangOptionsDialog(self, atLeastOneRequired)
         dlg.ShowModal()
 
 class HelloDialog(wx.Dialog):

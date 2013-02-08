@@ -149,6 +149,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         (isRecField, record, prefix) = self.lexer.RecordFieldUnderCursor()
         if isRecField:
             self.completer.UpdateRecordField(record, prefix)
+            self.completer.lastText = prefix
         else:
             line = self.GetCurrentLine()
             prefix = self.GetTextRange(self.PositionFromLine(line), caretPos)
