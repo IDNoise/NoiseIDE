@@ -308,7 +308,8 @@ class ProjectExplorer(IDNCustomTreeCtrl):
                     newMenu.AppendSeparator()
                     menu.newMenu = newMenu
                     menu.AppendMenu(wx.ID_ANY, "New", newMenu)
-
+                else:
+                    menu.AppendMenuItem("Open with default editor", self, self.OnMenuOpenWithDefault)
 
                 if (self.IsExecutable(self.eventItem) and self.IsEditable(self.eventItem)):
                     menu.AppendSeparator()
@@ -446,6 +447,11 @@ class ProjectExplorer(IDNCustomTreeCtrl):
             subprocess.call(['gnome-open', '--', path])
         elif sys.platform in ['windows', "win32"]:
             subprocess.call(['explorer', path])
+
+    def OnMenuOpenWithDefault(self, event):
+        path = self.GetPyData(self.eventItem)
+        import webbrowser
+        webbrowser.open(path)
 
     def ExecuteFile(self, path):
         os.chdir(os.path.dirname(path))
