@@ -383,7 +383,6 @@ class ErlangProject(Project):
                 done = (TASK_COMPILE, path.lower())
             else:
                 done = (TASK_COMPILE_FLY, path.lower())
-            #print path, self.explorer.FindItemByPath(path)
             if not self.explorer.FindItemByPath(path): return
             self.TaskDone("Compiled {}".format(path), done)
 
@@ -395,7 +394,6 @@ class ErlangProject(Project):
             self.AddErrors(path, errors)
 
         elif response == "compile_app":
-            #print response
             resultData = js["result"]
             path = pystr(js["path"])
             self.TaskDone("App compiled {}".format(path), (TASK_COMPILE_APP, path.lower()))
@@ -403,7 +401,6 @@ class ErlangProject(Project):
                 p = pystr(eRec["path"])
                 if 'nt' == os.name:
                     p = p[0].upper() + p[1:]
-                #print p, self.explorer.FindItemByPath(p)
                 if not self.explorer.FindItemByPath(p): continue
                 errors = []
                 for error in eRec["errors"]:
@@ -413,7 +410,6 @@ class ErlangProject(Project):
                 self.AddErrors(p, errors)
 
         elif response == "cache_app":
-            #print response
             path = pystr(js["path"])
             self.TaskDone("App cached {}".format(path), (TASK_CACHE_APP, path.lower()))
         elif response == "xref_module":

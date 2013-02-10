@@ -1,7 +1,8 @@
-{application, [module_name], [
+{application, [app], [
     {description,"Description"},
     {vsn,"1.0"},
     {modules,[]},
     {registered,[]},
-    {applications,[kernel,stdlib]}
+    {applications,[kernel,stdlib]},
+	{mod,{[app_module_name],[]}} 
 ]}.

@@ -28,8 +28,8 @@ class FastProjectFileOpenDialog(wx.Dialog):
     def PrepareChoices(self, project):
         files = project.explorer.GetAllFiles()
         result = []
-        for file in files:
-            result.append((os.path.basename(file), file))
+        for f in files:
+            result.append((os.path.basename(f), file))
         return result
 
     def OnKeyDown(self, event):

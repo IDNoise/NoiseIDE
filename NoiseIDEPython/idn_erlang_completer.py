@@ -313,7 +313,7 @@ class ErlangCompleter(wx.Frame):
                 module += prefix[i]
                 i -= 1
             module = module[::-1]
-            if not module.islower():
+            if not module[0].islower():
                 module = self.module
         else:
             module = self.module
@@ -396,16 +396,16 @@ class ErlangCompleter(wx.Frame):
         return arity
 
     def GetRecordNavAndHelp(self, record):
+        if record[0] == "#": record = record[1:]
         recordData = ErlangCache.RecordData(self.module, record)
         if not recordData: return
-        help = self._RecordHelp(recordData)
-        return ((recordData.moduleData.file, recordData.line), help)
+        return ((recordData.moduleData.file, recordData.line), self._RecordHelp(recordData))
 
     def GetMacrosNavAndHelp(self, macros):
+        if macros[0] == "?": macros = macros[1:]
         macrosData = ErlangCache.MacrosData(self.module, macros)
         if not macrosData: return
-        help = self._MacrosHelp(macrosData)
-        return ((macrosData.moduleData.file, macrosData.line), help)
+        return ((macrosData.moduleData.file, macrosData.line), self._MacrosHelp(macrosData))
 
 
 class ErlangSimpleCompleter(wx.Frame):

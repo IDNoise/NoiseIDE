@@ -9,7 +9,6 @@ from wx import stc
 import wx.lib.agw.customtreectrl as CT
 import core
 from idn_utils import CreateButton, extension, writeFile, readFile, CreateBitmapButton
-import idn_projectexplorer as exp
 
 class FindInFilePanel(wx.Panel):
     def __init__(self, parent, editor):
@@ -226,26 +225,29 @@ class FindInProjectDialog(wx.Dialog):
 
         if not self.textToFind in self.findText.Items:
             self.findText.Append(self.textToFind)
+        self.SetCursor(wx.StockCursor(wx.CURSOR_WAIT))
+        try:
+            results = {}
+            regexp = self.PrepareRegexp()
+            filePaths = core.Project.explorer.GetAllFiles()
+            for filePath in sorted(filePaths):
+                result = self.SearchInFile(filePath, regexp)
+                if result:
+                    results[filePath] = result
+            self.FillFindResultsTable(results, len(filePaths), regexp, self.openNewSearchResultCb.Value)
+        finally:
+            self.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
 
-        results = {}
-        regexp = self.PrepareRegexp()
-        files = core.Project.explorer.GetAllFiles()
-        for file in sorted(files):
-            result = self.SearchInFile(file, regexp)
-            if result:
-                results[file] = result
-        self.FillFindResultsTable(results, len(files), regexp, self.openNewSearchResultCb.Value)
-
-    def SearchInFile(self, file, regexp):
+    def SearchInFile(self, filePath, regexp):
         try:
             result = []
             lineNumber = 0
-            if file in core.TabMgr.OpenedFiles():
-                fileText = core.TabMgr.FindPageByPath(file).GetText().split("\n")
+            if filePath in core.TabMgr.OpenedFiles():
+                fileText = core.TabMgr.FindPageByPath(filePath).GetText().split("\n")
             else:
-                file = open(file, "r")
-                fileText = file.readlines()
-                file.close()
+                f = open(filePath, "r")
+                fileText = f.readlines()
+                f.close()
             for lineText in fileText:
                 end = 0
                 while True:
@@ -253,7 +255,7 @@ class FindInProjectDialog(wx.Dialog):
                     if not m: break
                     start = m.start()
                     end = m.end()
-                    result.append(SearchResult(file, lineNumber, lineText, start, end))
+                    result.append(SearchResult(filePath, lineNumber, lineText, start, end))
                 lineNumber += 1
             return result
         except Exception, e:
@@ -321,26 +323,26 @@ class FindInProjectDialog(wx.Dialog):
 
 
 def ReplaceInProject(regexp, replacement, mask = None):
-    files = core.Project.explorer.GetAllFiles()
-    for file in sorted(files):
-        if mask and extension(file) not in mask:
+    filePaths = core.Project.explorer.GetAllFiles()
+    for filePath in sorted(filePaths):
+        if mask and extension(filePath) not in mask:
             continue
-        ReplaceInFile(file, regexp, replacement)
+        ReplaceInFile(filePath, regexp, replacement)
 
-def ReplaceInFile(file, regexp, replacement):
+def ReplaceInFile(filePath, regexp, replacement):
     try:
-        if file in core.TabMgr.OpenedFiles():
-            editor = core.TabMgr.FindPageByPath(file)
+        if filePath in core.TabMgr.OpenedFiles():
+            editor = core.TabMgr.FindPageByPath(filePath)
             text = editor.GetText()
             if regexp.search(text):
                 text = regexp.sub(replacement, text)
                 editor.SetText(text)
                 editor.Save()
         else:
-            fileText = readFile(file)
+            fileText = readFile(filePath)
             if regexp.search(fileText):
                 fileText = regexp.sub(replacement, fileText)
-                writeFile(file, fileText)
+                writeFile(filePath, fileText)
     except Exception, e:
         core.Log("replace in project error: '", file, e)
 
@@ -361,24 +363,24 @@ class FindResultsTree(IDNCustomTreeCtrl):
         core.Project.explorer.ProjectFilesModifiedEvent -= self.OnProjectFilesModified
         core.Project.explorer.ProjectFilesDeletedEvent -= self.OnProjectFilesDeleted
 
-    def OnProjectFilesCreated(self, files):
-        for file in files:
+    def OnProjectFilesCreated(self, filePaths):
+        for filePath in filePaths:
             if self.regexp:
-                result = FindInProjectDialog.GetDialog().SearchInFile(file, self.regexp)
-                self.results[file] = result
+                result = FindInProjectDialog.GetDialog().SearchInFile(filePath, self.regexp)
+                self.results[filePath] = result
                 self.UpdateResults()
 
-    def OnProjectFilesModified(self, files):
-        for file in files:
-            if self.regexp and file in self.results:
-                result = FindInProjectDialog.GetDialog().SearchInFile(file, self.regexp)
-                self.results[file] = result
+    def OnProjectFilesModified(self, filePaths):
+        for filePath in filePaths:
+            if self.regexp and filePath in self.results:
+                result = FindInProjectDialog.GetDialog().SearchInFile(filePath, self.regexp)
+                self.results[filePath] = result
                 wx.CallAfter(self.UpdateResults)
 
-    def OnProjectFilesDeleted(self, files):
-        for file in files:
-            if self.regexp and file in self.results:
-                self.results[file] = None
+    def OnProjectFilesDeleted(self, filePaths):
+        for filePath in filePaths:
+            if self.regexp and filePath in self.results:
+                self.results[filePath] = None
                 wx.CallAfter(self.UpdateResults)
 
     def UpdateResults(self):
@@ -409,21 +411,21 @@ class FindResultsTree(IDNCustomTreeCtrl):
         self.SetItemHasChildren(rootNode, True)
         resultsCount = 0
 
-        for (file, res) in results.items():
+        for (filePath, res) in results.items():
             if not res or len(res) == 0:
                 continue
             resultsCount += len(res)
-            fileLabel = file.replace(core.Project.projectDir + os.sep, "")
+            fileLabel = filePath.replace(core.Project.projectDir + os.sep, "")
             fileNode = self.AppendItem(rootNode, "{0}: {1} results".format(fileLabel, len(res)))
 
-            self.SetPyData(fileNode, FindResultsTreeItemPyData(file))
+            self.SetPyData(fileNode, FindResultsTreeItemPyData(filePath))
             self.SetItemHasChildren(fileNode, True)
             for result in res:
                 resultNode = self.AppendItem(fileNode,
                     '{0:{fill}{align}14} {1}'.format('Line: ' + str(result.lineNumber + 1),
                         result.lineText.replace("\n", "").strip(), fill=" ", align="<"))
                 self.SetPyData(resultNode,
-                    FindResultsTreeItemPyData(file, result.lineNumber, result.start, result.end))
+                    FindResultsTreeItemPyData(filePath, result.lineNumber, result.start, result.end))
 
         self.SetItemText(rootNode, "{0} results in {1} files".format(resultsCount, filesCount))
         self.Expand(rootNode)

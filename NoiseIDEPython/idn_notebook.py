@@ -222,8 +222,8 @@ class EditorNotebook(aui.AuiNotebook):
     def OpenedFiles(self):
         return [p.filePath for p in self.Pages()]
 
-    def LoadFile(self, file):
-        id = self.FindPageIndexByPath(file)
+    def LoadFile(self, fileName):
+        id = self.FindPageIndexByPath(fileName)
         if id >= 0:
             editor = self[id]
             self.SetSelection(id)
@@ -231,15 +231,15 @@ class EditorNotebook(aui.AuiNotebook):
             self.EnsureVisible(self.FindPageIndexByEditor(editor))
             return editor
         else:
-            editorPanel = EditorPanel(self, file)
+            editorPanel = EditorPanel(self, fileName)
             self.AddPage(editorPanel, editorPanel.editor.FileName(), True)
             editorPanel.editor.SetFocus()
             self.EnsureVisible(self.FindPageIndexByEditor(editorPanel.editor))
             return  editorPanel.editor
 
-    def LoadFileLine(self, file, line = 0, addToHistory = True, fromLine = 0):
+    def LoadFileLine(self, fileName, line = 0, addToHistory = True, fromLine = 0):
         prevEditor = self.GetActiveEditor()
-        editor = self.LoadFile(file)
+        editor = self.LoadFile(fileName)
         editor.GotoLine(line)
 
         if addToHistory:
@@ -278,9 +278,9 @@ class EditorNotebook(aui.AuiNotebook):
                 return index
         return None
 
-    def FindPageByPath(self, file):
+    def FindPageByPath(self, fileName):
         for page in self.Pages():
-            if page.filePath.lower() == file.lower():
+            if page.filePath.lower() == fileName.lower():
                 return page
         return None
 
@@ -330,11 +330,11 @@ class EditorNotebook(aui.AuiNotebook):
 
 
 class EditorPanel(wx.Panel):
-    def __init__(self, parent, file):
+    def __init__(self, parent, fileName):
         wx.Panel.__init__(self, parent, style = wx.TAB_TRAVERSAL | wx.NO_BORDER)
-        stcType = GetSTCTypeByExt(file)
+        stcType = GetSTCTypeByExt(fileName)
         self.markPanel = MarkerPanel(self)
-        self.editor = stcType(self, self.markPanel, file)
+        self.editor = stcType(self, self.markPanel, fileName)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.findPanel = FindInFilePanel(self, self.editor)
         self.sizer.Add(self.findPanel)
@@ -402,10 +402,10 @@ class ConsolePanel(EditorPanel):
         self.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
 
 class ErlangCompileOptionPanel(EditorPanel):
-    def __init__(self, parent, filePath, option, text):
+    def __init__(self, parent, fileName, option, text):
         wx.Panel.__init__(self, parent, style = wx.TAB_TRAVERSAL | wx.NO_BORDER)
         self.markPanel = MarkerPanel(self)
-        self.editor = ErlangSTCReadOnly(self, self.markPanel, filePath, option, text)
+        self.editor = ErlangSTCReadOnly(self, self.markPanel, fileName, option, text)
         self.sizer = wx.BoxSizer(wx.VERTICAL)
         self.findPanel = FindInFilePanel(self, self.editor)
         self.sizer.Add(self.findPanel)

@@ -44,9 +44,9 @@ class ErrorsTableGrid(wx.grid.Grid):
     def OnLeftDClick(self, event):
         row = event.GetRow()
         rowData = self.table.data[row]
-        file = os.path.join(self.project.projectDir, rowData[0])
+        fileName = os.path.join(self.project.projectDir, rowData[0])
         line = rowData[1] - 1
-        core.TabMgr.LoadFileLine(file, line)
+        core.TabMgr.LoadFileLine(fileName, line)
 
     def AddErrors(self, path, errors):
         currentRows = len(self.table.data)

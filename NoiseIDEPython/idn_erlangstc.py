@@ -283,6 +283,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         style = self.GetStyleAt(pos)
         if style not in [ErlangHighlightType.ATOM,
                          ErlangHighlightType.FUNCTION,
+                         ErlangHighlightType.FUNDEC,
                          ErlangHighlightType.MACROS,
                          ErlangHighlightType.MODULE,
                          ErlangHighlightType.RECORD,
@@ -307,7 +308,11 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         value = self.GetTextRange(start, end)
         postfix = self.GetTextRange(end, lineEnd)
         data = None
-        if style == ErlangHighlightType.FUNCTION:
+        if style == ErlangHighlightType.FUNDEC:
+            (exports, start, end) = self.lexer.GetAllExports()
+            if value + "/" in exports:
+                self.navigateTo = (self.filePath, 1 + self.LineFromPosition(self.Text.find(value + "/")))
+        elif style == ErlangHighlightType.FUNCTION:
             data = self.completer.GetFunctionNavAndHelp(value, prefix, end)
         elif style == ErlangHighlightType.RECORD:
             data = self.completer.GetRecordNavAndHelp(value)
@@ -512,8 +517,8 @@ class ErlangSTCReadOnly(ErlangSTC):
         pass
 
     def OnProjectFilesModified(self, files):
-        for file in files:
-            if file == self.filePath:
+        for f in files:
+            if f == self.filePath:
                 core.Project.CompileOption(self.filePath, self.option)
 
     def SetNewText(self, text):
@@ -578,19 +583,19 @@ class ErlangConsoleSTC(ConsoleSTC):
                     self.IndicatorFillRange(lastPosition + startPos, endPos - startPos)
 
             elif last == "file_line":
-                file = d["file"]
+                filePath = d["file"]
                 fline = int(d["fline"])
-                if not os.path.isfile(file):
-                    (module, _) = os.path.splitext(file)
+                if not os.path.isfile(filePath):
+                    (module, _) = os.path.splitext(filePath)
                     if module in ErlangCache.moduleData:
-                        file = ErlangCache.moduleData[module].file
+                        filePath = ErlangCache.moduleData[module].file
                     else:
                         continue
-                file = os.path.normpath(file)
+                filePath = os.path.normpath(filePath)
                 startLine = self.LineFromPosition(lastPosition + startPos)
                 endLine = self.LineFromPosition(lastPosition + endPos)
                 for line in range (startLine, endLine + 1):
-                    self.navigationData[line] = (file, fline)
+                    self.navigationData[line] = (filePath, fline)
                     self.SetIndicatorCurrent(1)
                     self.IndicatorFillRange(lastPosition + startPos, endPos - startPos)
             elif last == "custom_log":

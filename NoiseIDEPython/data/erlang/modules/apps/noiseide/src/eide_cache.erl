@@ -1,6 +1,7 @@
 -module(eide_cache).
 
 -include_lib("edoc/src/edoc_types.hrl").
+-include("props.hrl").
  
 -define(log(P), io:format("~p~n", [P])).
 -define(TERM, "term()"). 
@@ -10,7 +11,6 @@
     create_cache_for_erlang_libs/1,
     create_cache_file_fly/2,
     generate_file/4, 
-    ignores/0,
     gen_file_cache/1, 
     gen_erlang_cache/1, 
     gen_project_cache/0,
@@ -68,19 +68,7 @@
     line, 
     file
 }).
-%erlang_cache:create_cache_for_erlang_libs("D:/temp/erlang_cache", erlang_cache:ignores()).
-%erlang_cache:create_cache("d:/temp/erlang_cache", "d:/projects/joe/server/apps", undefined, erlang_cache:ignores()).
-%erlang_cache:create_cache("d:/temp/erlang_cache", "d:/projects/gijoe/server/apps", undefined, erlang_cache:ignores()).
-%eide_cache:generate_file("D:/temp/erlang_cache", "eide_cache", "d:/Proects/noiseide/noiseidepython/data/erlang/modules/noiseide/src/eide_cache.erl", "", []).
 
-%appmon, aptransform, asn, commontest, compiler, cosEvent, cosEventDomain, cosFileTransfer, cosNotification, cosProperty, cosTime, cosTransactions, couchbeam, crypto, debugger, 
-%dialyzer, diameter, edoc, ejson, erldocgen, erlinterface, erts, et, eunit, genleader, gproc, gs, hipe, ibrowse, ic, inets, inviso, jinterface, kernel, megaco, mnesia, mochiweb, 
-%oauth, observer, odbc, orber, osmon, otpmibs, parsetools, percept, pman, proper, publickey, reltool, runtimetools, sasl, sha, snmp, ssh, ssl, stdlib, syntaxtools, testserver, 
-%toolbar, tools, tv, typer, webtool, wx
-
-%eide_cache:generate_file("D:/temp/erlang_cache", "eide_cache", "d:/Projects/noiseide/noiseidepython/data/erlang/modules/noiseide/src/eide_cache.erl", undefined, []).
-%eide_cache:generate_file("D:/temp/erlang_cache", "unit_building", "d:/Projects/GIJoe/server/apps/gamelib/src/units/unit_building.erl", undefined, []).
-%ololololo comment
 gen_file_cache(File) -> create_cache(eide_connect:prop(cache_dir) ++ "/" ++ eide_connect:prop(project_name), File).  
 
 gen_erlang_cache(Runtime) -> 
@@ -104,17 +92,8 @@ cache_app(AppPath) ->
         fun(File, H) -> [File|H] end, []), 
     [gen_file_cache(F) || F <- ModulesAndHrls ++ IncludeHrls].
 
-ignores() ->
-    [appmon, asn, cosEvent, cosEventDomain, 
-     cosFileTransfer, cosNotification, cosProperty, 
-     cosTime, cosTransactions, percept, 
-     erldocgen, erlinterface, et, gs, hipe, ic, 
-     inviso, jinterface, megaco, observer, orber, osmon, 
-     otpmibs, runtimetools, testserver, toolbar, 
-     tv, webtool, wx]. 
-
 prepare_ignores() ->
-    [ code:root_dir() ++ "/lib/" ++ atom_to_list(A) ++ "-" || A <- ignores()].
+    [ code:root_dir() ++ "/lib/" ++ atom_to_list(A) ++ "-" || A <- ?IGNORES].
 
 create_cache_for_erlang_libs(CacheDir) ->
     create_cache(CacheDir, code:root_dir(), prepare_ignores()).

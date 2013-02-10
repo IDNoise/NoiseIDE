@@ -8,20 +8,20 @@ import core
 import os
 import wx
 
-def readFile(file):
-    f = open(file)
+def readFile(fileName):
+    f = open(fileName)
     data = f.read()
     f.close()
     return data
 
-def writeFile(file, data):
-    f = open(file, 'w')
+def writeFile(fileName, data):
+    f = open(fileName, 'w')
     f.write(data.encode('utf8'))
     f.flush()
     f.close()
 
-def writeBinaryFile(file, data):
-    f = open(file, 'wb')
+def writeBinaryFile(fileName, data):
+    f = open(fileName, 'wb')
     f.write(data)
     f.flush()
     f.close()
@@ -34,14 +34,14 @@ def extension(path):
     name, ext = os.path.splitext(path)
     return ext
 
-def erlstr(str):
-    if not str: return ""
-    return str.replace(os.sep, "/")
+def erlstr(pystr):
+    if not pystr: return ""
+    return pystr.replace(os.sep, "/")
 
-def pystr(str):
-    if not str: return ""
-    str = os.path.normpath(str)
-    return str.replace("/", os.sep)
+def pystr(erlstr):
+    if not erlstr: return ""
+    erlstr = os.path.normpath(erlstr)
+    return erlstr.replace("/", os.sep)
 
 class Timer(Thread):
     def __init__(self, interval, function):

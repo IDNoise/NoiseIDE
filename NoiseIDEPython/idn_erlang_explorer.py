@@ -110,7 +110,8 @@ class ErlangProjectExplorer(ProjectExplorer):
         sup = sup.replace("[module_name]", supName)
 
         appSrc = self._GetTemplate("app.src")
-        appSrc = appSrc.replace("[module_name]", name)
+        appSrc = appSrc.replace("[app]", name)
+        appSrc = appSrc.replace("[app_module_name]", appName)
 
         writeFile(appModulePath, app)
         writeFile(supModulePath, sup)

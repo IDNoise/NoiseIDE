@@ -196,14 +196,15 @@ class NoiseIDE(wx.Frame):
 
     def OnHelpCheckForUpdates(self, event, auto = False):
         try:
-            self.SetCursor(wx.StockCursor(wx.CURSOR_WAIT))
+            if not auto:
+                self.SetCursor(wx.StockCursor(wx.CURSOR_WAIT))
             version = self.GetCurrentVersion()
             revfile = urllib2.urlopen("https://dl.dropbox.com/s/1a36pmlgmdy4rly/rev.cfg")
             newData = revfile.read()
             newVersion = float(newData.split("\n")[0].split(":")[1].strip())
-            dir = os.path.join(self.cwd, "installer")
-            if not os.path.isdir(dir):
-                os.mkdir(dir)
+            installDir = os.path.join(self.cwd, "installer")
+            if not os.path.isdir(installDir):
+                os.mkdir(installDir)
             self.autoCheckTimer.Stop()
             if newVersion != version:
                 dial = MultiMessageDialog(self,
@@ -214,7 +215,7 @@ class NoiseIDE(wx.Frame):
                 if dial.ShowModal() == wx.ID_YES:
                     progressDialog = wx.ProgressDialog("Autoupdater", "Downloading installer...", parent = self, style = wx.PD_APP_MODAL | wx.PD_ELAPSED_TIME | wx.PD_AUTO_HIDE)
                     progressDialog.Show()
-                    installerFileName = os.path.join(dir, "installer.zip")
+                    installerFileName = os.path.join(installDir, "installer.zip")
                     installerFile = open(installerFileName, 'wb')
                     dataFile = urllib2.urlopen("https://dl.dropbox.com/s/a2qrs1zw20who93/noiseide.zip")
                     meta = dataFile.info()
@@ -223,16 +224,16 @@ class NoiseIDE(wx.Frame):
                     fileSizeDl = 0
                     block_sz = 8192
                     while True:
-                        buffer = dataFile.read(block_sz)
-                        if not buffer:
+                        buf = dataFile.read(block_sz)
+                        if not buf:
                             break
 
-                        fileSizeDl += len(buffer)
-                        installerFile.write(buffer)
+                        fileSizeDl += len(buf)
+                        installerFile.write(buf)
                         newValue = int(float(fileSizeDl) / float(fileSize) * 100)
                         progressDialog.Update(newValue)
                     installerFile.close()
-                    writeBinaryFile(os.path.join(dir, "rev.cfg"), newData)
+                    writeBinaryFile(os.path.join(installDir, "rev.cfg"), newData)
                     idn_installer.Decompress(installerFileName)
                     global installNewVersion
                     installNewVersion = True
@@ -244,7 +245,8 @@ class NoiseIDE(wx.Frame):
             core.Log("Update error", e)
             if not auto:
                 wx.MessageBox("Update check error. Check log for info", "Check new version result")
-        self.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+        if not auto:
+            self.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
 
     def TryLoadLastProject(self):
         dialog = HelloDialog(self)
@@ -351,7 +353,7 @@ class NoiseIDE(wx.Frame):
             wx.MessageBox("Add at least one erlang runtime!", "Error")
             self.SetupRuntimes(True)
 
-    def SetupRuntimes(self, atLeastOneRequired):
+    def SetupRuntimes(self, atLeastOneRequired = False):
         dlg = ErlangOptionsDialog(self, atLeastOneRequired)
         dlg.ShowModal()
 
@@ -417,6 +419,9 @@ if __name__ == '__main__':
     def main():
         app = App()
         app.MainLoop()
+
+    # import cProfile
+    # cProfile.run('main()')
 
     try:
         import shutil

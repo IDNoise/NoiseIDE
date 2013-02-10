@@ -147,14 +147,14 @@ class Project(ProgressTaskManagerDialog):
     def OpenLastFiles(self):
         if not Config.GetProp(Config.OPEN_LAST_FILES, True): return
         removedFiles = []
-        for file in self.LastOpenedFiles():
-            if not os.path.isfile(file):
-                removedFiles.append(file)
+        for f in self.LastOpenedFiles():
+            if not os.path.isfile(f):
+                removedFiles.append(f)
             else:
-                core.TabMgr.LoadFileLine(file)
+                core.TabMgr.LoadFileLine(f)
         if removedFiles:
             self.userData[self.CONFIG_LAST_OPENED_FILES] = \
-                [file for file in self.userData[self.CONFIG_LAST_OPENED_FILES] if file not in removedFiles]
+                [f for f in self.userData[self.CONFIG_LAST_OPENED_FILES] if f not in removedFiles]
 
     def OnLoadProject(self):
         raise NotImplementedError

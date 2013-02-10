@@ -12,6 +12,7 @@ includefiles = ['dark.color.yaml',
                 'rev.cfg', 
                 'noiseide.template.yaml', 
                 'data/images',
+                'data/erlang/modules/apps/noiseide/include',
                 'data/erlang/modules/apps/noiseide/ebin',
                 'data/erlang/templates']
     
