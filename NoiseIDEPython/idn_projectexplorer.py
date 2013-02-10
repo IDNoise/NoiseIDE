@@ -78,20 +78,20 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         return True
 
     def AppendFile(self, parentNode, path):
-        file = os.path.basename(path)
+        fileName = os.path.basename(path)
         children = [self.GetPyData(c) for c in self.GetItemChildren(parentNode)]
         if (path in self.excludePaths or
             (not self.showHidden and path in self.hiddenPaths) or
-            (self.mask and not self.showAllFiles and extension(file) not in self.mask) or
+            (self.mask and not self.showAllFiles and extension(fileName) not in self.mask) or
             path in children):
             return False
         icon = self.GetIconIndex(path)
-        file = self.AppendItem(parentNode, file)
-        self.SetItemImage(file, icon, wx.TreeItemIcon_Normal)
+        fileName = self.AppendItem(parentNode, fileName)
+        self.SetItemImage(fileName, icon, wx.TreeItemIcon_Normal)
         if path in self.hiddenPaths:
-            self.SetAttrsForHiddenItem(file)
-        self.SetPyData(file, path)
-        self.paths[path] = file
+            self.SetAttrsForHiddenItem(fileName)
+        self.SetPyData(fileName, path)
+        self.paths[path] = fileName
         return True
 
     def SetupChecker(self):
@@ -118,33 +118,33 @@ class ProjectExplorer(IDNCustomTreeCtrl):
 
     def OnFilesCreated(self, files):
         self.ProjectFilesCreatedEvent(files)
-        for file in files:
-            self.FileCreated(file)
+        for f in files:
+            self.FileCreated(f)
 
     def OnFilesModified(self, files):
         self.ProjectFilesModifiedEvent(files)
-        for file in files:
-            self.FileModified(file)
+        for f in files:
+            self.FileModified(f)
 
     def OnFilesDeleted(self, files):
         self.ProjectFilesDeletedEvent(files)
-        for file in files:
-            self.FileDeleted(file)
+        for f in files:
+            self.FileDeleted(f)
 
     def OnDirsCreated(self, dirs):
         self.ProjectDirsCreatedEvent(dirs)
-        for dir in dirs:
-            self.DirCreated(dir)
+        for d in dirs:
+            self.DirCreated(d)
 
     def OnDirsModified(self, dirs):
         self.ProjectDirsModifiedEvent(dirs)
-        for dir in dirs:
-            self.DirModified(dir)
+        for d in dirs:
+            self.DirModified(d)
 
     def OnDirsDeleted(self, dirs):
         self.ProjectDirsDeletedEvent(dirs)
-        for dir in dirs:
-            self.DirDeleted(dir)
+        for d in dirs:
+            self.DirDeleted(d)
 
     def SetRoot(self, root):
         self.root = os.path.normpath(root)
@@ -182,8 +182,8 @@ class ProjectExplorer(IDNCustomTreeCtrl):
     def GetCustomMask(self):
         return self.mask
 
-    def SetHiddenList(self, list):
-        self.hiddenPaths = list
+    def SetHiddenList(self, hiddenPaths):
+        self.hiddenPaths = hiddenPaths
         self.UpdateRoot()
 
     def AddIcon(self, id, path):
@@ -240,40 +240,40 @@ class ProjectExplorer(IDNCustomTreeCtrl):
     def StopTrackingProject(self):
         self.dirChecker.Stop()
 
-    def FileCreated(self, file):
-        if file in self.paths:
+    def FileCreated(self, filePath):
+        if filePath in self.paths:
             return
-        id = self.FindItemByPath(os.path.dirname(file))
-        if id and self.AppendFile(id, file):
+        id = self.FindItemByPath(os.path.dirname(filePath))
+        if id and self.AppendFile(id, filePath):
             self.SortChildren(id)
 
-    def FileModified(self, file):
-        if self.mask and extension(file) not in self.mask: return
+    def FileModified(self, filePath):
+        if self.mask and extension(filePath) not in self.mask: return
 
-    def FileDeleted(self, file):
-        if self.mask and extension(file) not in self.mask: return
-        id = self.FindItemByPath(file)
+    def FileDeleted(self, filePath):
+        if self.mask and extension(filePath) not in self.mask: return
+        id = self.FindItemByPath(filePath)
         if id:
             del self.paths[self.GetPyData(id)]
             self.Delete(id)
 
-    def DirCreated(self, dir):
-        id = self.FindItemByPath(os.path.dirname(dir))
+    def DirCreated(self, dirPath):
+        id = self.FindItemByPath(os.path.dirname(dirPath))
         if id:
-            self.AppendDir(id, dir)
+            self.AppendDir(id, dirPath)
             self.SortChildren(id)
 
-    def DirModified(self, dir):
+    def DirModified(self, dirPath):
         pass
 
-    def DirDeleted(self, dir):
-        id = self.FindItemByPath(dir)
+    def DirDeleted(self, dirPath):
+        id = self.FindItemByPath(dirPath)
         if id:
             del self.paths[self.GetPyData(id)]
             self.Delete(id)
 
         for path in self.paths.keys():
-            if path.startswith(dir):
+            if path.startswith(dirPath):
                 del self.paths[path]
 
     def FindItemByPath(self, path):
@@ -350,16 +350,16 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         return []
 
     def OnMenuNewFile(self, event):
-        (_, file) = self.RequestName("New File", "Enter file name", "new_file.txt")
-        if file and not os.path.isfile(file):
-            writeFile(file, "")
+        (_, filePath) = self.RequestName("New File", "Enter file name", "new_file.txt")
+        if filePath and not os.path.isfile(filePath):
+            writeFile(filePath, "")
 
     def OnMenuNewDir(self, event):
-        (_, dir) = self.RequestName("New Directory", "Enter dir name", "new_dir")
-        if dir and not os.path.isdir(dir):
-            os.mkdir(dir)
+        (_, dirPath) = self.RequestName("New Directory", "Enter dir name", "new_dir")
+        if dirPath and not os.path.isdir(dirPath):
+            os.mkdir(dirPath)
         else:
-            wx.MessageBox("Dir {} already exists.".format(dir), "Error")
+            wx.MessageBox("Dir {} already exists.".format(dirPath), "Error")
 
     def OnMenuCut(self, event):
         self.cut = True
@@ -576,10 +576,10 @@ class ProjectExplorer(IDNCustomTreeCtrl):
 
     def GetAllFiles(self, selectAll = False):
         result = []
-        for file in self.dirChecker.files:
-            if not selectAll and self.mask and extension(file) not in self.mask:
+        for f in self.dirChecker.files:
+            if not selectAll and self.mask and extension(f) not in self.mask:
                 continue
-            result.append(file)
+            result.append(f)
         return result
 
     def _GetFiles(self, item):

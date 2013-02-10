@@ -28,8 +28,8 @@ EXT_STC_TYPE = {
     ".xml":  HtmlSTC
 }
 
-def GetSTCTypeByExt(file):
-    ext = extension(file)
+def GetSTCTypeByExt(filePath):
+    ext = extension(filePath)
     types = EXT_STC_TYPE
     if core.Project:
         types.update(core.Project.GetEditorTypes())
@@ -260,10 +260,10 @@ class EditorNotebook(aui.AuiNotebook):
                 prevLine = prev.CurrentLine
             if not self.navigationHistory or self.navigationHistory[-1] != (prevFile, prevLine):
                 self.navigationHistory.append((prevFile, prevLine))
-        file = new.filePath
+        filePath = new.filePath
         line = new.CurrentLine
-        if not self.navigationHistory or self.navigationHistory[-1] != (file, line):
-            self.navigationHistory.append((file, line))
+        if not self.navigationHistory or self.navigationHistory[-1] != (filePath, line):
+            self.navigationHistory.append((filePath, line))
             self.navigationHistoryIndex = len(self.navigationHistory) - 1
 
     def FindPageIndexByPath(self, path):

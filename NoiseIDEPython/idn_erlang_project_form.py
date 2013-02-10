@@ -217,9 +217,12 @@ class ErlangProjectFrom(wx.Dialog):
         yaml.dump(userData, open(os.path.join(Project.USER_DATA_FOLDER, "{}.project.user".format(title)), 'w'))
 
         if self.project:
-            self.project.projectData = data
-            self.project.userData[CONFIG_ERLANG_RUNTIME] = erlang
-            wx.CallAfter(self.project.UpdateProject)
+            if self.project.GetErlangRuntime() != erlang:
+                #self.project.userData[CONFIG_ERLANG_RUNTIME] = erlang
+                wx.CallAfter(core.MainFrame.OpenProject, pFile)
+            else:
+                self.project.projectData = data
+                wx.CallAfter(self.project.UpdateProject)
         else:
             wx.CallAfter(core.MainFrame.OpenProject, pFile)
 

@@ -548,7 +548,7 @@ class ErlangConsoleSTC(ConsoleSTC):
         (?P<error_report>Error|error|ERROR)|
         (?P<crash_report>CRASH\sREPORT)|
         (?P<module_fun_line>\{(?P<module>[a-zA-Z_]*)\,(?P<fun>[a-zA-Z_]*)\,(?P<arity>\d+)\,)|
-        (?P<file_line>\{file\,\s*"(?P<file>.*?)"\}\,\s*?\{line\,(?P<fline>\d+)\})
+        (?P<file_line>\{file\,\s*"(?P<file>.*?)"\}\,\s*?\{line\,\s*(?P<fline>\d+)\})
         """,
         re.VERBOSE | re.MULTILINE)
 
@@ -633,9 +633,9 @@ class ErlangConsoleSTC(ConsoleSTC):
         pos = self.PositionFromPoint(event.GetPosition())
         line = self.LineFromPosition(pos)
         if line in self.navigationData:
-            (file, line) = self.navigationData[line]
+            (f, line) = self.navigationData[line]
             if event.GetModifiers() == wx.MOD_CONTROL:
-                core.TabMgr.LoadFileLine(file, line - 1, False)
+                core.TabMgr.LoadFileLine(f, line - 1, False)
                 return
         event.Skip()
 

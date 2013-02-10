@@ -21,22 +21,22 @@ class DirectoryInfo:
 
     def GatherDirInfo(self, root):
         files = os.listdir(root)
-        for file in files:
+        for f in files:
             try:
-                file = os.path.normpath(os.path.join(root, file))
-                if self.excludePaths and file in self.excludePaths:
+                f = os.path.normpath(os.path.join(root, f))
+                if self.excludePaths and f in self.excludePaths:
                     continue
-                mtime = os.stat(file)[ST_MTIME]
-                if os.path.isdir(file):
-                    if self.excludeDirs and os.path.basename(file) in self.excludeDirs:
+                mtime = os.stat(f)[ST_MTIME]
+                if os.path.isdir(f):
+                    if self.excludeDirs and os.path.basename(f) in self.excludeDirs:
                         continue
-                    self.dirs[file] = mtime
+                    self.dirs[f] = mtime
                     if self.recursive:
-                        self.GatherDirInfo(file)
+                        self.GatherDirInfo(f)
                 else:
-                    if self.fileMask and extension(file) not in self.fileMask:
+                    if self.fileMask and extension(f) not in self.fileMask:
                         continue
-                    self.files[file] = mtime
+                    self.files[f] = mtime
             except Exception, e:
                 core.Log("Gather dir info error: ", e)
 

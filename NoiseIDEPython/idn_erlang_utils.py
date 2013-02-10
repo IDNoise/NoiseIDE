@@ -1,19 +1,19 @@
 __author__ = 'Yaroslav'
 
-def IsBeam(file):
-    return file.endswith(".beam")
+def IsBeam(path):
+    return path.endswith(".beam")
 
-def IsModule(file):
-    return file.endswith(".erl")
+def IsModule(path):
+    return path.endswith(".erl")
 
-def IsInclude(file):
-    return file.endswith(".hrl")
+def IsInclude(path):
+    return path.endswith(".hrl")
 
-def IsYrl(file):
-    return file.endswith(".yrl")
+def IsYrl(path):
+    return path.endswith(".yrl")
 
-def IsIgor(file):
-    return file.endswith(".igor")
+def IsIgor(path):
+    return path.endswith(".igor")
 
-def IsAppSrc(file):
-    return file.endswith(".app.src")
+def IsAppSrc(path):
+    return path.endswith(".app.src")

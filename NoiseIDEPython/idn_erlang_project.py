@@ -56,6 +56,7 @@ class ErlangProject(Project):
         self.explorer.ProjectDirsCreatedEvent += self.OnProjectDirsCreated
 
         ErlangCache.LoadCacheFromDir(self.ProjectName())
+        ErlangCache.LoadCacheFromDir(os.path.join("runtimes", self.GetErlangRuntime()))
 
     def SetupProps(self):
         if self.PltPath():
@@ -64,7 +65,9 @@ class ErlangProject(Project):
             self.GetShell().SetHomeDir(self.HomeDir())
 
     def ErlangCacheChecked(self):
-        ErlangCache.LoadCacheFromDir(os.path.join("runtimes", self.GetErlangRuntime()))
+        d = os.path.join("runtimes", self.GetErlangRuntime())
+        if os.path.isdir(d):
+            ErlangCache.LoadCacheFromDir(d)
 
     def SetupMenu(self):
         Project.SetupMenu(self)
@@ -199,9 +202,9 @@ class ErlangProject(Project):
     def DialyzeModules(self, files):
         if not self.CheckPlt(): return
         beams = set()
-        for file in files:
-            if not IsModule(file): continue
-            beamPath = self.GetBeamPathFromSrcPath(file)
+        for f in files:
+            if not IsModule(f): continue
+            beamPath = self.GetBeamPathFromSrcPath(f)
             if not beamPath: continue
             beams.add(beamPath)
         if len(beams) == 0:
@@ -237,9 +240,9 @@ class ErlangProject(Project):
         self.flyDir = os.path.join(self.window.cwd, "data", "erlang", "fly", self.ProjectName())
         if not os.path.isdir(self.flyDir):
             os.makedirs(self.flyDir)
-        for file in os.listdir(self.flyDir):
-            if IsModule(file):
-                os.remove(os.path.join(self.flyDir, file))
+        for f in os.listdir(self.flyDir):
+            if IsModule(f):
+                os.remove(os.path.join(self.flyDir, f))
 
     def RegenerateErlangCache(self):
         ErlangCache.CleanDir(os.path.join("runtimes", self.GetErlangRuntime()))
@@ -254,13 +257,13 @@ class ErlangProject(Project):
         for app in self.GetApps():
             path = os.path.join(self.GetAppPath(app), "src")
             for root, _, files in os.walk(path):
-                for file in files:
-                    file = os.path.join(root, file)
-                    if IsModule(file):
-                        filesForXref.add(file)
+                for f in files:
+                    f = os.path.join(root, f)
+                    if IsModule(f):
+                        filesForXref.add(f)
         self.xrefModules = set()
-        for file in filesForXref:
-            module = os.path.basename(file)[:-4]
+        for f in filesForXref:
+            module = os.path.basename(f)[:-4]
             self.GetShell().XRef(module)
             self.xrefModules.add(module)
         self.xrefTable.Clear()
@@ -285,17 +288,17 @@ class ErlangProject(Project):
         hrls = set()
         erls = set()
         igors = set()
-        def addByType(file):
-            if IsInclude(file):
-                hrls.add(file)
-            elif IsModule(file):
-                erls.add(file)
-            elif IsYrl(file):
-                erls.add(file)
-            elif IsAppSrc(file):
-                erls.add(file)
-            elif IsIgor(file):
-                igors.add(file)
+        def addByType(path):
+            if IsInclude(path):
+                hrls.add(path)
+            elif IsModule(path):
+                erls.add(path)
+            elif IsYrl(path):
+                erls.add(path)
+            elif IsAppSrc(path):
+                erls.add(path)
+            elif IsIgor(path):
+                igors.add(path)
         if isinstance(path, list):
             for p in path:
                 addByType(p)
@@ -556,40 +559,40 @@ class ErlangProject(Project):
 
     def OnProjectFilesModified(self, files):
         toCompile = []
-        for file in files:
-            editor = self.window.TabMgr.FindPageByPath(file)
+        for f in files:
+            editor = self.window.TabMgr.FindPageByPath(f)
             if editor:
-                text = readFile(file)
+                text = readFile(f)
                 if not text: continue
                 if editor.savedText != text:
                     dial = wx.MessageDialog(None,
-                        'File "{}" was modified.\nDo you want to reload document?'.format(file),
+                        'File "{}" was modified.\nDo you want to reload document?'.format(f),
                         'File modified',
                         wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
                     if dial.ShowModal() == wx.ID_YES:
-                        editor.LoadFile(file)
-                        toCompile.append(file)
+                        editor.LoadFile(f)
+                        toCompile.append(f)
             else:
-                toCompile.append(file)
+                toCompile.append(f)
         self.Compile(toCompile)
 
 
-    def FileSaved(self, file):
-        self.Compile(file)
+    def FileSaved(self, path):
+        self.Compile(path)
 
     def OnProjectFilesDeleted(self, files):
-        for file in files:
-            self.AddErrors(file, [])
+        for f in files:
+            self.AddErrors(f, [])
             self.RemoveUnusedBeams()
-            if IsInclude(file):
-                self.Compile(ErlangCache.GetDependentModules(os.path.basename(file)))
-            self.ClearCacheForFile(file)
-            editor = self.window.TabMgr.FindPageByPath(file)
-            page = self.window.TabMgr.FindPageIndexByPath(file)
+            if IsInclude(f):
+                self.Compile(ErlangCache.GetDependentModules(os.path.basename(f)))
+            self.ClearCacheForFile(f)
+            editor = self.window.TabMgr.FindPageByPath(f)
+            page = self.window.TabMgr.FindPageIndexByPath(f)
 
             if editor:
                 dial = wx.MessageDialog(None,
-                    'File "{}" was deleted.\nDo you want to close tab with deleted document?'.format(file),
+                    'File "{}" was deleted.\nDo you want to close tab with deleted document?'.format(f),
                     "File deleted",
                     wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
                 result = dial.ShowModal()
@@ -640,16 +643,16 @@ class ErlangProject(Project):
             path = os.path.join(self.GetAppPath(app), "src")
             for root, _, files in os.walk(path):
                 for fileName in files:
-                    (file, ext) = os.path.splitext(fileName)
+                    (f, ext) = os.path.splitext(fileName)
                     if IsModule(fileName):
-                        srcFiles.add(file)
+                        srcFiles.add(f)
 
             path = self.EbinDirForApp(app)
             for root, _, files in os.walk(path):
                 for fileName in files:
-                    (file, ext) = os.path.splitext(fileName)
+                    (f, ext) = os.path.splitext(fileName)
                     if IsBeam(fileName):
-                        if file not in srcFiles:
+                        if f not in srcFiles:
                             os.remove(os.path.join(root, fileName))
 
     def IsFlyCompileEnabled(self):
@@ -685,8 +688,8 @@ class ErlangProject(Project):
         if path not in self.errors: return []
         else: return self.errors[path]
 
-    def CompileFileFly(self, file, realPath, data):
-        flyPath = os.path.join(self.flyDir, "fly_" + file)
+    def CompileFileFly(self, fileName, realPath, data):
+        flyPath = os.path.join(self.flyDir, "fly_" + fileName)
         writeFile(flyPath, data)
         self.GetShell().CompileFileFly(realPath, flyPath)
 

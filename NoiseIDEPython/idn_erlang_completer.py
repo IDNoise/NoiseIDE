@@ -119,10 +119,14 @@ class ErlangCompleter(wx.Frame):
             elif (len(tokens) > 1 and
                   ((fIsAtom and tokens[1].value == ":") or fValue == ":")):
                 i = 1 if fValue == ":" else 2
-                moduleName = tokens[i].value
+                moduleName = str(tokens[i].value)
                 onlyExported = True
                 if moduleName == "?MODULE":
                     moduleName = self.module
+                elif moduleName.startswith("?"):
+                    macrosData = ErlangCache.MacrosData(self.module, moduleName[1:])
+                    if macrosData:
+                        moduleName = macrosData.value
                 self.prefix = "" if fValue == ":" else fValue
                 if self.stc.lexer.IsInSpec():
                     data += ErlangCache.ModuleExportedTypes(moduleName)
@@ -313,6 +317,10 @@ class ErlangCompleter(wx.Frame):
                 module += prefix[i]
                 i -= 1
             module = module[::-1]
+            if prefix[i] == "?":
+                macrosData = ErlangCache.MacrosData(self.module, module)
+                if macrosData:
+                    module = macrosData.value
             if not module[0].islower():
                 module = self.module
         else:
@@ -336,8 +344,8 @@ class ErlangCompleter(wx.Frame):
                 help = self._ExportedTypeHelp(data)
         else:
             help = self._FunctionHelp(data)
-        file = data.moduleData.file if data.moduleData else None
-        return ((file, data.line), help)
+        f = data.moduleData.file if data.moduleData else None
+        return ((f, data.line), help)
 
 
     def GetFunArity(self, pos):

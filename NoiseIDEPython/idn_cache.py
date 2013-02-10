@@ -220,22 +220,22 @@ class ErlangCache:
                 cls.UnloadFile(data.srcFile)
 
     @classmethod
-    def AddToLoad(cls, file):
-        cls.toLoad.append(file)
+    def AddToLoad(cls, f):
+        cls.toLoad.append(f)
 
     @classmethod
-    def LoadCacheFromDir(cls, dir):
-        dir = os.path.join(cls.CACHE_DIR, dir)
-        for file in os.listdir(dir):
-            file = os.path.join(dir, file)
-            cls.AddToLoad(file)
+    def LoadCacheFromDir(cls, d):
+        d = os.path.join(cls.CACHE_DIR, d)
+        for f in os.listdir(d):
+            f = os.path.join(d, f)
+            cls.AddToLoad(f)
 
     @classmethod
-    def CleanDir(cls, dir):
+    def CleanDir(cls, d):
         try:
-            dir = os.path.join(cls.CACHE_DIR, dir)
-            shutil.rmtree(dir, ignore_errors=True)
-            os.mkdir(dir)
+            d = os.path.join(cls.CACHE_DIR, d)
+            shutil.rmtree(d, ignore_errors=True)
+            os.mkdir(d)
         except Exception, e:
             pass
 

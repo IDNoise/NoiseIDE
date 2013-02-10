@@ -95,9 +95,9 @@ class ConfigEditForm(wx.Dialog):
 
         sizer = wx.GridBagSizer(2, 2)
         self.colorSchemas = []
-        for file in os.listdir(core.MainFrame.cwd):
-            if file.endswith(".color.yaml"):
-                self.colorSchemas.append(file.split(".")[0])
+        for f in os.listdir(core.MainFrame.cwd):
+            if f.endswith(".color.yaml"):
+                self.colorSchemas.append(f.split(".")[0])
         self.colorSchemaCB = wx.ComboBox(self, choices = self.colorSchemas,
             value = Config.ColorSchema(),
             size = (180, 25),

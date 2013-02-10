@@ -74,7 +74,7 @@ gen_file_cache(File) -> create_cache(eide_connect:prop(cache_dir) ++ "/" ++ eide
 gen_erlang_cache(Runtime) -> 
     Dir = eide_connect:prop(cache_dir) ++ "/runtimes/" ++ Runtime,
     io:format("Checking cache for erlang libs ~p~n", [Dir]),
-    filelib:ensure_dir(Dir),
+    catch file:make_dir(Dir),
     create_cache_for_erlang_libs(Dir),
     io:format("Checking cache for erlang libs......Done~n").
 
@@ -165,12 +165,12 @@ get_cache_file_name(CacheDir, Name) ->
 generate_file(CacheDir, ModuleName, FilePath, DocsFilePath) ->
     try
         CacheFileName = get_cache_file_name(CacheDir, ModuleName),
-        case filelib:last_modified(FilePath) < filelib:last_modified(CacheFileName) of
-            true -> ignore;
-            _ -> 
-                Data = generate(ModuleName, FilePath, DocsFilePath, ModuleName),
-                dump_data_to_file(ModuleName, CacheDir, FilePath, CacheFileName, Data)
-        end, 
+%        case filelib:last_modified(FilePath) < filelib:last_modified(CacheFileName) of
+%            true -> ignore;
+%            _ ->
+        Data = generate(ModuleName, FilePath, DocsFilePath, ModuleName),
+        dump_data_to_file(ModuleName, CacheDir, FilePath, CacheFileName, Data),
+%        end,
         send_answer(CacheFileName, FilePath) 
     catch 
         exit:{ucs, {bad_utf8_character_code}} ->
@@ -304,20 +304,21 @@ generate(ModuleName, FilePath, DocsFilePath, RealModuleName) ->
     Comments = erl_comment_scan:file(FilePath),
     {SyntaxTree1, _} = erl_recomment:recomment_tree(SyntaxTree, Comments),
     Content = parse_tree(SyntaxTree1, StartContent),
-    Content1 = case {DocsFilePath, filename:extension(FilePath), RealModuleName == ModuleName} of
+
+    Incls = sets:to_list(sets:from_list(Content#content.includes)),
+    BeamTree = get_tree_from_beam(RealModuleName), 
+    Content1 = case BeamTree of
+        undefined -> Content;
+        _ -> parse_beam_tree(BeamTree, Content)
+    end,
+    Content2 = case {DocsFilePath, filename:extension(FilePath), RealModuleName == ModuleName} of
 %                   {undefined, ".erl", true} ->
 %                       merge_with_edoc(Content, FilePath);
                    {File, ".erl", true} when File =/= undefined -> 
-                       merge_with_docs_file(Content, DocsFilePath);
+                       merge_with_docs_file(Content1, DocsFilePath);
                    _ ->
-                       Content
+                       Content1
                end,
-    Incls = sets:to_list(sets:from_list(Content1#content.includes)),
-    BeamTree = get_tree_from_beam(RealModuleName), 
-    Content2 = case BeamTree of
-        undefined -> Content1;
-        _ -> parse_beam_tree(BeamTree, Content1)
-    end,
     Content2#content{includes = Incls, file = FilePath, module_name = ModuleName}.
 
 generate_from_source(Path) ->  
@@ -532,9 +533,11 @@ parse_include(Node) ->
     erl_syntax:string_value(Arg).       
 
 parse_erlang_function(Node, Content, Comments) ->
+    %io:format("Node:~p~n", [Node]),
     NameInfo = erl_syntax:function_name(Node),
     Name = erl_syntax:atom_literal(NameInfo),
     Line = erl_syntax:get_pos(NameInfo),
+    
     Arity = erl_syntax:function_arity(Node),
     [Clause|_] = erl_syntax:function_clauses(Node),
     Params = 

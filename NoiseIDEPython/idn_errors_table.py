@@ -185,9 +185,9 @@ class XrefTableGrid(ErrorsTableGrid):
     def OnLeftDClick(self, event):
         row = event.GetRow()
         rowData = self.table.data[row]
-        file = os.path.join(self.project.projectDir, rowData[0])
+        filePath = os.path.join(self.project.projectDir, rowData[0])
         line = rowData[1] - 1
-        stc = core.TabMgr.LoadFileLine(file, line)
+        stc = core.TabMgr.LoadFileLine(filePath, line)
         fun, arity = rowData[3].split("/")
         stc.HighlightSelectedWord(fun, stc.PositionFromLine(line))
 

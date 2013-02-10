@@ -14,7 +14,7 @@ import asyncore
 import json
 import wx
 import core
-
+import asyncproc
 
 class AsyncoreThread(Thread):
     def __init__(self):
@@ -133,9 +133,9 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
 
         self.TaskAddedEvent = idn_events.Event()
 
-    def Compile(self, file):
-        self.TaskAddedEvent((TASK_COMPILE, file.lower()))
-        self._ExecRequest("compile", '"{}"'.format(erlstr(file)))
+    def Compile(self, path):
+        self.TaskAddedEvent((TASK_COMPILE, path.lower()))
+        self._ExecRequest("compile", '"{}"'.format(erlstr(path)))
 
     def CompileApp(self, path):
         self.TaskAddedEvent((TASK_COMPILE_APP, path.lower()))
@@ -158,8 +158,8 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
     def SetHomeDir(self, path):
         self._ExecRequest("set_home", '"{}"'.format(erlstr(path)))
 
-    def DialyzeModules(self, files):
-        paths = '[' + ', '.join(['"{}"'.format(erlstr(file)) for file in files]) + ']'
+    def DialyzeModules(self, paths):
+        paths = '[' + ', '.join(['"{}"'.format(erlstr(path)) for path in paths]) + ']'
         self._ExecRequest("dialyze_modules", '{}'.format(paths))
 
     def DialyzeApps(self, apps):
@@ -172,18 +172,18 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
     def XRef(self, module):
         self._ExecRequest("xref_module", '"{}"'.format(module))
 
-    def CompileProjectFiles(self, files):
-        for file in files:
-            self.TaskAddedEvent((TASK_COMPILE, file.lower()))
-            self.Compile(file)
+    def CompileProjectFiles(self, paths):
+        for path in paths:
+            self.TaskAddedEvent((TASK_COMPILE, path.lower()))
+            self.Compile(path)
 
-    def GenerateFileCache(self, file):
-        self.TaskAddedEvent((TASK_GEN_FILE_CACHE, file.lower()))
-        self._ExecRequest("gen_file_cache", '"{}"'.format(erlstr(file)))
+    def GenerateFileCache(self, path):
+        self.TaskAddedEvent((TASK_GEN_FILE_CACHE, path.lower()))
+        self._ExecRequest("gen_file_cache", '"{}"'.format(erlstr(path)))
 
-    def GenerateFileCaches(self, files):
-        for file in files:
-            self.GenerateFileCache(file)
+    def GenerateFileCaches(self, paths):
+        for path in paths:
+            self.GenerateFileCache(path)
 
     def GenerateErlangCache(self, runtime):
         self._ExecRequest("gen_erlang_cache", '"{}"'.format( runtime))
@@ -194,8 +194,8 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
     def AddPath(self, path):
         self._ExecRequest("add_path", '"{}"'.format(erlstr(path)))
 
-    def CompileOption(self, file, option):
-        self._ExecRequest("compile_option", '["{0}", "{1}"]'.format(erlstr(file), option))
+    def CompileOption(self, path, option):
+        self._ExecRequest("compile_option", '["{0}", "{1}"]'.format(erlstr(path), option))
 
     def RemovePath(self, path):
         self._ExecRequest("add_path", '"{}"'.format(erlstr(path)))
@@ -213,16 +213,13 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
 
             core.Log("===== connection exception ", text, e)
 
-class ErlangProcess(Process):
+class ErlangProcess(wx.EvtHandler):
     def __init__(self, cwd = os.getcwd(), params = []):
-        Process.__init__(self)
-        self.Redirect()
+        wx.EvtHandler.__init__(self)
         self.cwd = cwd
         self.SetParams(params)
         self.pid = None
-        self.handler = None
-        self.processQueue = Queue()
-        self.stopped = False
+        self.stopped = True
 
         self.timer = wx.Timer(self, wx.ID_ANY)
         self.Bind(wx.EVT_TIMER, self.OnTimer, self.timer)
@@ -239,34 +236,28 @@ class ErlangProcess(Process):
     def GetAdditionalParams(self):
         return []
 
-    def SendCommandToProcess(self, cmd):
-        cmd += '\n'
-        self.outputStream.write(cmd)
-        self.outputStream.flush()
-
     def Start(self):
-        cwd = os.getcwd()
-        os.chdir(self.cwd)
-        #print self.cmd
-        self.pid = wx.Execute(self.cmd, wx.EXEC_ASYNC | wx.EXEC_HIDE_CONSOLE, self)
-        os.chdir(cwd)
+        self.proc = asyncproc.Process(self.cmd, cwd = self.cwd, shell = True)
         self.timer.Start(100)
-        self.inputStream = self.GetInputStream()
-        self.outputStream = self.GetOutputStream()
         self.stopped = False
-
-    def OnTimer(self, event):
-        if  self.inputStream.CanRead():
-            text =  self.inputStream.read()
-            self.DataReceivedEvent(text)
 
     def Stop(self):
         if self.timer:
             self.timer.Stop()
-        if not self.pid or self.stopped:
+        if not self.proc or self.stopped:
             return
-        wx.Kill(self.pid, wx.SIGKILL, wx.KILL_CHILDREN)
+        self.proc.terminate(1)
+        del self.proc
         self.stopped = True
+
+    def OnTimer(self, event):
+        text = self.proc.read()
+        if text:
+            self.DataReceivedEvent(text)
+
+    def SendCommandToProcess(self, cmd):
+        cmd += '\n'
+        self.proc.write(cmd)
 
     def OnTerminate(self, *args, **kwargs):
         if self.timer:

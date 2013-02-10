@@ -196,7 +196,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
     def OnClose(self):
         if self.saved == False and os.path.exists(self.filePath):
             dial = wx.MessageDialog(None,
-                'You have unsaved changes in this document. Do you want to save it?'.format(file),
+                'You have unsaved changes in this document. Do you want to save it?'.format(self.filePath),
                 'File has unsaved changed',
                 wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
             if dial.ShowModal() == wx.ID_YES:

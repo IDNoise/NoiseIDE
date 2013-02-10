@@ -344,7 +344,7 @@ def ReplaceInFile(filePath, regexp, replacement):
                 fileText = regexp.sub(replacement, fileText)
                 writeFile(filePath, fileText)
     except Exception, e:
-        core.Log("replace in project error: '", file, e)
+        core.Log("replace in project error: '", filePath, e)
 
 class FindResultsTree(IDNCustomTreeCtrl):
     def __init__(self, parent):
