@@ -196,7 +196,7 @@ class ErlangProjectFrom(wx.Dialog):
 
         data[CONFIG_CONSOLES] = self.consoles
 
-        userData = {}
+        userData = self.project.userData.copy() if self.project else {}
         userData[CONFIG_ERLANG_RUNTIME] = erlang
 
         pFile = os.path.join(path, title + ".noiseide")
@@ -214,11 +214,11 @@ class ErlangProjectFrom(wx.Dialog):
         stream = file(pFile, 'w')
         yaml.dump(data, stream)
 
-        yaml.dump(userData, open(os.path.join(Project.USER_DATA_FOLDER, "{}.project.user".format(title)), 'w'))
+        yaml.dump(userData, file(os.path.join(Project.USER_DATA_FOLDER, "{}.project.user".format(title)), 'w'))
 
         if self.project:
             if self.project.GetErlangRuntime() != erlang:
-                #self.project.userData[CONFIG_ERLANG_RUNTIME] = erlang
+                self.project.userData[CONFIG_ERLANG_RUNTIME] = erlang
                 wx.CallAfter(core.MainFrame.OpenProject, pFile)
             else:
                 self.project.projectData = data
