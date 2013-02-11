@@ -97,7 +97,8 @@ class ProjectExplorer(IDNCustomTreeCtrl):
     def SetupChecker(self):
         if self.dirChecker:
             self.dirChecker.Stop()
-        self.dirChecker = DirectoryChecker(self.INTERVAL, self.root, True, self.mask, self.excludeDirs, self.excludePaths)
+        mask = [] if self.showAllFiles else self.mask
+        self.dirChecker = DirectoryChecker(self.INTERVAL, self.root, True, mask, self.excludeDirs, self.excludePaths)
         self.dirChecker.FilesCreatedEvent += self.OnFilesCreated
         self.dirChecker.FilesModifiedEvent += self.OnFilesModified
         self.dirChecker.FilesDeletedEvent += self.OnFilesDeleted
@@ -417,6 +418,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
                 shutil.rmtree(path, True)
             else:
                 os.remove(path)
+            self.Delete(id)
 
     def GetNewIfExists(self, name):
         base, ext = os.path.splitext(name)

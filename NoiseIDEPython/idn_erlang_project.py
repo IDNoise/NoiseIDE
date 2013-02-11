@@ -289,16 +289,18 @@ class ErlangProject(Project):
         erls = set()
         igors = set()
         def addByType(path):
-            if IsInclude(path):
+            isSrc = self.IsSrcPath(path)
+            if IsInclude(path) and isSrc:
                 hrls.add(path)
-            elif IsModule(path):
+            elif IsModule(path) and isSrc:
                 erls.add(path)
-            elif IsYrl(path):
+            elif IsYrl(path) and isSrc:
                 erls.add(path)
-            elif IsAppSrc(path):
+            elif IsAppSrc(path) and isSrc:
                 erls.add(path)
             elif IsIgor(path):
                 igors.add(path)
+
         if isinstance(path, list):
             for p in path:
                 addByType(p)
@@ -689,9 +691,18 @@ class ErlangProject(Project):
         else: return self.errors[path]
 
     def CompileFileFly(self, fileName, realPath, data):
+        if not self.IsSrcPath(realPath): return
         flyPath = os.path.join(self.flyDir, "fly_" + fileName)
         writeFile(flyPath, data)
         self.GetShell().CompileFileFly(realPath, flyPath)
+
+    def IsSrcPath(self, path):
+        app = self.GetApp(path)
+        if app and self.GetAppPath(app):
+            appPath = self.GetAppPath(app)
+            return any([path.startswith(os.path.join(appPath, d)) for d in ["src", "include", "test"]])
+        else:
+            return False
 
     def CompilerOptions(self, projectData = None):
         if not projectData:

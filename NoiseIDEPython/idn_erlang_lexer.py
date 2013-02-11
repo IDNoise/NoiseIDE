@@ -236,7 +236,7 @@ class ErlangLexer(BaseLexer):
                 else:
                     break
             if not start:
-                start = match.start()
+                start = match.start(1)
             pos = match.end(0)
             lastInsertPosition = match.end(1)
             if result is None:

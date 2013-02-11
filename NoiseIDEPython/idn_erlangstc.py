@@ -309,7 +309,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         postfix = self.GetTextRange(end, lineEnd)
         data = None
         if style == ErlangHighlightType.FUNDEC:
-            (exports, start, end) = self.lexer.GetAllExports()
+            (exports, _s, end) = self.lexer.GetAllExports()
             if value + "/" in exports:
                 self.navigateTo = (self.filePath, 1 + self.LineFromPosition(self.Text.find(value + "/")))
         elif style == ErlangHighlightType.FUNCTION:
@@ -436,14 +436,18 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         fun = funData[0]
         arity = self.completer.GetFunArity(funData[1] + len(fun))
 
-        funStr = "    {}/{}".format(fun, arity)
+        funStr = "{}/{}".format(fun, arity)
         (exports, startPos, insertPos) = self.lexer.GetAllExports()
         if funStr in exports:
             return
-        if exports:
-            funStr = ",\n    {}/{}".format(fun, arity)
 
         if insertPos:
+            funStr = "    {}/{}".format(fun, arity)
+            if self.Text[startPos:insertPos].strip() != "":
+                funStr = ",\n" + funStr
+            else:
+                insertPos = startPos
+                funStr += "\n"
             self.InsertText(insertPos, funStr)
 
     def GoToExport(self):
