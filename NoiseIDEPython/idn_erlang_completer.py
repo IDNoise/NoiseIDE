@@ -317,7 +317,7 @@ class ErlangCompleter(wx.Frame):
                 module += prefix[i]
                 i -= 1
             module = module[::-1]
-            if prefix[i] == "?":
+            if abs(i) <= len(prefix) and prefix[i] == "?":
                 macrosData = ErlangCache.MacrosData(self.module, module)
                 if macrosData:
                     module = macrosData.value
