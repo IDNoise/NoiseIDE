@@ -231,7 +231,7 @@ class ErlangProcess(wx.EvtHandler):
 
     def SetParams(self, params):
         erlang = core.Project.GetErlangPath()
-        self.cmd = "{} {} {}".format(erlang, self.GetSMPData(), ' '.join(params + ["-run reloader"] + self.GetAdditionalParams()))
+        self.cmd = "'{}' {} {}".format(erlang, self.GetSMPData(), ' '.join(params + ["-run reloader"] + self.GetAdditionalParams()))
 
     def GetAdditionalParams(self):
         return []
