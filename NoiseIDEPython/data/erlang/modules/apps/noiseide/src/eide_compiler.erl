@@ -131,7 +131,12 @@ compile_with_option(FileName, Option) ->
     OutDir = app_out_dir(FileName),
     catch file:make_dir(OutDir),
     Includes = eide_connect:prop(includes),
-    compile:file(FileName, [{outdir, OutDir}, Option | Includes]),
+    Options = [{outdir, OutDir}, Option | Includes],
+    Options1 = case eide_connect:prop(compiler_options) of
+            undefined -> Options;
+            Str -> Options ++ parse_term("[" ++ Str ++ "].")
+        end, 
+    compile:file(FileName, Options1),
     File = OutDir ++ "/" ++ filename:rootname(filename:basename(FileName)) ++ "." ++ atom_to_list(Option),
     {ok, Data} = file:read_file(File),
     mochijson2:encode({struct, [{response, compile_option},
