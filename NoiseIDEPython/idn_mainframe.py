@@ -19,7 +19,7 @@ from idn_notebook import  Notebook, EditorNotebook
 from idn_config import Config, ConfigEditForm
 import core
 from idn_project import Project
-
+import traceback
 #lists:flatten(edoc:read("d:/projects/noiseide/noiseidepython/data/erlang/modules/noiseide/src/test_cache_module.erl")).
 
 installNewVersion = False
@@ -335,10 +335,13 @@ class NoiseIDE(wx.Frame):
             self.project.Close()
         Config.save()
         self.autoCheckTimer.Stop()
+        for wnd in wx.GetTopLevelWindows():
+            if wnd != self:
+                wnd.Close(True)
         event.Skip()
 
     def OnQuit(self, event):
-        self.Close()
+        self.Close(True)
 
     def CheckRuntimes(self):
         #Config.SetProp(Config.RUNTIMES, availableRuntimes)
@@ -408,14 +411,26 @@ class HelloDialog(wx.Dialog):
 
 class App(wx.App):
     def __init__(self):
-        wx.App.__init__(self)
+        wx.App.__init__(self, redirect=False)
         frame = NoiseIDE()
         frame.Show()
 
 if __name__ == '__main__':
+    def excepthook(type, value, tb):
+        message = 'Uncaught exception:\n'
+        message += ''.join(traceback.format_exception(type, value, tb))
+        core.Log(message)
+
+    sys.excepthook = excepthook
+
     def main():
         app = App()
-        app.MainLoop()
+        try:
+            app.MainLoop()
+        except:
+            core.Log("app error: {}".format(traceback.print_exc()))
+        finally:
+            wx.Exit()
 
     # import cProfile
     # cProfile.run('main()')

@@ -6,20 +6,16 @@ import unittest
 import os
 import shutil
 from idn_directoryinfo import DirectoryInfo, DirectoryInfoDiff
-from idn_directoryinfo import DirectoryData, DirectoryDataConfig
 
 class TestDirectoryInfoDiff(unittest.TestCase):
     def setUp(self):
-
-        self.root = "D:\\Temp\\Test"
-        self.data = DirectoryData(self.root, DirectoryDataConfig())
-
+        self.root = "D:\\Temp"
         self.createFile('test_file1.test')
         self.createFile('test_file2.test')
         self.createDir('dir_test1')
         self.createDir('dir_test2')
         time.sleep(1)
-        print self.data.Gather()
+        self.data = DirectoryInfo(self.root)
 
     def tearDown(self):
         time.sleep(1)
@@ -27,35 +23,32 @@ class TestDirectoryInfoDiff(unittest.TestCase):
         self.deleteFile('test_file3.test')
         self.deleteDir('dir_test3')
         self.deleteDir('dir_test2')
-        #self.deleteDir('dir_test1')
 
     def test_diff(self):
         self.createFile('test_file3.test')
         self.modifyFile('test_file1.test')
         self.deleteFile('test_file2.test')
-        self.createFile('dir_test2\\test_file3.test')
 
         self.createDir('dir_test3')
         self.deleteDir('dir_test1')
         self.modifyDir('dir_test2')
 
-        print self.data.Gather()
+        newData = DirectoryInfo(self.root)
+        diff = DirectoryInfoDiff(newData, self.data)
 
-#        diff = DirectoryInfoDiff(newData, self.data)
-#
-#        self.assertEqual(len(diff.createdFiles), 3)
-#        self.assertEqual(len(diff.modifiedFiles), 1)
-#        self.assertEqual(len(diff.deletedFiles), 1)
-#
-#        self.assertEqual(len(diff.createdDirs), 1)
-#        self.assertEqual(len(diff.modifiedDirs), 1)
-#        self.assertEqual(len(diff.deletedDirs), 1)
-#
-#        import timeit
-#        t = timeit.Timer("""
-#from idn_directoryinfo import DirectoryInfo
-#DirectoryInfo('D:\\Projects\\GIJoe\\server', True)""")
-#        #print t.timeit(100)
+        self.assertEqual(len(diff.createdFiles), 2)
+        self.assertEqual(len(diff.modifiedFiles), 1)
+        self.assertEqual(len(diff.deletedFiles), 1)
+
+        self.assertEqual(len(diff.createdDirs), 1)
+        self.assertEqual(len(diff.modifiedDirs), 1)
+        self.assertEqual(len(diff.deletedDirs), 1)
+
+        import timeit
+        t = timeit.Timer("""
+from idn_directoryinfo import DirectoryInfo
+DirectoryInfo('D:\\Projects\\GIJoe\\server', True)""")
+        #print t.timeit(100)
 
     def createFile(self, name):
         f = file(os.path.join(self.root, name), 'w')

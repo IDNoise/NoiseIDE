@@ -592,6 +592,8 @@ class ConsoleSTC(CustomSTC):
         text = text.rstrip()
         text += "\n"
         self._AppendText(text)
+        if self.TextLength > 20000:
+            self.Text = self.Text[-20000:]
 
     def _AppendText(self, text):
         try:

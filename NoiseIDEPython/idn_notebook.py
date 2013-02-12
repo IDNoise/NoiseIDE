@@ -1,6 +1,7 @@
 import os
 from wx.lib.agw.aui.auibook import TabNavigatorWindow
 from idn_colorschema import ColorSchema
+from idn_config import Config
 from idn_erlang_utils import IsModule, IsInclude
 from idn_erlangstc import ErlangSTC, ErlangSTCReadOnly, IgorSTC
 from idn_marker_panel import MarkerPanel
@@ -132,6 +133,7 @@ class EditorNotebook(aui.AuiNotebook):
 
         self.navigationHistory = []
         self.navigationHistoryIndex = 0
+        self.pageOpenOrder = []
         self.UpdateNavToolbar()
 
         self.Bind(aui.EVT_AUINOTEBOOK_TAB_RIGHT_UP, self.OnTabRightUp)
@@ -139,12 +141,13 @@ class EditorNotebook(aui.AuiNotebook):
         self.Bind(aui.EVT_AUINOTEBOOK_PAGE_CHANGED, self.OnPageChanged)
         self.Bind(aui.EVT_AUINOTEBOOK_PAGE_CLOSE, self.OnPageClose)
 
+
     def OnPageClose(self, event):
         page = event.GetSelection()
         self[page].OnClose()
+        self.pageOpenOrder.remove(self[page])
         if self.GetSelection() == page:
             self.NavigateBack(True)
-
 
     def OnNavigationKeyNotebook(self, event):
         def OnKeyUp(self, event):
@@ -225,19 +228,26 @@ class EditorNotebook(aui.AuiNotebook):
         return [p.filePath for p in self.Pages()]
 
     def LoadFile(self, fileName):
+
         id = self.FindPageIndexByPath(fileName)
         if id >= 0:
             editor = self[id]
             self.SetSelection(id)
             editor.SetFocus()
             self.EnsureVisible(self.FindPageIndexByEditor(editor))
+            if editor in self.pageOpenOrder:
+                self.pageOpenOrder.remove(editor)
+            self.pageOpenOrder.append(editor)
             return editor
         else:
-            bitmap = self.GetBitmapForFile(fileName)
             editorPanel = EditorPanel(self, fileName)
-            self.AddPage(editorPanel, editorPanel.editor.FileName(), True, bitmap = bitmap)
+            #bitmap = self.GetBitmapForFile(fileName)
+            self.AddPage(editorPanel, editorPanel.editor.FileName(), True)#, bitmap = bitmap)
+            if len(self.Pages()) > Config.GetProp("max_tabs", 10):
+                self.ClosePage(self.FindPageIndexByEditor(self.pageOpenOrder[0]))
             editorPanel.editor.SetFocus()
             self.EnsureVisible(self.FindPageIndexByEditor(editorPanel.editor))
+            self.pageOpenOrder.append(editorPanel.editor)
             return  editorPanel.editor
 
     def LoadFileLine(self, fileName, line = 0, addToHistory = True, fromLine = 0):
@@ -271,10 +281,11 @@ class EditorNotebook(aui.AuiNotebook):
             else:
                 title = editor.FileName()
             self.SetPageText(index, title)
-            self.SetPageBitmap(index, core.TabMgr.GetBitmapForFile(path, changed))
+            #self.SetPageBitmap(index, core.TabMgr.GetBitmapForFile(path, changed))
 
     def AddCustomPage(self, page, title):
         self.AddPage(page, title, True)
+        self.pageOpenOrder.append(page)
 
     def _AddToHistory(self, new, prev = None, prevLine = 0):
         self.navigationHistory = self.navigationHistory[:self.navigationHistoryIndex + 1]

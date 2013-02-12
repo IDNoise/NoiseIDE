@@ -28,7 +28,6 @@ class DirectoryDataConfig:
 class DirectoryData:
     def __init__(self, path, config):
         self.path = path
-        self.modTime = self.GetModifiedTime(self.path)
         self.config = config
         self.filesModData = {}
         self.dirsModData = {}
@@ -36,67 +35,67 @@ class DirectoryData:
         self.dirs = {}
 
     def AllFiles(self):
-        return self.files + [d.AllFiles() for d in self.dirs]
+        result = self.files[:]
+        for d in self.dirs:
+            result += self.dirs[d].AllFiles()
+        return result
 
     def AllDirs(self):
-        return self.dirs.keys() + [d.dirs.keys() for d in self.dirs]
+        result = self.dirs.keys()
+        for d in self.dirs:
+            result += self.dirs[d].AllDirs()
+        return result
 
     def Gather(self):
-       # print "gather " + self.path, "old mod: ", self.modTime, "new: ", self.GetModifiedTime(self.path)
         filesDirs = [os.path.normpath(os.path.join(self.path, f)) for f in os.listdir(self.path)]
 
-        files = set([f for f in filesDirs if os.path.isfile(f) and self.config.CheckPath(f)])
         dirs = set([d for d in filesDirs if os.path.isdir(d) and self.config.CheckPath(d)])
-
-        prevFiles = set(self.files)
         prevDirs = set(self.dirs)
-
-
-
-        newFiles = list(files.difference(prevFiles))
-        deletedFiles = list(prevFiles.difference(files))
 
         newDirs = list(dirs.difference(prevDirs))
         deletedDirs = list(prevDirs.difference(dirs))
 
-        modifiedFiles = [f for f in files.intersection(prevFiles) if os.stat(f)[ST_MTIME] != self.filesModData[f]]
-        #modifiedDirs = [f for f in files.intersection(prevDirs) if os.stat(f)[ST_MTIME] != self.dirsModData[f]]
-
-        for f in files:
-            self.filesModData[f] = os.stat(f)[ST_MTIME]
         for d in dirs:
             self.dirsModData[d] = os.stat(d)[ST_MTIME]
 
+        files = set([f for f in filesDirs if os.path.isfile(f) and self.config.CheckPath(f)])
+        prevFiles = set(self.files)
+
+        newFiles = list(files.difference(prevFiles))
+        deletedFiles = list(prevFiles.difference(files))
+
+        modifiedFiles = [f for f in files.intersection(prevFiles) if os.stat(f)[ST_MTIME] != self.filesModData[f]]
+
+        for f in files:
+            self.filesModData[f] = os.stat(f)[ST_MTIME]
 
         for f in deletedFiles:
             self.files.remove(f)
             del self.filesModData[f]
 
-        self.files = files
+        self.files = list(files)
 
         for d in deletedDirs:
             deletedFiles += self.dirs[d].AllFiles()
+
         allDeletedDirs = deletedDirs[:]
         for d in deletedDirs:
             allDeletedDirs += self.dirs[d].AllDirs()
-
         for d in deletedDirs:
             del self.dirs[d]
             del self.dirsModData[d]
-        #print "new dirs: ", newDirs
+
         for d in newDirs[:]:
             newData = DirectoryData(d, self.config)
             self.dirs[d] = newData
+
         for d in dirs:
             (nf, mf, df, nd, dd) = self.dirs[d].Gather()
             newFiles += nf
             newDirs += nd
             modifiedFiles += mf
             deletedFiles += df
-            deletedDirs += dd
-       # print "+++ gather " + self.path + " result: "
-        #print (newFiles, modifiedFiles, deletedFiles, newDirs, allDeletedDirs)
-        #print "=========="
+            allDeletedDirs += dd
 
         return (newFiles, modifiedFiles, deletedFiles, newDirs, allDeletedDirs)
 
@@ -156,7 +155,7 @@ class DirectoryChecker:
 
     def CheckDirectoryChanges(self):
         (nf, mf, df, nd, dd) = self.data.Gather()
-        print (nf, mf, df, nd, dd)
+        #print (nf, mf, df, nd, dd)
         if nd: wx.CallAfter(self.DirsCreatedEvent, nd)
         if dd: wx.CallAfter(self.DirsDeletedEvent, dd)
         if nf: wx.CallAfter(self.FilesCreatedEvent, nf)

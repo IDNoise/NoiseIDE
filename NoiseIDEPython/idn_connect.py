@@ -224,6 +224,7 @@ class ErlangProcess(wx.EvtHandler):
         self.SetParams(params)
         self.pid = None
         self.stopped = True
+        self.proc = None
 
         self.timer = wx.Timer(self, wx.ID_ANY)
         self.Bind(wx.EVT_TIMER, self.OnTimer, self.timer)

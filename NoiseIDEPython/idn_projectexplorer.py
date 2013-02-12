@@ -16,7 +16,7 @@ ICON_SIZE = 16
 
 class ProjectExplorer(IDNCustomTreeCtrl):
     FILE, DIRECTORY_OPEN, DIRECTORY_CLOSED = range(3)
-    INTERVAL = 1.5
+    INTERVAL = 2
 
     def __init__(self, parent, project):
         style = wx.TR_MULTIPLE | wx.DIRCTRL_3D_INTERNAL | wx.TR_HAS_BUTTONS
@@ -248,7 +248,10 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         id = self.FindItemByPath(filePath)
         if id:
             del self.paths[self.GetPyData(id)]
-            self.Delete(id)
+            try:
+                self.Delete(id)
+            except Exception, e:
+                core.Log("File deleted handler in project: ", e)
 
     def DirCreated(self, dirPath):
         id = self.FindItemByPath(os.path.dirname(dirPath))
@@ -346,11 +349,13 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         (_, filePath) = self.RequestName("New File", "Enter file name", "new_file.txt")
         if filePath and not os.path.isfile(filePath):
             writeFile(filePath, "")
+            self.FileCreated(filePath)
 
     def OnMenuNewDir(self, event):
         (_, dirPath) = self.RequestName("New Directory", "Enter dir name", "new_dir")
         if dirPath and not os.path.isdir(dirPath):
             os.mkdir(dirPath)
+            self.DirCreated(dirPath)
         else:
             wx.MessageBox("Dir {} already exists.".format(dirPath), "Error")
 
@@ -383,14 +388,23 @@ class ProjectExplorer(IDNCustomTreeCtrl):
             if not os.path.exists(what): continue
             name = os.path.join(toPath, os.path.basename(what))
             newName = self.GetNewIfExists(name)
-
             if self.cut:
+                if os.path.isdir(what):
+                    self.DirDeleted(what)
+                else:
+                    self.FileDeleted(what)
                 shutil.move(what, newName)
+                if os.path.isdir(newName):
+                    self.DirCreated(newName)
+                else:
+                    self.FileCreated(newName)
             else:
                 if os.path.isdir(what):
                     shutil.copytree(what, newName)
+                    self.DirCreated(newName)
                 else:
                     shutil.copy(what, newName)
+                    self.FileCreated(newName)
             self.AfterPasteMove(what, newName)
 
         self.tempData = []
@@ -408,8 +422,10 @@ class ProjectExplorer(IDNCustomTreeCtrl):
             path = self.GetPyData(id)
             if os.path.isdir(path):
                 shutil.rmtree(path, True)
+                self.DirDeleted(path)
             else:
                 os.remove(path)
+                self.FileDeleted(path)
             self.Delete(id)
 
     def GetNewIfExists(self, name):
@@ -486,7 +502,6 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         self.SetRoot(self.root)
         self.ExpandPaths(expanded)
 
-
     def OnMenuShowHide(self, event):
         if self.showHidden == True:
             self.showHidden = False
@@ -541,7 +556,15 @@ class ProjectExplorer(IDNCustomTreeCtrl):
                         oNewPath = oPath.replace(path, newPath)
                         updateEditor(oPath, oNewPath)
 
+            if os.path.isdir(path):
+                self.DirDeleted(path)
+            else:
+                self.FileDeleted(path)
             os.rename(path, newPath)
+            if os.path.isdir(newPath):
+                self.DirCreated(newPath)
+            else:
+                self.FileCreated(newPath)
 
         dlg.Destroy()
 
@@ -570,7 +593,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
 
     def GetAllFiles(self, selectAll = False):
         result = []
-        for f in self.dirChecker.files:
+        for f in self.dirChecker.data.AllFiles():
             if not selectAll and self.mask and extension(f) not in self.mask:
                 continue
             result.append(f)
