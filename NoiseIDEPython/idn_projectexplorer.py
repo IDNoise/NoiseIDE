@@ -47,7 +47,6 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         self.ProjectFilesModifiedEvent = Event()
         self.ProjectFilesDeletedEvent = Event()
         self.ProjectDirsCreatedEvent = Event()
-        self.ProjectDirsModifiedEvent = Event()
         self.ProjectDirsDeletedEvent = Event()
 
     def SetupIcons(self):
@@ -103,7 +102,6 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         self.dirChecker.FilesModifiedEvent += self.OnFilesModified
         self.dirChecker.FilesDeletedEvent += self.OnFilesDeleted
         self.dirChecker.DirsCreatedEvent += self.OnDirsCreated
-        self.dirChecker.DirsModifiedEvent += self.OnDirsModified
         self.dirChecker.DirsDeletedEvent += self.OnDirsDeleted
         self.dirChecker.Start()
 
@@ -113,7 +111,6 @@ class ProjectExplorer(IDNCustomTreeCtrl):
             self.dirChecker.FilesModifiedEvent -= self.OnFilesModified
             self.dirChecker.FilesDeletedEvent -= self.OnFilesDeleted
             self.dirChecker.DirsCreatedEvent -= self.OnDirsCreated
-            self.dirChecker.DirsModifiedEvent -= self.OnDirsModified
             self.dirChecker.DirsDeletedEvent -= self.OnDirsDeleted
         IDNCustomTreeCtrl.Destroy(self, *args, **kwargs)
 
@@ -136,11 +133,6 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         self.ProjectDirsCreatedEvent(dirs)
         for d in dirs:
             self.DirCreated(d)
-
-    def OnDirsModified(self, dirs):
-        self.ProjectDirsModifiedEvent(dirs)
-        for d in dirs:
-            self.DirModified(d)
 
     def OnDirsDeleted(self, dirs):
         self.ProjectDirsDeletedEvent(dirs)
