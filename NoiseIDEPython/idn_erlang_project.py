@@ -17,6 +17,7 @@ from idn_notebook import ErlangCompileOptionPanel
 from idn_project import Project
 from idn_utils import readFile, writeFile, pystr, Menu, GetImage
 from idn_erlang_utils import IsBeam, IsInclude, IsYrl, IsModule, IsIgor, IsAppSrc
+import core
 
 class ErlangProject(Project):
     IDE_MODULES_DIR = os.path.join(os.getcwd(), 'data', 'erlang', 'modules', 'apps', 'noiseide', 'ebin')
@@ -395,75 +396,78 @@ class ErlangProject(Project):
         self.AddTask(task)
 
     def OnSocketDataReceived(self, response, js):
-        if response == "connect":
-            self.connected = True
-            self.OnSocketConnected()
-        elif response == "compile" or response == "compile_fly":
-            errorsData = js["errors"]
-            path = pystr(js["path"])
-            if response == "compile":
-                done = (TASK_COMPILE, path.lower())
-            else:
-                done = (TASK_COMPILE_FLY, path.lower())
-            if not self.explorer.FindItemByPath(path): return
-            self.TaskDone("Compiled {}".format(path), done)
+        try:
+            if response == "connect":
+                self.connected = True
+                self.OnSocketConnected()
+            elif response == "compile" or response == "compile_fly":
+                errorsData = js["errors"]
+                path = pystr(js["path"])
+                if response == "compile":
+                    done = (TASK_COMPILE, path.lower())
+                else:
+                    done = (TASK_COMPILE_FLY, path.lower())
+                if not self.explorer.FindItemByPath(path): return
+                self.TaskDone("Compiled {}".format(path), done)
 
-            errors = []
-            for error in errorsData:
-                if error["line"] == "none":
-                    continue
-                errors.append(CompileErrorInfo(path, error["type"], error["line"], error["msg"]))
-            self.AddErrors(path, errors)
-
-        elif response == "compile_app":
-            resultData = js["result"]
-            path = pystr(js["path"])
-            self.TaskDone("App compiled {}".format(path), (TASK_COMPILE_APP, path.lower()))
-            for eRec in resultData:
-                p = pystr(eRec["path"])
-                if 'nt' == os.name:
-                    p = p[0].upper() + p[1:]
-                if not self.explorer.FindItemByPath(p): continue
                 errors = []
-                for error in eRec["errors"]:
+                for error in errorsData:
                     if error["line"] == "none":
                         continue
-                    errors.append(CompileErrorInfo(p, error["type"], error["line"], error["msg"]))
-                self.AddErrors(p, errors)
+                    errors.append(CompileErrorInfo(path, error["type"], error["line"], error["msg"]))
+                self.AddErrors(path, errors)
 
-        elif response == "cache_app":
-            path = pystr(js["path"])
-            self.TaskDone("App cached {}".format(path), (TASK_CACHE_APP, path.lower()))
-        elif response == "xref_module":
-            module = pystr(js["module"])
-            if module in self.xrefModules:
-                self.xrefModules.remove(module)
-            if not module in ErlangCache.moduleData: return
-            undefined = [((u["where_m"], u["where_f"], u["where_a"]),
-                          (u["what_m"], u["what_f"], u["what_a"])) for u in js["undefined"]]
-            self.AddXRefErrors(ErlangCache.moduleData[module].file, undefined)
-            self.xrefProblemsCount += len(undefined)
-            if len(self.xrefModules) == 0:
-#                if self.xrefProblemsCount == 0:
-#                    wx.MessageBox("XRef check succeeded.", "XRef")
-#                else:
-                self.xrefTable.PrepareResult()
-                self.ShowXrefTable()
-        elif response == "dialyzer":
-            warnings = js["warnings"]
-            self.ShowDialyzerResult(warnings)
-        elif response == "gen_file_cache":
-            path = pystr(js["path"])
-            cachePath = pystr(js["cache_path"])
-            ErlangCache.AddToLoad(cachePath)
-            self.TaskDone("Generated cache for {}".format(path), (TASK_GEN_FILE_CACHE, path.lower()))
-        elif response == "gen_erlang_cache":
-            self.ErlangCacheChecked()
-        elif response == "compile_option":
-            path = pystr(js["path"])
-            option = js["option"]
-            data = js["result"]
-            self.OnCompileOptionResult(path, option, data)
+            elif response == "compile_app":
+                resultData = js["result"]
+                path = pystr(js["path"])
+                self.TaskDone("App compiled {}".format(path), (TASK_COMPILE_APP, path.lower()))
+                for eRec in resultData:
+                    p = pystr(eRec["path"])
+                    if 'nt' == os.name:
+                        p = p[0].upper() + p[1:]
+                    if not self.explorer.FindItemByPath(p): continue
+                    errors = []
+                    for error in eRec["errors"]:
+                        if error["line"] == "none":
+                            continue
+                        errors.append(CompileErrorInfo(p, error["type"], error["line"], error["msg"]))
+                    self.AddErrors(p, errors)
+
+            elif response == "cache_app":
+                path = pystr(js["path"])
+                self.TaskDone("App cached {}".format(path), (TASK_CACHE_APP, path.lower()))
+            elif response == "xref_module":
+                module = pystr(js["module"])
+                if module in self.xrefModules:
+                    self.xrefModules.remove(module)
+                if not module in ErlangCache.moduleData: return
+                undefined = [((u["where_m"], u["where_f"], u["where_a"]),
+                              (u["what_m"], u["what_f"], u["what_a"])) for u in js["undefined"]]
+                self.AddXRefErrors(ErlangCache.moduleData[module].file, undefined)
+                self.xrefProblemsCount += len(undefined)
+                if len(self.xrefModules) == 0:
+    #                if self.xrefProblemsCount == 0:
+    #                    wx.MessageBox("XRef check succeeded.", "XRef")
+    #                else:
+                    self.xrefTable.PrepareResult()
+                    self.ShowXrefTable()
+            elif response == "dialyzer":
+                warnings = js["warnings"]
+                self.ShowDialyzerResult(warnings)
+            elif response == "gen_file_cache":
+                path = pystr(js["path"])
+                cachePath = pystr(js["cache_path"])
+                ErlangCache.AddToLoad(cachePath)
+                self.TaskDone("Generated cache for {}".format(path), (TASK_GEN_FILE_CACHE, path.lower()))
+            elif response == "gen_erlang_cache":
+                self.ErlangCacheChecked()
+            elif response == "compile_option":
+                path = pystr(js["path"])
+                option = js["option"]
+                data = js["result"]
+                self.OnCompileOptionResult(path, option, data)
+        except Exception, e:
+            core.Log("Error in socket:" + e)
 
     def OnSocketConnected(self):
         self.SetCompilerOptions()
