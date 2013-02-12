@@ -23,11 +23,7 @@ class ErlangProject(Project):
     EXPLORER_TYPE = ErlangProjectExplorer
 
     def OnLoadProject(self):
-        self.window.CheckRuntimes()
-
-        if not self.GetErlangRuntime() or self.GetErlangRuntime() not in Config.Runtimes():
-            self.userData[CONFIG_ERLANG_RUNTIME] = Config.Runtimes().keys()[0]
-            self.SaveData()
+        self.CheckRuntimes()
 
         if not CONFIG_DEPS_DIR in self.projectData:
             self.projectData[CONFIG_DEPS_DIR] = "deps"
@@ -57,6 +53,16 @@ class ErlangProject(Project):
 
         ErlangCache.LoadCacheFromDir(self.ProjectName())
         ErlangCache.LoadCacheFromDir(os.path.join("runtimes", self.GetErlangRuntime()))
+
+    def CheckRuntimes(self):
+        self.window.CheckRuntimes()
+        if self.GetErlangRuntime() not in Config.AvailableRuntimes():
+            wx.MessageBox("Project runtime '{}' has not existing path. Please specify proper path or other runtime will be selected.".format(self.GetErlangRuntime()), "Error")
+            self.window.SetupRuntimes()
+
+        if not self.GetErlangRuntime() or self.GetErlangRuntime() not in Config.AvailableRuntimes():
+            self.userData[CONFIG_ERLANG_RUNTIME] = Config.Runtimes().keys()[0]
+            self.SaveData()
 
     def SetupProps(self):
         if self.PltPath():

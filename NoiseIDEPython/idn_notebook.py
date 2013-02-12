@@ -1,5 +1,7 @@
+import os
 from wx.lib.agw.aui.auibook import TabNavigatorWindow
 from idn_colorschema import ColorSchema
+from idn_erlang_utils import IsModule, IsInclude
 from idn_erlangstc import ErlangSTC, ErlangSTCReadOnly, IgorSTC
 from idn_marker_panel import MarkerPanel
 
@@ -10,7 +12,7 @@ from wx.lib.agw import aui
 from wx.aui import wxEVT_COMMAND_AUINOTEBOOK_TAB_MIDDLE_UP
 from idn_findreplace import FindInFilePanel
 import core
-from idn_utils import extension, Menu
+from idn_utils import extension, Menu, GetImage
 from idn_customstc import CustomSTC, YAMLSTC, PythonSTC, ConsoleSTC, CppSTC, HtmlSTC
 
 EXT_STC_TYPE = {
@@ -231,8 +233,9 @@ class EditorNotebook(aui.AuiNotebook):
             self.EnsureVisible(self.FindPageIndexByEditor(editor))
             return editor
         else:
+            bitmap = self.GetBitmapForFile(fileName)
             editorPanel = EditorPanel(self, fileName)
-            self.AddPage(editorPanel, editorPanel.editor.FileName(), True)
+            self.AddPage(editorPanel, editorPanel.editor.FileName(), True, bitmap = bitmap)
             editorPanel.editor.SetFocus()
             self.EnsureVisible(self.FindPageIndexByEditor(editorPanel.editor))
             return  editorPanel.editor
@@ -248,6 +251,27 @@ class EditorNotebook(aui.AuiNotebook):
         editor.EnsureVisibleEnforcePolicy(line)
         self.EnsureVisible(self.FindPageIndexByEditor(editor))
         return editor
+
+    def GetBitmapForFile(self, path, changed = False):
+        if IsModule(path):
+            fileName = "erlangModuleChanged.png" if changed else "erlangModule.png"
+            return GetImage(os.path.join("tabs", fileName))
+        elif IsInclude(path):
+            fileName = "erlangIncludeChanged.png" if changed else "erlangInclude.png"
+            return GetImage(os.path.join("tabs", fileName))
+        else:
+            return wx.NullBitmap()
+
+    def PageModified(self, path, changed = False):
+        index = self.FindPageIndexByPath(path)
+        if index >= 0:
+            editor = self[index]
+            if changed:
+                title = "* " + editor.FileName()
+            else:
+                title = editor.FileName()
+            self.SetPageText(index, title)
+            self.SetPageBitmap(index, core.TabMgr.GetBitmapForFile(path, changed))
 
     def AddCustomPage(self, page, title):
         self.AddPage(page, title, True)

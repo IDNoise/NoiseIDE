@@ -404,13 +404,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.GotoPos(pos + indent)
 
     def UpdateTabTitle(self):
-        index = core.TabMgr.FindPageIndexByPath(self.filePath)
-        if index >= 0:
-            if self.saved:
-                title = self.FileName()
-            else:
-                title = "* " + self.FileName()
-            core.TabMgr.SetPageText(index, title)
+        core.TabMgr.PageModified(self.filePath, not self.saved)
 
     def FileName(self):
         return os.path.basename(self.filePath)

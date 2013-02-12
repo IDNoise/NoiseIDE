@@ -63,6 +63,15 @@ class Config:
         return cls.data[cls.RUNTIMES] if cls.RUNTIMES in cls.data else {}
 
     @classmethod
+    def AvailableRuntimes(cls):
+        result = {}
+        if Config.Runtimes():
+            for r in Config.Runtimes():
+                if  os.path.isfile(Config.Runtimes()[r]):
+                    result[r] = Config.Runtimes()[r]
+        return result
+
+    @classmethod
     def LastProjects(cls):
         projects = (cls.data[cls.LAST_PROJECT_LIST] if cls.LAST_PROJECT_LIST in cls.data else [])
         projects = [p for p in projects if os.path.isfile(p)]

@@ -41,7 +41,7 @@ class NoiseIDE(wx.Frame):
         self.explorer = None
         self.project = None
 
-        agwFlags = aui.AUI_MGR_DEFAULT | aui.AUI_MGR_AUTONB_NO_CAPTION
+        agwFlags = aui.AUI_MGR_DEFAULT | aui.AUI_MGR_AUTONB_NO_CAPTION | aui.AUI_MGR_LIVE_RESIZE
         self.WinMgr = Manager(self, agwFlags = agwFlags )
 
         self.SetupSimpleMenu()
@@ -341,16 +341,13 @@ class NoiseIDE(wx.Frame):
         self.Close()
 
     def CheckRuntimes(self):
-        availableRuntimes = {}
-        if Config.Runtimes():
-            for r in Config.Runtimes():
-                if  os.path.isfile(Config.Runtimes()[r]):
-                    availableRuntimes[r] = Config.Runtimes()[r]
+        #Config.SetProp(Config.RUNTIMES, availableRuntimes)
 
-        Config.SetProp(Config.RUNTIMES, availableRuntimes)
-
-        while not Config.Runtimes():
-            wx.MessageBox("Add at least one erlang runtime!", "Error")
+        while not Config.AvailableRuntimes():
+            if not Config.Runtimes():
+                wx.MessageBox("Add at least one erlang runtime!", "Error")
+            else:
+                wx.MessageBox("Specify at least one proper path to erl executable.", "Error")
             self.SetupRuntimes(True)
 
     def SetupRuntimes(self, atLeastOneRequired = False):
