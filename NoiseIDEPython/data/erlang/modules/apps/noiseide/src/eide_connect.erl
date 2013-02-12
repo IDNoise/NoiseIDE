@@ -164,6 +164,10 @@ execute_action(gen_file_cache, Binary) ->
 execute_action(compile, PathBinary) ->
     Path = binary_to_list(PathBinary), 
     eide_compiler:compile(Path);
+execute_action(compile_tests, PathBinary) ->
+    Path = binary_to_list(PathBinary),
+    CompileResults = eide_compiler:compile_tests(Path),
+    done(compile_app, [{path, PathBinary}, {result, CompileResults}]);
 execute_action(compile_app, PathBinary) ->
     Path = binary_to_list(PathBinary),
     CompileResults = eide_compiler:compile_app(Path),

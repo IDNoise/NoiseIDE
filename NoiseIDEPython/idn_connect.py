@@ -137,6 +137,10 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
         self.TaskAddedEvent((TASK_COMPILE, path.lower()))
         self._ExecRequest("compile", '"{}"'.format(erlstr(path)))
 
+    def CompileTests(self, path):
+        self.TaskAddedEvent((TASK_COMPILE_APP, path.lower()))
+        self._ExecRequest("compile_tests", '"{}"'.format(erlstr(path)))
+
     def CompileApp(self, path):
         self.TaskAddedEvent((TASK_COMPILE_APP, path.lower()))
         self._ExecRequest("compile_app", '"{}"'.format(erlstr(path)))
@@ -232,6 +236,9 @@ class ErlangProcess(wx.EvtHandler):
     def SetParams(self, params):
         erlang = core.Project.GetErlangPath()
         self.cmd = '"{}" {} {}'.format(erlang, self.GetSMPData(), ' '.join(params + ["-run reloader"] + self.GetAdditionalParams()))
+
+    def SetCWD(self, cwd):
+        self.cwd = cwd
 
     def GetAdditionalParams(self):
         return []

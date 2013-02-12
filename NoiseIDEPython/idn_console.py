@@ -221,7 +221,6 @@ class ErlangConsole(wx.Panel):
         for token in tokens:
             self.commandText.SetStyle(token.start, token.start + len(token.value), self._TokenTypeToTextAttr(token.type))
 
-
     def _TokenTypeToTextAttr(self, type):
         format = self.typeToFormat.get(type, self.defaultFormat)
         color = format[5:12]
@@ -239,6 +238,9 @@ class ErlangConsole(wx.Panel):
 
     def SetParams(self, params):
         self.shell.SetParams(params)
+
+    def SetCWD(self, cwd):
+        self.shell.SetCWD(cwd)
 
 
 class ErlangProjectConsole(ErlangConsole):

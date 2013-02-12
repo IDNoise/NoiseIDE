@@ -260,7 +260,7 @@ class EditorNotebook(aui.AuiNotebook):
             fileName = "erlangIncludeChanged.png" if changed else "erlangInclude.png"
             return GetImage(os.path.join("tabs", fileName))
         else:
-            return wx.NullBitmap()
+            return wx.NullBitmap
 
     def PageModified(self, path, changed = False):
         index = self.FindPageIndexByPath(path)

@@ -12,7 +12,7 @@ __author__ = 'Yaroslav'
 
 class ErlangProjectFrom(wx.Dialog):
     def __init__(self, project = None):
-        wx.Dialog.__init__(self, core.MainFrame, size = (450, 600), title = "Create\Edit project",
+        wx.Dialog.__init__(self, core.MainFrame, title = "Create\Edit project",
             style = wx.DEFAULT_DIALOG_STYLE | wx.WS_EX_VALIDATE_RECURSIVELY)
 
         self.consoles = {}
@@ -43,6 +43,9 @@ class ErlangProjectFrom(wx.Dialog):
         self.depsDirTB.SetToolTipString("Deps folder name")
         self.depsDirTB.Bind(wx.EVT_TEXT, self.OnPathChanged)
 
+        self.workDirTB = wx.TextCtrl(self, value = "", size = (300, 20))
+        self.workDirTB.SetToolTipString("Work dir. Empty if root.")
+
         self.compilerOptionsTB = wx.TextCtrl(self, value = "", size = (300, 60), style = wx.TE_MULTILINE)
         self.compilerOptionsTB.SetToolTipString("Compiler options in form: \n{d, Macro} or {d, Macro, Value}")
 
@@ -64,27 +67,31 @@ class ErlangProjectFrom(wx.Dialog):
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         gSizer = wx.GridBagSizer(2, 2)
-
-        gSizer.Add(CreateLabel(self, "Title:"), (0, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
-        gSizer.Add(self.projectNameTB, (0, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
-
-        gSizer.Add(CreateLabel(self, "Project dir:"), (1, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
-        gSizer.Add(self.projectPathTB, (1, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
-        gSizer.Add(self.projectPathButton, (1, 2), flag = wx.ALIGN_CENTER)
-
-        gSizer.Add(CreateLabel(self, "Apps dir:"), (2, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
-        gSizer.Add(self.appsDirTB, (2, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
-
-        gSizer.Add(CreateLabel(self, "Deps dir:"), (3, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
-        gSizer.Add(self.depsDirTB, (3, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
-
-        gSizer.Add(CreateLabel(self, "Erlang runtime:"), (4, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
-        gSizer.Add(self.erlangCMB, (4, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
-
-        gSizer.Add(CreateLabel(self, "Compiler options:"), (5, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
-        gSizer.Add(self.compilerOptionsTB, (5, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
+        i = 0
+        gSizer.Add(CreateLabel(self, "Title:"), (i, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
+        gSizer.Add(self.projectNameTB, (i, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
+        i += 1
+        gSizer.Add(CreateLabel(self, "Project dir:"), (i, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
+        gSizer.Add(self.projectPathTB, (i, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
+        gSizer.Add(self.projectPathButton, (i, 2), flag = wx.ALIGN_CENTER)
+        i += 1
+        gSizer.Add(CreateLabel(self, "Apps dir:"), (i, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
+        gSizer.Add(self.appsDirTB, (i, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
+        i += 1
+        gSizer.Add(CreateLabel(self, "Deps dir:"), (i, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
+        gSizer.Add(self.depsDirTB, (i, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
+        i += 1
+        gSizer.Add(CreateLabel(self, "Work dir:"), (i, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
+        gSizer.Add(self.workDirTB, (i, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
+        i += 1
+        gSizer.Add(CreateLabel(self, "Erlang runtime:"), (i, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
+        gSizer.Add(self.erlangCMB, (i, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
+        i += 1
+        gSizer.Add(CreateLabel(self, "Compiler options:"), (i, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
+        gSizer.Add(self.compilerOptionsTB, (i, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
 
         sizer.AddSizer(gSizer)
+
 
         excludedAppsSizer = wx.StaticBoxSizer(wx.StaticBox(self, label = "Excluded dirs"), wx.HORIZONTAL)
 
@@ -111,6 +118,7 @@ class ErlangProjectFrom(wx.Dialog):
         sizer.AddSizer(bSizerH, 1, flag = wx.EXPAND)
 
         self.SetSizer(sizer)
+        sizer.SetSizeHints(self)
         self.Layout()
 
     def SetCurrentValues(self):
@@ -121,6 +129,7 @@ class ErlangProjectFrom(wx.Dialog):
         self.projectPathButton.Disable()
         self.appsDirTB.Value = self.project.projectData[CONFIG_APPS_DIR]
         self.depsDirTB.Value = self.project.projectData[CONFIG_DEPS_DIR]
+        self.workDirTB.Value = self.project.projectData[CONFIG_WORK_DIR] if CONFIG_WORK_DIR in self.project.projectData else ""
 
         runtime = self.project.GetErlangRuntime()
         if runtime:
@@ -182,6 +191,7 @@ class ErlangProjectFrom(wx.Dialog):
         path = self.projectPathTB.Value
         apps = self.appsDirTB.Value
         deps = self.depsDirTB.Value
+        workDir = self.workDirTB.Value
         erlang = self.erlangCMB.Value
         compilerOptions = self.compilerOptionsTB.Value
         excludedDirs = list(self.excludedDirList.GetCheckedStrings())
@@ -191,6 +201,7 @@ class ErlangProjectFrom(wx.Dialog):
         data[Project.CONFIG_PROJECT_TYPE] = "erlang"
         data[CONFIG_APPS_DIR] = apps
         data[CONFIG_DEPS_DIR] = deps
+        data[CONFIG_WORK_DIR] = workDir
         data[CONFIG_EXCLUDED_DIRS] = excludedDirs
         data[CONFIG_COMPILER_OPTIONS] = compilerOptions
 
@@ -210,6 +221,11 @@ class ErlangProjectFrom(wx.Dialog):
         depsPath = os.path.join(path, deps)
         if not os.path.isdir(depsPath):
             os.mkdir(depsPath)
+
+        if workDir:
+            workDirPath = os.path.join(path, workDir)
+            if not os.path.isdir(workDirPath):
+                os.mkdir(workDirPath)
 
         stream = file(pFile, 'w')
         yaml.dump(data, stream)

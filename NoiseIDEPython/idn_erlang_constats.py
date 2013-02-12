@@ -8,6 +8,7 @@ CONFIG_COMPILER_OPTIONS = "compiler_options"
 CONFIG_FLY_COMPILE = "fly_compile"
 CONFIG_APPS_DIR = "apps_dir"
 CONFIG_DEPS_DIR = "deps_dir"
+CONFIG_WORK_DIR = "work_dir"
 
 CONFIG_CONSOLES = "consoles"
 CONFIG_CONSOLE_SNAME = "sname"

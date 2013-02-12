@@ -75,15 +75,26 @@ class ErlangProject(Project):
         if os.path.isdir(d):
             ErlangCache.LoadCacheFromDir(d)
 
+    def GetWorkDir(self):
+        workDir = "" if not CONFIG_WORK_DIR in self.projectData else self.projectData[CONFIG_WORK_DIR]
+        if workDir:
+            return os.path.join(self.projectDir, workDir)
+        else:
+            return self.projectDir
+
     def SetupMenu(self):
         Project.SetupMenu(self)
 
         self.window.projectMenu.AppendSeparator()
-        self.window.projectMenu.AppendMenuItem("Rebuild apps", self.window, lambda e: self.RecompileApps(), "F7")
+        self.window.projectMenu.AppendMenuItem("Rebuild apps", self.window, lambda e: self.RebuildApps(), "F7")
         self.window.projectMenu.AppendMenuItem("Recache apps", self.window, lambda e: self.RecacheApps(), "Shift+F7")
         if self.AppsPath() != self.DepsPath():
-            self.window.projectMenu.AppendMenuItem("Rebuild deps", self.window, lambda e: self.RecompileDeps(), "F8")
+            self.window.projectMenu.AppendSeparator()
+            self.window.projectMenu.AppendMenuItem("Rebuild deps", self.window, lambda e: self.RebuildDeps(), "F8")
             self.window.projectMenu.AppendMenuItem("Recache deps", self.window, lambda e: self.RecacheDeps(), "Shift+F8")
+        self.window.projectMenu.AppendSeparator()
+        self.window.projectMenu.AppendMenuItem("Rebuild tests", self.window, lambda e: self.RebuildTests(), "F9")
+        self.window.projectMenu.AppendSeparator()
         self.window.projectMenu.AppendMenuItem("XRef check", self.window, lambda e: self.StartXRef())
 
         self.dialyzerMenu = Menu()
@@ -110,7 +121,7 @@ class ErlangProject(Project):
         self.rebuildT = self.window.toolbar.AddLabelTool(wx.ID_ANY, 'Rebuild apps', GetImage('build.png'), shortHelp = 'Rebuild apps')
         self.xrefCheckT = self.window.toolbar.AddLabelTool(wx.ID_ANY, 'XRef check', GetImage('xrefCheck.png'), shortHelp = 'XRef check')
 
-        self.window.Bind(wx.EVT_TOOL, lambda e: self.RecompileApps(), self.rebuildT)
+        self.window.Bind(wx.EVT_TOOL, lambda e: self.RebuildApps(), self.rebuildT)
         self.window.Bind(wx.EVT_TOOL, lambda e: self.StartXRef(), self.xrefCheckT)
 
         self.window.toolbar.Realize()
@@ -456,7 +467,7 @@ class ErlangProject(Project):
 
     def OnSocketConnected(self):
         self.SetCompilerOptions()
-        self.RecompileApps()
+        self.RebuildApps()
         #self.GenerateErlangCache()
 
     def UpdatePaths(self):
@@ -505,9 +516,10 @@ class ErlangProject(Project):
 
             if title in self.consoleTabs:
                 self.consoleTabs[title].SetParams(params)
+                self.consoleTabs[title].SetCWD(self.GetWorkDir())
                 self.consoleTabs[title].SetStartCommand(data[CONFIG_CONSOLE_COMMAND])
             else:
-                self.consoles[title] = ErlangProjectConsole(self.window.ToolMgr, self.AppsPath(), params)
+                self.consoles[title] = ErlangProjectConsole(self.window.ToolMgr, self.GetWorkDir(), params)
                 self.consoles[title].onlyHide = True
                 self.consoles[title].SetStartCommand(data[CONFIG_CONSOLE_COMMAND])
                 self.consoleTabs[title] = self.consoles[title]
@@ -632,10 +644,15 @@ class ErlangProject(Project):
                 ".src": ErlangHighlightedSTCBase,
                 ".app": ErlangHighlightedSTCBase}
 
-    def RecompileApps(self):
+
+
+    def RebuildTests(self):
+        self.CompileTestSubset(self.GetAppsAndDeps())
+
+    def RebuildApps(self):
         self.CompileSubset(self.GetApps())
 
-    def RecompileDeps(self):
+    def RebuildDeps(self):
         self.CompileSubset(self.GetDeps())
 
     def RecacheApps(self):
@@ -726,23 +743,26 @@ class ErlangProject(Project):
         options = self.CompilerOptions().replace("\n", ", ")
         self.shellConsole.shell.SetProp(CONFIG_COMPILER_OPTIONS, options)
         if self.CompilerOptions() != self.CompilerOptions(self.oldProjectData):
-            self.RecompileApps()
-            self.RecompileDeps()
+            self.RebuildApps()
+            self.RebuildDeps()
+
+    def CheckBackgroundTasks(self, msg = "Compiling..."):
+        if len(self.tasks) > 0:
+            self.CreateProgressDialog(msg)
+
+    def CompileTestSubset(self, apps):
+        [self.GetShell().CompileTests(self.GetAppPath(app)) for app in apps if app not in self.projectData[CONFIG_EXCLUDED_DIRS]]
+        self.CheckBackgroundTasks("Compiling tests...")
 
     def CompileSubset(self, apps):
         [self.GetShell().CompileApp(self.GetAppPath(app)) for app in apps if app not in self.projectData[CONFIG_EXCLUDED_DIRS]]
-
-        if len(self.tasks) > 0:
-            self.CreateProgressDialog("Compiling...")
+        self.CheckBackgroundTasks()
 
     def CacheSubset(self, apps):
         [self.GetShell().CacheApp(self.GetAppPath(app)) for app in apps]
-
         for f in self.explorer.GetAllFiles():
             if IsIgor(f): IgorCache.GenerateForFile(f)
-
-        if len(self.tasks) > 0:
-            self.CreateProgressDialog("Caching...")
+        self.CheckBackgroundTasks("Caching...")
 
     def GetAppPath(self, app):
         path = os.path.join(self.AppsPath(), app)

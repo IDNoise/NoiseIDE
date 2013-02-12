@@ -9,7 +9,8 @@
     compile_yecc/1,
     compile_with_option/2,
     compile_app/1,
-    app_out_dir/1
+    app_out_dir/1,
+    compile_tests/1
 ]).  
 
 generate_includes() ->
@@ -49,7 +50,6 @@ compile_app(AppPath) ->
     catch file:make_dir(OutDir),
     SrcDir = AppPath ++ "/src",
     HrlDir = AppPath ++ "/include",
-    TestDir = AppPath ++ "/test",
     Includes = eide_connect:prop(includes),
     {Modules, LocalHrls, Yrls, AppSrcFile} = filelib:fold_files(SrcDir, ".*\.(erl|hrl|yrl|src)$", true, 
         fun(File, {M, H, Y, ASF}) ->
@@ -83,11 +83,18 @@ compile_app(AppPath) ->
         undefined -> ignore;
         _ -> compile_appsrc(AppSrcFile)
     end,
+    SrcResult.
+ 
+compile_tests(AppPath) ->
+    OutDir = AppPath ++ "/ebin",
+    catch file:make_dir(OutDir),
+    TestDir = AppPath ++ "/test",
+    Includes = eide_connect:prop(includes),
     TestResult = filelib:fold_files(TestDir, ".*\.erl$", true, 
         fun(File, R) ->
            [compile_result(File, Includes, OutDir) | R]
         end, []), 
-    SrcResult ++ TestResult.
+    TestResult.
  
 compile_result(File, Includes, OutDir) ->
     catch file:make_dir(OutDir),
