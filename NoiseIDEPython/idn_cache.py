@@ -180,16 +180,19 @@ class ErlangCache:
     moduleData = {}
     modules = set()
     includes = set()
+    project = None
+    CACHE_DIR = ""
+    erlangDir = ""
+
     @classmethod
     def Init(cls, project):
         cls.project = project
         cls.CACHE_DIR = os.path.join(core.MainFrame.cwd, "cache", "erlang")
-
         cls.ERLANG_LIBS_CACHE_DIR =  os.path.join(cls.CACHE_DIR, "runtimes", project.GetErlangRuntime())
-        otherCacheDir =  os.path.join(cls.CACHE_DIR, "other")
-        for dir in [cls.CACHE_DIR, cls.ERLANG_LIBS_CACHE_DIR, otherCacheDir]:
-            if not os.path.isdir(dir):
-                os.makedirs(dir)
+
+        for d in [cls.CACHE_DIR, cls.ERLANG_LIBS_CACHE_DIR]:
+            if not os.path.isdir(d):
+                os.makedirs(d)
 
         cls.erlangDir = os.path.dirname(os.path.dirname(project.GetErlangPath()))
 
@@ -208,8 +211,8 @@ class ErlangCache:
         if len(cls.toLoad) > 0:
             for i in range(40):
                 try:
-                    file = cls.toLoad.pop()
-                    cls.LoadFile_(file)
+                    f = cls.toLoad.pop()
+                    cls.LoadFile_(f)
                 except IndexError, e:
                     pass
 
@@ -228,7 +231,11 @@ class ErlangCache:
         d = os.path.join(cls.CACHE_DIR, d)
         for f in os.listdir(d):
             f = os.path.join(d, f)
-            cls.AddToLoad(f)
+            if os.path.isdir(f):
+                for f1 in os.listdir(f):
+                    cls.AddToLoad(os.path.join(f, f1))
+            else:
+                cls.AddToLoad(f)
 
     @classmethod
     def CleanDir(cls, d):
@@ -240,12 +247,12 @@ class ErlangCache:
             pass
 
     @classmethod
-    def LoadFile_(cls, file):
+    def LoadFile_(cls, f):
         try:
-            if not os.path.isfile(file): return
-            if not file.endswith(".cache"): return
-            data = json.loads(readFile(file))
-            name = os.path.basename(file)[:-6]
+            if not os.path.isfile(f): return
+            if not f.endswith(".cache"): return
+            data = json.loads(readFile(f))
+            name = os.path.basename(f)[:-6]
             if 'nt' == os.name:
                 import win32api
                 try:
@@ -255,7 +262,7 @@ class ErlangCache:
                     core.Log("error ", e, "on get long path name for ", data[FILE])
             srcFile = data[FILE].replace("\\", "/")
             if not os.path.isfile(srcFile):
-                os.remove(file)
+                os.remove(f)
                 return
             if (name in cls.modules and
                 not cls.moduleData[name].file.lower().startswith(cls.erlangDir) and
@@ -266,7 +273,7 @@ class ErlangCache:
             else:
                 cls.modules.add(name)
 
-            cls.moduleData[name] = ModuleData(name, data, file)
+            cls.moduleData[name] = ModuleData(name, data, f)
         except  Exception, e:
             core.Log("load cache file error", e)
 
@@ -274,18 +281,18 @@ class ErlangCache:
     def TryLoad(cls, module):
         if module in cls.moduleData:
             return True
-        for dir in [cls.project.ProjectName(), os.path.join("runtimes", cls.project.GetErlangRuntime())]:
-            file = os.path.join(cls.CACHE_DIR, dir, module + ".cache")
-            if os.path.isfile(file):
-                cls.LoadFile_(file)
+        for d in [cls.project.ProjectName(), os.path.join("runtimes", cls.project.GetErlangRuntime())]:
+            f = os.path.join(cls.CACHE_DIR, d, module + ".cache")
+            if os.path.isfile(f):
+                cls.LoadFile_(f)
                 return module in cls.moduleData
         return False
 
     @classmethod
-    def UnloadFile(cls, file):
-        if not os.path.isfile(file): return
-        if not file.endswith(".cache"): return
-        name = os.path.basename(file)[:-6]
+    def UnloadFile(cls, f):
+        if not os.path.isfile(f): return
+        if not f.endswith(".cache"): return
+        name = os.path.basename(f)[:-6]
         if not name in cls.moduleData: return
         del cls.moduleData[name]
         if IsInclude(name):
@@ -303,35 +310,8 @@ class ErlangCache:
             cls.modules.remove(name)
 
     @classmethod
-    def StartCheckingFolder(cls, folder):
-        if folder in cls.checkers:
-            cls.checkers[folder].Stop()
-        checker = DirectoryChecker(5, os.path.join(cls.CACHE_DIR, folder), False, [".cache"])
-        checker.FilesCreatedEvent += cls.OnFilesCreated
-        checker.FilesModifiedEvent += cls.OnFilesCreated
-        checker.FilesDeletedEvent += cls.OnFilesDeleted
-        checker.Start()
-        cls.checkers[folder] = checker
-
-    @classmethod
-    def OnFilesCreated(cls, files):
-        for file in files:
-            cls.LoadFile_(file)
-
-    @classmethod
-    def OnFilesDeleted(cls, files):
-        for file in files:
-            cls.UnloadCacheForFile(file)
-
-    @classmethod
-    def StopCheckingFolder(cls, folder):
-        if folder in cls.checkers:
-            cls.checkers[folder].Stop()
-            del cls.checkers[folder]
-
-    @classmethod
-    def UnloadCacheForFile(cls, file):
-        cls.UnloadFile(file)
+    def UnloadCacheForFile(cls, f):
+        cls.UnloadFile(f)
 
     @classmethod
     def AllModules(cls):

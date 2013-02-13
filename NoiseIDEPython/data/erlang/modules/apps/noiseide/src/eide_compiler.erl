@@ -10,7 +10,8 @@
     compile_with_option/2,
     compile_app/1,
     app_out_dir/1,
-    compile_tests/1
+    compile_tests/1,
+    app_name/1
 ]).  
 
 generate_includes() ->
@@ -167,12 +168,16 @@ compile_yecc(FileName) ->
     end.
  
 app_name(File) -> 
-    lists:last(lists:takewhile(
+    App = lists:last(lists:takewhile(
         fun(I) -> 
             I =/= "src" andalso I =/= "include" andalso I =/= "test" 
         end, 
         filename:split(File))
-    ).
+    ),
+    case lists:member($-, App) of
+        true -> lists:takewhile(fun(E) -> E =/= $- end, App);
+        _ -> App
+    end.
     
 app_path(File) ->
     filename:join(lists:takewhile(

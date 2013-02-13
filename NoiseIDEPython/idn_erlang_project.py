@@ -569,7 +569,6 @@ class ErlangProject(Project):
         self.ShowErrorsTable()
 
     def Close(self):
-        ErlangCache.StopCheckingFolder(self.ProjectName())
         self.shellConsole.Stop()
         for title, console in self.consoles.items():
             console.Stop()

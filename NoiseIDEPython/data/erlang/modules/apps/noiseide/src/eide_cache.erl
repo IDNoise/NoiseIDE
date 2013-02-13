@@ -106,7 +106,7 @@ create_cache_file_fly(FlyFile, RealFile) ->
     CacheDir = eide_connect:prop(cache_dir) ++ "/" ++ eide_connect:prop(project_name),
     RealModuleName = module_name(RealFile),    
     ModuleName = module_name(FlyFile),    
-    CacheFileName = get_cache_file_name(CacheDir, RealModuleName),
+    CacheFileName = get_cache_file_name(CacheDir, RealFile, RealModuleName),
     try 
        Data = generate(ModuleName, FlyFile, undefined, RealModuleName), 
        dump_data_to_file(RealModuleName, CacheDir, RealFile, CacheFileName, Data, FlyFile),
@@ -148,8 +148,7 @@ create_cache(CacheDir, AppsPath, Ignores) ->
                                            end
                                    end 
                                end, dict:new()),
-    [generate_file(CacheDir, Name, File, Docs) || {Name, {File, Docs}} <- dict:to_list(Files), File =/= undefined],
-    ok.
+    [generate_file(CacheDir, Name, File, Docs) || {Name, {File, Docs}} <- dict:to_list(Files), File =/= undefined].
 
 module_name(File) ->
     Ext = filename:extension(File),
@@ -159,12 +158,13 @@ module_name(File) ->
         _ -> ModuleName
     end.
 
-get_cache_file_name(CacheDir, Name) ->
-    CacheDir ++ "/" ++ Name ++ ".cache".
+get_cache_file_name(CacheDir, FilePath, Name) ->
+    %io:format("Name: ~p, app:~p~n", [Name, eide_compiler:app_name(FilePath)]), 
+    CacheDir ++ "/" ++ eide_compiler:app_name(FilePath) ++ "/" ++ Name ++ ".cache".
 
 generate_file(CacheDir, ModuleName, FilePath, DocsFilePath) ->
     try
-        CacheFileName = get_cache_file_name(CacheDir, ModuleName),
+        CacheFileName = get_cache_file_name(CacheDir, FilePath, ModuleName),
 %        case filelib:last_modified(FilePath) < filelib:last_modified(CacheFileName) of
 %            true -> ignore;
 %            _ ->
@@ -177,8 +177,7 @@ generate_file(CacheDir, ModuleName, FilePath, DocsFilePath) ->
             ok;
         Error:Reason ->
             io:format("File:~p Error:~p, ~p~n~p~n", [FilePath, Error, Reason, erlang:get_stacktrace()])
-    end,
-    ok.
+    end.
 
 send_answer(CacheFile, File) -> 
     Response = mochijson2:encode({struct, [
@@ -201,12 +200,12 @@ dump_data_to_file(ModuleName, CacheDir, FilePath, CFile, Content, FlyFileName) -
     Props = [ 
         {name, list_to_binary(ModuleName)},
         {file, list_to_binary(FilePath)},
-        {funs, funs_to_json(MN, CacheDir, Funs)},
+        {funs, funs_to_json(MN, CacheDir, Funs, FilePath)},
         {macros, {struct, macros_to_json(Macs, FlyFileName)}},
         {includes, includes_to_json(sets:to_list(sets:from_list(Incs)), FlyFileName)},
         {records_data, {struct, recs_data_to_json(Recs, FlyFileName)}},
         {exported_types, {struct, exp_types_to_json(ExpTypes)}}
-    ],
+    ], 
     Dirname = filename:basename(filename:dirname(FilePath)),
     Extension = filename:extension(FilePath),
     Props1 =  
@@ -217,23 +216,24 @@ dump_data_to_file(ModuleName, CacheDir, FilePath, CFile, Content, FlyFileName) -
                 Props
         end,
     JsonStruct =  {struct, Props1},
+    catch file:make_dir(filename:dirname(CFile)),
     write_json(CFile, JsonStruct).
 
 write_json(File, Json) ->
     StringData = iolist_to_binary(lists:flatten(mochijson2:encode(Json))),
     file:write_file(File, StringData).
  
-funs_to_json(ModuleName, CacheDir, Funs) -> 
-    lists:reverse([fun_to_json(ModuleName, CacheDir, F) || F <- Funs]).
+funs_to_json(ModuleName, CacheDir, Funs, FilePath) -> 
+    lists:reverse([fun_to_json(ModuleName, CacheDir, F, FilePath) || F <- Funs]).
 
-fun_to_json(ModuleName, CacheDir, Fun) ->
+fun_to_json(ModuleName, CacheDir, Fun, FilePath) ->
     {Name, Arity} = Fun#function.name,
     DocRef =  
         case Fun#function.doc of
             undefined -> [];
             Text ->
                 FileName = ModuleName ++ "_" ++ Name ++ "-" ++ integer_to_list(Arity) ++ ".fun",
-                FullPath = CacheDir ++ "/" ++ FileName,
+                FullPath = CacheDir ++ "/" ++ eide_compiler:app_name(FilePath) ++ "/" ++ FileName,
                 file:write_file(FullPath, iolist_to_binary(Text)),
                 FullPath
         end, 
