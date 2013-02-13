@@ -346,7 +346,6 @@ class ErlangCache:
         cls.TryLoad(os.path.basename(includePath))
         for module in cls.modules.values():
             if not module.file.startswith(cls.project.projectDir): continue
-            print module.file, module.AllIncludes()
             if include in module.AllIncludes():
                 result.append(module.file)
         return result

@@ -17,7 +17,6 @@ class ErlangProjectFrom(wx.Dialog):
 
         self.consoles = {}
         self.projectType = projectType
-        print projectType
         if projectType == SINGLE_APP_PROJECT:
             self.CreateSingleAppForm()
         elif projectType == MULTIPLE_APP_PROJECT:
