@@ -124,8 +124,7 @@ done(Type, Params) -> iolist_to_binary(lists:flatten(mochijson2:encode({struct, 
 
 execute_instant_action(add_path, PathBinary) ->
     Path = binary_to_list(PathBinary), 
-    code:add_patha(Path),
-    eide_compiler:generate_includes(); 
+    code:add_patha(Path); 
 execute_instant_action(remove_path, PathBinary) ->
     Path = binary_to_list(PathBinary),
     code:del_path(Path); 
@@ -133,8 +132,7 @@ execute_instant_action(set_prop, Binary) ->
     [Prop, Value] = Binary,
     Key = binary_to_atom(Prop, latin1),
     Val = binary_to_list(Value),
-    set_prop(Key, Val), 
-    eide_compiler:generate_includes();
+    set_prop(Key, Val);
 execute_instant_action(set_home, Binary) ->
     Path = binary_to_list(Binary),
     os:putenv("HOME", Path);

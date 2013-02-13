@@ -1,3 +1,5 @@
+import ide_migrations
+
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 import sys
@@ -25,6 +27,8 @@ import traceback
 installNewVersion = False
 
 class NoiseIDE(wx.Frame):
+
+
     def __init__(self, *args, **kwargs):
         wx.Frame.__init__(self, None, wx.ID_ANY, 'Noise IDE', size = (1680, 900), pos = (10, 10))
         self.cwd = os.getcwd()
@@ -33,6 +37,11 @@ class NoiseIDE(wx.Frame):
 
         self.Maximize()
         Config.load()
+        currentVersion = self.GetCurrentVersion()
+        if Config.GetProp("current_version", 0) < currentVersion:
+            self.apply_migration(Config.GetProp("current_version", 0))
+        Config.SetProp("current_version", currentVersion)
+
         ColorSchema.load(Config.ColorSchema())
 
         icon = wx.Icon('data/images/icon.png', wx.BITMAP_TYPE_PNG, 16, 16)
@@ -87,6 +96,11 @@ class NoiseIDE(wx.Frame):
                 wx.CallAfter(self.TryLoadLastProject)
         else:
             wx.CallAfter(self.TryLoadLastProject)
+
+    def apply_migration(self, version):
+        for v, fun in ide_migrations.MIGRATIONS.items():
+            if v > version:
+                fun()
 
     def SetupSimpleMenu(self):
         self.menubar = wx.MenuBar()
@@ -202,11 +216,8 @@ class NoiseIDE(wx.Frame):
             revfile = urllib2.urlopen("https://dl.dropbox.com/s/1a36pmlgmdy4rly/rev.cfg")
             newData = revfile.read()
             newVersion = float(newData.split("\n")[0].split(":")[1].strip())
-            installDir = os.path.join(self.cwd, "installer")
-            if not os.path.isdir(installDir):
-                os.mkdir(installDir)
             self.autoCheckTimer.Stop()
-            if newVersion != version:
+            if newVersion > version:
                 dial = MultiMessageDialog(self,
                     'There is new version {} available. Current version is {}. Do you want to update after exit?'.format(newVersion, version),
                     msg2 = 'Changelog:\n\n' + newData,
@@ -215,6 +226,9 @@ class NoiseIDE(wx.Frame):
                 if dial.ShowModal() == wx.ID_YES:
                     progressDialog = wx.ProgressDialog("Autoupdater", "Downloading installer...", parent = self, style = wx.PD_APP_MODAL | wx.PD_ELAPSED_TIME | wx.PD_AUTO_HIDE)
                     progressDialog.Show()
+                    installDir = os.path.join(self.cwd, "installer")
+                    if not os.path.isdir(installDir):
+                        os.mkdir(installDir)
                     installerFileName = os.path.join(installDir, "installer.zip")
                     installerFile = open(installerFileName, 'wb')
                     dataFile = urllib2.urlopen("https://dl.dropbox.com/s/a2qrs1zw20who93/noiseide.zip")

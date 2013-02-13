@@ -1,3 +1,6 @@
+import core
+from idn_erlang_utils import IsInclude
+
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 import wx
@@ -7,9 +10,9 @@ from idn_cache import ErlangCache
 
 
 class ErlangOutline(wx.Dialog):
-    def __init__(self, parent, moduleName):
+    def __init__(self, parent, filePath):
         wx.Dialog.__init__(self, parent, title = "Outline", size = (260, 600))
-        self.moduleName = moduleName
+        self.filePath = filePath
 
         self.images = {"fun": 0, "record": 1, "macros": 2}
 
@@ -22,7 +25,10 @@ class ErlangOutline(wx.Dialog):
 
         self.list.AssignImageList(il, wx.IMAGE_LIST_SMALL)
 
-        data = ErlangCache.moduleData[moduleName]
+        if IsInclude(filePath):
+            data = ErlangCache.includes[(core.Project.GetApp(filePath), os.path.splitext(os.path.basename(filePath))[0])]
+        else:
+            data = ErlangCache.modules[os.path.basename(filePath)]
 
         self.navigation = {}
 

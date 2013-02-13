@@ -5,3 +5,4 @@ deps_dir: !!python/unicode 'deps'
 excluded_dirs: [!!python/unicode 'test_app']
 project_name: !!python/unicode 'NoiseIDE'
 project_type: erlang
+work_dir: !!python/unicode ''

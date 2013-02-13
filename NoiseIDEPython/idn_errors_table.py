@@ -225,7 +225,7 @@ class DialyzerTableGrid(ErrorsTableGrid):
             line = int(warningData[1])
             msg = ':'.join(warningData[2:])
 
-            path = ErlangCache.moduleData[os.path.splitext(module)[0]].file
+            path = ErlangCache.modules[os.path.splitext(module)[0]].file
             newPath = path.replace(self.project.projectDir + os.sep, "")
             self.pathDict[newPath] = path
             data.append((newPath, line, msg))

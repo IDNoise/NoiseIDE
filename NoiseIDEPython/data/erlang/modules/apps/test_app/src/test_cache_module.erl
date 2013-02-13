@@ -4,7 +4,7 @@
 -module(test_cache_module).
 
 %% Include files
--include_lib("noiseide/include/sample.hrl").
+-include_lib("sample.hrl").
 %% Exported Functions
 
 -export([

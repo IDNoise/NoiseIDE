@@ -6,7 +6,7 @@
 -define(log(P), io:format("~p~n", [P])).
 -define(TERM, "term()"). 
 -define(VAR, "Var"). 
-  
+   
 -export([ 
     create_cache_for_erlang_libs/1,
     create_cache_file_fly/2,
@@ -282,19 +282,26 @@ macros_data_to_json(Mac) ->
                                 {line, Mac#macro.line}]}
     }.
 
-rec_fields_to_json(Fields) ->
+rec_fields_to_json(Fields) -> 
     [list_to_binary(F) || #field{name = F} <- Fields].
  
 rec_field_types_to_json(Fields) ->
     [list_to_binary(T) || #field{type = T} <- Fields].
  
 includes_to_json(Incs, File) ->
-    [iolist_to_binary(filename:basename(I)) || I <- Incs, string:to_lower(I) =/= string:to_lower(File)].
+    [begin
+        I1 = case lists:prefix("../", I) of
+            true -> filename:absname(I, filename:dirname(File));
+            _ -> I
+        end,   
+        [iolist_to_binary(eide_compiler:app_name(I1)), iolist_to_binary(filename:basename(I))]
+    end
+    || I <- Incs, string:to_lower(I) =/= string:to_lower(File)].
 
 generate(ModuleName, FilePath, DocsFilePath, RealModuleName) -> 
     {StartContent, SyntaxTree} = 
         case filename:extension(FilePath) of
-            ".erl" ->
+            ".erl" -> 
                 generate_from_source(FilePath);
             ".hrl" -> 
                 generate_from_source(FilePath);
@@ -322,10 +329,10 @@ generate(ModuleName, FilePath, DocsFilePath, RealModuleName) ->
     Content2#content{includes = Incls, file = FilePath, module_name = ModuleName}.
 
 generate_from_source(Path) ->  
-    {ok, Source} = epp:parse_file(Path, eide_connect:prop(flat_includes, []), []),
+    {ok, Source} = epp:parse_file(Path, ["../include"], []), 
     {ok, SourceMacros}  = epp_dodger:parse_file(Path),
     Content = parse_tree_simple(erl_syntax:form_list(SourceMacros), #content{file = Path, last_file_attr = Path}),
-    {#content{ 
+    {#content{  
             file = Path,  
             last_file_attr = Path, 
             macros = Content#content.macros, 
@@ -500,12 +507,6 @@ parse_atom_simple(Node, "define", Content) ->
     Macro = parse_erlang_macro(Node),
     Macros = [Macro#macro{file = Content#content.last_file_attr} | Content#content.macros],
     Content#content{macros = Macros};
-parse_atom_simple(Node, "include", Content) -> 
-    Includes = [parse_include(Node) | Content#content.includes],
-    Content#content{includes = Includes};
-parse_atom_simple(Node, "include_lib", Content) -> 
-    Includes = [parse_include(Node) | Content#content.includes],
-    Content#content{includes = Includes};
 parse_atom_simple(_, _, Content) ->
     Content.
     
@@ -524,13 +525,9 @@ parse_atom_beam(Node, "export", Content) ->
 parse_atom_beam(_, _, Content) ->
     Content.
     
-parse_export(Export) ->
+parse_export(Export) -> 
     {erl_syntax:atom_literal(erl_syntax:arity_qualifier_body(Export)),
-     erl_syntax:integer_value(erl_syntax:arity_qualifier_argument(Export))}.
-
-parse_include(Node) ->
-    [Arg] = erl_syntax:attribute_arguments(Node),
-    erl_syntax:string_value(Arg).       
+     erl_syntax:integer_value(erl_syntax:arity_qualifier_argument(Export))}.  
 
 parse_erlang_function(Node, Content, Comments) ->
     %io:format("Node:~p~n", [Node]),

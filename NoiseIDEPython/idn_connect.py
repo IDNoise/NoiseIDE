@@ -134,7 +134,7 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
         self.TaskAddedEvent = idn_events.Event()
 
     def Compile(self, path):
-        self.TaskAddedEvent((TASK_COMPILE, path.lower()))
+        #self.TaskAddedEvent((TASK_COMPILE, path.lower()))
         self._ExecRequest("compile", '"{}"'.format(erlstr(path)))
 
     def CompileTests(self, path):
@@ -150,7 +150,7 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
         self._ExecRequest("cache_app", '"{}"'.format(erlstr(path)))
 
     def CompileFileFly(self, realPath, flyPath):
-        self.TaskAddedEvent((TASK_COMPILE_FLY, realPath.lower()))
+        #self.TaskAddedEvent((TASK_COMPILE_FLY, realPath.lower()))
         self._ExecRequest("compile_file_fly", '["{0}", "{1}"]'.format(erlstr(realPath), erlstr(flyPath)))
 
     def Rpc(self, module, fun):
@@ -182,7 +182,7 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
             self.Compile(path)
 
     def GenerateFileCache(self, path):
-        self.TaskAddedEvent((TASK_GEN_FILE_CACHE, path.lower()))
+        #self.TaskAddedEvent((TASK_GEN_FILE_CACHE, path.lower()))
         self._ExecRequest("gen_file_cache", '"{}"'.format(erlstr(path)))
 
     def GenerateFileCaches(self, paths):

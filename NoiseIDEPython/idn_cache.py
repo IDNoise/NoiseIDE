@@ -1,3 +1,4 @@
+import fnmatch
 import os
 import json
 import re
@@ -83,10 +84,11 @@ class ExportedType:
             self.file = moduleData.file
 
 class ModuleData:
-    def __init__(self, module, data, srcFile):
+    def __init__(self, module, data, srcFile, app):
         self.srcFile = srcFile
         self.file = data[FILE]
         self.module = module
+        self.app = app
 
         self.data = data
 
@@ -111,32 +113,35 @@ class ModuleData:
             macData = data[MACROS][macros]
             self.macroses.append(Macros(self, module, macros, macData[VALUE], macData[LINE]))
 
-        self.includes = set(data[INCLUDES])
+        self.includes = set([(i[0], i[1]) for i in data[INCLUDES]])
 
         self.exportedTypes = []
         for expDype in data[EXPORTED_TYPES]:
             expData = data[EXPORTED_TYPES][expDype]
             self.exportedTypes.append(ExportedType(self, module, expDype, expData[TYPES], expData[LINE]))
 
+    def Key(self):
+        return (self.app, self.name)
+
     def AllIncludes(self):
         includes = list(self.includes)[:]
         for include in self.includes:
-            if include in ErlangCache.moduleData and self.module != include:
-                includes += ErlangCache.moduleData[include].AllIncludes()
+            if include in ErlangCache.includes and self.Key() != include:
+                includes += ErlangCache.includes[include].AllIncludes()
         return set(includes)
 
     def AllRecords(self):
         records = self.records[:]
         for include in self.includes:
-            if include in ErlangCache.moduleData and self.module != include:
-                records += ErlangCache.moduleData[include].AllRecords()
+            if include in ErlangCache.includes and self.Key() != include:
+                records += ErlangCache.includes[include].AllRecords()
         return set(records)
 
     def AllMacroses(self):
         macroses = self.macroses[:]
         for include in self.includes:
-            if include in ErlangCache.moduleData and self.module != include:
-                macroses += ErlangCache.moduleData[include].AllMacroses()
+            if include in ErlangCache.includes and self.Key() != include:
+                macroses += ErlangCache.includes[include].AllMacroses()
         return set(macroses)
 
     def Functions(self, exported = True):
@@ -177,20 +182,20 @@ class ErlangCache:
     }
 
     toLoad = []
-    moduleData = {}
-    modules = set()
-    includes = set()
+    modules = {}
+    includes = {}
     project = None
-    CACHE_DIR = ""
     erlangDir = ""
+
+    @classmethod
+    def CacheDir(cls): return os.path.join(core.MainFrame.cwd, "cache", "erlang")
 
     @classmethod
     def Init(cls, project):
         cls.project = project
-        cls.CACHE_DIR = os.path.join(core.MainFrame.cwd, "cache", "erlang")
-        cls.ERLANG_LIBS_CACHE_DIR =  os.path.join(cls.CACHE_DIR, "runtimes", project.GetErlangRuntime())
+        cls.ERLANG_LIBS_CACHE_DIR =  os.path.join(cls.CacheDir(), "runtimes", project.GetErlangRuntime())
 
-        for d in [cls.CACHE_DIR, cls.ERLANG_LIBS_CACHE_DIR]:
+        for d in [cls.CacheDir(), cls.ERLANG_LIBS_CACHE_DIR]:
             if not os.path.isdir(d):
                 os.makedirs(d)
 
@@ -218,7 +223,7 @@ class ErlangCache:
 
     @classmethod
     def OnFileCheckTimer(cls, event):
-        for m, data in cls.moduleData.items():
+        for data in cls.modules.values() + cls.includes.values():
             if not os.path.exists(data.srcFile):
                 cls.UnloadFile(data.srcFile)
 
@@ -228,7 +233,7 @@ class ErlangCache:
 
     @classmethod
     def LoadCacheFromDir(cls, d):
-        d = os.path.join(cls.CACHE_DIR, d)
+        d = os.path.join(cls.CacheDir(), d)
         for f in os.listdir(d):
             f = os.path.join(d, f)
             if os.path.isdir(f):
@@ -240,8 +245,8 @@ class ErlangCache:
     @classmethod
     def CleanDir(cls, d):
         try:
-            d = os.path.join(cls.CACHE_DIR, d)
-            shutil.rmtree(d, ignore_errors=True)
+            d = os.path.join(cls.CacheDir(), d)
+            shutil.rmtree(d, True)
             os.mkdir(d)
         except Exception, e:
             pass
@@ -249,10 +254,11 @@ class ErlangCache:
     @classmethod
     def LoadFile_(cls, f):
         try:
-            if not os.path.isfile(f): return
-            if not f.endswith(".cache"): return
+            if not f.endswith(".cache") or not os.path.isfile(f): return
+
             data = json.loads(readFile(f))
             name = os.path.basename(f)[:-6]
+            app = os.path.basename(os.path.dirname(f))
             if 'nt' == os.name:
                 import win32api
                 try:
@@ -264,50 +270,61 @@ class ErlangCache:
             if not os.path.isfile(srcFile):
                 os.remove(f)
                 return
-            if (name in cls.modules and
-                not cls.moduleData[name].file.lower().startswith(cls.erlangDir) and
-                srcFile.lower().startswith(cls.erlangDir)):
-                return
+            # if (name in cls.modules and
+            #     not cls.moduleData[name].file.lower().startswith(cls.erlangDir) and
+            #     srcFile.lower().startswith(cls.erlangDir)):
+            #     return
+            mdata = ModuleData(name, data, f, app)
             if name.endswith(".hrl"):
-                cls.includes.add(name)
+                cls.includes[(app, name)] = mdata
             else:
-                cls.modules.add(name)
-
-            cls.moduleData[name] = ModuleData(name, data, f)
+                cls.modules[name] = mdata
+            return mdata
         except  Exception, e:
             core.Log("load cache file error", e)
+        return None
 
     @classmethod
     def TryLoad(cls, module):
-        if module in cls.moduleData:
+        if cls.IsModuleLoaded(module):
             return True
+        for m in cls.FindCacheFiles(module + ".cache"):
+            cls.LoadFile_(m)
+        return cls.IsModuleLoaded(module)
+
+    @classmethod
+    def FindCacheFiles(cls, fileName):
+        matches = []
         for d in [cls.project.ProjectName(), os.path.join("runtimes", cls.project.GetErlangRuntime())]:
-            f = os.path.join(cls.CACHE_DIR, d, module + ".cache")
-            if os.path.isfile(f):
-                cls.LoadFile_(f)
-                return module in cls.moduleData
-        return False
+
+            for root, dirnames, filenames in os.walk(d):
+                for filename in fnmatch.filter(filenames, fileName):
+                    matches.append(os.path.join(root, filename))
+        return matches
+
+    @classmethod
+    def IsModuleLoaded(cls, module):
+        return module in cls.AllModules() or module in cls.AllIncludes()
 
     @classmethod
     def UnloadFile(cls, f):
         if not os.path.isfile(f): return
         if not f.endswith(".cache"): return
         name = os.path.basename(f)[:-6]
-        if not name in cls.moduleData: return
-        del cls.moduleData[name]
-        if IsInclude(name):
-            cls.includes.remove(name)
-        else:
-            cls.modules.remove(name)
+        app = os.path.dirname(f)
+        cls.Unload(name, app)
 
     @classmethod
-    def UnloadModule(cls, name):
-        if not name in cls.moduleData: return
-        del cls.moduleData[name]
-        if IsInclude(name):
-            cls.includes.remove(name)
-        else:
-            cls.modules.remove(name)
+    def Unload(cls, name ,app):
+        key = (app, name)
+        if name in cls.modules:
+            del cls.modules[name]
+        elif key in cls.includes:
+            del cls.includes[key]
+
+    @classmethod
+    def UnloadModule(cls, name, app):
+        cls.Unload(name, app)
 
     @classmethod
     def UnloadCacheForFile(cls, f):
@@ -315,17 +332,22 @@ class ErlangCache:
 
     @classmethod
     def AllModules(cls):
-        return cls.modules
+        return cls.modules.keys()
 
     @classmethod
-    def GetDependentModules(cls, include):
+    def AllIncludes(cls):
+        return [name for (app, name) in cls.includes.keys()]
+
+    @classmethod
+    def GetDependentModules(cls, includePath):
         result = []
-        cls.TryLoad(include)
-        for module in cls.modules:
-            data = cls.moduleData[module]
-            if not data.file.startswith(cls.project.projectDir): continue
-            if include in data.AllIncludes():
-                result.append(data.file)
+        app = core.Project.GetApp(includePath)
+        include = (app, os.path.basename(includePath))
+        cls.TryLoad(os.path.basename(includePath))
+        for module in cls.modules.values():
+            if not module.file.startswith(cls.project.projectDir): continue
+            if include in module.AllIncludes():
+                result.append(module.file)
         return result
 
     @classmethod
@@ -337,7 +359,7 @@ class ErlangCache:
     @classmethod
     def RecordData(cls, module, record):
         if not cls.TryLoad(module): return None
-        for rec in cls.moduleData[module].AllRecords():
+        for rec in cls.modules[module].AllRecords():
             if rec.name == record:
                 return rec
         return None
@@ -345,14 +367,14 @@ class ErlangCache:
     @classmethod
     def AllRecords(cls):
         result = []
-        for include in cls.includes:
-            result += cls.moduleData[include].AllRecords()
+        for include in cls.includes.values():
+            result += include.AllRecords()
         return result
 
     @classmethod
     def AllRecordsData(cls, record):
-        for include in cls.includes:
-            for rec in cls.moduleData[include].AllRecords():
+        for include in cls.includes.values():
+            for rec in include.AllRecords():
                 if rec.name == record:
                     return rec
         return None
@@ -366,13 +388,13 @@ class ErlangCache:
     @classmethod
     def ModuleFunctions(cls, module, exported = True):
         if not cls.TryLoad(module):return []
-        return cls.moduleData[module].Functions(exported)
+        return cls.modules[module].Functions(exported)
 
     @classmethod
     def ModuleFunction(cls, module, funName, arity):
         if not cls.TryLoad(module): return None
         funs = []
-        for fun in cls.moduleData[module].functions:
+        for fun in cls.modules[module].functions:
             if fun.name == funName:
                 funs.append(fun)
         for fun in funs:
@@ -385,7 +407,7 @@ class ErlangCache:
     @classmethod
     def ModuleExportedData(cls, module, type):
         if not cls.TryLoad(module): return None
-        for typeData in cls.moduleData[module].exportedTypes:
+        for typeData in cls.modules[module].exportedTypes:
             if typeData.name == type:
                 return typeData
         for typeData in cls.ERLANG_TYPES:
@@ -396,18 +418,18 @@ class ErlangCache:
     @classmethod
     def ModuleExportedTypes(cls, module):
         if not cls.TryLoad(module): return None
-        return cls.moduleData[module].exportedTypes
+        return cls.modules[module].exportedTypes
 
     @classmethod
     def ModuleRecords(cls, module):
         if not cls.TryLoad(module): return []
-        return cls.moduleData[module].AllRecords()
+        return cls.modules[module].AllRecords()
 
     @classmethod
     def Bifs(cls):
         module = "erlang"
         if not cls.TryLoad(module): return []
-        return [fun for fun in cls.moduleData[module].Functions() if isinstance(fun, Function) and fun.bif == True]
+        return [fun for fun in cls.modules[module].Functions() if isinstance(fun, Function) and fun.bif == True]
 
     @classmethod
     def Bif(cls, name, arity):
@@ -425,12 +447,12 @@ class ErlangCache:
     @classmethod
     def Macroses(cls, module):
         if not cls.TryLoad(module): return []
-        return cls.moduleData[module].AllMacroses()
+        return cls.modules[module].AllMacroses()
 
     @classmethod
     def MacrosData(cls, module, macros):
         if not cls.TryLoad(module): return None
-        for mac in cls.moduleData[module].AllMacroses():
+        for mac in cls.modules[module].AllMacroses():
             if mac.name == macros or mac.name.startswith(macros + "("):
                 return mac
         return None
@@ -438,19 +460,22 @@ class ErlangCache:
     @classmethod
     def ApplicationIncludes(cls, module):
         if not cls.TryLoad(module): return []
-        app = cls.moduleData[module].Application()
+        #print "app inc", module
+        app = cls.modules[module].Application()
+        #print app
+        #print cls.includes.keys()
         result = []
-        for inc in cls.includes:
-            if cls.moduleData[inc].Application() == app:
+        for (incapp, inc) in cls.includes.keys():
+            if incapp == app:
                 result.append(inc + "\").")
         return result
 
     @classmethod
     def GlobalIncludes(cls):
         result = []
-        for inc in cls.includes:
-            if cls.moduleData[inc].IsGlobalInclude():
-                result.append(cls.moduleData[inc].Application() + "/include/" + inc + "\").")
+        for inc in cls.includes.keys():
+            if cls.includes[inc].IsGlobalInclude():
+                result.append(inc[0] + "/include/" + inc[1] + "\").")
         return result
 
 class IgorEntryData:

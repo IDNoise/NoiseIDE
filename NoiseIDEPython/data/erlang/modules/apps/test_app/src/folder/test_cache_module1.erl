@@ -4,13 +4,14 @@
 -module(test_cache_module1).
 
 %% Include files
--include_lib("noiseide/include/sample.hrl").
+-include("sample.hrl").  
+-include_lib("noiseide/include/props.hrl").
 %% Exported Functions
 
--export([
-    x/0,
-    xxx/0,
-    round/2
+-export([  
+    x/0, 
+    xxx/0,  
+    round/2     
 ]).    
 -define(XssssX, ololasdasdado).  
 -type beam_instr() :: 'bs_init_writable' | 'fclearerror' | 'if_end'
@@ -22,7 +23,7 @@
 %%% API  
 
 %-include("sample.hrl
-%%%============================  ======= ================================
+%%%========================== =  ======= ================================
       
 -record(ololo, {       
     field_1 :: beam_instr(),  

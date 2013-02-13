@@ -5,7 +5,6 @@
 -export([
     compile/1, 
     compile_file_fly/2, 
-    generate_includes/0,
     compile_yecc/1,
     compile_with_option/2,
     compile_app/1,
@@ -13,31 +12,13 @@
     compile_tests/1,
     app_name/1
 ]).  
-
-generate_includes() ->
-    Includes = includes(eide_connect:prop(apps_dir)),
-    Includes1 = Includes ++ includes(eide_connect:prop(deps_dir)),
-    eide_connect:set_prop(includes, Includes1),
-    FlatIncludes = lists:map(fun({i, F}) -> F end, Includes1),
-    eide_connect:set_prop(flat_includes, FlatIncludes). 
-
-includes(undefined) -> [];
-includes(Path) ->
-    {ok, Apps} = file:list_dir(Path),
-    [{i, "../include"}| [{i,Ai} || A <- Apps, End <- ["include"],
-     begin
-         Ai = Path ++ "/"++ A ++"/" ++ End,
-         filelib:is_dir(Path ++ "/"++ A) 
-     end]].
- 
   
 compile(FileName) -> 
     case filename:extension(FileName) of
         ".erl" -> 
             OutDir = app_out_dir(FileName),
-            Includes = eide_connect:prop(includes),
             catch file:make_dir(OutDir), 
-            create_response(FileName, compile_internal(FileName, [{outdir, OutDir} | Includes]));
+            create_response(FileName, compile_internal(FileName, [{outdir, OutDir}]));
         ".yrl" -> 
             compile_yecc(FileName),
             create_response(FileName, []);
@@ -51,7 +32,6 @@ compile_app(AppPath) ->
     catch file:make_dir(OutDir),
     SrcDir = AppPath ++ "/src",
     HrlDir = AppPath ++ "/include",
-    Includes = eide_connect:prop(includes),
     {Modules, LocalHrls, Yrls, AppSrcFile} = filelib:fold_files(SrcDir, ".*\.(erl|hrl|yrl|src)$", true, 
         fun(File, {M, H, Y, ASF}) ->
            case filename:extension(File) of
@@ -78,7 +58,7 @@ compile_app(AppPath) ->
         end, undefined),
     [eide_cache:gen_file_cache(H) || H <- IncludeHrls ++ LocalHrls],
     Modules1 = Modules ++ [filename:rootname(Y) ++ ".erl" || Y <- Yrls, compile_yecc(Y) == ok],
-    SrcResult = [compile_result(M, Includes, OutDir) || M <- Modules1],
+    SrcResult = [compile_result(M, OutDir) || M <- Modules1],
     
     case AppSrcFile of
         undefined -> ignore;
@@ -90,18 +70,17 @@ compile_tests(AppPath) ->
     OutDir = AppPath ++ "/ebin",
     catch file:make_dir(OutDir),
     TestDir = AppPath ++ "/test",
-    Includes = eide_connect:prop(includes),
     TestResult = filelib:fold_files(TestDir, ".*\.erl$", true, 
         fun(File, R) ->
-           [compile_result(File, Includes, OutDir) | R]
+           [compile_result(File, OutDir) | R]
         end, []), 
     TestResult.
  
-compile_result(File, Includes, OutDir) ->
+compile_result(File, OutDir) ->
     catch file:make_dir(OutDir),
     {struct, 
         [{path, iolist_to_binary(File)}, 
-         {errors, compile_internal(File, [{outdir, OutDir} | Includes])}
+         {errors, compile_internal(File, [{outdir, OutDir}])}
         ]}.
  
 compile_appsrc(AppSrcFile) ->
@@ -131,8 +110,7 @@ compile_appsrc(AppSrcFile) ->
 compile_with_option(FileName, Option) ->
     OutDir = app_out_dir(FileName),
     catch file:make_dir(OutDir),
-    Includes = eide_connect:prop(includes),
-    Options = [{outdir, OutDir}, Option | Includes],
+    Options = [{outdir, OutDir}, Option, {i, filename:join(app_path(FileName), "include")}],
     Options1 = case eide_connect:prop(compiler_options) of
             undefined -> Options;
             Str -> Options ++ parse_term("[" ++ Str ++ "].")
@@ -140,6 +118,7 @@ compile_with_option(FileName, Option) ->
     compile:file(FileName, Options1),
     File = OutDir ++ "/" ++ filename:rootname(filename:basename(FileName)) ++ "." ++ atom_to_list(Option),
     {ok, Data} = file:read_file(File),
+    file:delete(File),
     mochijson2:encode({struct, [{response, compile_option},
                                 {option, Option},
                                 {path, iolist_to_binary(FileName)},
@@ -230,7 +209,7 @@ create_response_fly(FilePath, Errors) ->
                                 {path, iolist_to_binary(FilePath)}]}).
 
 compile_file_fly(RealPath, NewPath) -> 
-    create_response_fly(RealPath, compile_internal(NewPath, eide_connect:prop(includes), false, RealPath)).
+    create_response_fly(RealPath, compile_internal(NewPath, [{i, filename:join(app_path(RealPath), "include")}], false, RealPath)).
 
 parse_term(String) when is_binary(String) ->
     parse_term(binary_to_list(String));
@@ -242,7 +221,7 @@ parse_term(String) when is_list(String) ->
 compile_internal(FileName, Options) ->
     compile_internal(FileName, Options, true, FileName).
 compile_internal(FileName, Options, ToBinary, RealPath) ->
-    Options0 = default_options() ++ Options,
+    Options0 = default_options() ++ Options ++ [{i, filename:join(app_path(RealPath), "include")}],
     Options1 = 
         case eide_connect:prop(compiler_options) of
             undefined -> Options0;

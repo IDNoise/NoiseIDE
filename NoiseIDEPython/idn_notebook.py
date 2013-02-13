@@ -145,7 +145,8 @@ class EditorNotebook(aui.AuiNotebook):
     def OnPageClose(self, event):
         page = event.GetSelection()
         self[page].OnClose()
-        self.pageOpenOrder.remove(self[page])
+        if self[page] in self.pageOpenOrder:
+            self.pageOpenOrder.remove(self[page])
         if self.GetSelection() == page:
             self.NavigateBack(True)
 

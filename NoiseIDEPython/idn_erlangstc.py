@@ -186,7 +186,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
             return False
 
     def ShowOutline(self):
-        dlg = ErlangOutline(self, self.ModuleName())
+        dlg = ErlangOutline(self, self.filePath)
         dlg.ShowModal()
 
     def CommentLines(self):
@@ -320,19 +320,26 @@ class ErlangSTC(ErlangHighlightedSTCBase):
             data = self.completer.GetMacrosNavAndHelp(value)
         elif style in [ErlangHighlightType.ATOM, ErlangHighlightType.MODULE]:
             if value in ErlangCache.AllModules():
-                self.navigateTo = (ErlangCache.moduleData[value].file, 0)
+                self.navigateTo = (ErlangCache.modules[value].file, 0)
 
         elif style == ErlangHighlightType.MODULEATTR or ErlangHighlightType.STRING:
             path = None
+            isIncludeLib = False
             if (style == ErlangHighlightType.MODULEATTR and value in ["include", "include_lib"]):
+                isIncludeLib = value == "include_lib"
                 path = postfix[2:len(postfix)-3]
             elif style == ErlangHighlightType.STRING and lineText.startswith("-include"):
                 s = 14 if lineText.startswith("-include_lib") else 10
+                isIncludeLib = lineText.startswith("-include_lib")
                 path = lineText[s:len(lineText)-3]
             if path:
-                include = os.path.basename(path)
-                if include in ErlangCache.moduleData:
-                    self.navigateTo = (ErlangCache.moduleData[include].file, 0)
+                if isIncludeLib:
+                    app = path.split("/")[0]
+                else:
+                    app = core.Project.GetApp(self.filePath)
+                include = (app, path)
+                if include in ErlangCache.includes:
+                    self.navigateTo = (ErlangCache.includes[include].file, 0)
                     start = lineStart
                     end = lineEnd
         if style in [ErlangHighlightType.FUNCTION, ErlangHighlightType.RECORD, ErlangHighlightType.MACROS]:
@@ -591,8 +598,8 @@ class ErlangConsoleSTC(ConsoleSTC):
                 fline = int(d["fline"])
                 if not os.path.isfile(filePath):
                     (module, _) = os.path.splitext(filePath)
-                    if module in ErlangCache.moduleData:
-                        filePath = ErlangCache.moduleData[module].file
+                    if module in ErlangCache.modules:
+                        filePath = ErlangCache.modules[module].file
                     else:
                         continue
                 filePath = os.path.normpath(filePath)

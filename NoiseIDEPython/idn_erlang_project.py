@@ -252,7 +252,7 @@ class ErlangProject(Project):
         return Config.Runtimes()[runtime]
 
     def SetupDirs(self):
-        projectCacheDir = os.path.join(ErlangCache.CACHE_DIR, self.ProjectName())
+        projectCacheDir = os.path.join(ErlangCache.CacheDir(), self.ProjectName())
         if not os.path.isdir(projectCacheDir):
             os.makedirs(projectCacheDir)
         self.flyDir = os.path.join(self.window.cwd, "data", "erlang", "fly", self.ProjectName())
@@ -302,7 +302,7 @@ class ErlangProject(Project):
             return app[:app.index(os.sep)]
         return app
 
-    def Compile(self, path):
+    def Compile(self, path, ingoreExclusion = False):
         hrls = set()
         erls = set()
         igors = set()
@@ -328,7 +328,7 @@ class ErlangProject(Project):
             toRemove = []
             for hrl in hrls:
                 self.GetShell().GenerateFileCache(hrl)
-                dependent = ErlangCache.GetDependentModules(os.path.basename(hrl))
+                dependent = ErlangCache.GetDependentModules(hrl)
                 for d in dependent:
                     addByType(d)
                 toRemove.append(hrl)
@@ -337,7 +337,7 @@ class ErlangProject(Project):
 
         for erl in erls:
             app = self.GetApp(erl)
-            if app in self.projectData[CONFIG_EXCLUDED_DIRS]:
+            if not ingoreExclusion and app in self.projectData[CONFIG_EXCLUDED_DIRS]:
                 continue
             self.GetShell().Compile(erl)
         for igor in igors:
@@ -374,7 +374,7 @@ class ErlangProject(Project):
     def SetupShellConsole(self):
         self.connected = False
         self.shellConsole = ErlangIDEConsole(self.window.ToolMgr, self.IDE_MODULES_DIR)
-        self.shellConsole.shell.SetProp("cache_dir", ErlangCache.CACHE_DIR)
+        self.shellConsole.shell.SetProp("cache_dir", ErlangCache.CacheDir())
         self.shellConsole.shell.SetProp("project_dir", self.projectDir)
         self.shellConsole.shell.SetProp("apps_dir", self.AppsPath())
         self.shellConsole.shell.SetProp("deps_dir", self.DepsPath())
@@ -440,10 +440,10 @@ class ErlangProject(Project):
                 module = pystr(js["module"])
                 if module in self.xrefModules:
                     self.xrefModules.remove(module)
-                if not module in ErlangCache.moduleData: return
+                if not module in ErlangCache.modules: return
                 undefined = [((u["where_m"], u["where_f"], u["where_a"]),
                               (u["what_m"], u["what_f"], u["what_a"])) for u in js["undefined"]]
-                self.AddXRefErrors(ErlangCache.moduleData[module].file, undefined)
+                self.AddXRefErrors(ErlangCache.modules[module].file, undefined)
                 self.xrefProblemsCount += len(undefined)
                 if len(self.xrefModules) == 0:
     #                if self.xrefProblemsCount == 0:
@@ -601,14 +601,14 @@ class ErlangProject(Project):
 
 
     def FileSaved(self, path):
-        self.Compile(path)
+        self.Compile(path, True)
 
     def OnProjectFilesDeleted(self, files):
         for f in files:
             self.AddErrors(f, [])
             self.RemoveUnusedBeams()
             if IsInclude(f):
-                self.Compile(ErlangCache.GetDependentModules(os.path.basename(f)))
+                self.Compile(ErlangCache.GetDependentModules(f))
             self.ClearCacheForFile(f)
             editor = self.window.TabMgr.FindPageByPath(f)
             page = self.window.TabMgr.FindPageIndexByPath(f)
@@ -640,14 +640,12 @@ class ErlangProject(Project):
         name = os.path.basename(path)
         if IsModule(name):
             name = name[:-4]
-        ErlangCache.UnloadModule(name)
+        ErlangCache.UnloadModule(name, self.GetApp(path))
 
     def GetEditorTypes(self):
         return {".config": ErlangHighlightedSTCBase,
                 ".src": ErlangHighlightedSTCBase,
                 ".app": ErlangHighlightedSTCBase}
-
-
 
     def RebuildTests(self):
         self.CompileTestSubset(self.GetAppsAndDeps())
