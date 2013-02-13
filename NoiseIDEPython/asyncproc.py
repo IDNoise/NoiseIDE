@@ -233,6 +233,9 @@ class Process(object):
 	   first level (closing stdin) is skipped.
 	"""
 	if self.__process.stdin:
+	    self.kill(signal.SIGTERM)
+	    self.kill(signal.SIGABRT)
+	    self.kill(signal.SIGILL)
 	    # This is rather meaningless when stdin != PIPE.
 	    self.closeinput()
 	    try:
