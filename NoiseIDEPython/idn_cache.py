@@ -121,7 +121,7 @@ class ModuleData:
             self.exportedTypes.append(ExportedType(self, module, expDype, expData[TYPES], expData[LINE]))
 
     def Key(self):
-        return (self.app, self.name)
+        return (self.app, self.module)
 
     def AllIncludes(self):
         includes = list(self.includes)[:]
@@ -304,7 +304,7 @@ class ErlangCache:
 
     @classmethod
     def IsModuleLoaded(cls, module):
-        return module in cls.AllModules() or module in cls.AllIncludes()
+        return module in cls.AllModules()
 
     @classmethod
     def UnloadFile(cls, f):
@@ -346,6 +346,7 @@ class ErlangCache:
         cls.TryLoad(os.path.basename(includePath))
         for module in cls.modules.values():
             if not module.file.startswith(cls.project.projectDir): continue
+            print module.file, module.AllIncludes()
             if include in module.AllIncludes():
                 result.append(module.file)
         return result

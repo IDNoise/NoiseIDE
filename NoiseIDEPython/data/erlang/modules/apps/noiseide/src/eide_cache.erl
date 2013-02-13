@@ -7,7 +7,7 @@
 -define(TERM, "term()"). 
 -define(VAR, "Var"). 
    
--export([ 
+-export([  
     create_cache_for_erlang_libs/1,
     create_cache_file_fly/2,
     generate_file/4, 
@@ -108,7 +108,7 @@ create_cache_file_fly(FlyFile, RealFile) ->
     ModuleName = module_name(FlyFile),    
     CacheFileName = get_cache_file_name(CacheDir, RealFile, RealModuleName),
     try 
-       Data = generate(ModuleName, FlyFile, undefined, RealModuleName), 
+       Data = generate(ModuleName, FlyFile, RealFile, undefined, RealModuleName), 
        dump_data_to_file(RealModuleName, CacheDir, RealFile, CacheFileName, Data, FlyFile),
        send_answer(CacheFileName, RealFile)
     catch _:_ -> ok
@@ -159,7 +159,6 @@ module_name(File) ->
     end.
 
 get_cache_file_name(CacheDir, FilePath, Name) ->
-    %io:format("Name: ~p, app:~p~n", [Name, eide_compiler:app_name(FilePath)]), 
     CacheDir ++ "/" ++ eide_compiler:app_name(FilePath) ++ "/" ++ Name ++ ".cache".
 
 generate_file(CacheDir, ModuleName, FilePath, DocsFilePath) ->
@@ -168,7 +167,7 @@ generate_file(CacheDir, ModuleName, FilePath, DocsFilePath) ->
 %        case filelib:last_modified(FilePath) < filelib:last_modified(CacheFileName) of
 %            true -> ignore;
 %            _ ->
-        Data = generate(ModuleName, FilePath, DocsFilePath, ModuleName),
+        Data = generate(ModuleName, FilePath, FilePath, DocsFilePath, ModuleName),
         dump_data_to_file(ModuleName, CacheDir, FilePath, CacheFileName, Data),
 %        end,
         send_answer(CacheFileName, FilePath) 
@@ -298,20 +297,19 @@ includes_to_json(Incs, File) ->
     end
     || I <- Incs, string:to_lower(I) =/= string:to_lower(File)].
 
-generate(ModuleName, FilePath, DocsFilePath, RealModuleName) -> 
+generate(ModuleName, FilePath, RealFile, DocsFilePath, RealModuleName) -> 
     {StartContent, SyntaxTree} = 
         case filename:extension(FilePath) of
             ".erl" -> 
-                generate_from_source(FilePath);
+                generate_from_source(FilePath, RealFile);
             ".hrl" -> 
-                generate_from_source(FilePath);
+                generate_from_source(FilePath, RealFile);
             _ -> 
                 throw(unknown_type) 
         end,
     Comments = erl_comment_scan:file(FilePath),
     {SyntaxTree1, _} = erl_recomment:recomment_tree(SyntaxTree, Comments),
-    Content = parse_tree(SyntaxTree1, StartContent),
-
+    Content = parse_tree(SyntaxTree1, StartContent),  
     Incls = sets:to_list(sets:from_list(Content#content.includes)),
     BeamTree = get_tree_from_beam(RealModuleName), 
     Content1 = case BeamTree of
@@ -328,18 +326,18 @@ generate(ModuleName, FilePath, DocsFilePath, RealModuleName) ->
                end,
     Content2#content{includes = Incls, file = FilePath, module_name = ModuleName}.
 
-generate_from_source(Path) ->  
-    {ok, Source} = epp:parse_file(Path, ["../include"], []), 
+generate_from_source(Path, RealPath) ->   
+    {ok, Source} = epp:parse_file(Path, [ eide_compiler:app_path(RealPath) ++ "/include"], []), 
     {ok, SourceMacros}  = epp_dodger:parse_file(Path),
     Content = parse_tree_simple(erl_syntax:form_list(SourceMacros), #content{file = Path, last_file_attr = Path}),
     {#content{  
             file = Path,  
             last_file_attr = Path, 
-            macros = Content#content.macros, 
+            macros = Content#content.macros,    
             includes = Content#content.includes
         }, 
         erl_syntax:form_list(Source)}.
-
+ 
     
 get_tree_from_beam(ModuleName) ->
     case code:where_is_file(ModuleName ++ ".beam") of
@@ -443,18 +441,15 @@ parse_tree(Node, Content) ->
             Content
     end.
 
-parse_atom(Node, "file", Content) when Content#content.file == undefined  -> 
-    [Attribute, _] = erl_syntax:attribute_arguments(Node),
-    File = erl_syntax:string_value(Attribute),
-    Content#content{file = File, last_file_attr = File}; 
-parse_atom(Node, "file", Content) -> 
+parse_atom(Node, "file", Content) ->
     [Attribute, _] = erl_syntax:attribute_arguments(Node),
     File = erl_syntax:string_value(Attribute),
     Content1 =     
-        case lists:suffix("hrl", File) of
+        case lists:suffix("hrl", File) andalso File =/= Content#content.file of
             true -> 
                 Content#content{includes = [File | Content#content.includes]};
-            false -> Content
+            false -> 
+                Content
         end,
     Content1#content{last_file_attr = File}; 
 parse_atom(Node, "export", Content) -> 
@@ -530,7 +525,6 @@ parse_export(Export) ->
      erl_syntax:integer_value(erl_syntax:arity_qualifier_argument(Export))}.  
 
 parse_erlang_function(Node, Content, Comments) ->
-    %io:format("Node:~p~n", [Node]),
     NameInfo = erl_syntax:function_name(Node),
     Name = erl_syntax:atom_literal(NameInfo),
     Line = erl_syntax:get_pos(NameInfo),

@@ -1,4 +1,5 @@
 import ide_migrations
+from idn_erlang_constats import SINGLE_APP_PROJECT, MULTIPLE_APP_PROJECT, CONFIG_PROJECT_TYPE
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
@@ -7,7 +8,7 @@ import urllib2
 from wx.lib.dialogs import  MultiMessageDialog
 import yaml
 from idn_erlang_dialogs import ErlangOptionsDialog
-from idn_erlang_project import ErlangProject
+from idn_erlang_project import ErlangProject, LoadProject
 from idn_erlang_project_form import ErlangProjectFrom
 import idn_installer
 from idn_utils import Menu, GetImage, readFile, writeBinaryFile, Timer, CreateButton, CreateLabel
@@ -37,10 +38,6 @@ class NoiseIDE(wx.Frame):
 
         self.Maximize()
         Config.load()
-        currentVersion = self.GetCurrentVersion()
-        if Config.GetProp("current_version", 0) < currentVersion:
-            self.apply_migration(Config.GetProp("current_version", 0))
-        Config.SetProp("current_version", currentVersion)
 
         ColorSchema.load(Config.ColorSchema())
 
@@ -87,15 +84,26 @@ class NoiseIDE(wx.Frame):
 
         self.autoCheckTimer = Timer(600, newVersionChecker)
         self.autoCheckTimer.Start()
+
         args = sys.argv[1:]
+        wx.CallAfter(self.OnAfterLoad, args)
+
+
+
+    def OnAfterLoad(self, args):
+        newVersion = Config.GetCurrentVersion()
+        current = Config.GetProp("current_version", 0)
+
+        if current < newVersion:
+            self.apply_migration(current)
+        Config.SetProp("current_version", newVersion)
+
         if args:
             path = args[0]
-            if os.path.isfile(path) and path.endswith("noiseide"):
-                wx.CallAfter(self.OpenProject, path)
-            else:
-                wx.CallAfter(self.TryLoadLastProject)
-        else:
-            wx.CallAfter(self.TryLoadLastProject)
+            if os.path.isfile(path) and path.endswith(".noiseide"):
+                self.OpenProject(path)
+                return
+        self.TryLoadLastProject()
 
     def apply_migration(self, version):
         for v, fun in ide_migrations.MIGRATIONS.items():
@@ -199,20 +207,11 @@ class NoiseIDE(wx.Frame):
     def OnHelpShortcuts(self, event):
         ShortcutWindow(self).Show()
 
-
-    def GetCurrentVersion(self):
-        revCfg = os.path.join(self.cwd, "rev.cfg")
-        version = 0.1
-        if os.path.isfile(revCfg):
-            data = readFile(revCfg)
-            version = float(data.split("\n")[0].split(":")[1].strip())
-        return version
-
     def OnHelpCheckForUpdates(self, event, auto = False):
         try:
             if not auto:
                 self.SetCursor(wx.StockCursor(wx.CURSOR_WAIT))
-            version = self.GetCurrentVersion()
+            version = Config.GetCurrentVersion()
             revfile = urllib2.urlopen("https://dl.dropbox.com/s/1a36pmlgmdy4rly/rev.cfg")
             newData = revfile.read()
             newVersion = float(newData.split("\n")[0].split(":")[1].strip())
@@ -302,7 +301,7 @@ class NoiseIDE(wx.Frame):
         form.ShowModal()
 
     def OnHelpAbout(self, event):
-        wx.MessageBox("IDE for Erlang programming language.\nMade by Yaroslav 'IDNoise' Nikityshev.", "Noise IDE v {}".format(self.GetCurrentVersion()))
+        wx.MessageBox("IDE for Erlang programming language.\nMade by Yaroslav 'IDNoise' Nikityshev.", "Noise IDE v {}".format(Config.GetCurrentVersion()))
 
     def MenuBar(self):
         return self.menubar
@@ -330,19 +329,17 @@ class NoiseIDE(wx.Frame):
         projects.append(projectFile)
         Config.SetLastProjects(projects)
         self.SetupProjectMenu()
-        self.project = self.LoadProject(projectFile)
+        self.project = LoadProject(projectFile)
 
         self.SetTitle(self.project.ProjectName() + " - " + "Noise IDE")
 
-
-    def LoadProject(self, filePath):
-        projectData = yaml.load(file(filePath, 'r'))
-        type = projectData[Project.CONFIG_PROJECT_TYPE]
-        return Project.TYPE_PROJECT_DICT[type](self, filePath, projectData)
-
     def OnNewErlangProject(self, event):
         self.CheckRuntimes()
-        ErlangProjectFrom().ShowModal()
+        dlg = wx.SingleChoiceDialog(self, "Select project type", "Project type", [SINGLE_APP_PROJECT, MULTIPLE_APP_PROJECT])
+        if dlg.ShowModal() == wx.ID_CANCEL:
+            return
+
+        ErlangProjectFrom(None, dlg.GetStringSelection()).ShowModal()
 
     def OnClose(self, event):
         if self.project:

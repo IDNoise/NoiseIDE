@@ -16,7 +16,7 @@ ICON_SIZE = 16
 
 class ProjectExplorer(IDNCustomTreeCtrl):
     FILE, DIRECTORY_OPEN, DIRECTORY_CLOSED = range(3)
-    INTERVAL = 2
+    INTERVAL = 3
 
     def __init__(self, parent, project):
         style = wx.TR_MULTIPLE | wx.DIRCTRL_3D_INTERNAL | wx.TR_HAS_BUTTONS

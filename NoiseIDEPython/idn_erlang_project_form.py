@@ -11,46 +11,35 @@ from idn_window_utils import NotEmptyTextValidator
 __author__ = 'Yaroslav'
 
 class ErlangProjectFrom(wx.Dialog):
-    def __init__(self, project = None):
+    def __init__(self, project = None, projectType = None):
         wx.Dialog.__init__(self, core.MainFrame, title = "Create\Edit project",
             style = wx.DEFAULT_DIALOG_STYLE | wx.WS_EX_VALIDATE_RECURSIVELY)
 
         self.consoles = {}
-
-        self.CreateForm()
+        self.projectType = projectType
+        print projectType
+        if projectType == SINGLE_APP_PROJECT:
+            self.CreateSingleAppForm()
+        elif projectType == MULTIPLE_APP_PROJECT:
+            self.CreateMultipleAppsForm()
 
         self.project = project
         if self.project:
             self.SetCurrentValues()
             self.project.oldProjectData = self.project.projectData.copy()
 
-    def CreateForm(self):
+    def CreateCommonElements(self):
         self.projectNameTB = wx.TextCtrl(self, value = "Project_name", size = (300, 20), validator = NotEmptyTextValidator("Title"))
         self.projectNameTB.SetToolTipString("Project name")
 
         self.projectPathTB = wx.TextCtrl(self, value = "C:\\YourProjectFolder", size = (300, 20), validator = NotEmptyTextValidator("Project dir"))
         self.projectPathTB.SetToolTipString("Path to folder")
-        self.projectPathTB.Bind(wx.EVT_TEXT, self.OnPathChanged)
 
         self.projectPathButton = CreateButton(self, "...", self.OnSelectProjectPath)
         self.projectPathButton.MinSize = (25, 25)
 
-        self.appsDirTB = wx.TextCtrl(self, value = "apps", size = (300, 20), validator = NotEmptyTextValidator("Apps dir"))
-        self.appsDirTB.SetToolTipString("Apps folder name")
-        self.appsDirTB.Bind(wx.EVT_TEXT, self.OnPathChanged)
-
-        self.depsDirTB = wx.TextCtrl(self, value = "deps", size = (300, 20), validator = NotEmptyTextValidator("Deps dir"))
-        self.depsDirTB.SetToolTipString("Deps folder name")
-        self.depsDirTB.Bind(wx.EVT_TEXT, self.OnPathChanged)
-
-        self.workDirTB = wx.TextCtrl(self, value = "", size = (300, 20))
-        self.workDirTB.SetToolTipString("Work dir. Empty if root.")
-
         self.compilerOptionsTB = wx.TextCtrl(self, value = "", size = (300, 60), style = wx.TE_MULTILINE)
         self.compilerOptionsTB.SetToolTipString("Compiler options in form: \n{d, Macro} or {d, Macro, Value}")
-
-        self.excludedDirList = wx.CheckListBox(self, choices = [], size = (220, 150))
-        self.excludedDirList.SetToolTipString("Directories to exclude from compilation")
 
         self.erlangCMB = wx.ComboBox(self, choices = Config.Runtimes().keys(), value = Config.Runtimes().keys()[0])
         self.erlangCMB.SetToolTipString("Select project runtime")
@@ -64,6 +53,68 @@ class ErlangProjectFrom(wx.Dialog):
 
         self.closeButton = CreateButton(self, "Close", lambda e: self.Close())
         self.saveButton = CreateButton(self, "Save", self.OnSave)
+
+        self.consoleSizer = wx.StaticBoxSizer(wx.StaticBox(self, label = "Consoles"), wx.HORIZONTAL)
+
+        bSizer = wx.BoxSizer(wx.VERTICAL)
+        bSizer.Add(self.addConsoleButton)
+        bSizer.Add(self.editConsoleButton)
+        bSizer.Add(self.removeConsoleButton)
+
+        self.consoleSizer.Add(self.consolesList, 1, flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
+        self.consoleSizer.AddSizer(bSizer, flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
+
+        self.saveCloseButtonSizer = wx.BoxSizer(wx.HORIZONTAL)
+        self.saveCloseButtonSizer.Add(self.closeButton, flag = wx.ALL | wx.ALIGN_LEFT, border = 4)
+        self.saveCloseButtonSizer.AddStretchSpacer()
+        self.saveCloseButtonSizer.Add(self.saveButton, flag = wx.ALL | wx.ALIGN_RIGHT, border = 4)
+
+    def CreateSingleAppForm(self):
+        self.CreateCommonElements()
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        gSizer = wx.GridBagSizer(2, 2)
+        i = 0
+        gSizer.Add(CreateLabel(self, "Title:"), (i, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
+        gSizer.Add(self.projectNameTB, (i, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
+        i += 1
+        gSizer.Add(CreateLabel(self, "Project dir:"), (i, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
+        gSizer.Add(self.projectPathTB, (i, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
+        gSizer.Add(self.projectPathButton, (i, 2), flag = wx.ALIGN_CENTER)
+        i += 1
+        gSizer.Add(CreateLabel(self, "Erlang runtime:"), (i, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
+        gSizer.Add(self.erlangCMB, (i, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
+        i += 1
+        gSizer.Add(CreateLabel(self, "Compiler options:"), (i, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
+        gSizer.Add(self.compilerOptionsTB, (i, 1), flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
+
+        sizer.AddSizer(gSizer)
+
+        sizer.AddSizer(self.consoleSizer, flag =  wx.EXPAND)
+        sizer.AddSizer(self.saveCloseButtonSizer, 1, flag = wx.EXPAND)
+
+        self.SetSizer(sizer)
+        sizer.SetSizeHints(self)
+        self.Layout()
+
+    def CreateMultipleAppsForm(self):
+        self.CreateCommonElements()
+
+        self.projectPathTB.Bind(wx.EVT_TEXT, self.OnPathChanged)
+
+        self.appsDirTB = wx.TextCtrl(self, value = "apps", size = (300, 20), validator = NotEmptyTextValidator("Apps dir"))
+        self.appsDirTB.SetToolTipString("Apps folder name")
+        self.appsDirTB.Bind(wx.EVT_TEXT, self.OnPathChanged)
+
+        self.depsDirTB = wx.TextCtrl(self, value = "deps", size = (300, 20), validator = NotEmptyTextValidator("Deps dir"))
+        self.depsDirTB.SetToolTipString("Deps folder name")
+        self.depsDirTB.Bind(wx.EVT_TEXT, self.OnPathChanged)
+
+        self.workDirTB = wx.TextCtrl(self, value = "", size = (300, 20))
+        self.workDirTB.SetToolTipString("Work dir. Empty if root.")
+
+        self.excludedDirList = wx.CheckListBox(self, choices = [], size = (220, 150))
+        self.excludedDirList.SetToolTipString("Directories to exclude from compilation")
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         gSizer = wx.GridBagSizer(2, 2)
@@ -92,30 +143,12 @@ class ErlangProjectFrom(wx.Dialog):
 
         sizer.AddSizer(gSizer)
 
-
         excludedAppsSizer = wx.StaticBoxSizer(wx.StaticBox(self, label = "Excluded dirs"), wx.HORIZONTAL)
-
         excludedAppsSizer.Add(self.excludedDirList, 1, flag = wx.ALL | wx.ALIGN_LEFT | wx.EXPAND, border = 4)
+
         sizer.AddSizer(excludedAppsSizer, flag = wx.EXPAND)
-
-        cSizerH = wx.StaticBoxSizer(wx.StaticBox(self, label = "Consoles"), wx.HORIZONTAL)
-
-        bSizer = wx.BoxSizer(wx.VERTICAL)
-        bSizer.Add(self.addConsoleButton)
-        bSizer.Add(self.editConsoleButton)
-        bSizer.Add(self.removeConsoleButton)
-
-        cSizerH.Add(self.consolesList, 1, flag = wx.ALL | wx.ALIGN_CENTER | wx.EXPAND, border = 4)
-        cSizerH.AddSizer(bSizer, flag = wx.ALL | wx.ALIGN_CENTER, border = 4)
-
-        sizer.AddSizer(cSizerH, flag =  wx.EXPAND)
-
-        bSizerH = wx.BoxSizer(wx.HORIZONTAL)
-        bSizerH.Add(self.closeButton, flag = wx.ALL | wx.ALIGN_LEFT, border = 4)
-        bSizerH.AddStretchSpacer()
-        bSizerH.Add(self.saveButton, flag = wx.ALL | wx.ALIGN_RIGHT, border = 4)
-
-        sizer.AddSizer(bSizerH, 1, flag = wx.EXPAND)
+        sizer.AddSizer(self.consoleSizer, flag =  wx.EXPAND)
+        sizer.AddSizer(self.saveCloseButtonSizer, 1, flag = wx.EXPAND)
 
         self.SetSizer(sizer)
         sizer.SetSizeHints(self)
@@ -127,9 +160,6 @@ class ErlangProjectFrom(wx.Dialog):
         self.projectPathTB.Value = self.project.projectDir
         self.projectPathTB.Disable()
         self.projectPathButton.Disable()
-        self.appsDirTB.Value = self.project.projectData[CONFIG_APPS_DIR]
-        self.depsDirTB.Value = self.project.projectData[CONFIG_DEPS_DIR]
-        self.workDirTB.Value = self.project.projectData[CONFIG_WORK_DIR] if CONFIG_WORK_DIR in self.project.projectData else ""
 
         runtime = self.project.GetErlangRuntime()
         if runtime:
@@ -137,11 +167,16 @@ class ErlangProjectFrom(wx.Dialog):
 
         self.compilerOptionsTB.Value = self.project.CompilerOptions()
 
-        self.excludedDirList.SetItems(self.project.projectData[CONFIG_EXCLUDED_DIRS] + self.project.GetAppsAndDeps())
-        self.excludedDirList.SetCheckedStrings(self.project.projectData[CONFIG_EXCLUDED_DIRS])
-
         self.consoles = self.project.projectData[CONFIG_CONSOLES]
         self.UpdateConsoles()
+
+        if self.projectType == MULTIPLE_APP_PROJECT:
+            self.appsDirTB.Value = self.project.projectData[CONFIG_APPS_DIR]
+            self.depsDirTB.Value = self.project.projectData[CONFIG_DEPS_DIR]
+            self.workDirTB.Value = self.project.projectData[CONFIG_WORK_DIR] if CONFIG_WORK_DIR in self.project.projectData else ""
+
+            self.excludedDirList.SetItems(self.project.projectData[CONFIG_EXCLUDED_DIRS] + self.project.GetAppsAndDeps())
+            self.excludedDirList.SetCheckedStrings(self.project.projectData[CONFIG_EXCLUDED_DIRS])
 
 
     def OnPathChanged(self, event):
@@ -184,28 +219,42 @@ class ErlangProjectFrom(wx.Dialog):
         self.UpdateConsoles()
 
     def OnSave(self, event):
-
         if not self.Validate(): return
 
         title = self.projectNameTB.Value
         path = self.projectPathTB.Value
-        apps = self.appsDirTB.Value
-        deps = self.depsDirTB.Value
-        workDir = self.workDirTB.Value
         erlang = self.erlangCMB.Value
         compilerOptions = self.compilerOptionsTB.Value
-        excludedDirs = list(self.excludedDirList.GetCheckedStrings())
 
         data = {}
         data[Project.CONFIG_PROJECT_NAME] = title
         data[Project.CONFIG_PROJECT_TYPE] = "erlang"
-        data[CONFIG_APPS_DIR] = apps
-        data[CONFIG_DEPS_DIR] = deps
-        data[CONFIG_WORK_DIR] = workDir
-        data[CONFIG_EXCLUDED_DIRS] = excludedDirs
         data[CONFIG_COMPILER_OPTIONS] = compilerOptions
-
         data[CONFIG_CONSOLES] = self.consoles
+        data[CONFIG_PROJECT_TYPE] = self.projectType
+
+        if self.projectType == MULTIPLE_APP_PROJECT:
+            apps = self.appsDirTB.Value
+            deps = self.depsDirTB.Value
+            workDir = self.workDirTB.Value
+            excludedDirs = list(self.excludedDirList.GetCheckedStrings())
+
+            data[CONFIG_APPS_DIR] = apps
+            data[CONFIG_DEPS_DIR] = deps
+            data[CONFIG_WORK_DIR] = workDir
+            data[CONFIG_EXCLUDED_DIRS] = excludedDirs
+
+            appsPath = os.path.join(path, apps)
+            depsPath = os.path.join(path, deps)
+
+            dirs = [appsPath, depsPath]
+            if workDir:
+                workDirPath = os.path.join(path, workDir)
+                dirs.append(workDirPath)
+
+            for d in dirs:
+                if not os.path.isdir(d):
+                    os.mkdir(d)
 
         userData = self.project.userData.copy() if self.project else {}
         userData[CONFIG_ERLANG_RUNTIME] = erlang
@@ -213,19 +262,6 @@ class ErlangProjectFrom(wx.Dialog):
         pFile = os.path.join(path, title + ".noiseide")
         if not os.path.isdir(path):
             os.makedirs(path)
-
-        appsPath = os.path.join(path, apps)
-        if not os.path.isdir(appsPath):
-            os.mkdir(appsPath)
-
-        depsPath = os.path.join(path, deps)
-        if not os.path.isdir(depsPath):
-            os.mkdir(depsPath)
-
-        if workDir:
-            workDirPath = os.path.join(path, workDir)
-            if not os.path.isdir(workDirPath):
-                os.mkdir(workDirPath)
 
         stream = file(pFile, 'w')
         yaml.dump(data, stream)

@@ -10,7 +10,8 @@
     compile_app/1,
     app_out_dir/1,
     compile_tests/1,
-    app_name/1
+    app_name/1,
+    app_path/1
 ]).  
   
 compile(FileName) -> 

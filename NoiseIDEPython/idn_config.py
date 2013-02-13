@@ -7,7 +7,8 @@ import wx
 import yaml
 import shutil
 import core
-from idn_utils import CreateButton
+from idn_utils import CreateButton, readFile
+
 
 class Config:
     COLOR_SCHEMA = "color_schema"
@@ -29,8 +30,19 @@ class Config:
         stream = file(path, 'r')
         cls.data = yaml.load(stream)
         if firstTime:
+            cls.SetProp("current_version", cls.GetCurrentVersion())
+            cls.save()
             form = ConfigEditForm()
             form.ShowModal()
+
+    @classmethod
+    def GetCurrentVersion(cls):
+        revCfg = os.path.join(core.MainFrame.cwd, "rev.cfg")
+        version = 0.1
+        if os.path.isfile(revCfg):
+            data = readFile(revCfg)
+            version = float(data.split("\n")[0].split(":")[1].strip())
+        return version
 
     @classmethod
     def save(cls):
