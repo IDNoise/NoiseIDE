@@ -101,7 +101,10 @@ worker() ->
                         %io:format("Answer:~p~n", [Answer]),
                         gen_tcp:send(Socket, Answer)
                 end
-            catch Error:Reason -> 
+            catch 
+                exit:{ucs, {bad_utf8_character_code}} ->
+                    ok;
+                Error:Reason -> 
                     %ok
                     io:format("Error:~p, Reason:~p, Trace:~n~p~n", [Error, Reason, erlang:get_stacktrace()])
             end;

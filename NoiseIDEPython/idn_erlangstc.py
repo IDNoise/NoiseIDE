@@ -1,5 +1,5 @@
 import re
-from idn_findreplace import FindInProjectDialog
+from idn_findreplace import FindInProjectDialog, Find
 
 __author__ = 'Yaroslav'
 
@@ -126,9 +126,54 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         (start, end, value) = result
         style = self.GetStyleAt(self.popupPos)
         title = "Find references: {}".format(value)
-        print value, style == ErlangHighlightType.ATOM
+        tokenType = None
         if style == ErlangHighlightType.ATOM:
-            FindInProjectDialog.GetDialog().Find(value, title, True, True, fileMasks = [".erl", ".hrl", ".src"])
+            tokenType = "ErlangHighlightType.ATOM"
+        elif style == ErlangHighlightType.FUNDEC:
+            tokenType = "ErlangHighlightType.FUNDEC"
+        elif style == ErlangHighlightType.FUNCTION:
+            tokenType = "ErlangHighlightType.FUNCTION"
+        elif style == ErlangHighlightType.MODULE:
+            tokenType = "ErlangHighlightType.MODULE"
+        elif style == ErlangHighlightType.MACROS:
+            tokenType = "ErlangHighlightType.MACROS"
+        elif style == ErlangHighlightType.RECORD:
+            tokenType = "ErlangHighlightType.RECORD"
+        elif style == ErlangHighlightType.RECORDDEF:
+            tokenType = "ErlangHighlightType.RECORDDEF"
+        print value, tokenType
+        if style == ErlangHighlightType.ATOM:
+            Find(value, title,
+                 wholeWords = True,
+                 matchCase = True,
+                 fileMasks = [".erl", ".hrl", ".src"],
+                 resultsFilter = lambda r: self.CheckResult(r, [value], [ErlangHighlightType.ATOM]))
+        elif style in [ErlangHighlightType.FUNCTION, ErlangHighlightType.FUNDEC]:
+            Find(r"\b{0}\(|\s{0}/".format(value), title,
+                 useRegexp = True,
+                 fileMasks = [".erl", ".hrl"],
+                 resultsFilter = lambda r: self.CheckResult(r, [value], [ErlangHighlightType.FUNCTION, ErlangHighlightType.FUNDEC]))
+        elif style == ErlangHighlightType.MODULE:
+            Find(r"-module\({0}\)|-extends\({0}\)|\b{0}:".format(value), title,
+                 useRegexp = True,
+                 fileMasks = [".erl", ".hrl", ".src"],
+                 resultsFilter = lambda r: self.CheckResult(r, [value], [ErlangHighlightType.MODULE]))
+        elif style in [ErlangHighlightType.RECORD, ErlangHighlightType.RECORDDEF]:
+            Find(r"-record\({0}\b|#{0}\b".format(value), title,
+                 useRegexp = True,
+                 fileMasks = [".erl", ".hrl"],
+                 resultsFilter = lambda r: self.CheckResult(r, [value, "#" + value], [ErlangHighlightType.RECORD, ErlangHighlightType.RECORDDEF]))
+        elif style == ErlangHighlightType.MACROS:
+            Find(r"-define\({0}\b|\?{0}\b".format(value), title,
+                 useRegexp = True,
+                 fileMasks = [".erl", ".hrl"],
+                 resultsFilter = lambda r: self.CheckResult(r, [value, "?" + value], [ErlangHighlightType.MACROS]))
+
+    def CheckResult(self, result, values, styles):
+        tokens = self.lexer.highlighter.GetHighlightingTokens(result.lineText)
+        #print values, "tokens:{}".format([token.value for token in tokens])
+        #print "result ", any([token.value in values and token.type in styles for token in tokens])
+        return any([token.value in values and token.type in styles for token in tokens])
 
     def ModuleName(self):
         name = self.FileName()
@@ -535,10 +580,14 @@ class ErlangSTCReadOnly(ErlangSTC):
         ErlangHighlightedSTCBase.SetupEditorMenu(self)
 
     def CreatePopupMenu(self, event):
-        pass
+        return None
 
     def Changed(self, changed = True):
         pass
+
+    def OnClose(self):
+        ErlangSTC.OnClose(self)
+        core.Project.explorer.ProjectFilesModifiedEvent -= self.OnProjectFilesModified
 
     def Save(self):
         pass

@@ -257,6 +257,9 @@ class ErlangCache:
             if not f.endswith(".cache") or not os.path.isfile(f): return
 
             data = json.loads(readFile(f))
+            if not os.path.isfile(data[FILE]):
+                os.remove(f)
+                return None
             name = os.path.basename(f)[:-6]
             app = os.path.basename(os.path.dirname(f))
             if 'nt' == os.name:
@@ -266,10 +269,6 @@ class ErlangCache:
                     data[FILE] = data[FILE][0].upper() + data[FILE][1:]
                 except Exception, e:
                     core.Log("error ", e, "on get long path name for ", data[FILE])
-            srcFile = data[FILE].replace("\\", "/")
-            if not os.path.isfile(srcFile):
-                os.remove(f)
-                return
             # if (name in cls.modules and
             #     not cls.moduleData[name].file.lower().startswith(cls.erlangDir) and
             #     srcFile.lower().startswith(cls.erlangDir)):
@@ -313,6 +312,7 @@ class ErlangCache:
         name = os.path.basename(f)[:-6]
         app = os.path.dirname(f)
         cls.Unload(name, app)
+        os.remove(f)
 
     @classmethod
     def Unload(cls, name ,app):

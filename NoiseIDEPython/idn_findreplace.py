@@ -218,62 +218,27 @@ class FindInProjectDialog(wx.Dialog):
 
         self.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
 
-    def OnFind(self, event = None, textToFind = None, title = None):
-        self.Find(textToFind, title)
+    def OnFind(self, event = None):
+        textToFind = self.findText.Value
+        if not textToFind: return
 
-    def Find(self, textToFind = None, title = None, wholeWords = None, matchCase = None, useRegexp = None, fileMasks = [], resultsFilter = None):
-        self.textToFind = textToFind if textToFind else self.findText.Value
-        if not self.textToFind:
-            return
+        Find(textToFind,
+             "Find Results: {}".format(textToFind),
+             wholeWords = self.wholeWordsCb.Value,
+             matchCase = self.matchCaseCb.Value,
+             useRegexp = self.useRegextCb.Value,
+             openNewTab = self.openNewSearchResultCb.Value
+            )
 
-        if not textToFind and not self.textToFind in self.findText.Items:
-            self.findText.Append(self.textToFind)
-        self.SetCursor(wx.StockCursor(wx.CURSOR_WAIT))
-        try:
-            results = {}
-            regexp = self.PrepareRegexp(wholeWords, matchCase, useRegexp)
-            filePaths = core.Project.explorer.GetAllFiles()
-            for filePath in sorted(filePaths):
-                if fileMasks and extension(filePath) not in fileMasks:
-                    continue
-                result = self.SearchInFile(filePath, regexp)
-                if result:
-                    if resultsFilter and not resultsFilter(result):
-                        continue
-                    results[filePath] = result
-            self.FillFindResultsTable(results, len(filePaths), regexp, self.openNewSearchResultCb.Value, title)
-        finally:
-            self.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
-
-    def SearchInFile(self, filePath, regexp):
-        try:
-            result = []
-            lineNumber = 0
-            if filePath in core.TabMgr.OpenedFiles():
-                fileText = core.TabMgr.FindPageByPath(filePath).GetText().split("\n")
-            else:
-                f = open(filePath, "r")
-                fileText = f.readlines()
-                f.close()
-            for lineText in fileText:
-                end = 0
-                while True:
-                    m = regexp.search(lineText, end)
-                    if not m: break
-                    start = m.start()
-                    end = m.end()
-                    result.append(SearchResult(filePath, lineNumber, lineText, start, end))
-                lineNumber += 1
-            return result
-        except Exception, e:
-            core.Log("find in project error", e)
+        if not textToFind and not textToFind in self.findText.Items:
+            self.findText.Append(textToFind)
 
     def OnReplace(self, event):
-        self.textToFind = self.findText.Value
-        if not self.textToFind:
+        textToFind = self.findText.Value
+        if not textToFind:
             return
-        if not self.textToFind in self.findText.Items:
-            self.findText.Append(self.textToFind)
+        if not textToFind in self.findText.Items:
+            self.findText.Append(textToFind)
 
         self.textToReplace = self.replaceText.Value
         if not self.textToReplace:
@@ -282,47 +247,11 @@ class FindInProjectDialog(wx.Dialog):
         if not self.textToReplace in self.replaceText.Items:
             self.replaceText.Append(self.textToReplace)
 
-        regexp = self.PrepareRegexp()
+        regexp = PrepareRegexp(textToFind,
+                               self.wholeWordsCb.Value,
+                               self.matchCaseCb.Value,
+                               self.useRegextCb.Value)
         ReplaceInProject(regexp, self.textToReplace)
-
-
-    def PrepareRegexp(self, wholeWords = None, matchCase = None, useRegexp = None):
-        if wholeWords is None:
-            wholeWords = self.wholeWordsCb.Value
-        if matchCase is None:
-            matchCase = self.matchCaseCb.Value
-        if useRegexp is None:
-            useRegexp = self.useRegextCb.Value
-
-        flags = re.MULTILINE | re.DOTALL
-        pattern = self.textToFind
-        if not useRegexp:
-            pattern = re.escape(pattern)
-        if wholeWords:
-            pattern = r"\b" + pattern + r"\b"
-        if not matchCase:
-            flags |= re.IGNORECASE
-        return re.compile(pattern, flags)
-
-
-
-    def FillFindResultsTable(self, results, filesCount, regexp, openNewTab, title):
-        if not title:
-            title = "Find Results: {}".format(self.textToFind)
-        resultsTable = None
-        if not openNewTab:
-            for page in reversed(core.ToolMgr.Pages()):
-                if isinstance(page, FindResultsTree):
-                    id = core.ToolMgr.FindPageIndexByWindow(page)
-                    resultsTable = page
-                    core.ToolMgr.SetPageText(id, title)
-                    break
-        if not resultsTable:
-            resultsTable = FindResultsTree(core.ToolMgr)
-            core.ToolMgr.AddPage(resultsTable, title, True)
-        resultsTable.SetResults(results, filesCount, regexp)
-        core.ToolMgr.FocusOnWidget(resultsTable)
-
 
 
     def OnKeyDown(self, event):
@@ -333,6 +262,79 @@ class FindInProjectDialog(wx.Dialog):
             self.OnFind()
         else:
             event.Skip()
+
+def Find(textToFind = "", title = "Find results", wholeWords = False, matchCase = False, useRegexp = False, openNewTab = True, fileMasks = [], resultsFilter = None):
+    if not textToFind:
+        return
+
+    core.MainFrame.SetCursor(wx.StockCursor(wx.CURSOR_WAIT))
+    try:
+        results = {}
+        regexp = PrepareRegexp(textToFind, wholeWords, matchCase, useRegexp)
+        filePaths = core.Project.explorer.GetAllFiles()
+        for filePath in sorted(filePaths):
+            if fileMasks and extension(filePath) not in fileMasks:
+                continue
+            result = SearchInFile(filePath, regexp)
+            if result:
+                if resultsFilter:
+                    for res in result[:]:
+                        if not resultsFilter(res):
+                            result.remove(res)
+                if result:
+                    results[filePath] = result
+        FillFindResultsTable(results, len(filePaths), regexp, openNewTab, title)
+    finally:
+        core.MainFrame.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+
+def SearchInFile(filePath, regexp):
+    try:
+        result = []
+        lineNumber = 0
+        if filePath in core.TabMgr.OpenedFiles():
+            fileText = core.TabMgr.FindPageByPath(filePath).GetText().split("\n")
+        else:
+            f = open(filePath, "r")
+            fileText = f.readlines()
+            f.close()
+        for lineText in fileText:
+            end = 0
+            while True:
+                m = regexp.search(lineText, end)
+                if not m: break
+                start = m.start()
+                end = m.end()
+                result.append(SearchResult(filePath, lineNumber, lineText, start, end))
+            lineNumber += 1
+        return result
+    except Exception, e:
+        core.Log("find in project error", e)
+
+def PrepareRegexp(textToFind, wholeWords = False, matchCase = False, useRegexp = False):
+    flags = re.MULTILINE | re.DOTALL
+    pattern = textToFind
+    if not useRegexp:
+        pattern = re.escape(pattern)
+    if wholeWords:
+        pattern = r"\b" + pattern + r"\b"
+    if not matchCase:
+        flags |= re.IGNORECASE
+    return re.compile(pattern, flags)
+
+def FillFindResultsTable(results, filesCount, regexp, openNewTab, title):
+    resultsTable = None
+    if not openNewTab:
+        for page in reversed(core.ToolMgr.Pages()):
+            if isinstance(page, FindResultsTree):
+                id = core.ToolMgr.FindPageIndexByWindow(page)
+                resultsTable = page
+                core.ToolMgr.SetPageText(id, title)
+                break
+    if not resultsTable:
+        resultsTable = FindResultsTree(core.ToolMgr)
+        core.ToolMgr.AddPage(resultsTable, title, True)
+    resultsTable.SetResults(results, filesCount, regexp)
+    core.ToolMgr.FocusOnWidget(resultsTable)
 
 
 def ReplaceInProject(regexp, replacement, mask = None):

@@ -5,6 +5,9 @@ import os
 import core
 
 class ColorSchema:
+    codeEditor = {}
+    codeLanguages = {}
+
     @classmethod
     def load(cls, theme):
         path = os.path.join(core.MainFrame.cwd, "{}.color.yaml".format(theme))
