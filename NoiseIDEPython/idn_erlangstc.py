@@ -163,33 +163,33 @@ class ErlangSTC(ErlangHighlightedSTCBase):
             Find(value, "Find reference of atom '{}'".format(value),
                  wholeWords = True,
                  matchCase = True,
-                 fileMasks = [".erl", ".hrl", ".src"],
+                 fileExts = [".erl", ".hrl", ".src"],
                  resultsFilter = lambda r: self.CheckResult(r, [value], self.CompoundFindRefTypes()))
         elif style == ErlangHighlightType.ATOM:
             Find(value, "Find reference of atom '{}'".format(value),
                  wholeWords = True,
                  matchCase = True,
-                 fileMasks = [".erl", ".hrl", ".src"],
+                 fileExts = [".erl", ".hrl", ".src"],
                  resultsFilter = lambda r: self.CheckResult(r, [value], [ErlangHighlightType.ATOM]))
         elif style in [ErlangHighlightType.FUNCTION, ErlangHighlightType.FUNDEC]:
             Find(r"\b{0}\(|\s{0}/".format(value), "Find reference of function '{}'".format(value),
                  useRegexp = True,
-                 fileMasks = [".erl", ".hrl"],
+                 fileExts = [".erl", ".hrl"],
                  resultsFilter = lambda r: self.CheckResult(r, [value], [ErlangHighlightType.FUNCTION, ErlangHighlightType.FUNDEC]))
         elif style == ErlangHighlightType.MODULE:
             Find(r"-module\({0}\)|-extends\({0}\)|\b{0}:".format(value), "Find reference of module '{}'".format(value),
                  useRegexp = True,
-                 fileMasks = [".erl", ".hrl"],
+                 fileExts = [".erl", ".hrl"],
                  resultsFilter = lambda r: self.CheckResult(r, [value], [ErlangHighlightType.MODULE]))
         elif style in [ErlangHighlightType.RECORD, ErlangHighlightType.RECORDDEF]:
             Find(r"-record\({0}\b|#{0}\b".format(value), "Find reference of record '{}'".format(value),
                  useRegexp = True,
-                 fileMasks = [".erl", ".hrl"],
+                 fileExts = [".erl", ".hrl"],
                  resultsFilter = lambda r: self.CheckResult(r, [value, "#" + value], [ErlangHighlightType.RECORD, ErlangHighlightType.RECORDDEF]))
         elif style == ErlangHighlightType.MACROS:
             Find(r"-define\({0}\b|\?{0}\b".format(value), "Find reference of macros '{}'".format(value),
                  useRegexp = True,
-                 fileMasks = [".erl", ".hrl"],
+                 fileExts = [".erl", ".hrl"],
                  resultsFilter = lambda r: self.CheckResult(r, [value, "?" + value], [ErlangHighlightType.MACROS]))
 
     def CheckResult(self, result, values, styles):

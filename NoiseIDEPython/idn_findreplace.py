@@ -196,8 +196,8 @@ class FindInProjectDialog(wx.Dialog):
         self.findButton = CreateButton(self, "Find", self.OnFind)
         self.replaceButton = CreateButton(self, "Replace", self.OnReplace)
 
-        self.fileMasksTB = wx.TextCtrl(self, size = (300, 25))
-        self.fileMasksTB.SetToolTipString("Comma separated, spaces ignored. Example: '.erl, .hrl'")
+        self.fileExtensionTB = wx.TextCtrl(self, size = (300, 25))
+        self.fileExtensionTB.SetToolTipString("Comma separated, spaces ignored. Example: '.erl, .hrl'")
 
         self.searchDirTB = wx.TextCtrl(self, size = (300, 25))
         self.searchDirTB.SetToolTipString("Relative to project dir: {}. Example: 'apps'".format(core.Project.projectDir))
@@ -219,8 +219,8 @@ class FindInProjectDialog(wx.Dialog):
         self.sizer.Add(self.replaceText, (i, 1), flag = wx.ALL | wx.ALIGN_CENTER, border = 2)
         self.sizer.Add(self.replaceButton, (i, 2), flag = wx.ALL | wx.ALIGN_CENTER, border = 2)
         i += 1
-        self.sizer.Add(wx.StaticText(self, label = "File masks:"), (i, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 10)
-        self.sizer.Add(self.fileMasksTB, (i, 1), flag = wx.ALL | wx.ALIGN_CENTER, border = 2)
+        self.sizer.Add(wx.StaticText(self, label = "File extensions:"), (i, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 10)
+        self.sizer.Add(self.fileExtensionTB, (i, 1), flag = wx.ALL | wx.ALIGN_CENTER, border = 2)
         i += 1
         self.sizer.Add(wx.StaticText(self, label = "Search dir:"), (i, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 10)
         self.sizer.Add(self.searchDirTB, (i, 1), flag = wx.ALL | wx.ALIGN_CENTER, border = 2)
@@ -251,10 +251,10 @@ class FindInProjectDialog(wx.Dialog):
     def OnFind(self, event = None):
         textToFind = self.findText.Value
         if not textToFind: return
-        fileMasks = []
-        if self.fileMasksTB.Value:
-            value = self.fileMasksTB.Value.replace(" ", "")
-            fileMasks = value.split(",")
+        fileExts = []
+        if self.fileExtensionTB.Value:
+            value = self.fileExtensionTB.Value.replace(" ", "")
+            fileExts = value.split(",")
 
         searchDir = core.Project.projectDir
         path = os.path.join(searchDir, self.searchDirTB.Value)
@@ -267,7 +267,7 @@ class FindInProjectDialog(wx.Dialog):
              matchCase = self.matchCaseCb.Value,
              useRegexp = self.useRegextCb.Value,
              openNewTab = self.openNewSearchResultCb.Value,
-             fileMasks = fileMasks,
+             fileExts = fileExts,
              searchDir = searchDir
             )
 
@@ -304,7 +304,7 @@ class FindInProjectDialog(wx.Dialog):
         else:
             event.Skip()
 
-def Find(textToFind = "", title = "Find results", wholeWords = False, matchCase = False, useRegexp = False, openNewTab = True, fileMasks = [], searchDir = None, resultsFilter = None):
+def Find(textToFind = "", title = "Find results", wholeWords = False, matchCase = False, useRegexp = False, openNewTab = True, fileExts = [], searchDir = None, resultsFilter = None):
     if not textToFind:
         return
 
@@ -317,7 +317,7 @@ def Find(textToFind = "", title = "Find results", wholeWords = False, matchCase 
         regexp = PrepareRegexp(textToFind, wholeWords, matchCase, useRegexp)
         filePaths = core.Project.explorer.GetAllFiles()
         for filePath in GetAllFilesInDir(searchDir):
-            if fileMasks and not any([filePath.endswith(fm) for fm in fileMasks]):
+            if fileExts and not any([filePath.endswith(fm) for fm in fileExts]):
                 continue
             result = SearchInFile(filePath, regexp)
             if result:
