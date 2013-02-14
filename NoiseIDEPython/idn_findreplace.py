@@ -316,9 +316,7 @@ def Find(textToFind = "", title = "Find results", wholeWords = False, matchCase 
         results = {}
         regexp = PrepareRegexp(textToFind, wholeWords, matchCase, useRegexp)
         filePaths = core.Project.explorer.GetAllFiles()
-        for filePath in GetAllFilesInDir(searchDir):
-            if fileExts and not any([filePath.endswith(fm) for fm in fileExts]):
-                continue
+        for filePath in GetAllFilesInDir(searchDir, fileExts):
             result = SearchInFile(filePath, regexp)
             if result:
                 if resultsFilter:
@@ -327,15 +325,17 @@ def Find(textToFind = "", title = "Find results", wholeWords = False, matchCase 
                             result.remove(res)
                 if result:
                     results[filePath] = result
-        FillFindResultsTable(results, len(filePaths), regexp, openNewTab, title)
+        FillFindResultsTable(results, len(filePaths), regexp, openNewTab, title, searchDir, fileExts, resultsFilter)
     finally:
         core.MainFrame.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
 
-def GetAllFilesInDir(path):
+def GetAllFilesInDir(path, fileExts):
     files = []
     for root, _, fileNames in os.walk(path):
         for fileName in fileNames:
-            files.append(os.path.join(root, fileName))
+            fp = os.path.join(root, fileName)
+            if fileExts and any([fp.endswith(fm) for fm in fileExts]):
+                files.append(fp)
     return files
 
 def SearchInFile(filePath, regexp):
@@ -372,7 +372,7 @@ def PrepareRegexp(textToFind, wholeWords = False, matchCase = False, useRegexp =
         flags |= re.IGNORECASE
     return re.compile(pattern, flags)
 
-def FillFindResultsTable(results, filesCount, regexp, openNewTab, title):
+def FillFindResultsTable(results, filesCount, regexp, openNewTab, title, searchDir, fileExts, resultsFilter):
     resultsTable = None
     if not openNewTab:
         for page in reversed(core.ToolMgr.Pages()):
@@ -384,7 +384,7 @@ def FillFindResultsTable(results, filesCount, regexp, openNewTab, title):
     if not resultsTable:
         resultsTable = FindResultsTree(core.ToolMgr)
         core.ToolMgr.AddPage(resultsTable, title, True)
-    resultsTable.SetResults(results, filesCount, regexp)
+    resultsTable.SetResults(results, filesCount, regexp, searchDir, fileExts, resultsFilter)
     core.ToolMgr.FocusOnWidget(resultsTable)
 
 
@@ -417,6 +417,9 @@ class FindResultsTree(IDNCustomTreeCtrl):
         IDNCustomTreeCtrl.__init__(self, parent)
         self.results = []
         self.filesCount = 0
+        self.searchDir = core.Project.projectDir
+        self.fileExts = []
+        self.resultsFilter = None
         self.regexp = None
         self.Bind(CT.EVT_TREE_ITEM_ACTIVATED, self.OnActivateItem)
         core.Project.explorer.ProjectFilesCreatedEvent += self.OnProjectFilesCreated
@@ -431,15 +434,19 @@ class FindResultsTree(IDNCustomTreeCtrl):
 
     def OnProjectFilesCreated(self, filePaths):
         for filePath in filePaths:
-            if self.regexp:
-                result = FindInProjectDialog.GetDialog().SearchInFile(filePath, self.regexp)
+            if (self.regexp and filePath.startswith(self.searchDir) and
+                (self.fileExts and any([filePath.endswith(fm) for fm in self.fileExts]))):
+                result = SearchInFile(filePath, self.regexp)
+                for r in result[:]:
+                    if self.resultsFilter and not self.resultsFilter(r):
+                        result.remove(r)
                 self.results[filePath] = result
                 self.UpdateResults()
 
     def OnProjectFilesModified(self, filePaths):
         for filePath in filePaths:
             if self.regexp and filePath in self.results:
-                result = FindInProjectDialog.GetDialog().SearchInFile(filePath, self.regexp)
+                result = SearchInFile(filePath, self.regexp)
                 self.results[filePath] = result
                 wx.CallAfter(self.UpdateResults)
 
@@ -455,7 +462,7 @@ class FindResultsTree(IDNCustomTreeCtrl):
             if self.IsExpanded(node):
                 expanded.append(self.GetPyData(node).file)
 
-        self.SetResults(self.results, self.filesCount, self.regexp)
+        self.SetResults(self.results, self.filesCount, self.regexp, self.searchDir, self.fileExts, self.resultsFilter)
         for node in self.GetItemChildren(self.GetRootItem()):
             if self.GetPyData(node).file in expanded:
                 self.Expand(node)
@@ -464,10 +471,13 @@ class FindResultsTree(IDNCustomTreeCtrl):
         self.results = []
         self.DeleteAllItems()
 
-    def SetResults(self, results, filesCount, regexp):
+    def SetResults(self, results, filesCount, regexp, searchDir, fileExts, resultsFilter):
         self.results = results
         self.filesCount = filesCount
         self.regexp = regexp
+        self.searchDir = searchDir
+        self.fileExts = fileExts
+        self.resultsFilter = resultsFilter
         self.DeleteAllItems()
         rootNode = self.AddRoot("0 results in {0} files".format(filesCount))
         self.SetPyData(rootNode, FindResultsTreeItemPyData())

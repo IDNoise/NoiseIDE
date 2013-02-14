@@ -38,6 +38,7 @@ class ErlangSocketConnection(asyncore.dispatcher):
         self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socketQueue = Queue()
         self.socketHandler = None
+        self.asyncoreThread = None
         self.port = self.PickUnusedPort()
 
     def Host(self):
@@ -61,7 +62,8 @@ class ErlangSocketConnection(asyncore.dispatcher):
         self.asyncoreThread.Start()
 
     def Stop(self):
-        self.asyncoreThread.Stop()
+        if self.asyncoreThread:
+            self.asyncoreThread.Stop()
         self.close()
 
     def handle_connect(self):

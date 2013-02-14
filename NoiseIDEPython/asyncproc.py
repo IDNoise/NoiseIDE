@@ -13,13 +13,13 @@
 #  The text of the license conditions can be read at
 #  <http://www.lysator.liu.se/~bellman/download/gpl-3.0.txt>
 #  or at <http://www.gnu.org/licenses/>.
+import core
 
 
 __rcsId__ = """$Id: asyncproc.py,v 1.9 2007/08/06 18:29:24 bellman Exp $"""
 __author__ = "Thomas Bellman <bellman@lysator.liu.se>"
 __url__ = "http://www.lysator.liu.se/~bellman/download/"
 __licence__ = "GNU General Publice License version 3 or later"
-
 
 import os
 import time
@@ -29,7 +29,7 @@ import threading
 import subprocess
 
 
-__all__ = [ 'Process', 'with_timeout', 'Timeout' ]
+__all__ = ['Process', 'with_timeout', 'Timeout']
 
 
 class Timeout(Exception):
@@ -63,36 +63,35 @@ def with_timeout(timeout, func, *args, **kwargs):
     """
 
     class SigAlarm(Exception):
-	"""Internal exception used only within with_timeout().
+        """Internal exception used only within with_timeout().
 	"""
-	pass
+        pass
 
     def alarm_handler(signum, frame):
-	raise SigAlarm()
+        raise SigAlarm()
 
     oldalarm = signal.alarm(0)
     oldhandler = signal.signal(signal.SIGALRM, alarm_handler)
     try:
-	try:
-	    t0 = time.time()
-	    signal.alarm(timeout)
-	    retval = func(*args, **kwargs)
-	except SigAlarm:
-	    raise Timeout("Function call took too long", func, timeout)
+        try:
+            t0 = time.time()
+            signal.alarm(timeout)
+            retval = func(*args, **kwargs)
+        except SigAlarm:
+            raise Timeout("Function call took too long", func, timeout)
     finally:
-	signal.alarm(0)
-	signal.signal(signal.SIGALRM, oldhandler)
-	if oldalarm != 0:
-	    t1 = time.time()
-	    remaining = oldalarm - int(t1 - t0 + 0.5)
-	    if remaining <= 0:
-		# The old alarm has expired.
-		os.kill(os.getpid(), signal.SIGALRM)
-	    else:
-		signal.alarm(remaining)
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, oldhandler)
+        if oldalarm != 0:
+            t1 = time.time()
+            remaining = oldalarm - int(t1 - t0 + 0.5)
+            if remaining <= 0:
+                # The old alarm has expired.
+                os.kill(os.getpid(), signal.SIGALRM)
+            else:
+                signal.alarm(remaining)
 
     return retval
-
 
 
 class Process(object):
@@ -120,70 +119,63 @@ class Process(object):
     """
 
     def __init__(self, *params, **kwparams):
-	if len(params) <= 3:
-	    kwparams.setdefault('stdin', subprocess.PIPE)
-	if len(params) <= 4:
-	    kwparams.setdefault('stdout', subprocess.PIPE)
-	if len(params) <= 5:
-	    kwparams.setdefault('stderr', subprocess.PIPE)
-	self.__pending_input = []
-	self.__collected_outdata = []
-	self.__collected_errdata = []
-	self.__exitstatus = None
-	self.__lock = threading.Lock()
-	self.__inputsem = threading.Semaphore(0)
-	# Flag telling feeder threads to quit
-	self.__quit = False
+        if len(params) <= 3:
+            kwparams.setdefault('stdin', subprocess.PIPE)
+        if len(params) <= 4:
+            kwparams.setdefault('stdout', subprocess.PIPE)
+        if len(params) <= 5:
+            kwparams.setdefault('stderr', subprocess.PIPE)
+        self.__pending_input = []
+        self.__collected_outdata = []
+        self.__collected_errdata = []
+        self.__exitstatus = None
+        self.__lock = threading.Lock()
+        self.__inputsem = threading.Semaphore(0)
+        # Flag telling feeder threads to quit
+        self.__quit = False
 
-	self.__process = subprocess.Popen(*params, **kwparams)
+        self.__process = subprocess.Popen(*params, **kwparams)
 
-	if self.__process.stdin:
-	    self.__stdin_thread = threading.Thread(
-		name="stdin-thread",
-		target=self.__feeder, args=(self.__pending_input,
-					    self.__process.stdin))
-	    self.__stdin_thread.setDaemon(True)
-	    self.__stdin_thread.start()
-	if self.__process.stdout:
-	    self.__stdout_thread = threading.Thread(
-		name="stdout-thread",
-		target=self.__reader, args=(self.__collected_outdata,
-					    self.__process.stdout))
-	    self.__stdout_thread.setDaemon(True)
-	    self.__stdout_thread.start()
-	if self.__process.stderr:
-	    self.__stderr_thread = threading.Thread(
-		name="stderr-thread",
-		target=self.__reader, args=(self.__collected_errdata,
-					    self.__process.stderr))
-	    self.__stderr_thread.setDaemon(True)
-	    self.__stderr_thread.start()
-
-    def __del__(self, __killer=os.kill, __sigkill=signal.SIGILL):
-	if self.__exitstatus is None:
-	    __killer(self.pid(), __sigkill)
+        if self.__process.stdin:
+            self.__stdin_thread = threading.Thread(
+                name="stdin-thread",
+                target=self.__feeder, args=(self.__pending_input,
+                                            self.__process.stdin))
+            self.__stdin_thread.setDaemon(True)
+            self.__stdin_thread.start()
+        if self.__process.stdout:
+            self.__stdout_thread = threading.Thread(
+                name="stdout-thread",
+                target=self.__reader, args=(self.__collected_outdata,
+                                            self.__process.stdout))
+            self.__stdout_thread.setDaemon(True)
+            self.__stdout_thread.start()
+        if self.__process.stderr:
+            self.__stderr_thread = threading.Thread(
+                name="stderr-thread",
+                target=self.__reader, args=(self.__collected_errdata,
+                                            self.__process.stderr))
+            self.__stderr_thread.setDaemon(True)
+            self.__stderr_thread.start()
 
     def pid(self):
-	"""Return the process id of the process.
+        """Return the process id of the process.
 	   Note that if the process has died (and successfully been waited
 	   for), that process id may have been re-used by the operating
 	   system.
 	"""
-	return self.__process.pid
+        return self.__process.pid
 
-    def kill(self, signal):
-	"""Send a signal to the process.
-	   Raises OSError, with errno set to ECHILD, if the process is no
-	   longer running.
-	"""
-	if self.__exitstatus is not None:
-	    # Throwing ECHILD is perhaps not the most kosher thing to do...
-	    # ESRCH might be considered more proper.
-	    raise OSError(errno.ECHILD, os.strerror(errno.ECHILD))
-	os.kill(self.pid(), signal)
+    def kill(self):
+        try:
+            self.__process.terminate()
+            self.__process.kill()
+        except Exception, e:
+            core.Log("Kill process error:{}".format(e))
+
 
     def wait(self, flags=0):
-	"""Return the process' termination status.
+        """Return the process' termination status.
 
 	   If bitmask parameter 'flags' contains os.WNOHANG, wait() will
 	   return None if the process hasn't terminated.  Otherwise it
@@ -194,32 +186,32 @@ class Process(object):
 	   status from the first successful call, and return that on
 	   subsequent calls.
 	"""
-	if self.__exitstatus is not None:
-	    return self.__exitstatus
-	pid,exitstatus = os.waitpid(self.pid(), flags)
-	if pid == 0:
-	    return None
-	if os.WIFEXITED(exitstatus) or os.WIFSIGNALED(exitstatus):
-	    self.__exitstatus = exitstatus
-	    # If the process has stopped, we have to make sure to stop
-	    # our threads.  The reader threads will stop automatically
-	    # (assuming the process hasn't forked), but the feeder thread
-	    # must be signalled to stop.
-	    if self.__process.stdin:
-		self.closeinput()
-	    # We must wait for the reader threads to finish, so that we
-	    # can guarantee that all the output from the subprocess is
-	    # available to the .read*() methods.
-	    # And by the way, it is the responsibility of the reader threads
-	    # to close the pipes from the subprocess, not our.
-	    if self.__process.stdout:
-		self.__stdout_thread.join()
-	    if self.__process.stderr:
-		self.__stderr_thread.join()
-	return exitstatus
+        if self.__exitstatus is not None:
+            return self.__exitstatus
+        pid, exitstatus = os.waitpid(self.pid(), flags)
+        if pid == 0:
+            return None
+        if os.WIFEXITED(exitstatus) or os.WIFSIGNALED(exitstatus):
+            self.__exitstatus = exitstatus
+            # If the process has stopped, we have to make sure to stop
+            # our threads.  The reader threads will stop automatically
+            # (assuming the process hasn't forked), but the feeder thread
+            # must be signalled to stop.
+            if self.__process.stdin:
+                self.closeinput()
+                # We must wait for the reader threads to finish, so that we
+            # can guarantee that all the output from the subprocess is
+            # available to the .read*() methods.
+            # And by the way, it is the responsibility of the reader threads
+            # to close the pipes from the subprocess, not our.
+            if self.__process.stdout:
+                self.__stdout_thread.join()
+            if self.__process.stderr:
+                self.__stderr_thread.join()
+        return exitstatus
 
     def terminate(self, graceperiod=1):
-	"""Terminate the process, with escalating force as needed.
+        """Terminate the process, with escalating force as needed.
 	   First try gently, but increase the force if it doesn't respond
 	   to persuassion.  The levels tried are, in order:
 	    - close the standard input of the process, so it gets an EOF.
@@ -232,110 +224,97 @@ class Process(object):
 	      If the process was started with stdin not set to PIPE, the
 	   first level (closing stdin) is skipped.
 	"""
-	if self.__process.stdin:
-	    self.kill(signal.SIGTERM)
-	    self.kill(signal.SIGABRT)
-	    self.kill(signal.SIGILL)
-	    # This is rather meaningless when stdin != PIPE.
-	    self.closeinput()
-	    try:
-		return with_timeout(graceperiod, self.wait)
-	    except Timeout:
-		pass
+        if self.__process.stdin:
+            # This is rather meaningless when stdin != PIPE.
+            self.closeinput()
 
-	self.kill(signal.SIGTERM)
-	try:
-	    return with_timeout(graceperiod, self.wait)
-	except Timeout:
-	    pass
-
-	self.kill(signal.SIGKILL)
-	return self.wait()
+        self.kill()
+        #self.kill(signal.SIGILL)
 
     def __reader(self, collector, source):
-	"""Read data from source until EOF, adding it to collector.
+        """Read data from source until EOF, adding it to collector.
 	"""
-	while True:
-	    data = os.read(source.fileno(), 65536)
-	    self.__lock.acquire()
-	    collector.append(data)
-	    self.__lock.release()
-	    if data == "":
-		source.close()
-		break
-	return
+        while True:
+            data = os.read(source.fileno(), 65536)
+            self.__lock.acquire()
+            collector.append(data)
+            self.__lock.release()
+            if data == "":
+                source.close()
+                break
+        return
 
     def __feeder(self, pending, drain):
-	"""Feed data from the list pending to the file drain.
+        """Feed data from the list pending to the file drain.
 	"""
-	while True:
-	    self.__inputsem.acquire()
-	    self.__lock.acquire()
-	    if not pending  and	 self.__quit:
-		drain.close()
-		self.__lock.release()
-		break
-	    data = pending.pop(0)
-	    self.__lock.release()
-	    drain.write(data)
+        while True:
+            self.__inputsem.acquire()
+            self.__lock.acquire()
+            if not pending and self.__quit:
+                drain.close()
+                self.__lock.release()
+                break
+            data = pending.pop(0)
+            self.__lock.release()
+            drain.write(data)
 
     def read(self):
-	"""Read data written by the process to its standard output.
+        """Read data written by the process to its standard output.
 	"""
-	self.__lock.acquire()
-	outdata = "".join(self.__collected_outdata)
-	del self.__collected_outdata[:]
-	self.__lock.release()
-	return outdata
+        self.__lock.acquire()
+        outdata = "".join(self.__collected_outdata)
+        del self.__collected_outdata[:]
+        self.__lock.release()
+        return outdata
 
     def readerr(self):
-	"""Read data written by the process to its standard error.
+        """Read data written by the process to its standard error.
 	"""
-	self.__lock.acquire()
-	errdata = "".join(self.__collected_errdata)
-	del self.__collected_errdata[:]
-	self.__lock.release()
-	return errdata
+        self.__lock.acquire()
+        errdata = "".join(self.__collected_errdata)
+        del self.__collected_errdata[:]
+        self.__lock.release()
+        return errdata
 
     def readboth(self):
-	"""Read data written by the process to its standard output and error.
+        """Read data written by the process to its standard output and error.
 	   Return value is a two-tuple ( stdout-data, stderr-data ).
 
 	   WARNING!  The name of this method is ugly, and may change in
 	   future versions!
 	"""
-	self.__lock.acquire()
-	outdata = "".join(self.__collected_outdata)
-	del self.__collected_outdata[:]
-	errdata = "".join(self.__collected_errdata)
-	del self.__collected_errdata[:]
-	self.__lock.release()
-	return outdata,errdata
+        self.__lock.acquire()
+        outdata = "".join(self.__collected_outdata)
+        del self.__collected_outdata[:]
+        errdata = "".join(self.__collected_errdata)
+        del self.__collected_errdata[:]
+        self.__lock.release()
+        return outdata, errdata
 
     def _peek(self):
-	self.__lock.acquire()
-	output = "".join(self.__collected_outdata)
-	error = "".join(self.__collected_errdata)
-	self.__lock.release()
-	return output,error
+        self.__lock.acquire()
+        output = "".join(self.__collected_outdata)
+        error = "".join(self.__collected_errdata)
+        self.__lock.release()
+        return output, error
 
     def write(self, data):
-	"""Send data to a process's standard input.
+        """Send data to a process's standard input.
 	"""
-	if self.__process.stdin is None:
-	    raise ValueError("Writing to process with stdin not a pipe")
-	self.__lock.acquire()
-	self.__pending_input.append(data)
-	self.__inputsem.release()
-	self.__lock.release()
+        if self.__process.stdin is None:
+            raise ValueError("Writing to process with stdin not a pipe")
+        self.__lock.acquire()
+        self.__pending_input.append(data)
+        self.__inputsem.release()
+        self.__lock.release()
 
     def closeinput(self):
-	"""Close the standard input of a process, so it receives EOF.
+        """Close the standard input of a process, so it receives EOF.
 	"""
-	self.__lock.acquire()
-	self.__quit = True
-	self.__inputsem.release()
-	self.__lock.release()
+        self.__lock.acquire()
+        self.__quit = True
+        self.__inputsem.release()
+        self.__lock.release()
 
 
 class ProcessManager(object):
@@ -348,74 +327,75 @@ class ProcessManager(object):
     """
 
     def __init__(self):
-	self.__last_id = 0
-	self.__procs = {}
+        self.__last_id = 0
+        self.__procs = {}
 
     def start(self, args, executable=None, shell=False, cwd=None, env=None):
-	"""Start a program in the background, collecting its output.
+        """Start a program in the background, collecting its output.
 	   Returns an integer identifying the process.	(Note that this
 	   integer is *not* the OS process id of the actuall running
 	   process.)
 	"""
-	proc = Process(args=args, executable=executable, shell=shell,
-		       cwd=cwd, env=env)
-	self.__last_id += 1
-	self.__procs[self.__last_id] = proc
-	return self.__last_id
+        proc = Process(args=args, executable=executable, shell=shell,
+                       cwd=cwd, env=env)
+        self.__last_id += 1
+        self.__procs[self.__last_id] = proc
+        return self.__last_id
 
     def kill(self, procid, signal):
-	return self.__procs[procid].kill(signal)
+        return self.__procs[procid].kill(signal)
 
     def terminate(self, procid, graceperiod=1):
-	return self.__procs[procid].terminate(graceperiod)
+        return self.__procs[procid].terminate(graceperiod)
 
     def write(self, procid, data):
-	return self.__procs[procid].write(data)
+        return self.__procs[procid].write(data)
 
     def closeinput(self, procid):
-	return self.__procs[procid].closeinput()
+        return self.__procs[procid].closeinput()
 
     def read(self, procid):
-	return self.__procs[procid].read()
+        return self.__procs[procid].read()
 
     def readerr(self, procid):
-	return self.__procs[procid].readerr()
+        return self.__procs[procid].readerr()
 
     def readboth(self, procid):
-	return self.__procs[procid].readboth()
+        return self.__procs[procid].readboth()
 
     def wait(self, procid, flags=0):
-	"""
+        """
 	   Unlike the os.wait() function, the process will be available
 	   even after ProcessManager.wait() has returned successfully,
 	   in order for the process' output to be retrieved.  Use the
 	   reap() method for removing dead processes.
 	"""
-	return self.__procs[procid].wait(flags)
+        return self.__procs[procid].wait(flags)
 
     def reap(self, procid):
-	"""Remove a process.
+        """Remove a process.
 	   If the process is still running, it is killed with no pardon.
 	   The process will become unaccessible, and its identifier may
 	   be reused immediately.
 	"""
-	if self.wait(procid, os.WNOHANG) is None:
-	    self.kill(procid, signal.SIGKILL)
-	self.wait(procid)
-	del self.__procs[procid]
+        if self.wait(procid, os.WNOHANG) is None:
+            self.kill(procid, signal.SIGKILL)
+        self.wait(procid)
+        del self.__procs[procid]
 
     def reapall(self):
-	"""Remove all processes.
+        """Remove all processes.
 	   Running processes are killed without pardon.
 	"""
-	# Since reap() modifies __procs, we have to iterate over a copy
-	# of the keys in it.  Thus, do not remove the .keys() call.
-	for procid in self.__procs.keys():
-	    self.reap(procid)
+        # Since reap() modifies __procs, we have to iterate over a copy
+        # of the keys in it.  Thus, do not remove the .keys() call.
+        for procid in self.__procs.keys():
+            self.reap(procid)
 
 
 def _P1():
     return Process(["tcpconnect", "-irv", "localhost", "6923"])
+
 
 def _P2():
     return Process(["tcplisten", "-irv", "6923"])
