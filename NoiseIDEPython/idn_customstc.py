@@ -1,7 +1,3 @@
-from idn_config import Config
-from idn_findreplace import FindInProjectDialog
-from idn_marker_panel import Marker
-
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 
@@ -12,6 +8,10 @@ from wx import html
 from wx.stc import STC_FOLDLEVELHEADERFLAG, StyledTextCtrl
 from idn_colorschema import ColorSchema
 import core
+from idn_utils import Menu
+from idn_config import Config
+from idn_findreplace import FindInProjectDialog
+from idn_marker_panel import Marker
 
 class EditorFoldMixin:
     def __init__(self):
@@ -183,15 +183,27 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.editorMenu = core.MainFrame.editorMenu
         self.SetupEditorMenu()
 
-        self.Bind(wx.EVT_RIGHT_UP, self.CreatePopupMenu)
+        self.Bind(wx.EVT_RIGHT_UP, self.ShowPopupMenu)
 
         self.customTooltip = STCContextToolTip(self, self.OnRequestTooltipText)
 
     def OnRequestTooltipText(self):
         return None
 
-    def CreatePopupMenu(self, event):
-        pass
+    def ShowPopupMenu(self, event):
+        self.popupPos = self.PositionFromPoint(self.ScreenToClient(wx.GetMousePosition()))
+        menu = self.CreatePopupMenu()
+        if menu:
+            self.PopupMenu(menu)
+
+    def CreatePopupMenu(self):
+        menu = Menu()
+        editMenu = Menu()
+        menu.AppendMenu(wx.ID_ANY, "Edit", editMenu)
+        editMenu.AppendMenuItem("Cut", self, lambda e: self.Cut())
+        editMenu.AppendMenuItem("Copy", self, lambda e: self.Copy())
+        editMenu.AppendMenuItem("Paste", self, lambda e: self.Paste())
+        return menu
 
     def OnClose(self):
         if self.saved == False and os.path.exists(self.filePath):

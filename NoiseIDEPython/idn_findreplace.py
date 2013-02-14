@@ -218,23 +218,30 @@ class FindInProjectDialog(wx.Dialog):
 
         self.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
 
-    def OnFind(self, event = None):
-        self.textToFind = self.findText.Value
+    def OnFind(self, event = None, textToFind = None, title = None):
+        self.Find(textToFind, title)
+
+    def Find(self, textToFind = None, title = None, wholeWords = None, matchCase = None, useRegexp = None, fileMasks = [], resultsFilter = None):
+        self.textToFind = textToFind if textToFind else self.findText.Value
         if not self.textToFind:
             return
 
-        if not self.textToFind in self.findText.Items:
+        if not textToFind and not self.textToFind in self.findText.Items:
             self.findText.Append(self.textToFind)
         self.SetCursor(wx.StockCursor(wx.CURSOR_WAIT))
         try:
             results = {}
-            regexp = self.PrepareRegexp()
+            regexp = self.PrepareRegexp(wholeWords, matchCase, useRegexp)
             filePaths = core.Project.explorer.GetAllFiles()
             for filePath in sorted(filePaths):
+                if fileMasks and extension(filePath) not in fileMasks:
+                    continue
                 result = self.SearchInFile(filePath, regexp)
                 if result:
+                    if resultsFilter and not resultsFilter(result):
+                        continue
                     results[filePath] = result
-            self.FillFindResultsTable(results, len(filePaths), regexp, self.openNewSearchResultCb.Value)
+            self.FillFindResultsTable(results, len(filePaths), regexp, self.openNewSearchResultCb.Value, title)
         finally:
             self.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
 
@@ -279,10 +286,13 @@ class FindInProjectDialog(wx.Dialog):
         ReplaceInProject(regexp, self.textToReplace)
 
 
-    def PrepareRegexp(self):
-        wholeWords = self.wholeWordsCb.Value
-        matchCase = self.matchCaseCb.Value
-        useRegexp = self.useRegextCb.Value
+    def PrepareRegexp(self, wholeWords = None, matchCase = None, useRegexp = None):
+        if wholeWords is None:
+            wholeWords = self.wholeWordsCb.Value
+        if matchCase is None:
+            matchCase = self.matchCaseCb.Value
+        if useRegexp is None:
+            useRegexp = self.useRegextCb.Value
 
         flags = re.MULTILINE | re.DOTALL
         pattern = self.textToFind
@@ -294,8 +304,11 @@ class FindInProjectDialog(wx.Dialog):
             flags |= re.IGNORECASE
         return re.compile(pattern, flags)
 
-    def FillFindResultsTable(self, results, filesCount, regexp, openNewTab):
-        title = "Find Results: {}".format(self.textToFind)
+
+
+    def FillFindResultsTable(self, results, filesCount, regexp, openNewTab, title):
+        if not title:
+            title = "Find Results: {}".format(self.textToFind)
         resultsTable = None
         if not openNewTab:
             for page in reversed(core.ToolMgr.Pages()):

@@ -42,6 +42,8 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         self.Bind(CT.EVT_TREE_ITEM_MENU, self.ShowMenu)
         self.Bind(CT.EVT_TREE_ITEM_ACTIVATED, self.OnActivateItem)
         self.Bind(wx.EVT_KEY_DOWN, self.OnExplorerKeyDown)
+        self.Bind(CT.EVT_TREE_BEGIN_DRAG, self.OnBeginDrag)
+        self.Bind(CT.EVT_TREE_END_DRAG, self.OnEndDrag)
 
         self.ProjectFilesCreatedEvent = Event()
         self.ProjectFilesModifiedEvent = Event()
@@ -593,7 +595,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
 
     def GetAllFiles(self, selectAll = False):
         result = []
-        for f in self.dirChecker.data.AllFiles():
+        for f in self.dirChecker.files:
             if not selectAll and self.mask and extension(f) not in self.mask:
                 continue
             result.append(f)
@@ -671,6 +673,19 @@ class ProjectExplorer(IDNCustomTreeCtrl):
             self.OnMenuEditExecutable(None)
         else:
             event.Skip()
+
+    def OnBeginDrag(self, event):
+        self.selectedItems = self.GetSelections()
+        rootInSelection = self.GetRootItem() in self.selectedItems
+        if not self.selectedItems or rootInSelection:
+            return
+        self.OnMenuCut(None)
+        event.Allow()
+
+    def OnEndDrag(self, event):
+        self.eventItem = event.GetItem()
+        if self.eventItem:
+            self.OnMenuPaste(None)
 
     def OnPaint(self, event):
         try:

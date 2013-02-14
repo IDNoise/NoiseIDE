@@ -1,4 +1,5 @@
 import re
+from idn_findreplace import FindInProjectDialog
 
 __author__ = 'Yaroslav'
 
@@ -108,16 +109,26 @@ class ErlangSTC(ErlangHighlightedSTCBase):
 
         self.SetMarginMask(2, ~stc.STC_MASK_FOLDERS)
 
-    def CreatePopupMenu(self, event):
-        menu = Menu()
+    def CreatePopupMenu(self):
+        menu = CustomSTC.CreatePopupMenu(self)
         if self.ModuleType() == TYPE_MODULE:
             compileOptionMenu = Menu()
             menu.AppendMenu(wx.ID_ANY, "Compile Option", compileOptionMenu)
-            compileOptionMenu.AppendCheckMenuItem("With 'P' flag", self, lambda e: core.Project.CompileOption(self.filePath, "P"))
-            compileOptionMenu.AppendCheckMenuItem("With 'E' flag", self, lambda e: core.Project.CompileOption(self.filePath, "E"))
-            compileOptionMenu.AppendCheckMenuItem("With 'S' flag", self, lambda e: core.Project.CompileOption(self.filePath, "S"))
+            compileOptionMenu.AppendMenuItem("With 'P' flag", self, lambda e: core.Project.CompileOption(self.filePath, "P"))
+            compileOptionMenu.AppendMenuItem("With 'E' flag", self, lambda e: core.Project.CompileOption(self.filePath, "E"))
+            compileOptionMenu.AppendMenuItem("With 'S' flag", self, lambda e: core.Project.CompileOption(self.filePath, "S"))
+        menu.AppendMenuItem("Find references", self, lambda e: self.FindReferences())
+        return menu
 
-        self.PopupMenu(menu)
+    def FindReferences(self):
+        result = self.GetErlangWordAtPosition(self.popupPos)
+        if not result: return
+        (start, end, value) = result
+        style = self.GetStyleAt(self.popupPos)
+        title = "Find references: {}".format(value)
+        print value, style == ErlangHighlightType.ATOM
+        if style == ErlangHighlightType.ATOM:
+            FindInProjectDialog.GetDialog().Find(value, title, True, True, fileMasks = [".erl", ".hrl", ".src"])
 
     def ModuleName(self):
         name = self.FileName()
@@ -249,6 +260,19 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                 data = reduce(lambda msg, e: msg + e.msg + "\n", errs, "")
         return data
 
+    def GetErlangWordAtPosition(self, pos):
+        style = self.GetStyleAt(pos)
+        start = pos
+        end = pos
+        while self.GetStyleAt(start - 1) == style:
+            start -= 1
+        while self.GetStyleAt(end + 1) == style:
+            end += 1
+        if start == end:
+            return False
+        end += 1
+        return (start, end, self.GetTextRange(start, end))
+
 
     def GetContextData(self):
         pos = self.PositionFromPoint(self.ScreenToClient(wx.GetMousePosition()))
@@ -257,15 +281,13 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                          ErlangHighlightType.MACROS,
                          ErlangHighlightType.RECORD]:
             return None
-        start = self.WordStartPosition(pos, True)
-        end = self.WordEndPosition(pos, True)
-        if start == end:
-            return None
 
+        result = self.GetErlangWordAtPosition(pos)
+        if not result: return
+        (start, end, value) = result
         line = self.LineFromPosition(pos)
         lineStart = self.PositionFromLine(line)
         prefix = self.GetTextRange(lineStart, start)
-        value = self.GetTextRange(start, end)
         data = None
         if style == ErlangHighlightType.FUNCTION:
             data = self.completer.GetFunctionNavAndHelp(value, prefix, end)
@@ -290,22 +312,16 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                          ErlangHighlightType.MODULEATTR,
                          ErlangHighlightType.STRING]:
             return False
-        start = pos
-        end = pos
-        while self.GetStyleAt(start - 1) == style:
-            start -= 1
-        while self.GetStyleAt(end + 1) == style:
-            end += 1
-        if start == end:
-            return False
-        end += 1
+
+        result = self.GetErlangWordAtPosition(pos)
+        if not result: return
+        (start, end, value) = result
 
         line = self.LineFromPosition(pos)
         lineText = self.GetLine(line).strip()
         lineStart = self.PositionFromLine(line)
         lineEnd = self.GetLineEndPosition(line)
         prefix = self.GetTextRange(lineStart, start)
-        value = self.GetTextRange(start, end)
         postfix = self.GetTextRange(end, lineEnd)
         data = None
         if style == ErlangHighlightType.FUNDEC:
