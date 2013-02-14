@@ -42,18 +42,18 @@ class ErlangLexer(BaseLexer):
                 self.stc.SetStyling(len(token.value), token.type)
                 lastEnd  = lineStart + token.end
                 if token.type == ErlangHighlightType.FUNDEC:
+                    lineData.functionName = token.value
+                    lineData.functionStart = token.start + lineStart
+                    line = startLine - 1
+                    while line > 0:
+                        if self.linesData[line].functionName == token.value:
+                            self.linesData[line].functionEnd = self.stc.GetLineEndPosition(startLine - 1)
+                            break
+                        line -= 1
+                elif token.type == ErlangHighlightType.FUNCTION:
                     if tokens[0].value == "-spec":
                         lineData.specName = token.value
                         lineData.specStart = tokens[0].start + lineStart
-                    else:
-                        lineData.functionName = token.value
-                        lineData.functionStart = token.start + lineStart
-                        line = startLine - 1
-                        while line > 0:
-                            if self.linesData[line].functionName == token.value:
-                                self.linesData[line].functionEnd = self.stc.GetLineEndPosition(startLine - 1)
-                                break
-                            line -= 1
                 elif token.type == ErlangHighlightType.FULLSTOP:
                     lineData.functionEnd = token.end + lineStart
                     line = startLine
@@ -144,6 +144,8 @@ class ErlangLexer(BaseLexer):
         caretPos = self.stc.GetCurrentPos()
         while line > 0:
             data = self.linesData[line]
+            if data.functionEnd or data.functionStart or data.functionName:
+                return False
             if data.specEnd: return data.specEnd > caretPos
             line -= 1
         return False
@@ -256,6 +258,9 @@ class LineData:
         self.specStart = None
         self.specEnd = None
 
+    def __str__(self):
+        return "Fun: {} ({}, {}). Spec: {} ({}, {})".format(self.functionName, self.functionStart, self.functionEnd,
+                                                           self.specName, self.specStart, self.specEnd)
 
 class RecordStart:
     def __init__(self, record, start):

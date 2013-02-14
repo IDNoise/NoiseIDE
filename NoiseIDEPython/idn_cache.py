@@ -417,8 +417,8 @@ class ErlangCache:
 
     @classmethod
     def ModuleExportedTypes(cls, module):
-        if not cls.TryLoad(module): return None
-        return cls.modules[module].exportedTypes
+        if not cls.TryLoad(module): return []
+        return cls.modules[module].Types()
 
     @classmethod
     def ModuleRecords(cls, module):

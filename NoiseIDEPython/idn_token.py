@@ -41,7 +41,7 @@ class ErlangTokenizer:
             (?P<comment>%.*$)
             |(?P<arrow>->)
             |(?P<string>"([^"\\]|\\.)*"|"[^"\\]*?$)
-            |(?P<fundec>^(?!fun\()[a-z][a-zA-Z_0-9]*\()
+            |(?P<fundec>^(?!fun\()[a-z][a-zA-Z_0-9]*(?=\())
             |(?P<var>[A-Z_][a-zA-Z_0-9]*)
             |(?P<moduleattr>^-[a-z][a-z_]*)
             |(?P<number>[0-9]{1,2}\#[0-9a-z]*|[0-9]*\.?[0-9]+)

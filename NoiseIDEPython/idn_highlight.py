@@ -19,7 +19,8 @@ class ErlangHighlighter:
         ErlangTokenType.FULLSTOP: ErlangHighlightType.FULLSTOP,
         ErlangTokenType.ARROW: ErlangHighlightType.ARROW,
         ErlangTokenType.NUMBER: ErlangHighlightType.NUMBER,
-        ErlangTokenType.MACROS: ErlangHighlightType.MACROS
+        ErlangTokenType.MACROS: ErlangHighlightType.MACROS,
+        ErlangTokenType.FUNDEC: ErlangHighlightType.FUNDEC
     }
 
     KEYWORDS = {"after", "and", "andalso", "band", "begin", "bnot", "bor", "bsl", "bsr", "bxor", "case", "catch", "cond",
@@ -66,11 +67,6 @@ class ErlangHighlighter:
             tokenType = ErlangHighlightType.DEFAULT
             if token.type in self.RULES:
                 tokenType = self.RULES[token.type]
-
-            elif token.type == ErlangTokenType.FUNDEC:
-                result.append(Token(ErlangHighlightType.FUNDEC, token.value[:-1], token.start, token.end - 1, ))
-                result.append(Token(ErlangHighlightType.BRACKET, token.value[-1], token.end - 1, token.end))
-                continue
 
             elif token.type == ErlangTokenType.VAR:
                 if i == 2 and firstToken.value == "-define":

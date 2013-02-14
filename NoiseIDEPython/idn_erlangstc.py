@@ -117,54 +117,77 @@ class ErlangSTC(ErlangHighlightedSTCBase):
             compileOptionMenu.AppendMenuItem("With 'P' flag", self, lambda e: core.Project.CompileOption(self.filePath, "P"))
             compileOptionMenu.AppendMenuItem("With 'E' flag", self, lambda e: core.Project.CompileOption(self.filePath, "E"))
             compileOptionMenu.AppendMenuItem("With 'S' flag", self, lambda e: core.Project.CompileOption(self.filePath, "S"))
-        menu.AppendMenuItem("Find references", self, lambda e: self.FindReferences())
+
+        result = self.GetErlangWordAtPosition(self.popupPos)
+        if result:
+            style = self.GetStyleAt(self.popupPos)
+            if style in self.SimpleFindRefTypes():
+                menu.AppendMenuItem("Find references as {}".format(self.StringStyleType(style)), self, lambda e: self.FindReferences())
+            elif style in self.CompoundFindRefTypes():
+                submenu = Menu()
+                menu.AppendMenu(wx.ID_ANY, "Find references as", submenu)
+                submenu.AppendMenuItem(self.StringStyleType(style), self, lambda e: self.FindReferences())
+                submenu.AppendMenuItem("Atom", self, lambda e: self.FindReferences(True))
         return menu
 
-    def FindReferences(self):
+    def StringStyleType(self, style):
+        if style in [ErlangHighlightType.FUNCTION, ErlangHighlightType.FUNDEC]:
+            return "Function call\definition"
+        elif style in [ErlangHighlightType.RECORD, ErlangHighlightType.RECORDDEF]:
+            return "Record use\definition"
+        elif style in [ErlangHighlightType.MODULE]:
+            return "Module use\definition"
+        elif style in [ErlangHighlightType.ATOM]:
+            return "Atom"
+        elif style in [ErlangHighlightType.MACROS]:
+            return "Macros"
+        raise Exception("Unsupported type")
+
+    def FindRefTypes(self):
+        return self.CompoundFindRefTypes() + self.SimpleFindRefTypes()
+
+    def SimpleFindRefTypes(self):
+        return [ErlangHighlightType.ATOM, ErlangHighlightType.MACROS]
+
+    def CompoundFindRefTypes(self):
+        return [ErlangHighlightType.FUNCTION, ErlangHighlightType.FUNDEC,
+                ErlangHighlightType.RECORD, ErlangHighlightType.RECORDDEF,
+                ErlangHighlightType.MODULE]
+
+    def FindReferences(self, asAtom = False):
         result = self.GetErlangWordAtPosition(self.popupPos)
         if not result: return
         (start, end, value) = result
         style = self.GetStyleAt(self.popupPos)
-        title = "Find references: {}".format(value)
-        tokenType = None
-        if style == ErlangHighlightType.ATOM:
-            tokenType = "ErlangHighlightType.ATOM"
-        elif style == ErlangHighlightType.FUNDEC:
-            tokenType = "ErlangHighlightType.FUNDEC"
-        elif style == ErlangHighlightType.FUNCTION:
-            tokenType = "ErlangHighlightType.FUNCTION"
-        elif style == ErlangHighlightType.MODULE:
-            tokenType = "ErlangHighlightType.MODULE"
-        elif style == ErlangHighlightType.MACROS:
-            tokenType = "ErlangHighlightType.MACROS"
-        elif style == ErlangHighlightType.RECORD:
-            tokenType = "ErlangHighlightType.RECORD"
-        elif style == ErlangHighlightType.RECORDDEF:
-            tokenType = "ErlangHighlightType.RECORDDEF"
-        print value, tokenType
-        if style == ErlangHighlightType.ATOM:
-            Find(value, title,
+        if asAtom:
+            Find(value, "Find reference of atom '{}'".format(value),
+                 wholeWords = True,
+                 matchCase = True,
+                 fileMasks = [".erl", ".hrl", ".src"],
+                 resultsFilter = lambda r: self.CheckResult(r, [value], self.CompoundFindRefTypes()))
+        elif style == ErlangHighlightType.ATOM:
+            Find(value, "Find reference of atom '{}'".format(value),
                  wholeWords = True,
                  matchCase = True,
                  fileMasks = [".erl", ".hrl", ".src"],
                  resultsFilter = lambda r: self.CheckResult(r, [value], [ErlangHighlightType.ATOM]))
         elif style in [ErlangHighlightType.FUNCTION, ErlangHighlightType.FUNDEC]:
-            Find(r"\b{0}\(|\s{0}/".format(value), title,
+            Find(r"\b{0}\(|\s{0}/".format(value), "Find reference of function '{}'".format(value),
                  useRegexp = True,
                  fileMasks = [".erl", ".hrl"],
                  resultsFilter = lambda r: self.CheckResult(r, [value], [ErlangHighlightType.FUNCTION, ErlangHighlightType.FUNDEC]))
         elif style == ErlangHighlightType.MODULE:
-            Find(r"-module\({0}\)|-extends\({0}\)|\b{0}:".format(value), title,
+            Find(r"-module\({0}\)|-extends\({0}\)|\b{0}:".format(value), "Find reference of module '{}'".format(value),
                  useRegexp = True,
-                 fileMasks = [".erl", ".hrl", ".src"],
+                 fileMasks = [".erl", ".hrl"],
                  resultsFilter = lambda r: self.CheckResult(r, [value], [ErlangHighlightType.MODULE]))
         elif style in [ErlangHighlightType.RECORD, ErlangHighlightType.RECORDDEF]:
-            Find(r"-record\({0}\b|#{0}\b".format(value), title,
+            Find(r"-record\({0}\b|#{0}\b".format(value), "Find reference of record '{}'".format(value),
                  useRegexp = True,
                  fileMasks = [".erl", ".hrl"],
                  resultsFilter = lambda r: self.CheckResult(r, [value, "#" + value], [ErlangHighlightType.RECORD, ErlangHighlightType.RECORDDEF]))
         elif style == ErlangHighlightType.MACROS:
-            Find(r"-define\({0}\b|\?{0}\b".format(value), title,
+            Find(r"-define\({0}\b|\?{0}\b".format(value), "Find reference of macros '{}'".format(value),
                  useRegexp = True,
                  fileMasks = [".erl", ".hrl"],
                  resultsFilter = lambda r: self.CheckResult(r, [value, "?" + value], [ErlangHighlightType.MACROS]))
@@ -190,7 +213,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
 
     def OnAutoComplete(self):
         self.UpdateCompleter()
-        if len(self.completer.list.Items) == 1 and isinstance(self.completer.lastData[0], unicode):
+        if len(self.completer.list.Items) == 1 and self.completer.lastData and isinstance(self.completer.lastData, unicode):
             self.completer.AutoComplete(self.completer.list.Items[0])
         else:
             self.completer.Show()

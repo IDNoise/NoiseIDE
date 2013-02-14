@@ -93,6 +93,7 @@ class ErlangCompleter(wx.Frame):
         data = []
         self.prefix = ""
         self.prefixType = ""
+
         if not tokens:
             data = self.GetVars()
         else:
@@ -100,7 +101,20 @@ class ErlangCompleter(wx.Frame):
             fType = fToken.type
             fValue = fToken.value
             fIsAtom = fType == ErlangTokenType.ATOM
-            if (fType == ErlangTokenType.SPACE or
+
+            if (len(tokens) > 3 and
+                    ((fIsAtom and "::" in text[:fToken.start])
+                     or (text.strip()[-2:] == "::"))):
+                self.prefix = fValue if fIsAtom else ""
+                if tokens[2].type == ErlangTokenType.ATOM and tokens[1].value == ":":
+                    moduleName = tokens[2].value
+                else:
+                    moduleName = self.module
+                data += ErlangCache.ModuleExportedTypes(moduleName)
+                data += ErlangCache.ERLANG_TYPES
+                if not self.prefix:
+                    data += ErlangCache.AllModules()
+            elif (fType == ErlangTokenType.SPACE or
                 (len(tokens) == 1 and fIsAtom) or
                 (fIsAtom and tokens[1].type == ErlangTokenType.SPACE) or
                 (fIsAtom and tokens[1].value in self.separators) or
@@ -113,10 +127,12 @@ class ErlangCompleter(wx.Frame):
                     if self.stc.lexer.IsInSpec():
                         data += ErlangCache.ModuleExportedTypes(self.module)
                         data += ErlangCache.ERLANG_TYPES
+                        if not self.prefix:
+                            data += ErlangCache.AllModules()
                     else:
                         data += ErlangCache.ModuleFunctions(self.module, False)
                         data += ErlangCache.Bifs()
-                data += ErlangCache.AllModules()
+                        data += ErlangCache.AllModules()
             elif (len(tokens) > 1 and
                   ((fIsAtom and tokens[1].value == ":") or fValue == ":")):
                 i = 1 if fValue == ":" else 2
@@ -169,29 +185,29 @@ class ErlangCompleter(wx.Frame):
         self.list.Clear()
         self.lastData = []
         for d in set(data):
-            help = None
+            helpText = None
             if isinstance(d, Function):
                 if True:
                     text = "{}({})".format(d.name, ", ".join(d.params))
                 else:
                     text = "{}/{}".format(d.name, d.arity)
-                help = self._FunctionHelp(d)
+                helpText = self._FunctionHelp(d)
             elif isinstance(d, Record):
                 text = d.name
-                help = self._RecordHelp(d)
+                helpText = self._RecordHelp(d)
             elif isinstance(d, ExportedType):
                 text = d.name + "()"
-                help = self._ExportedTypeHelp(d)
+                helpText = self._ExportedTypeHelp(d)
             elif isinstance(d, Macros):
                 text = d.name
-                help = self._MacrosHelp(d)
+                helpText = self._MacrosHelp(d)
             elif isinstance(d, tuple):
-                (text, help) = d
+                (text, helpText) = d
             else:
                 text = d
+                self.lastData = d
             if text.startswith(self.prefix):
-                self.lastData.append(d)
-                self.list.Append(text, help)
+                self.list.Append(text, helpText)
 
         self._AppendCustomData()
 
@@ -200,10 +216,8 @@ class ErlangCompleter(wx.Frame):
     def _AppendCustomData(self):
         if self.prefixType == "macros":
             if "MODULE".startswith(self.prefix):
-                self.lastData.append("MODULE")
                 self.list.Append("MODULE", "Default macros. Equals current module name")
             if "LINE".startswith(self.prefix):
-                self.lastData.append("LINE")
                 self.list.Append("LINE", "Default macros. Equals current line number")
 
     def _RecordHelp(self, record):
@@ -539,11 +553,11 @@ class ErlangSimpleCompleter(wx.Frame):
             elif isinstance(d, Record):
                 text = d.name
             elif isinstance(d, tuple):
-                (text, help) = d
+                (text, _h) = d
             else:
                 text = d
+                self.lastData = d
             if text.startswith(self.prefix):
-                self.lastData.append(d)
                 self.list.Append(text)
         self.ValidateCompleter()
 

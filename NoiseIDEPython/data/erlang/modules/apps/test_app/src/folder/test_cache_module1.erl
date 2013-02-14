@@ -19,6 +19,14 @@
                     | tuple().  %% XXX: Very underspecified - FIX THIS 
    
  
+-spec round(XX, integer()) -> integer()
+  when XX :: atom().
+%% @doc Prints the value X.
+%round(Price, buy) ->
+%    [ {Key, apmath:ceil(Count)} || {Key, Count} <- Price ];
+round(Price, sell) ->
+    [ {Key, trunc(Count)} || {Key, Count} <- Price ].
+ 
 %%%========================== ==== ======= ==============================
 %%% API  
 
@@ -60,11 +68,5 @@ x() ->
         end, []),
     io:format("~p~n", [?X]).
     
--spec round(XX, integer()) -> integer()
-  when XX :: atom().
-%% @doc Prints the value X.
-%round(Price, buy) ->
-%    [ {Key, apmath:ceil(Count)} || {Key, Count} <- Price ];
-round(Price, sell) ->
-    [ {Key, trunc(Count)} || {Key, Count} <- Price ].
+
 
