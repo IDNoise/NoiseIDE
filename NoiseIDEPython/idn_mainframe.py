@@ -440,8 +440,8 @@ if __name__ == '__main__':
             app.MainLoop()
         except:
             core.Log("app error: {}".format(traceback.print_exc()))
-        finally:
-            wx.Exit()
+        # finally:
+        #     wx.Exit()
 
     # import cProfile
     # cProfile.run('main()')
