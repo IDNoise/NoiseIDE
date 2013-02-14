@@ -189,51 +189,92 @@ class FindInProjectDialog(wx.Dialog):
         return FindInProjectDialog.dialog
 
     def __init__(self, parent):
-        wx.Dialog.__init__(self, parent, id = wx.ID_ANY, title = "Find / Replace in project", size = (500, 195))
-
-        self.sizer = wx.GridBagSizer(2, 2)
-        self.findTextLabel = wx.StaticText(self, label = "Find text:")
+        wx.Dialog.__init__(self, parent, id = wx.ID_ANY, title = "Find / Replace in project")
+        wx.ToolTip_Enable(True)
         self.findText = wx.ComboBox(self, size = (300, 25))
-        self.replaceTextLabel = wx.StaticText(self, label = "Replace text:")
         self.replaceText = wx.ComboBox(self, size = (300, 25))
         self.findButton = CreateButton(self, "Find", self.OnFind)
         self.replaceButton = CreateButton(self, "Replace", self.OnReplace)
+
+        self.fileMasksTB = wx.TextCtrl(self, size = (300, 25))
+        self.fileMasksTB.SetToolTipString("Comma separated, spaces ignored. Example: '.erl, .hrl'")
+
+        self.searchDirTB = wx.TextCtrl(self, size = (300, 25))
+        self.searchDirTB.SetToolTipString("Relative to project dir: {}. Example: 'apps'".format(core.Project.projectDir))
+        self.searchDirButton = CreateButton(self, "...", self.OnSelectProjectPath)
+        self.searchDirButton.MinSize = (25, 25)
 
         self.wholeWordsCb = wx.CheckBox(self, label = "Whole words")
         self.matchCaseCb = wx.CheckBox(self, label = "Match case")
         self.useRegextCb = wx.CheckBox(self, label = "Regexp")
         self.openNewSearchResultCb = wx.CheckBox(self, label = "Open new tab for result")
-        self.sizer.Add(self.findTextLabel, (0, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 10)
-        self.sizer.Add(self.findText, (0, 1), flag = wx.ALL | wx.ALIGN_CENTER, border = 2)
-        self.sizer.Add(self.findButton, (0, 2), flag = wx.ALL | wx.ALIGN_CENTER, border = 2)
-        self.sizer.Add(self.replaceTextLabel, (1, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 10)
-        self.sizer.Add(self.replaceText, (1, 1), flag = wx.ALL | wx.ALIGN_CENTER, border = 2)
-        self.sizer.Add(self.replaceButton, (1, 2), flag = wx.ALL | wx.ALIGN_CENTER, border = 2)
-        self.sizer.Add(self.useRegextCb, (2, 1), flag = wx.LEFT | wx.ALIGN_CENTER_VERTICAL, border = 10)
-        self.sizer.Add(self.wholeWordsCb, (3, 1), flag = wx.LEFT | wx.ALIGN_CENTER_VERTICAL, border = 10)
-        self.sizer.Add(self.matchCaseCb, (4, 1), flag = wx.LEFT | wx.ALIGN_CENTER_VERTICAL, border = 10)
-        self.sizer.Add(self.openNewSearchResultCb, (5, 1), flag = wx.LEFT | wx.ALIGN_CENTER_VERTICAL, border = 10)
+
+        self.sizer = wx.GridBagSizer(1, 1)
+        i = 0
+        self.sizer.Add(wx.StaticText(self, label = "Find text:"), (i, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 10)
+        self.sizer.Add(self.findText, (i, 1), flag = wx.ALL | wx.ALIGN_CENTER, border = 2)
+        self.sizer.Add(self.findButton, (i, 2), flag = wx.ALL | wx.ALIGN_CENTER, border = 2)
+        i += 1
+        self.sizer.Add(wx.StaticText(self, label = "Replace text:"), (i, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 10)
+        self.sizer.Add(self.replaceText, (i, 1), flag = wx.ALL | wx.ALIGN_CENTER, border = 2)
+        self.sizer.Add(self.replaceButton, (i, 2), flag = wx.ALL | wx.ALIGN_CENTER, border = 2)
+        i += 1
+        self.sizer.Add(wx.StaticText(self, label = "File masks:"), (i, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 10)
+        self.sizer.Add(self.fileMasksTB, (i, 1), flag = wx.ALL | wx.ALIGN_CENTER, border = 2)
+        i += 1
+        self.sizer.Add(wx.StaticText(self, label = "Search dir:"), (i, 0), flag = wx.ALL | wx.ALIGN_CENTER, border = 10)
+        self.sizer.Add(self.searchDirTB, (i, 1), flag = wx.ALL | wx.ALIGN_CENTER, border = 2)
+        self.sizer.Add(self.searchDirButton, (i, 2), flag = wx.ALL | wx.ALIGN_LEFT, border = 2)
+        i += 1
+        self.sizer.Add(self.useRegextCb, (i, 1), flag = wx.LEFT | wx.ALIGN_CENTER_VERTICAL, border = 10)
+        i += 1
+        self.sizer.Add(self.wholeWordsCb, (i, 1), flag = wx.LEFT | wx.ALIGN_CENTER_VERTICAL, border = 10)
+        i += 1
+        self.sizer.Add(self.matchCaseCb, (i, 1), flag = wx.LEFT | wx.ALIGN_CENTER_VERTICAL, border = 10)
+        i += 1
+        self.sizer.Add(self.openNewSearchResultCb, (i, 1), flag = wx.LEFT | wx.BOTTOM | wx.ALIGN_CENTER_VERTICAL, border = 10)
         self.SetSizer(self.sizer)
         self.Layout()
+        self.sizer.SetSizeHints(self)
 
-        self.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
+        #self.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
+
+    def OnSelectProjectPath(self, event):
+        dlg = wx.DirDialog(self, defaultPath = core.Project.projectDir)
+        if dlg.ShowModal() == wx.ID_OK:
+            path = dlg.GetPath()
+            if not path.startswith(core.Project.projectDir):
+                return
+            path = path.replace(core.Project.projectDir + os.sep, "")
+            self.searchDirTB.Value = path
 
     def OnFind(self, event = None):
         textToFind = self.findText.Value
         if not textToFind: return
+        fileMasks = []
+        if self.fileMasksTB.Value:
+            value = self.fileMasksTB.Value.replace(" ", "")
+            fileMasks = value.split(",")
+
+        searchDir = core.Project.projectDir
+        path = os.path.join(searchDir, self.searchDirTB.Value)
+        if os.path.isdir(path):
+            searchDir = path
 
         Find(textToFind,
              "Find Results: {}".format(textToFind),
              wholeWords = self.wholeWordsCb.Value,
              matchCase = self.matchCaseCb.Value,
              useRegexp = self.useRegextCb.Value,
-             openNewTab = self.openNewSearchResultCb.Value
+             openNewTab = self.openNewSearchResultCb.Value,
+             fileMasks = fileMasks,
+             searchDir = searchDir
             )
 
         if not textToFind and not textToFind in self.findText.Items:
             self.findText.Append(textToFind)
 
-    def OnReplace(self, event):
+    def OnReplace(self, event = None):
         textToFind = self.findText.Value
         if not textToFind:
             return
@@ -263,17 +304,20 @@ class FindInProjectDialog(wx.Dialog):
         else:
             event.Skip()
 
-def Find(textToFind = "", title = "Find results", wholeWords = False, matchCase = False, useRegexp = False, openNewTab = True, fileMasks = [], resultsFilter = None):
+def Find(textToFind = "", title = "Find results", wholeWords = False, matchCase = False, useRegexp = False, openNewTab = True, fileMasks = [], searchDir = None, resultsFilter = None):
     if not textToFind:
         return
+
+    if not searchDir or not os.path.isdir(searchDir):
+        searchDir = core.Project.projectDir
 
     core.MainFrame.SetCursor(wx.StockCursor(wx.CURSOR_WAIT))
     try:
         results = {}
         regexp = PrepareRegexp(textToFind, wholeWords, matchCase, useRegexp)
         filePaths = core.Project.explorer.GetAllFiles()
-        for filePath in sorted(filePaths):
-            if fileMasks and extension(filePath) not in fileMasks:
+        for filePath in GetAllFilesInDir(searchDir):
+            if fileMasks and not any([filePath.endswith(fm) for fm in fileMasks]):
                 continue
             result = SearchInFile(filePath, regexp)
             if result:
@@ -286,6 +330,13 @@ def Find(textToFind = "", title = "Find results", wholeWords = False, matchCase 
         FillFindResultsTable(results, len(filePaths), regexp, openNewTab, title)
     finally:
         core.MainFrame.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
+
+def GetAllFilesInDir(path):
+    files = []
+    for root, _, fileNames in os.walk(path):
+        for fileName in fileNames:
+            files.append(os.path.join(root, fileName))
+    return files
 
 def SearchInFile(filePath, regexp):
     try:

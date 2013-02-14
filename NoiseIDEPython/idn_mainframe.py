@@ -371,7 +371,7 @@ class NoiseIDE(wx.Frame):
 class HelloDialog(wx.Dialog):
     def __init__(self, parent):
         wx.Dialog.__init__(self, parent, title = "Hello, " + Config.GetProp(Config.USER_NAME),
-            style = wx.DEFAULT_DIALOG_STYLE, size = (330, 265))
+            style = wx.DEFAULT_DIALOG_STYLE)
 
         self.recentLB = wx.ListCtrl(self, -1, style = wx.LC_REPORT | wx.LC_NO_HEADER | wx.LC_ALIGN_LEFT)
         self.recentLB.SetMinSize((200, 200))
@@ -406,6 +406,7 @@ class HelloDialog(wx.Dialog):
 
         self.SetSizer(gSizer)
         self.Layout()
+        gSizer.SetSizeHints(self)
 
     def OnCreateNew(self, event):
         self.Close()
@@ -454,6 +455,7 @@ if __name__ == '__main__':
         main()
         if installNewVersion:
             os.startfile("noiseide_copy.bat")
+        wx.Exit()
 
     except Exception, e:
         core.Log("app error" + str(e))

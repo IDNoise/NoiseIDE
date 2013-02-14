@@ -706,7 +706,7 @@ class PythonProjectExplorer(ProjectExplorer):
 
 class MaskEditor(wx.Dialog):
     def __init__(self, parent):
-        wx.Dialog.__init__(self, parent, title = "Masks", size = (180, 400))
+        wx.Dialog.__init__(self, parent, title = "Masks")
         self.explorer = parent
         self.sizer = wx.BoxSizer()
         buttonSizer = wx.BoxSizer(wx.VERTICAL)
@@ -720,6 +720,8 @@ class MaskEditor(wx.Dialog):
         self.sizer.AddSizer(buttonSizer)
         self.SetSizer(self.sizer)
         self.Layout()
+        self.sizer.SetSizeHints(self)
+
 
     def OnAddMask(self, event):
         dlg = wx.TextEntryDialog(self, 'Mask:', 'Add Mask', style = wx.OK | wx.CANCEL)

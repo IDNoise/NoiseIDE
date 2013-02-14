@@ -9,7 +9,7 @@ class ShortcutWindow(wx.Dialog):
     def __init__(self, parent):
         wx.Dialog.__init__(self, parent, title = "Shortcuts", style = wx.DEFAULT_DIALOG_STYLE)
 
-        self.panel = wx.ScrolledWindow(self, size = (500, 700))
+        self.panel = wx.ScrolledWindow(self)
         psizer = wx.BoxSizer(wx.VERTICAL)
 
         allEditorsSBSizer = wx.StaticBoxSizer(wx.StaticBox(self.panel, label = "All editors\consoles"))
@@ -30,6 +30,7 @@ class ShortcutWindow(wx.Dialog):
 
         self.panel.SetSizer(psizer)
         self.panel.SetScrollbars(1, 1, 1, 1)
+        psizer.SetSizeHints(self)
 
         i = {
             allEditorsSizer : 0,
@@ -58,4 +59,5 @@ class ShortcutWindow(wx.Dialog):
         #addShortcutRecord("Erlang with compiled option:", "")
         addShortcutRecord(erlangOptionSizer, "Refresh", "Ctrl-R")
         self.Layout()
+
 

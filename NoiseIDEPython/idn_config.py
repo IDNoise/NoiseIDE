@@ -112,7 +112,7 @@ class Config:
 
 class ConfigEditForm(wx.Dialog):
     def __init__(self):
-        wx.Dialog.__init__(self, core.MainFrame, size = (300, 180), title = "Edit config")
+        wx.Dialog.__init__(self, core.MainFrame, title = "Edit config")
 
         sizer = wx.GridBagSizer(2, 2)
         self.colorSchemas = []
@@ -144,6 +144,7 @@ class ConfigEditForm(wx.Dialog):
 
         self.SetSizer(sizer)
         self.Layout()
+        sizer.SetSizeHints(self)
 
     def OnClose(self, event):
         self.Close()

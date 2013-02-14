@@ -7,7 +7,7 @@ __author__ = 'Yaroslav'
 
 class FastProjectFileOpenDialog(wx.Dialog):
     def __init__(self, parent, project):
-        wx.Dialog.__init__(self, parent, title = "Open file", size = (600, 55))
+        wx.Dialog.__init__(self, parent, title = "Open file")
         choices = self.PrepareChoices(project)
         self.cb = TextCtrlAutoComplete(
             self,
@@ -24,6 +24,7 @@ class FastProjectFileOpenDialog(wx.Dialog):
         self.CenterOnParent()
         self.cb.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
         self.cb.SetFocus()
+        sizer.SetSizeHints(self)
 
     def PrepareChoices(self, project):
         files = project.explorer.GetAllFiles()

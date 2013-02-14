@@ -283,8 +283,7 @@ class ErlangProjectFrom(wx.Dialog):
 class ConsoleCreateEditDialog(wx.Dialog):
     def __init__(self, parent, console = None):
         wx.Dialog.__init__(self, parent, title = "Console props",
-            style = wx.DEFAULT_DIALOG_STYLE | wx.WS_EX_VALIDATE_RECURSIVELY,
-            size = (370, 210))
+            style = wx.DEFAULT_DIALOG_STYLE | wx.WS_EX_VALIDATE_RECURSIVELY)
 
         self.currentConsole = console
 
@@ -327,6 +326,7 @@ class ConsoleCreateEditDialog(wx.Dialog):
 
         self.SetSizer(gSizer)
         self.Layout()
+        gSizer.SetSizeHints(self)
 
     def OnSave(self, event):
 

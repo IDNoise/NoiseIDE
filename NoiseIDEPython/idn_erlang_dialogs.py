@@ -9,7 +9,7 @@ import wx
 
 class ErlangOptionsDialog(wx.Dialog):
     def __init__(self, parent, atLeastOneRequired):
-        wx.Dialog.__init__(self, parent, size = (320, 150), title = "Erlang options")
+        wx.Dialog.__init__(self, parent, title = "Erlang options")
         self.panel = ErlangOptionsPanel(self, atLeastOneRequired)
 
 class ErlangOptionsPanel(wx.Panel):
@@ -38,6 +38,7 @@ class ErlangOptionsPanel(wx.Panel):
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.AddSizer(runtimesSizer)
         self.SetSizer(sizer)
+        sizer.SetSizeHints(parent)
 
     def OnAddRuntime(self, event):
         dlg = RuntimeCreateEditDialog(self)
@@ -64,8 +65,7 @@ class ErlangOptionsPanel(wx.Panel):
 class RuntimeCreateEditDialog(wx.Dialog):
     def __init__(self, parent, runtime = None):
         wx.Dialog.__init__(self, parent, title = "Runtime props",
-            style = wx.DEFAULT_DIALOG_STYLE | wx.WS_EX_VALIDATE_RECURSIVELY,
-            size = (390, 120))
+            style = wx.DEFAULT_DIALOG_STYLE | wx.WS_EX_VALIDATE_RECURSIVELY)
 
         self.currentRuntime = runtime
 
@@ -95,6 +95,7 @@ class RuntimeCreateEditDialog(wx.Dialog):
 
         self.SetSizer(gSizer)
         self.Layout()
+        gSizer.SetSizeHints(self)
 
     def OnSelectErlangPath(self, event):
         dlg = wx.FileDialog(self, defaultFile = self.pathTB.Value)
@@ -118,7 +119,7 @@ class RuntimeCreateEditDialog(wx.Dialog):
 
 class ErlangDialyzerDialog(wx.Dialog):
     def __init__(self, parent, project):
-        wx.Dialog.__init__(self, parent, title = "Dialyzer options", size = (390, 120),
+        wx.Dialog.__init__(self, parent, title = "Dialyzer options",
             style = wx.DEFAULT_DIALOG_STYLE | wx.WS_EX_VALIDATE_RECURSIVELY)
 
         self.project = project
@@ -155,6 +156,7 @@ class ErlangDialyzerDialog(wx.Dialog):
 
         self.SetSizer(gSizer)
         self.Layout()
+        gSizer.SetSizeHints(self)
 
     def OnSelectPltPath(self, event):
         dlg = wx.FileDialog(self, defaultFile = self.pathTB.Value, wildcard = "*.plt")

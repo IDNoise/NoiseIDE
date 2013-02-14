@@ -111,21 +111,29 @@ class ErlangProject(Project):
         self.window.projectMenu.AppendSeparator()
         self.SetCompileMenuItems()
         self.window.projectMenu.AppendSeparator()
-        self.window.projectMenu.AppendMenuItem("Rebuild tests", self.window, lambda e: self.RebuildTests(), "F9")
+        self.window.projectMenu.AppendMenuItem("Rebuild tests", self.window,
+                                               lambda e: self.RebuildTests(), "F9")
         self.window.projectMenu.AppendSeparator()
-        self.window.projectMenu.AppendMenuItem("XRef check", self.window, lambda e: self.StartXRef())
+        self.window.projectMenu.AppendMenuItem("XRef check", self.window,
+                                               lambda e: self.StartXRef())
 
         self.dialyzerMenu = Menu()
         self.dialyzerMenu.AppendMenuItem("Edit Options", self.window, self.OnEditDialyzerOptions)
         self.dialyzerMenu.AppendSeparator()
-        self.dialyzerMenu.AppendMenuItem("Project", self.window, lambda e: self.DialyzeProject())
+        self.dialyzerMenu.AppendMenuItem("Project", self.window,
+                                         lambda e: self.DialyzeProject())
         self.dialyzerMenu.AppendMenuItem("Current module", self.window, self.OnDialyzerRunModule)
         self.window.projectMenu.AppendMenu(wx.ID_ANY, "Dialyzer", self.dialyzerMenu)
 
-        self.window.erlangMenu.AppendMenuItem("Regenerate erlang cache", self.window, lambda e: self.RegenerateErlangCache())
+        self.window.erlangMenu.AppendMenuItem("Regenerate erlang cache", self.window,
+                                              lambda e: self.RegenerateErlangCache())
         self.window.erlangMenu.AppendSeparator()
-        self.window.erlangMenu.AppendCheckMenuItem("Fly Compilation", self.window, self.OnCheckErlangFlyCompilation, Config.GetProp("erlang_fly_compilation", True))
-        self.window.erlangMenu.AppendCheckMenuItem("Highlight whole line on error", self.window, self.OnCheckErlangHighlightErrorBackground, Config.GetProp("highlight_error_background", False))
+        self.window.erlangMenu.AppendCheckMenuItem("Fly Compilation", self.window,
+                                                   self.OnCheckErlangFlyCompilation,
+                                                   Config.GetProp("erlang_fly_compilation", True))
+        self.window.erlangMenu.AppendCheckMenuItem("Highlight whole line on error", self.window,
+                                                   self.OnCheckErlangHighlightErrorBackground,
+                                                   Config.GetProp("highlight_error_background", False))
 
         self.window.viewMenu.AppendMenuItem("Errors/Warnings", self.window, lambda e: self.ShowErrorsTable())
         self.window.viewMenu.AppendMenuItem("IDE Console", self.window, lambda e: self.ShowIDEConsole())
@@ -136,8 +144,12 @@ class ErlangProject(Project):
         self.window.viewMenu.AppendMenu(wx.ID_ANY, "Consoles", self.consoleMenu)
 
         self.window.toolbar.AddSeparator()
-        self.rebuildT = self.window.toolbar.AddLabelTool(wx.ID_ANY, 'Rebuild apps', GetImage('build.png'), shortHelp = 'Rebuild apps')
-        self.xrefCheckT = self.window.toolbar.AddLabelTool(wx.ID_ANY, 'XRef check', GetImage('xrefCheck.png'), shortHelp = 'XRef check')
+        self.rebuildT = self.window.toolbar.AddLabelTool(wx.ID_ANY, 'Rebuild apps',
+                                                         GetImage('build.png'),
+                                                         shortHelp = 'Rebuild apps')
+        self.xrefCheckT = self.window.toolbar.AddLabelTool(wx.ID_ANY, 'XRef check',
+                                                           GetImage('xrefCheck.png'),
+                                                           shortHelp = 'XRef check')
 
         self.window.Bind(wx.EVT_TOOL, lambda e: self.Rebuild(), self.rebuildT)
         self.window.Bind(wx.EVT_TOOL, lambda e: self.StartXRef(), self.xrefCheckT)
@@ -211,8 +223,6 @@ class ErlangProject(Project):
             wx.MessageBox("Please specify plt for dialyzer. Project -> Dialyzer -> Edit Options.", "Dialyzer")
             return False
         return True
-
-
 
     def DialyzeModules(self, files):
         if not self.CheckPlt(): return
