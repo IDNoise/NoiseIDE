@@ -1,3 +1,4 @@
+from idn_config import Config
 from idn_events import Event
 from idn_window_utils import IDNCustomTreeCtrl
 
@@ -16,7 +17,6 @@ ICON_SIZE = 16
 
 class ProjectExplorer(IDNCustomTreeCtrl):
     FILE, DIRECTORY_OPEN, DIRECTORY_CLOSED = range(3)
-    INTERVAL = 3
 
     def __init__(self, parent, project):
         style = wx.TR_MULTIPLE | wx.DIRCTRL_3D_INTERNAL | wx.TR_HAS_BUTTONS
@@ -99,7 +99,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         if self.dirChecker:
             self.dirChecker.Stop()
         mask = [] if self.showAllFiles else self.mask
-        self.dirChecker = DirectoryChecker(self.INTERVAL, self.root, True, mask, self.excludeDirs, self.excludePaths)
+        self.dirChecker = DirectoryChecker(Config.RefreshInterval(), self.root, True, mask, self.excludeDirs, self.excludePaths)
         self.dirChecker.FilesCreatedEvent += self.OnFilesCreated
         self.dirChecker.FilesModifiedEvent += self.OnFilesModified
         self.dirChecker.FilesDeletedEvent += self.OnFilesDeleted
@@ -283,6 +283,8 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         menu = Menu()
 
         if self.eventItem == self.GetRootItem():
+            if Config.RefreshInterval() == 0:
+                menu.AppendMenuItem("Refresh", self, self.OnMenuRefresh)
             menu.AppendMenuItem("Setup masks", self, self.OnMenuSetupMasks)
             menu.AppendCheckMenuItem("Show hidden", self, self.OnMenuShowHide, self.showHidden)
             menu.AppendCheckMenuItem("Show all files", self, self.OnMenuShowAllFiles, self.showAllFiles)
@@ -520,6 +522,9 @@ class ProjectExplorer(IDNCustomTreeCtrl):
                     else:
                         self.AppendFile(id, path)
                     self.SortChildren(id)
+
+    def OnMenuRefresh(self, event):
+        self.UpdateRoot()
 
     def OnMenuSetupMasks(self, event):
         dlg = MaskEditor(self)

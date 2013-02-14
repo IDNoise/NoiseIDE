@@ -78,6 +78,7 @@ class DirectoryChecker:
         self.fileMask = fileMask
         self.excludeDirs = excludeDirs
         self.excludePaths = excludePaths
+        self.interval = interval
         self.timer = Timer(interval, self.CheckDirectoryChanges)
         if root:
             self.dirSnapshot = self.GetDirectoryInfo()
@@ -96,6 +97,7 @@ class DirectoryChecker:
 
     def SetInterval(self, interval):
         self.Stop()
+        self.interval = interval
         self.timer = Timer(interval, self.CheckDirectoryChanges)
         self.Start()
 
@@ -120,8 +122,9 @@ class DirectoryChecker:
         self.Start()
 
     def Start(self):
-        self.dirSnapshot = self.GetDirectoryInfo()
-        self.timer.Start()
+        if self.interval > 0:
+            self.dirSnapshot = self.GetDirectoryInfo()
+            self.timer.Start()
 
     def Stop(self):
         self.timer.Stop()

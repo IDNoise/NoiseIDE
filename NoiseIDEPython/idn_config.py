@@ -17,8 +17,12 @@ class Config:
     LAST_PROJECT_LIST = "last_project_list"
     RUNTIMES = "runtimes"
     TOOLTIP_DELAY = "tooltip_delay"
+    REFRESH_INTERVAL = "refresh_interval"
 
     DEFAULT_TOOLTIP_DELAY = 500
+    DEFAULT_REFRESH_INTERVAL = 2
+
+    data = {}
 
     @classmethod
     def load(cls):
@@ -101,6 +105,10 @@ class Config:
         return cls.data[cls.TOOLTIP_DELAY] if cls.TOOLTIP_DELAY in cls.data else cls.DEFAULT_TOOLTIP_DELAY
 
     @classmethod
+    def RefreshInterval(cls):
+        return cls.data[cls.REFRESH_INTERVAL] if cls.REFRESH_INTERVAL in cls.data else cls.DEFAULT_REFRESH_INTERVAL
+
+    @classmethod
     def SetTooltipDelay(cls, delay):
         try:
             delay = int(delay)
@@ -110,10 +118,22 @@ class Config:
             cls.data[cls.TOOLTIP_DELAY] = delay
             cls.save()
 
+    @classmethod
+    def SetRefreshInterval(cls, interval):
+        try:
+            interval = abs(int(interval))
+        except:
+            interval = cls.DEFAULT_REFRESH_INTERVAL
+        finally:
+            cls.data[cls.REFRESH_INTERVAL] = interval
+            cls.save()
+        if core.Project:
+            core.Project.SetRefreshInterval(interval)
+
 class ConfigEditForm(wx.Dialog):
     def __init__(self):
         wx.Dialog.__init__(self, core.MainFrame, title = "Edit config")
-
+        wx.ToolTip_Enable(True)
         sizer = wx.GridBagSizer(2, 2)
         self.colorSchemas = []
         for f in os.listdir(core.MainFrame.cwd):
@@ -126,21 +146,31 @@ class ConfigEditForm(wx.Dialog):
         )
         self.userNameTB = wx.TextCtrl(self, value = Config.UserName(), size = (180, 25))
         self.tooltipDelayTB = wx.TextCtrl(self, value = str(Config.TooltipDelay()), size = (180, 25))
+        self.refreshIntervalTB = wx.TextCtrl(self, value = str(Config.RefreshInterval()), size = (180, 25))
         self.openLastFilesCb = wx.CheckBox(self, label = "Open last files")
         self.openLastFilesCb.SetValue(Config.GetProp(Config.OPEN_LAST_FILES, True))
+        self.refreshIntervalTB.SetToolTipString("Interval in seconds. 0 = No refresh -> " +
+                                                "Use Refresh on root element in project explorer")
         self.closeButton = CreateButton(self, "Close", self.OnClose)
         self.saveButton = CreateButton(self, "Save", self.OnSave)
 
-        sizer.Add(wx.StaticText(self, label = "Color schema:"), (0, 0), flag = wx.ALL | wx.ALIGN_CENTER_VERTICAL, border = 2)
-        sizer.Add(self.colorSchemaCB, (0, 1), flag = wx.ALL | wx.wx.ALIGN_LEFT, border = 2)
-        sizer.Add(wx.StaticText(self, label = "User name:"), (1, 0), flag = wx.ALL | wx.ALIGN_CENTER_VERTICAL, border = 2)
-        sizer.Add(self.userNameTB, (1, 1), flag = wx.ALL | wx.wx.ALIGN_LEFT, border = 2)
-        sizer.Add(wx.StaticText(self, label = "Tooltip delay:"), (2, 0), flag = wx.ALL | wx.ALIGN_CENTER_VERTICAL, border = 2)
-        sizer.Add(self.tooltipDelayTB, (2, 1), flag = wx.ALL | wx.wx.ALIGN_LEFT, border = 2)
-        sizer.Add(self.openLastFilesCb, (3, 0), flag = wx.ALL | wx.ALIGN_LEFT, border = 2)
-
-        sizer.Add(self.closeButton, (4, 0), flag = wx.ALL | wx.wx.ALIGN_LEFT, border = 2)
-        sizer.Add(self.saveButton, (4, 1), flag = wx.ALL | wx.wx.ALIGN_RIGHT, border = 2)
+        i = 0
+        sizer.Add(wx.StaticText(self, label = "Color schema:"), (i, 0), flag = wx.ALL | wx.ALIGN_CENTER_VERTICAL, border = 2)
+        sizer.Add(self.colorSchemaCB, (i, 1), flag = wx.ALL | wx.wx.ALIGN_LEFT, border = 2)
+        i += 1
+        sizer.Add(wx.StaticText(self, label = "User name:"), (i, 0), flag = wx.ALL | wx.ALIGN_CENTER_VERTICAL, border = 2)
+        sizer.Add(self.userNameTB, (i, 1), flag = wx.ALL | wx.wx.ALIGN_LEFT, border = 2)
+        i += 1
+        sizer.Add(wx.StaticText(self, label = "Tooltip delay:"), (i, 0), flag = wx.ALL | wx.ALIGN_CENTER_VERTICAL, border = 2)
+        sizer.Add(self.tooltipDelayTB, (i, 1), flag = wx.ALL | wx.wx.ALIGN_LEFT, border = 2)
+        i += 1
+        sizer.Add(self.openLastFilesCb, (i, 0), flag = wx.ALL | wx.ALIGN_LEFT, border = 2)
+        i += 1
+        sizer.Add(wx.StaticText(self, label = "Tree refresh interval(seconds):"), (i, 0), flag = wx.ALL | wx.ALIGN_CENTER_VERTICAL, border = 2)
+        sizer.Add(self.refreshIntervalTB, (i, 1), flag = wx.ALL | wx.ALIGN_LEFT, border = 2)
+        i += 1
+        sizer.Add(self.closeButton, (i, 0), flag = wx.ALL | wx.wx.ALIGN_LEFT, border = 2)
+        sizer.Add(self.saveButton, (i, 1), flag = wx.ALL | wx.wx.ALIGN_RIGHT, border = 2)
 
         self.SetSizer(sizer)
         self.Layout()
@@ -156,5 +186,7 @@ class ConfigEditForm(wx.Dialog):
             Config.SetProp(Config.USER_NAME, self.userNameTB.Value)
         if self.tooltipDelayTB.Value:
             Config.SetTooltipDelay(self.tooltipDelayTB.Value)
+        if self.refreshIntervalTB.Value:
+            Config.SetRefreshInterval(self.refreshIntervalTB.Value)
         Config.SetProp(Config.OPEN_LAST_FILES, self.openLastFilesCb.Value)
         self.Close()

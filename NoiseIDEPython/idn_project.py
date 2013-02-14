@@ -2,6 +2,7 @@ import time
 from idn_config import Config
 from idn_findreplace import FindInProjectDialog
 from idn_project_dialogs import FastProjectFileOpenDialog
+from idn_utils import readFile
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
@@ -91,6 +92,7 @@ class Project(ProgressTaskManagerDialog):
         self.projectDir = os.path.dirname(filePath)
         self.projectData = projectData
         self.oldProjectData = None
+        self.openedFilesChecker = None
 
         if not os.path.isdir(self.USER_DATA_FOLDER):
             os.makedirs(self.USER_DATA_FOLDER)
@@ -109,7 +111,12 @@ class Project(ProgressTaskManagerDialog):
 
         self.SetupPerspective()
 
+        self.explorer.ProjectFilesModifiedEvent += self.OnProjectFilesModified
+
         core.TabMgr.Parent.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
+
+    def SetRefreshInterval(self, interval):
+        self.explorer.dirChecker.SetInterval(interval)
 
     def SetupMenu(self):
         self.window.projectMenu.AppendMenuItem('Project Settings', self.window, self.OnEditProject)
@@ -211,3 +218,17 @@ class Project(ProgressTaskManagerDialog):
     def ShowFastOpen(self):
         dialog = FastProjectFileOpenDialog(core.TabMgr, self)
         dialog.ShowModal()
+
+    def OnProjectFilesModified(self, files):
+        for f in files:
+            editor = self.window.TabMgr.FindPageByPath(f)
+            if editor:
+                text = readFile(f)
+                if not text: continue
+                if editor.savedText != text:
+                    dial = wx.MessageDialog(None,
+                                            'File "{}" was modified.\nDo you want to reload document?'.format(f),
+                                            'File modified',
+                                            wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
+                    if dial.ShowModal() == wx.ID_YES:
+                        editor.LoadFile(f)

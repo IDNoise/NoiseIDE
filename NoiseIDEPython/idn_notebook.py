@@ -229,7 +229,6 @@ class EditorNotebook(aui.AuiNotebook):
         return [p.filePath for p in self.Pages()]
 
     def LoadFile(self, fileName):
-
         id = self.FindPageIndexByPath(fileName)
         if id >= 0:
             editor = self[id]
@@ -249,7 +248,7 @@ class EditorNotebook(aui.AuiNotebook):
             editorPanel.editor.SetFocus()
             self.EnsureVisible(self.FindPageIndexByEditor(editorPanel.editor))
             self.pageOpenOrder.append(editorPanel.editor)
-            return  editorPanel.editor
+            return editorPanel.editor
 
     def LoadFileLine(self, fileName, line = 0, addToHistory = True, fromLine = 0):
         prevEditor = self.GetActiveEditor()

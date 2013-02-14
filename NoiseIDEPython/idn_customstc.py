@@ -1,3 +1,5 @@
+from stat import ST_MTIME
+
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 
@@ -178,6 +180,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
             self.LoadFile(filePath)
             self.Bind(stc.EVT_STC_SAVEPOINTLEFT, self.OnSavePointLeft)
             self.Bind(stc.EVT_STC_SAVEPOINTREACHED, self.OnSavePointReached)
+            self.StartModifyCheck()
         self.OnInit()
 
         self.editorMenu = core.MainFrame.editorMenu
@@ -186,6 +189,19 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.Bind(wx.EVT_RIGHT_UP, self.ShowPopupMenu)
 
         self.customTooltip = STCContextToolTip(self, self.OnRequestTooltipText)
+
+    def StartModifyCheck(self):
+        self.modifyCheckTimer = wx.Timer(self, wx.ID_ANY)
+        self.Bind(wx.EVT_TIMER, self.OnModifyCheckTimer, self.modifyCheckTimer)
+        self.modifyCheckTimer.Start(1000)
+        self.modifyTime = os.stat(self.filePath)[ST_MTIME]
+
+    def OnModifyCheckTimer(self, event):
+        if Config.RefreshInterval() != 0: return
+        modifyTime = os.stat(self.filePath)[ST_MTIME]
+        if modifyTime != self.modifyTime:
+            self.modifyTime = modifyTime
+            core.Project.OnProjectFilesModified([self.filePath])
 
     def OnRequestTooltipText(self):
         return None
@@ -266,6 +282,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.filePath = os.path.normpath(filePath)
         self.ClearAll()
         StyledTextCtrl.LoadFile(self, self.filePath)
+        self.modifyTime = os.stat(self.filePath)[ST_MTIME]
         self.savedText = self.GetText()
         self.changed = False
         self.saved = True
@@ -389,6 +406,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
             return
         self.savedText = self.GetText()
         self.SaveFile(self.filePath)
+        self.modifyTime = os.stat(self.filePath)[ST_MTIME]
         self.Changed(False)
         self.OnFileSaved()
 

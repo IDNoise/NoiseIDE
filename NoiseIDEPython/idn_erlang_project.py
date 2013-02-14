@@ -67,7 +67,6 @@ class ErlangProject(Project):
         self.SetupProps()
 
         self.explorer.ProjectFilesCreatedEvent += self.OnProjectFilesCreated
-        self.explorer.ProjectFilesModifiedEvent += self.OnProjectFilesModified
         self.explorer.ProjectFilesDeletedEvent += self.OnProjectFilesDeleted
 
 
