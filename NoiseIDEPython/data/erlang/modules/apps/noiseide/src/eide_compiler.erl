@@ -148,11 +148,11 @@ compile_yecc(FileName) ->
     end.
  
 app_name(File) -> 
-    App = lists:last(lists:takewhile(
+    App = lists:nth(2, lists:dropwhile(
         fun(I) -> 
-            I =/= "src" andalso I =/= "include" andalso I =/= "test" 
+            not lists:member(I, ["src", "include", "test"])
         end, 
-        filename:split(File))
+        lists:reverse(filename:split(File)))
     ),
     case lists:member($-, App) of
         true -> lists:takewhile(fun(E) -> E =/= $- end, App);

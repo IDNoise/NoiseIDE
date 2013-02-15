@@ -339,24 +339,14 @@ class NoiseIDE(wx.Frame):
         ErlangProjectFrom(None, dlg.GetStringSelection()).ShowModal()
 
     def OnClose(self, event):
-        print "On close mainframe"
         if self.project:
-            print "project close start"
             self.project.Close()
-            print "project close end"
         Config.save()
-        print "config saved"
         self.autoCheckTimer.Stop()
-        print "auto check timer stop"
-        print "start exiting top levels"
-        print wx.GetTopLevelWindows()
         for wnd in wx.GetTopLevelWindows():
             if wnd != self:
-                print "close wnd start", wnd
                 wnd.Close(True)
-                print "close wnd end"
         event.Skip()
-        print "end on close"
 
     def OnQuit(self, event):
         self.Close(True)
