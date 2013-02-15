@@ -216,6 +216,19 @@ class ErlangLexer(BaseLexer):
                     state = None
         return (result, record, prefix)
 
+    def IsInTypeBlock(self):
+        r = re.compile(r"(?:^-spec|^-type|^-record)(.*?)(?:^[a-z].*?|^-[a-z]+|\.)", re.MULTILINE | re.DOTALL)
+        text = self.stc.GetText()
+        caretPos = self.stc.GetCurrentPos()
+        pos = 0
+        while True:
+            match = r.search(text, pos)
+            if not match: return False
+            if caretPos > match.start() and caretPos < match.end():
+                return True
+            pos = match.end()
+        return False
+
     def GetAllExports(self):
         r = re.compile("^-export\(\[\s*(.*?)\s*\]\)\.", re.MULTILINE | re.DOTALL)
         text = self.stc.GetText()
@@ -246,7 +259,7 @@ class ErlangLexer(BaseLexer):
             result += match.group(1)
         if result is None:
             result = ""
-        return (result.strip(), start, lastInsertPosition)
+        return (result.strip(), start, pos, lastInsertPosition)
 
 
 class LineData:

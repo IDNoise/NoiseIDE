@@ -217,9 +217,9 @@ class Project(ProgressTaskManagerDialog):
     def Close(self):
         self.SaveUserData()
         self.explorer.StopTrackingProject()
-        self.window.WinMgr.DetachPane(self.explorer)
+        self.window.WinMgr.DetachPane(self.explorerPanel)
         self.window.WinMgr.Update()
-        self.explorer.Destroy()
+        self.explorerPanel.Destroy()
         core.TabMgr.CloseAll()
         for item in self.window.projectMenu.GetMenuItems():
             self.window.projectMenu.Remove(item.GetId())

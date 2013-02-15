@@ -104,19 +104,20 @@ class ErlangCompleter(wx.Frame):
             fValue = fToken.value
             fIsAtom = fType == ErlangTokenType.ATOM
 
-            if (len(tokens) > 3 and
-                    ((fIsAtom and "::" in text[:fToken.start])
-                     or (text.strip()[-2:] == "::"))):
-                self.prefix = fValue if fIsAtom else ""
-                if tokens[2].type == ErlangTokenType.ATOM and tokens[1].value == ":":
-                    moduleName = tokens[2].value
-                else:
-                    moduleName = self.module
-                data += ErlangCache.ModuleExportedTypes(moduleName)
-                data += ErlangCache.ERLANG_TYPES
-                if not self.prefix:
-                    data += ErlangCache.AllModules()
-            elif (fType == ErlangTokenType.SPACE or
+            # if (len(tokens) > 3 and
+            #         ((fIsAtom and "::" in text[:fToken.start])
+            #          or (text.strip()[-2:] == "::"))):
+            #     self.prefix = fValue if fIsAtom else ""
+            #     if tokens[2].type == ErlangTokenType.ATOM and tokens[1].value == ":":
+            #         moduleName = tokens[2].value
+            #     else:
+            #         moduleName = self.module
+            #     data += ErlangCache.ModuleExportedTypes(moduleName)
+            #     data += ErlangCache.ERLANG_TYPES
+            #     if not self.prefix:
+            #         data += ErlangCache.AllModules()
+           # el
+            if (fType == ErlangTokenType.SPACE or
                 (len(tokens) == 1 and fIsAtom) or
                 (fIsAtom and tokens[1].type == ErlangTokenType.SPACE) or
                 (fIsAtom and tokens[1].value in self.separators) or
@@ -126,7 +127,7 @@ class ErlangCompleter(wx.Frame):
                 else:
                     self.prefix = fValue.strip()
                 if self.moduleType == TYPE_MODULE:
-                    if self.stc.lexer.IsInSpec():
+                    if self.stc.lexer.IsInTypeBlock():
                         data += ErlangCache.ModuleExportedTypes(self.module)
                         data += ErlangCache.ERLANG_TYPES
                         if self.prefix:
@@ -147,7 +148,7 @@ class ErlangCompleter(wx.Frame):
                     if macrosData:
                         moduleName = macrosData.value
                 self.prefix = "" if fValue == ":" else fValue
-                if self.stc.lexer.IsInSpec():
+                if self.stc.lexer.IsInTypeBlock():
                     data += ErlangCache.ModuleExportedTypes(moduleName)
                 else:
                     data += ErlangCache.ModuleFunctions(moduleName, onlyExported)
@@ -189,10 +190,11 @@ class ErlangCompleter(wx.Frame):
         for d in set(data):
             helpText = None
             if isinstance(d, Function):
-                if True:
-                    text = "{}({})".format(d.name, ", ".join(d.params))
-                else:
+                (_f, s, e, _l) = self.stc.lexer.GetAllExports()
+                if self.stc.CurrentPos >= s and self.stc.CurrentPos <= e:
                     text = "{}/{}".format(d.name, d.arity)
+                else:
+                    text = "{}({})".format(d.name, ", ".join(d.params))
                 helpText = self._FunctionHelp(d)
             elif isinstance(d, Record):
                 text = d.name

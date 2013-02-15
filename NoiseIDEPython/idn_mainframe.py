@@ -114,10 +114,7 @@ class NoiseIDE(wx.Frame):
         self.menubar = wx.MenuBar()
         self.fileMenu = Menu()
 
-        projectsMenu = Menu()
-        projectsMenu.AppendMenuItem('Erlang', self, self.OnNewErlangProject)
-
-        self.fileMenu.AppendMenu(wx.ID_ANY, "New project", projectsMenu)
+        self.fileMenu.AppendMenuItem('New project', self, self.OnNewErlangProject)
         self.fileMenu.AppendMenuItem('Open Project', self, self.OnOpenProject)
 
         if Config.LastProjects():
@@ -455,7 +452,7 @@ if __name__ == '__main__':
         main()
         if installNewVersion:
             os.startfile("noiseide_copy.bat")
-        wx.Exit()
+        exit()
 
     except Exception, e:
         core.Log("app error" + str(e))

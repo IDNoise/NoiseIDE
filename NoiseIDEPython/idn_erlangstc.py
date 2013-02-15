@@ -188,8 +188,6 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                             macrosData = ErlangCache.MacrosData(self.ModuleName(), macros)
                             if macrosData:
                                 module = macrosData.value
-
-            print module
             Find(r"\b{0}:{1}\(|\s{0}:{1}/|^{1}\(".format(module, value), "Find reference of function '{}'".format(value),
                  useRegexp = True,
                  fileExts = [".erl", ".hrl", "{}.erl".format(module)],
@@ -411,7 +409,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         postfix = self.GetTextRange(end, lineEnd)
         data = None
         if style == ErlangHighlightType.FUNDEC:
-            (exports, _s, end) = self.lexer.GetAllExports()
+            (exports, _s, _end, _last) = self.lexer.GetAllExports()
             if value + "/" in exports:
                 self.navigateTo = (self.filePath, 1 + self.LineFromPosition(self.Text.find(value + "/")))
         elif style == ErlangHighlightType.FUNCTION:
@@ -546,7 +544,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         arity = self.completer.GetFunArity(funData[1] + len(fun))
 
         funStr = "{}/{}".format(fun, arity)
-        (exports, startPos, insertPos) = self.lexer.GetAllExports()
+        (exports, startPos, _endPos, insertPos) = self.lexer.GetAllExports()
         if funStr in exports:
             return
 
@@ -566,7 +564,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         fun = funData[0]
         arity = self.completer.GetFunArity(funData[1] + len(fun))
         funStr = "{}/{}".format(fun, arity)
-        (exports, startPos, insertPos) = self.lexer.GetAllExports()
+        (exports, startPos, _endPos, insertPos) = self.lexer.GetAllExports()
         if funStr not in exports: return
         self.SetTargetStart(startPos)
         self.SetTargetEnd(insertPos)
