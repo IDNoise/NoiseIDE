@@ -42,7 +42,7 @@ def GenerateUpdatePackages():
     zipdir('data', noiseide)
     for f in os.listdir(os.getcwd()):
         noiseide_last.write(f)
-        if f not in ['NoiseIDE.exe', 'rev.cfg', 'python27.dll']:
+        if f not in ['NoiseIDE.exe', 'rev.cfg', 'python27.dll', 'noiseide_copy.bat']:
             noiseide.write(f)
     noiseide_last.close()
     noiseide.close()
