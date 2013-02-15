@@ -188,10 +188,11 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                             macrosData = ErlangCache.MacrosData(self.ModuleName(), macros)
                             if macrosData:
                                 module = macrosData.value
+            moduleFile = "{}.erl".format(module)
             Find(r"\b{0}:{1}\(|\s{0}:{1}/|^{1}\(".format(module, value), "Find reference of function '{}'".format(value),
                  useRegexp = True,
-                 fileExts = [".erl", ".hrl", "{}.erl".format(module)],
-                 resultsFilter = lambda r: self.CheckResult(r, [value], [ErlangHighlightType.FUNCTION, ErlangHighlightType.FUNDEC]))
+                 fileExts = [".erl", ".hrl", moduleFile],
+                 resultsFilter = lambda r: self.FunctionCheckResult(r, value, moduleFile))
         elif style == ErlangHighlightType.MODULE:
             Find(r"-module\({0}\)|-extends\({0}\)|\b{0}:".format(value), "Find reference of module '{}'".format(value),
                  useRegexp = True,
@@ -207,6 +208,12 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                  useRegexp = True,
                  fileExts = [".erl", ".hrl"],
                  resultsFilter = lambda r: self.CheckResult(r, [value, "?" + value], [ErlangHighlightType.MACROS]))
+
+    def FunctionCheckResult(self, result, value, module):
+        tokens = self.lexer.highlighter.GetHighlightingTokens(result.lineText)
+        return any([token.value == value and
+                    (token.type == ErlangHighlightType.FUNCTION or
+                     (token.type == ErlangHighlightType.FUNDEC and os.path.basename(result.file) == module)) for token in tokens])
 
     def CheckResult(self, result, values, styles):
         tokens = self.lexer.highlighter.GetHighlightingTokens(result.lineText)

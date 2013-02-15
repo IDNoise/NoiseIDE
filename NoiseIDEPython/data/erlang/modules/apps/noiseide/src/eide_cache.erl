@@ -499,9 +499,13 @@ parse_atom(_Node, _Atom, Content) ->
     Content.
 
 parse_atom_simple(Node, "define", Content) -> 
-    Macro = parse_erlang_macro(Node),
-    Macros = [Macro#macro{file = Content#content.last_file_attr} | Content#content.macros],
-    Content#content{macros = Macros};
+    try
+        Macro = parse_erlang_macro(Node),
+        Macros = [Macro#macro{file = Content#content.last_file_attr} | Content#content.macros],
+        Content#content{macros = Macros}
+    catch _:_ ->
+        Content
+    end;
 parse_atom_simple(_, _, Content) ->
     Content.
     
