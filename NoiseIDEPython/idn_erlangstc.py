@@ -1,5 +1,6 @@
 import re
 from idn_findreplace import FindInProjectDialog, Find
+from idn_token import ErlangTokenType
 
 __author__ = 'Yaroslav'
 
@@ -159,6 +160,8 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         if not result: return
         (start, end, value) = result
         style = self.GetStyleAt(self.popupPos)
+        line = self.LineFromPosition(start)
+        text = self.GetLineText(line)
         if asAtom:
             Find(value, "Find reference of atom '{}'".format(value),
                  wholeWords = True,
@@ -172,9 +175,24 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                  fileExts = [".erl", ".hrl", ".src"],
                  resultsFilter = lambda r: self.CheckResult(r, [value], [ErlangHighlightType.ATOM]))
         elif style in [ErlangHighlightType.FUNCTION, ErlangHighlightType.FUNDEC]:
-            Find(r"\b{0}\(|\s{0}/".format(value), "Find reference of function '{}'".format(value),
+            module = self.ModuleName()
+            if style == ErlangHighlightType.FUNCTION:
+                prefix = text[:start]
+                if prefix and prefix[0] == ":":
+                    tokens = self.completer.tokenizer.GetTokens(prefix[:-1])
+                    if tokens:
+                        if tokens[0].type == ErlangTokenType.ATOM:
+                            module = tokens[0].value
+                        elif tokens[0].type == ErlangTokenType.MACROS:
+                            macros = tokens[0].value
+                            macrosData = ErlangCache.MacrosData(self.ModuleName(), macros)
+                            if macrosData:
+                                module = macrosData.value
+
+            print module
+            Find(r"\b{0}:{1}\(|\s{0}:{1}/|^{1}\(".format(module, value), "Find reference of function '{}'".format(value),
                  useRegexp = True,
-                 fileExts = [".erl", ".hrl"],
+                 fileExts = [".erl", ".hrl", "{}.erl".format(module)],
                  resultsFilter = lambda r: self.CheckResult(r, [value], [ErlangHighlightType.FUNCTION, ErlangHighlightType.FUNDEC]))
         elif style == ErlangHighlightType.MODULE:
             Find(r"-module\({0}\)|-extends\({0}\)|\b{0}:".format(value), "Find reference of module '{}'".format(value),

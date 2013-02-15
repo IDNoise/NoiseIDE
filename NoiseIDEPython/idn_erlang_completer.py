@@ -87,6 +87,8 @@ class ErlangCompleter(wx.Frame):
 
     def Update(self, text, nextChar = None):
         if self.lastText == text: return
+        self.module = self.stc.ModuleName()
+        self.moduleType = self.stc.ModuleType()
         self.lastText = text
         tokens = self.tokenizer.GetTokens(text)
         tokens.reverse()
