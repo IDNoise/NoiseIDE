@@ -121,9 +121,10 @@ class Project(ProgressTaskManagerDialog):
         self.explorer.dirChecker.SetInterval(interval)
         if interval == 0 and not self.refreshTool:
             self.AddRefreshTool()
-        elif self.refreshTool:
-            self.explorerToolbar.DeleteTool(self.refreshTool)
+        elif interval > 0 and self.refreshTool:
+            self.explorerToolbar.DeleteTool(self.refreshTool.GetId())
             self.refreshTool = None
+        self.explorerToolbar.Realize()
 
     def SetupMenu(self):
         self.window.projectMenu.AppendMenuItem('Project Settings', self.window, self.OnEditProject)
