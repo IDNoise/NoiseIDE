@@ -525,6 +525,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
 
     def OnMenuRefresh(self, event):
         self.UpdateRoot()
+        self.dirChecker.CheckDirectoryChanges()
 
     def OnMenuSetupMasks(self, event):
         dlg = MaskEditor(self)
