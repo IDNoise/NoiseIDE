@@ -197,7 +197,7 @@ class FindInProjectDialog(wx.Dialog):
         self.replaceButton = CreateButton(self, "Replace", self.OnReplace)
 
         self.fileExtensionTB = wx.TextCtrl(self, size = (300, 25))
-        self.fileExtensionTB.SetToolTipString("Comma separated, spaces ignored. Example: '.erl, .hrl'")
+        self.fileExtensionTB.SetToolTipString("Semicolon separated, spaces ignored. Example: '*.erl;*.hrl'")
 
         self.searchDirTB = wx.TextCtrl(self, size = (300, 25))
         self.searchDirTB.SetToolTipString("Relative to project dir: {}. Example: 'apps'".format(core.Project.projectDir))
@@ -237,7 +237,7 @@ class FindInProjectDialog(wx.Dialog):
         self.Layout()
         self.sizer.SetSizeHints(self)
 
-        #self.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
+        self.Bind(wx.EVT_CHAR_HOOK, self.OnKeyDown)
 
     def OnSelectProjectPath(self, event):
         dlg = wx.DirDialog(self, defaultPath = core.Project.projectDir)
@@ -253,8 +253,8 @@ class FindInProjectDialog(wx.Dialog):
         if not textToFind: return
         fileExts = []
         if self.fileExtensionTB.Value:
-            value = self.fileExtensionTB.Value.replace(" ", "")
-            fileExts = value.split(",")
+            value = self.fileExtensionTB.Value.replace(" ", "").replace("*", "")
+            fileExts = value.split(";")
 
         searchDir = core.Project.projectDir
         path = os.path.join(searchDir, self.searchDirTB.Value)
