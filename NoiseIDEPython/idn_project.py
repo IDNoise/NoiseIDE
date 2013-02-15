@@ -1,8 +1,10 @@
+from sys import exc_clear
 import time
+from wx.lib.agw.aui import AuiToolBar, ITEM_NORMAL
 from idn_config import Config
 from idn_findreplace import FindInProjectDialog
 from idn_project_dialogs import FastProjectFileOpenDialog
-from idn_utils import readFile
+from idn_utils import readFile, CreateButton, GetImage
 
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
@@ -117,6 +119,11 @@ class Project(ProgressTaskManagerDialog):
 
     def SetRefreshInterval(self, interval):
         self.explorer.dirChecker.SetInterval(interval)
+        if interval == 0 and not self.refreshTool:
+            self.AddRefreshTool()
+        elif self.refreshTool:
+            self.explorerToolbar.DeleteTool(self.refreshTool)
+            self.refreshTool = None
 
     def SetupMenu(self):
         self.window.projectMenu.AppendMenuItem('Project Settings', self.window, self.OnEditProject)
@@ -167,15 +174,39 @@ class Project(ProgressTaskManagerDialog):
         raise NotImplementedError
 
     def CreateExplorer(self):
-        self.explorer = self.EXPLORER_TYPE(self.window, self)
+        self.explorerPanel = wx.Panel(self.window)
+        explorerPanelSizer = wx.BoxSizer(wx.VERTICAL)
+        self.explorerPanel.SetSizer(explorerPanelSizer)
+
+        self.explorer = self.EXPLORER_TYPE(self.explorerPanel, self)
         self.explorer.SetRoot(self.projectDir)
         if self.CONFIG_EXPANDED_PATHS in self.userData:
             self.explorer.ExpandPaths(self.userData[self.CONFIG_EXPANDED_PATHS])
         self.explorer.SetHiddenList(self.HiddenPathsList())
-        self.window.WinMgr.AddPane1(self.explorer, aui.AuiPaneInfo().Left().Layer(1).Caption("Project Explorer")
+
+        self.explorerToolbar = AuiToolBar(self.explorerPanel)
+        self.showAllTool = self.explorerToolbar.AddToggleTool(wx.ID_ANY, GetImage('showAllFiles.png'), wx.NullBitmap, True, short_help_string = "Show all files = ignore masks")
+        self.explorerToolbar.Bind(wx.EVT_TOOL, lambda e: self.explorer.OnMenuShowAllFiles(None), self.showAllTool)
+        self.showHiddenTool = self.explorerToolbar.AddToggleTool(wx.ID_ANY, GetImage('showHidden.png'), wx.NullBitmap, True, short_help_string = "Show hidden dirs/files")
+        self.explorerToolbar.Bind(wx.EVT_TOOL, lambda e: self.explorer.OnMenuShowHide(None), self.showHiddenTool)
+        self.refreshTool = None
+        if Config.RefreshInterval() == 0:
+            self.AddRefreshTool()
+
+        self.explorerToolbar.Realize()
+
+        explorerPanelSizer.Add(self.explorerToolbar, 0)
+        explorerPanelSizer.Add(self.explorer, 1, wx.EXPAND | wx.ALL, 2)
+
+        self.window.WinMgr.AddPane1(self.explorerPanel, aui.AuiPaneInfo().Left().Layer(1).Caption("Project Explorer")
             .MinimizeButton().CloseButton(False).BestSize2(300, 600).MinSize(100, 100)
             .MinimizeMode(aui.AUI_MINIMIZE_POS_LEFT | aui.AUI_MINIMIZE_CAPT_SMART))
         self.window.WinMgr.Update()
+
+    def AddRefreshTool(self):
+        self.refreshTool = self.explorerToolbar.AddTool(wx.ID_ANY, "", GetImage('refresh.png'), wx.NullBitmap, ITEM_NORMAL, short_help_string = "Refresh")
+        self.explorerToolbar.Bind(wx.EVT_TOOL, lambda e: self.explorer.OnMenuRefresh(None), self.refreshTool)
+
 
     def GetMask(self):
         if self.CONFIG_MASK in self.userData:

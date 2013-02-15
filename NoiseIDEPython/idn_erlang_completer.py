@@ -127,7 +127,7 @@ class ErlangCompleter(wx.Frame):
                     if self.stc.lexer.IsInSpec():
                         data += ErlangCache.ModuleExportedTypes(self.module)
                         data += ErlangCache.ERLANG_TYPES
-                        if not self.prefix:
+                        if self.prefix:
                             data += ErlangCache.AllModules()
                     else:
                         data += ErlangCache.ModuleFunctions(self.module, False)

@@ -283,11 +283,11 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         menu = Menu()
 
         if self.eventItem == self.GetRootItem():
-            if Config.RefreshInterval() == 0:
-                menu.AppendMenuItem("Refresh", self, self.OnMenuRefresh)
-            menu.AppendMenuItem("Setup masks", self, self.OnMenuSetupMasks)
-            menu.AppendCheckMenuItem("Show hidden", self, self.OnMenuShowHide, self.showHidden)
-            menu.AppendCheckMenuItem("Show all files", self, self.OnMenuShowAllFiles, self.showAllFiles)
+            # if Config.RefreshInterval() == 0:
+            #     menu.AppendMenuItem("Refresh", self, self.OnMenuRefresh)
+            menu.AppendMenuItem("Setup file extensions", self, self.OnMenuSetupMasks)
+            # menu.AppendCheckMenuItem("Show hidden", self, self.OnMenuShowHide, self.showHidden)
+            # menu.AppendCheckMenuItem("Show all files", self, self.OnMenuShowAllFiles, self.showAllFiles)
             menu.AppendSeparator()
             newMenu = Menu()
             newMenu.AppendMenuItem("File", self, self.OnMenuNewFile)
@@ -712,7 +712,7 @@ class PythonProjectExplorer(ProjectExplorer):
 
 class MaskEditor(wx.Dialog):
     def __init__(self, parent):
-        wx.Dialog.__init__(self, parent, title = "Masks")
+        wx.Dialog.__init__(self, parent, title = "File extensions")
         self.explorer = parent
         self.sizer = wx.BoxSizer()
         buttonSizer = wx.BoxSizer(wx.VERTICAL)
@@ -730,7 +730,7 @@ class MaskEditor(wx.Dialog):
 
 
     def OnAddMask(self, event):
-        dlg = wx.TextEntryDialog(self, 'Mask:', 'Add Mask', style = wx.OK | wx.CANCEL)
+        dlg = wx.TextEntryDialog(self, 'Extension:', 'Add Extension', style = wx.OK | wx.CANCEL)
         dlg.SetValue("")
         if dlg.ShowModal() == wx.ID_OK:
             self.explorer.AddMask(dlg.Value)

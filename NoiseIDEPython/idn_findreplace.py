@@ -304,10 +304,12 @@ class FindInProjectDialog(wx.Dialog):
         else:
             event.Skip()
 
-def Find(textToFind = "", title = "Find results", wholeWords = False, matchCase = False, useRegexp = False, openNewTab = True, fileExts = [], searchDir = None, resultsFilter = None):
+def Find(textToFind = "", title = "Find results", wholeWords = False, matchCase = False, useRegexp = False, openNewTab = True, fileExts = None, searchDir = None, resultsFilter = None):
     if not textToFind:
         return
 
+    if not fileExts:
+        fileExts = []
     if not searchDir or not os.path.isdir(searchDir):
         searchDir = core.Project.projectDir
 
@@ -315,8 +317,8 @@ def Find(textToFind = "", title = "Find results", wholeWords = False, matchCase 
     try:
         results = {}
         regexp = PrepareRegexp(textToFind, wholeWords, matchCase, useRegexp)
-        filePaths = core.Project.explorer.GetAllFiles()
-        for filePath in GetAllFilesInDir(searchDir, fileExts):
+        filePaths = GetAllFilesInDir(searchDir, fileExts)
+        for filePath in filePaths:
             result = SearchInFile(filePath, regexp)
             if result:
                 if resultsFilter:
@@ -334,8 +336,9 @@ def GetAllFilesInDir(path, fileExts):
     for root, _, fileNames in os.walk(path):
         for fileName in fileNames:
             fp = os.path.join(root, fileName)
-            if fileExts and any([fp.endswith(fm) for fm in fileExts]):
-                files.append(fp)
+            if fileExts and not any([fp.endswith(fm) for fm in fileExts]):
+                continue
+            files.append(fp)
     return files
 
 def SearchInFile(filePath, regexp):

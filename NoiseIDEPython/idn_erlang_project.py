@@ -62,6 +62,8 @@ class ErlangProject(Project):
         IgorCache.Init(self)
 
         self.SetupDirs()
+        ErlangCache.LoadCacheFromDir(self.ProjectName())
+        ErlangCache.LoadCacheFromDir(os.path.join("runtimes", self.GetErlangRuntime()))
         self.AddTabs()
         self.AddConsoles()
         self.SetupProps()
@@ -69,9 +71,6 @@ class ErlangProject(Project):
         self.explorer.ProjectFilesCreatedEvent += self.OnProjectFilesCreated
         self.explorer.ProjectFilesDeletedEvent += self.OnProjectFilesDeleted
 
-
-        ErlangCache.LoadCacheFromDir(self.ProjectName())
-        ErlangCache.LoadCacheFromDir(os.path.join("runtimes", self.GetErlangRuntime()))
 
     def ProjectType(self):
         return self.projectData[CONFIG_PROJECT_TYPE]

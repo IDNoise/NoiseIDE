@@ -214,7 +214,7 @@ class ErlangCache:
     @classmethod
     def OnProgressTimer(cls, event):
         if len(cls.toLoad) > 0:
-            for i in range(40):
+            for i in range(60):
                 try:
                     f = cls.toLoad.pop()
                     cls.LoadFile_(f)
