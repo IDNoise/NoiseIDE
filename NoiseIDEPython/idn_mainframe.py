@@ -339,14 +339,24 @@ class NoiseIDE(wx.Frame):
         ErlangProjectFrom(None, dlg.GetStringSelection()).ShowModal()
 
     def OnClose(self, event):
+        print "On close mainframe"
         if self.project:
+            print "project close start"
             self.project.Close()
+            print "project close end"
         Config.save()
+        print "config saved"
         self.autoCheckTimer.Stop()
+        print "auto check timer stop"
+        print "start exiting top levels"
+        print wx.GetTopLevelWindows()
         for wnd in wx.GetTopLevelWindows():
             if wnd != self:
+                print "close wnd start", wnd
                 wnd.Close(True)
+                print "close wnd end"
         event.Skip()
+        print "end on close"
 
     def OnQuit(self, event):
         self.Close(True)
@@ -436,6 +446,7 @@ if __name__ == '__main__':
         app = App()
         try:
             app.MainLoop()
+            print "main loop end"
         except:
             core.Log("app error: {}".format(traceback.print_exc()))
         # finally:
@@ -450,9 +461,9 @@ if __name__ == '__main__':
         if os.path.isdir(installerPath):
             shutil.rmtree(installerPath)
         main()
+        print "main end"
         if installNewVersion:
             os.startfile("noiseide_copy.bat")
-        exit()
 
     except Exception, e:
         core.Log("app error" + str(e))

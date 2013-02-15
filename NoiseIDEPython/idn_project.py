@@ -57,7 +57,7 @@ class ProgressTaskManagerDialog(wx.EvtHandler):
     def OnProgressTimer(self, event):
         if self.progressDialog:
             self.UpdatePulse("Tasks left: {}".format(len(self.tasks)))
-            if (time.time() - self.lastTaskTime > 8 and len(self.tasks) > 0):
+            if (time.time() - self.lastTaskTime > 20 and len(self.tasks) > 0):
                 core.Log("tasks left:", self.tasks)
                 self.DestroyDialog()
 

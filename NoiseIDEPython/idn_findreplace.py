@@ -196,7 +196,7 @@ class FindInProjectDialog(wx.Dialog):
         self.findButton = CreateButton(self, "Find", self.OnFind)
         self.replaceButton = CreateButton(self, "Replace", self.OnReplace)
 
-        self.fileExtensionTB = wx.TextCtrl(self, size = (300, 25))
+        self.fileExtensionTB = wx.TextCtrl(self, size = (300, 25), value = "*.erl; *.hrl")
         self.fileExtensionTB.SetToolTipString("Semicolon separated, spaces ignored. Example: '*.erl;*.hrl'")
 
         self.searchDirTB = wx.TextCtrl(self, size = (300, 25))
