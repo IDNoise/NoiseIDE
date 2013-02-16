@@ -40,15 +40,15 @@ class ErlangProject(Project):
     def OnLoadProject(self):
         self.CheckRuntimes()
 
+        if not CONFIG_PROJECT_TYPE in self.projectData:
+            self.projectData[CONFIG_PROJECT_TYPE] = MULTIPLE_APP_PROJECT
+
         if self.ProjectType() == MULTIPLE_APP_PROJECT:
             if not CONFIG_DEPS_DIR in self.projectData:
                 self.projectData[CONFIG_DEPS_DIR] = "deps"
 
             if not os.path.isdir(self.DepsPath()):
                 os.mkdir(self.DepsPath())
-
-        if not CONFIG_PROJECT_TYPE in self.projectData:
-            self.projectData[CONFIG_PROJECT_TYPE] = MULTIPLE_APP_PROJECT
 
         self.SaveData()
 
@@ -77,7 +77,7 @@ class ErlangProject(Project):
 
     def CheckRuntimes(self):
         self.window.CheckRuntimes()
-        if self.GetErlangRuntime() not in Config.AvailableRuntimes():
+        if self.GetErlangRuntime() and self.GetErlangRuntime() not in Config.AvailableRuntimes():
             wx.MessageBox("Project runtime '{}' has not existing path. Please specify proper path or other runtime will be selected.".format(self.GetErlangRuntime()), "Error")
             self.window.SetupRuntimes()
 
@@ -514,7 +514,7 @@ class ErlangProject(Project):
         self.window.toolbar.DeleteTool(self.xrefCheckT.GetId())
         self.window.toolbar.DeleteTool(self.rebuildT.GetId())
         self.window.toolbar.DeleteToolByPos(self.window.toolbar.GetToolsCount() - 1)
-
+        ErlangCache.Stop()
         Project.Close(self)
 
     def OnProjectFilesModified(self, files):
@@ -907,6 +907,11 @@ class MultipleAppErlangProject(ErlangProject):
         elif path.startswith(self.DepsPath()):
             app = path.replace(self.DepsPath() + os.sep, "")
         else:
+            pos = path.find(os.sep + "lib" + os.sep)
+            if pos > 0:
+                path = path[pos + 5:]
+                appFolder = path.split(os.sep)[0]
+                return appFolder.split("-")[0]
             return None
         if os.sep in app:
             return app[:app.index(os.sep)]

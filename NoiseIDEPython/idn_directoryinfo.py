@@ -7,39 +7,56 @@ from stat import ST_MTIME
 from idn_utils import Timer, extension
 import core
 import wx
+import gc
 
-class DirectoryInfo:
-    def __init__(self, root, recursive = True, fileMask = [], excludeDirs = [], excludePaths = []):
-        self.recursive = recursive
-        self.root = root
-        self.files = {}
-        self.dirs = {}
-        self.fileMask = fileMask
-        self.excludeDirs = excludeDirs
-        self.excludePaths = excludePaths
-        self.GatherDirInfo(root)
+from collections import defaultdict
 
-    def GatherDirInfo(self, root):
-        files = os.listdir(root)
-        for f in files:
-            try:
-                f = os.path.normpath(os.path.join(root, f))
-                if self.excludePaths and f in self.excludePaths:
+olditems = None
+def output_memory():
+    try:
+        global olditems
+        d = defaultdict(int)
+        for o in gc.get_objects():
+            name = type(o).__name__
+            d[name] += 1
+        items = d.items()
+        items.sort(key=lambda x:x[1])
+        if olditems:
+            for k, v in items:
+                if k in olditems and v >= olditems[k]:
+                    core.Log("Changed ", k, "from", olditems[k], "to", v)
+        olditems = items
+    finally:
+        pass
+
+
+def GatherInfo(root, recursive = True, fileMask = None, excludeDirs = None, excludePaths = None):
+    if not fileMask: fileMask = []
+    if not excludeDirs: excludeDirs = []
+    if not excludePaths: excludePaths = []
+    dirs = {}
+    files = {}
+    for f in os.listdir(root):
+        try:
+            f = os.path.normpath(os.path.join(root, f))
+            if excludePaths and f in excludePaths:
+                continue
+            mtime = os.stat(f)[ST_MTIME]
+            if os.path.isdir(f):
+                if excludeDirs and os.path.basename(f) in excludeDirs:
                     continue
-                mtime = os.stat(f)[ST_MTIME]
-                if os.path.isdir(f):
-                    if self.excludeDirs and os.path.basename(f) in self.excludeDirs:
-                        continue
-                    self.dirs[f] = mtime
-                    if self.recursive:
-                        self.GatherDirInfo(f)
-                else:
-                    if self.fileMask and extension(f) not in self.fileMask:
-                        continue
-                    self.files[f] = mtime
-            except Exception, e:
-                core.Log("Gather dir info error: ", e)
-
+                dirs[f] = mtime
+                if recursive:
+                    (dd, fd) = GatherInfo(f, recursive, fileMask, excludeDirs, excludePaths)
+                    dirs.update(dd)
+                    files.update(fd)
+            else:
+                if fileMask and extension(f) not in fileMask:
+                    continue
+                files[f] = mtime
+        except Exception, e:
+            core.Log("Gather dir info error: ", e)
+    return (dirs, files)
 
 class DirectoryInfoDiff:
     def __init__(self, newState, oldState):
@@ -51,9 +68,9 @@ class DirectoryInfoDiff:
         self.deletedDirs = []
 
         (self.createdDirs, self.modifiedDirs, self.deletedDirs) =\
-        self.GetNewModDel(newState.dirs, oldState.dirs)
+        self.GetNewModDel(newState[0], oldState[0])
         (self.createdFiles, self.modifiedFiles, self.deletedFiles) =\
-        self.GetNewModDel(newState.files, oldState.files)
+        self.GetNewModDel(newState[1], oldState[1])
 
     def GetNewModDel(self, newDict, oldDict):
         new = []
@@ -71,7 +88,6 @@ class DirectoryInfoDiff:
         return (new, modified, deleted)
 
 class DirectoryChecker:
-
     def __init__(self, interval, root, recursive = True, fileMask = [], excludeDirs = [], excludePaths = []):
         self.root = root
         self.recursive = recursive
@@ -79,7 +95,8 @@ class DirectoryChecker:
         self.excludeDirs = excludeDirs
         self.excludePaths = excludePaths
         self.interval = interval
-        self.timer = Timer(interval, self.CheckDirectoryChanges)
+        self.timer = wx.Timer(core.MainFrame, wx.ID_ANY)
+        core.MainFrame.Bind(wx.EVT_TIMER, self.CheckDirectoryChanges, self.timer)
         if root:
             self.dirSnapshot = self.GetDirectoryInfo()
 
@@ -91,14 +108,13 @@ class DirectoryChecker:
         self.DirsDeletedEvent = Event()
 
     def GetDirectoryInfo(self):
-        info = DirectoryInfo(self.root, self.recursive, self.fileMask, self.excludeDirs, self.excludePaths)
-        self.files = info.files.keys()
+        info = GatherInfo(self.root, self.recursive, self.fileMask, self.excludeDirs, self.excludePaths)
+        self.files = info[1].keys()
         return info
 
     def SetInterval(self, interval):
         self.Stop()
         self.interval = interval
-        self.timer = Timer(interval, self.CheckDirectoryChanges)
         self.Start()
 
     def SetRoot(self, root):
@@ -124,20 +140,23 @@ class DirectoryChecker:
     def Start(self):
         if self.interval > 0:
             self.dirSnapshot = self.GetDirectoryInfo()
-            self.timer.Start()
+            self.timer.Start(self.interval * 1000)
 
     def Stop(self):
         self.timer.Stop()
 
-    def CheckDirectoryChanges(self):
-        dirSnapshot = self.GetDirectoryInfo()
+    def CheckDirectoryChanges(self, event = None):
+        dirSnapshot = GatherInfo(self.root, self.recursive, self.fileMask, self.excludeDirs, self.excludePaths)
         diff = DirectoryInfoDiff(dirSnapshot, self.dirSnapshot)
         self.dirSnapshot = dirSnapshot
+        self.files = self.dirSnapshot[1].keys()
+        #print diff.createdDirs
+        if diff.createdDirs: self.DirsCreatedEvent(diff.createdDirs)
+        if diff.deletedDirs: self.DirsDeletedEvent(diff.deletedDirs)
+        if diff.createdFiles: self.FilesCreatedEvent(diff.createdFiles)
+        if diff.modifiedFiles: self.FilesModifiedEvent(diff.modifiedFiles)
+        if diff.deletedFiles: self.FilesDeletedEvent(diff.deletedFiles)
 
-        if diff.createdDirs: wx.CallAfter(self.DirsCreatedEvent, diff.createdDirs)
-        if diff.deletedDirs: wx.CallAfter(self.DirsDeletedEvent, diff.deletedDirs)
-        if diff.createdFiles: wx.CallAfter(self.FilesCreatedEvent, diff.createdFiles)
-        if diff.modifiedFiles: wx.CallAfter(self.FilesModifiedEvent, diff.modifiedFiles)
-        if diff.deletedFiles: wx.CallAfter(self.FilesDeletedEvent, diff.deletedFiles)
+        #del diff
 
 

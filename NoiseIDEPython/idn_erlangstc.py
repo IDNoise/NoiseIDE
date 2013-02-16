@@ -62,7 +62,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         self.overlay = wx.Overlay()
 
         self.navigateTo = None
-
+        self.flyTimer = None
         if self.ModuleType() == TYPE_MODULE:
             self.flyTimer = wx.Timer(self, wx.ID_ANY)
             self.Bind(wx.EVT_TIMER, self.OnFlyTimer, self.flyTimer)
@@ -444,7 +444,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                     app = path.split("/")[0]
                 else:
                     app = core.Project.GetApp(self.filePath)
-                include = (app, path)
+                include = (app, path.split("/")[-1])
                 if include in ErlangCache.includes:
                     self.navigateTo = (ErlangCache.includes[include].file, 0)
                     start = lineStart
@@ -595,6 +595,11 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         value = self.GetTextRange(start, end)
         navigateTo = self.completer.GetFunctionNavAndHelp(value, prefix, end)[0]
         self.GotoLine(navigateTo[1] - 1)
+
+    def OnClose(self):
+        ErlangHighlightedSTCBase.OnClose(self)
+        if self.flyTimer:
+            self.flyTimer.Stop()
 
 class ErlangSTCReadOnly(ErlangSTC):
     def __init__(self, parent, panel, filePath, option, text):

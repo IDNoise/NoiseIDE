@@ -212,6 +212,11 @@ class ErlangCache:
         core.MainFrame.Bind(wx.EVT_TIMER, cls.OnFileCheckTimer, cls.fileCheckTimer)
 
     @classmethod
+    def Stop(cls):
+        cls.loadTimer.Stop()
+        cls.fileCheckTimer.Stop()
+
+    @classmethod
     def OnProgressTimer(cls, event):
         if len(cls.toLoad) > 0:
             for i in range(60):

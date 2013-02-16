@@ -218,7 +218,7 @@ class NoiseIDE(wx.Frame):
                     'There is new version {} available. Current version is {}. Do you want to update after exit?'.format(newVersion, version),
                     msg2 = 'Changelog:\n\n' + newData,
                     caption = 'New version {} available'.format(newVersion),
-                    style = wx.YES_NO | wx.YES_DEFAULT | wx.ICON_QUESTION)
+                    style = wx.YES_NO | wx.ICON_QUESTION)
                 if dial.ShowModal() == wx.ID_YES:
                     progressDialog = wx.ProgressDialog("Autoupdater", "Downloading installer...", parent = self, style = wx.PD_APP_MODAL | wx.PD_ELAPSED_TIME | wx.PD_AUTO_HIDE)
                     progressDialog.Show()

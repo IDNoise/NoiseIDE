@@ -14,7 +14,8 @@
     gen_file_cache/1, 
     gen_erlang_cache/1, 
     gen_project_cache/0,
-    cache_app/1    
+    cache_app/1,
+    test/0    
 ]).
 
 -record(function, {  
@@ -68,6 +69,9 @@
     line, 
     file
 }).
+
+test() ->
+    generate_from_source("c:/PROGRA~4/erl5.10/lib/wx-1.0/src/gen/wxBoxSizer.erl", "c:/PROGRA~4/erl5.10/lib/wx-1.0/src/gen/wxBoxSizer.erl").
 
 gen_file_cache(File) -> create_cache(eide_connect:prop(cache_dir) ++ "/" ++ eide_connect:prop(project_name), File).  
 

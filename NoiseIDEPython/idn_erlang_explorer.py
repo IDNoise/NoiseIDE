@@ -212,3 +212,7 @@ class ErlangProjectExplorer(ProjectExplorer):
                 self.SetItemTextColour(item, color)
                 item = self.GetItemParent(item)
         self.needHighlight = False
+
+    def OnClose(self):
+        ProjectExplorer.OnClose(self)
+        self.highlightTimer.Stop()

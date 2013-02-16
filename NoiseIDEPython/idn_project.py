@@ -26,7 +26,6 @@ class ProgressTaskManagerDialog(wx.EvtHandler):
         self.tasks = set()
         self.lastTaskTime = time.time()
 
-
     def AddTask(self, task):
         self.tasks.add(task)
 
@@ -66,6 +65,9 @@ class ProgressTaskManagerDialog(wx.EvtHandler):
             self.progressDialog.ReenableOtherWindows()
             self.progressDialog.Destroy()
             self.progressDialog = None
+
+    def Close(self):
+        self.progressTimer.Stop()
 
 class Project(ProgressTaskManagerDialog):
 
@@ -216,7 +218,7 @@ class Project(ProgressTaskManagerDialog):
 
     def Close(self):
         self.SaveUserData()
-        self.explorer.StopTrackingProject()
+        self.explorer.OnClose()
         self.window.WinMgr.DetachPane(self.explorerPanel)
         self.window.WinMgr.Update()
         self.explorerPanel.Destroy()

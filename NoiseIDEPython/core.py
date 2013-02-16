@@ -10,5 +10,7 @@ logFile = open("ide.log", 'w')
 def Log(*text):
     text = " ".join([str(t) for t in text])
     print text
+    if not text.endswith("\n"):
+        text += "\n"
     logFile.write(text)
     logFile.flush()

@@ -232,7 +232,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         wx.Log.EnableLogging(True)
         return result
 
-    def StopTrackingProject(self):
+    def OnClose(self):
         self.dirChecker.Stop()
 
     def FileCreated(self, filePath):
@@ -430,7 +430,6 @@ class ProjectExplorer(IDNCustomTreeCtrl):
             else:
                 os.remove(path)
                 self.FileDeleted(path)
-            self.Delete(id)
 
     def GetNewIfExists(self, name):
         base, ext = os.path.splitext(name)

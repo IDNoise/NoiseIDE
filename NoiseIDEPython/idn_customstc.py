@@ -222,6 +222,8 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         return menu
 
     def OnClose(self):
+        self.highlightTimer.Stop()
+        self.modifyCheckTimer.Stop()
         if self.saved == False and os.path.exists(self.filePath):
             dial = wx.MessageDialog(None,
                 'You have unsaved changes in this document. Do you want to save it?'.format(self.filePath),
