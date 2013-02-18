@@ -30,7 +30,7 @@ class ShortcutWindow(wx.Dialog):
 
         self.panel.SetSizer(psizer)
         self.panel.SetScrollbars(1, 1, 1, 1)
-        psizer.SetSizeHints(self)
+
 
         i = {
             allEditorsSizer : 0,
@@ -38,7 +38,9 @@ class ShortcutWindow(wx.Dialog):
             erlangOptionSizer : 0
          }
         def addShortcutRecord(sizer, what, button):
-            sizer.Add(CreateLabel(self.panel, what), (i[sizer], 0), flag = wx.ALL | wx.ALIGN_LEFT, border = 1)
+            text = CreateLabel(self.panel, what)
+            text.SetMinSize((300, 20))
+            sizer.Add(text, (i[sizer], 0), flag = wx.ALL | wx.ALIGN_LEFT, border = 1)
             sizer.Add(CreateLabel(self.panel, button), (i[sizer], 1), flag = wx.ALL | wx.ALIGN_LEFT, border = 1)
             i[sizer] += 1
 
@@ -54,10 +56,10 @@ class ShortcutWindow(wx.Dialog):
         #addShortcutRecord("Erlang:", "")
         addShortcutRecord(erlangSizer, "Add to export:", "Ctrl-E")
         addShortcutRecord(erlangSizer, "Outline:", "Ctrl-H")
-        addShortcutRecord(erlangSizer, "Go to export record for current fun", "Ctrl-Up")
-        addShortcutRecord(erlangSizer, "Go to fun body:", "Ctrl-Down")
+        addShortcutRecord(erlangSizer, "Go to export entry(cursor in fun)", "Ctrl-Up")
+        addShortcutRecord(erlangSizer, "Go to fun body(cursor on fun name):", "Ctrl-Down")
         #addShortcutRecord("Erlang with compiled option:", "")
         addShortcutRecord(erlangOptionSizer, "Refresh", "Ctrl-R")
         self.Layout()
-
+        psizer.SetSizeHints(self)
 

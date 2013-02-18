@@ -93,8 +93,8 @@ class ErlangProjectFrom(wx.Dialog):
         sizer.AddSizer(self.saveCloseButtonSizer, 1, flag = wx.EXPAND)
 
         self.SetSizer(sizer)
-        sizer.SetSizeHints(self)
         self.Layout()
+        sizer.SetSizeHints(self)
 
     def CreateMultipleAppsForm(self):
         self.CreateCommonElements()
@@ -150,8 +150,8 @@ class ErlangProjectFrom(wx.Dialog):
         sizer.AddSizer(self.saveCloseButtonSizer, 1, flag = wx.EXPAND)
 
         self.SetSizer(sizer)
-        sizer.SetSizeHints(self)
         self.Layout()
+        sizer.SetSizeHints(self)
 
     def SetCurrentValues(self):
         self.projectNameTB.Value = self.project.ProjectName()

@@ -24,11 +24,11 @@ class ErlangOutline(wx.Dialog):
         self.list = wx.ListCtrl(self, -1, style = wx.LC_REPORT | wx.LC_NO_HEADER | wx.LC_ALIGN_LEFT)# wx.LC_REPORT | wx.LC_NO_HEADER)# wx.LC_ICON | wx.LC_ALIGN_LEFT |  | wx.LC_AUTOARRANGE)
 
         self.list.AssignImageList(il, wx.IMAGE_LIST_SMALL)
-
+        name = os.path.splitext(os.path.basename(filePath))[0]
         if IsInclude(filePath):
-            data = ErlangCache.includes[(core.Project.GetApp(filePath), os.path.splitext(os.path.basename(filePath))[0])]
+            data = ErlangCache.includes[(core.Project.GetApp(filePath), name)]
         else:
-            data = ErlangCache.modules[os.path.basename(filePath)]
+            data = ErlangCache.modules[name]
 
         self.navigation = {}
 
