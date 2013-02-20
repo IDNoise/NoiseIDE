@@ -81,6 +81,7 @@ class ErlangProjectExplorer(ProjectExplorer):
         if path and not os.path.isfile(path):
             writeFile(path, "")
             core.TabMgr.LoadFileLine(path)
+            self.FileCreated(path)
 
     def OnMenuNewApplication(self, event):
         result = self.RequestName("New Application", "Enter application name", "new_application")
@@ -119,6 +120,10 @@ class ErlangProjectExplorer(ProjectExplorer):
         core.TabMgr.LoadFileLine(appModulePath)
         core.TabMgr.LoadFileLine(supModulePath)
         core.TabMgr.LoadFileLine(appSrcPath)
+        self.DirCreated(srcPath)
+        self.FileCreated(appModulePath)
+        self.FileCreated(supModulePath)
+        self.FileCreated(appSrcPath)
 
 
     def DefaultExcludeDirs(self):
@@ -139,6 +144,7 @@ class ErlangProjectExplorer(ProjectExplorer):
             data = data.replace("[module_name]", module)
             writeFile(path, data)
             core.TabMgr.LoadFileLine(path)
+            self.FileCreated(path)
 
     def Rename(self, path):
         if os.path.isfile(path):

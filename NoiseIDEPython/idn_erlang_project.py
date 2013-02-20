@@ -505,9 +505,9 @@ class ErlangProject(Project):
         self.ShowErrorsTable()
 
     def Close(self):
-        self.shellConsole.Stop()
+        self.shellConsole.Stop(True)
         for title, console in self.consoles.items():
-            console.Stop()
+            console.Stop(True)
 
         self.window.ToolMgr.CloseAll()
         self.window.toolbar.DeleteTool(self.xrefCheckT.GetId())
@@ -649,9 +649,8 @@ class ErlangProject(Project):
         result = set()
         for root, _, files in os.walk(path):
             for fileName in files:
-                (f, ext) = os.path.splitext(fileName)
                 if IsBeam(fileName):
-                    result.add(f)
+                    result.add(fileName)
         return result
 
     def ModuleName(self, path):
@@ -701,8 +700,9 @@ class SingleAppErlangProject(ErlangProject):
         beams = self.GetBeamsInPath(beamPath)
         for beam in beams:
             (f, ext) = os.path.splitext(beam)
-            if f not in modules:
-                os.remove(os.path.join(beamPath, beam))
+            path = os.path.join(beamPath, beam)
+            if f not in modules and os.path.exists(path):
+                os.remove(path)
 
     def IsSrcPath(self, path):
         return any([path.startswith(d) for d in [self.SrcDir(), self.IncludeDir(), self.TestDir()]])
@@ -820,8 +820,9 @@ class MultipleAppErlangProject(ErlangProject):
             beams = self.GetBeamsInPath(beamPath)
             for beam in beams:
                 (f, ext) = os.path.splitext(beam)
-                if f not in modules:
-                    os.remove(os.path.join(beamPath, beam))
+                path = os.path.join(beamPath, beam)
+                if f not in modules and os.path.exists(path):
+                    os.remove(path)
 
     def IsSrcPath(self, path):
         app = self.GetApp(path)

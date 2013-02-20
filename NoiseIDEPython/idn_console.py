@@ -144,16 +144,17 @@ class ErlangConsole(wx.Panel):
         self.startButton.Enabled = False
         self.stopButton.Enabled = True
 
-    def Stop(self):
+    def Stop(self, kill = False):
         noLog = wx.LogNull()
         try:
             self.shell.Stop()
+            if not kill:
+                self.WriteToConsoleOut("\n\nSTOPPED\n\n")
+                self.startButton.Enabled = True
+                self.stopButton.Enabled = False
         except Exception, e:
             core.Log(e)
         finally:
-            self.WriteToConsoleOut("\n\nSTOPPED\n\n")
-            self.startButton.Enabled = True
-            self.stopButton.Enabled = False
             del noLog
 
     def Clear(self):
@@ -271,7 +272,6 @@ class ErlangIDEConsole(ErlangConsole):
     def CreateShell(self, cwd, params):
         self.shell = connect.ErlangProcessWithConnection(cwd)
         self.shell.DataReceivedEvent += self.WriteToConsoleAndLog
-
 
     def WriteToConsoleAndLog(self, text):
         text = "\n".join([re.sub(self.promptRegexp, "", line) for line in text.split("\n")])
