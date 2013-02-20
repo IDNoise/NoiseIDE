@@ -94,7 +94,6 @@ class ErlangCompleter(wx.Frame):
         tokens.reverse()
         data = []
         self.prefix = ""
-        self.prefixType = ""
 
         if not tokens:
             data = self.GetVars()
@@ -154,7 +153,6 @@ class ErlangCompleter(wx.Frame):
                     data += ErlangCache.ModuleFunctions(moduleName, onlyExported)
             elif (fValue == "?" or fType == ErlangTokenType.MACROS):
                 self.prefix = "" if fValue == "?" else fValue[1:]
-                self.prefixType = "macros"
                 data = ErlangCache.Macroses(self.module)
             elif fType == ErlangTokenType.RECORD or fValue == "#":
                 self.prefix = "" if fValue == "#" else fValue[1:]
@@ -213,16 +211,7 @@ class ErlangCompleter(wx.Frame):
             if text.startswith(self.prefix):
                 self.list.Append(text, helpText)
 
-        self._AppendCustomData()
-
         self.ValidateCompleter()
-
-    def _AppendCustomData(self):
-        if self.prefixType == "macros":
-            if "MODULE".startswith(self.prefix):
-                self.list.Append("MODULE", "Default macros. Equals current module name")
-            if "LINE".startswith(self.prefix):
-                self.list.Append("LINE", "Default macros. Equals current line number")
 
     def _RecordHelp(self, record):
         fields = record.FieldsData()

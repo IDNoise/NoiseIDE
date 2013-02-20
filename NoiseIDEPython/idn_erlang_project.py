@@ -467,9 +467,8 @@ class ErlangProject(Project):
                 index = self.window.ToolMgr.FindPageIndexByWindow(c)
                 if index != None:
                     self.window.ToolMgr.DeletePage(index, True)
-                id = self.consoleMenu.FindItem('Console <{}>'.format(console))
-                if id != wx.NOT_FOUND:
-                    self.consoleMenu.Delete(id)
+        for item in self.consoleMenu.MenuItems:
+            self.consoleMenu.DeleteItem(item)
 
         for title in consoles:
             data = consoles[title]
