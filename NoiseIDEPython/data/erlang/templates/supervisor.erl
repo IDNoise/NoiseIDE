@@ -6,34 +6,23 @@
 -behaviour(supervisor).
 
 %% API
--export([start_link/0]).
+-export([
+	start_link/0
+]).
 
 %% Supervisor callbacks
 -export([init/1]).
-
--define(SERVER, ?MODULE).
 
 %%%===================================================================
 %%% API functions
 %%%===================================================================
 
--spec start_link() -> {ok, Pid} | ignore | {error, Error} when
-    Pid :: pid(),
-    Error :: {already_started, Pid} | term().
-
 start_link() ->
-        supervisor:start_link({local, ?SERVER}, ?MODULE, []).
+        supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
 %%%===================================================================
 %%% Supervisor callbacks
 %%%===================================================================
-
--spec init(Args :: term()) ->
-    {ok, {{RestartStrategy :: supervisor:strategy(),
-           MaxR            :: non_neg_integer(),
-           MaxT            :: non_neg_integer()},
-           [ChildSpec :: supervisor:child_spec()]}}
-    | ignore.
 
 init([]) ->
     RestartStrategy = one_for_one,
