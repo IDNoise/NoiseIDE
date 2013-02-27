@@ -727,7 +727,6 @@ class MaskEditor(wx.Dialog):
         self.Layout()
         self.sizer.SetSizeHints(self)
 
-
     def OnAddMask(self, event):
         dlg = wx.TextEntryDialog(self, 'Extension:', 'Add Extension', style = wx.OK | wx.CANCEL)
         dlg.SetValue("")

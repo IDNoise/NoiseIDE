@@ -217,7 +217,7 @@ class ErlangLexer(BaseLexer):
         return (result, record, prefix)
 
     def IsInTypeBlock(self):
-        r = re.compile(r"(?:^-spec|^-type|^-record)(.*?)(?:^[a-z].*?|^-[a-z]+|\.)", re.MULTILINE | re.DOTALL)
+        r = re.compile(r"(?:^-spec|^-callback|^-type|^-record)(.*?)(?:^[a-z].*?|^-[a-z]+|\.)", re.MULTILINE | re.DOTALL)
         text = self.stc.GetText()
         caretPos = self.stc.GetCurrentPos()
         pos = 0
