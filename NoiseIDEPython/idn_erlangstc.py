@@ -552,7 +552,8 @@ class ErlangSTC(ErlangHighlightedSTCBase):
 
         funStr = "{}/{}".format(fun, arity)
         (exports, startPos, _endPos, insertPos) = self.lexer.GetAllExports()
-        if funStr in exports:
+
+        if funStr in map(lambda e: e[0:e.find("/")], exports.split(",")):
             return
 
         if insertPos:

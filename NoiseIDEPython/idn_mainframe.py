@@ -434,16 +434,7 @@ if __name__ == '__main__':
 
     def main():
         app = App()
-        try:
-            app.MainLoop()
-            print "main loop end"
-        except:
-            core.Log("app error: {}".format(traceback.print_exc()))
-        # finally:
-        #     wx.Exit()
-
-    # import cProfile
-    # cProfile.run('main()')
+        app.MainLoop()
 
     try:
         import shutil
@@ -451,7 +442,6 @@ if __name__ == '__main__':
         if os.path.isdir(installerPath):
             shutil.rmtree(installerPath)
         main()
-        print "main end"
         if installNewVersion:
             os.startfile("noiseide_copy.bat")
 

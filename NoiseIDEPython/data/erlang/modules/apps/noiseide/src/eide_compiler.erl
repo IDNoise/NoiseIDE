@@ -111,7 +111,7 @@ compile_appsrc(AppSrcFile) ->
 compile_with_option(FileName, Option) ->
     OutDir = app_out_dir(FileName),
     catch file:make_dir(OutDir),
-    Options = [{outdir, OutDir}, Option, {i, filename:join(app_path(FileName), "include")}],
+    Options = [{outdir, OutDir}, Option, {i, filename:join(app_path(FileName), "include")}, {i, filename:join(app_path(FileName), "src")}],
     Options1 = case eide_connect:prop(compiler_options) of
             undefined -> Options;
             Str -> Options ++ parse_term("[" ++ Str ++ "].")
@@ -222,7 +222,7 @@ parse_term(String) when is_list(String) ->
 compile_internal(FileName, Options) ->
     compile_internal(FileName, Options, true, FileName).
 compile_internal(FileName, Options, ToBinary, RealPath) ->
-    Options0 = default_options() ++ Options ++ [{i, filename:join(app_path(RealPath), "include")}],
+    Options0 = default_options() ++ Options ++ [{i, filename:join(app_path(RealPath), "include")}, {i, filename:join(app_path(RealPath), "src")}],
     Options1 = 
         case eide_connect:prop(compiler_options) of
             undefined -> Options0;
