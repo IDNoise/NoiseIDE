@@ -244,7 +244,10 @@ class EditorNotebook(aui.AuiNotebook):
             #bitmap = self.GetBitmapForFile(fileName)
             self.AddPage(editorPanel, editorPanel.editor.FileName(), True)#, bitmap = bitmap)
             if len(self.Pages()) > Config.GetProp("max_tabs", 10):
-                self.ClosePage(self.FindPageIndexByEditor(self.pageOpenOrder[0]))
+                while self.FindPageIndexByEditor(self.pageOpenOrder[0]) == None:
+                    self.pageOpenOrder.pop(0)
+                if len(self.pageOpenOrder) > 0:
+                    self.ClosePage(self.FindPageIndexByEditor(self.pageOpenOrder[0]))
             editorPanel.editor.SetFocus()
             self.EnsureVisible(self.FindPageIndexByEditor(editorPanel.editor))
             self.pageOpenOrder.append(editorPanel.editor)

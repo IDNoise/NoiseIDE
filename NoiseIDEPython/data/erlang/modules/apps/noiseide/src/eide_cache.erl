@@ -143,8 +143,10 @@ create_cache(CacheDir, AppsPath, Ignores) ->
                                                    dict:store(ModuleName, {File, undefined}, A);
                                                ".html" ->
                                                    case dict:find(ModuleName, A) of
-                                                       {ok, {F, _}} ->
+                                                       {ok, {F, undefined}} ->
                                                            dict:store(ModuleName, {F, File}, A);
+                                                       {ok, {_, _}} ->
+                                                           A;
                                                        error ->
                                                            dict:store(ModuleName, {undefined, File}, A)
                                                    end;
@@ -953,6 +955,10 @@ merge_with_docs_file(Content, DocsFilePath) ->
     try
         {ok, Docs} = file:read_file(DocsFilePath),
         Functions = get_functions_data_from_html(Docs),
+        case Content#content.module_name == erlang of
+            true -> io:format("~p~n~p~n~p", [DocsFilePath, Content, Functions]);
+            _ -> ok
+        end,
         lists:foldl(fun add_data_from_html_fun/2, Content, Functions)
     catch E:R ->
         io:format("merge with docs file error:~p~n", [{E, R}]),

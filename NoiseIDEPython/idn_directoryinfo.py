@@ -29,6 +29,7 @@ def output_memory():
     finally:
         pass
 
+import time
 
 def GatherInfo(root, recursive = True, fileMask = None, excludeDirs = None, excludePaths = None):
     if not fileMask: fileMask = []
@@ -47,6 +48,7 @@ def GatherInfo(root, recursive = True, fileMask = None, excludeDirs = None, excl
                     continue
                 dirs[f] = mtime
                 if recursive:
+                    time.sleep(0.0005)
                     (dd, fd) = GatherInfo(f, recursive, fileMask, excludeDirs, excludePaths)
                     dirs.update(dd)
                     files.update(fd)
@@ -140,7 +142,7 @@ class DirectoryChecker:
     def Start(self):
         if self.interval > 0:
             self.dirSnapshot = self.GetDirectoryInfo()
-            self.timer.Start(self.interval * 1000)
+            self.timer.Start(self.interval * 1000, True)
 
     def Stop(self):
         self.timer.Stop()
@@ -156,7 +158,8 @@ class DirectoryChecker:
         if diff.createdFiles: self.FilesCreatedEvent(diff.createdFiles)
         if diff.modifiedFiles: self.FilesModifiedEvent(diff.modifiedFiles)
         if diff.deletedFiles: self.FilesDeletedEvent(diff.deletedFiles)
-
+        if self.interval > 0:
+            self.timer.Start(self.interval * 1000, True)
         #del diff
 
 
