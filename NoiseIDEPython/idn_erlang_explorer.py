@@ -42,7 +42,7 @@ class ErlangProjectExplorer(ProjectExplorer):
             tMenu.AppendMenuItem("Application", self, lambda e:
                 self.CreateFromTemplate("application.erl", "Application", "application_1"))
             tMenu.AppendMenuItem("App Src", self, lambda e:
-                self.CreateFromTemplate("app.src", "App Src", "application_1", ".app.src", "Enter application name:"))
+                self.CreateFromTemplate("app.src", "App Src", "application_1", ".app.src", "Enter application name:", "[app]"))
             newMenu.AppendMenu(wx.ID_ANY, "Template", tMenu)
 
         dialyzerMenu = Menu()
@@ -136,12 +136,12 @@ class ErlangProjectExplorer(ProjectExplorer):
         data = data.replace("[date]", time.strftime("%d.%m.%Y"))
         return data
 
-    def CreateFromTemplate(self, template, title, defaultValue = "new_module_name", ext = ".erl", prompt = "Enter module name:"):
+    def CreateFromTemplate(self, template, title, defaultValue = "new_module_name", ext = ".erl", prompt = "Enter module name:", replaceWhat = "[module_name]"):
         (module, path) = self.RequestName(title, prompt, defaultValue)
         path = path + ext
         if path and not os.path.isfile(path):
             data = self._GetTemplate(template)
-            data = data.replace("[module_name]", module)
+            data = data.replace(replaceWhat, module)
             writeFile(path, data)
             core.TabMgr.LoadFileLine(path)
             self.FileCreated(path)

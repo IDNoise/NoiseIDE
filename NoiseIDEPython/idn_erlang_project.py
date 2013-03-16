@@ -71,6 +71,8 @@ class ErlangProject(Project):
         self.explorer.ProjectFilesCreatedEvent += self.OnProjectFilesCreated
         self.explorer.ProjectFilesDeletedEvent += self.OnProjectFilesDeleted
 
+        self.CacheIgor()
+
 
     def ProjectType(self):
         return self.projectData[CONFIG_PROJECT_TYPE]
@@ -656,6 +658,10 @@ class ErlangProject(Project):
     def ModuleName(self, path):
         return os.path.basename(path)[:-4]
 
+    def CacheIgor(self):
+        for f in self.explorer.GetAllFiles():
+            if IsIgor(f): IgorCache.GenerateForFile(f)
+
     def IsSrcPath(self, path): raise Exception("override in child class")
     def GetBeamPathFromSrcPath(self, path): raise Exception("override in child class")
     def GetApp(self, path): raise Exception("override in child class")
@@ -772,8 +778,6 @@ class MultipleAppErlangProject(ErlangProject):
 
     def CacheSubset(self, apps):
         [self.GetShell().CacheApp(self.GetAppPath(app)) for app in apps]
-        for f in self.explorer.GetAllFiles():
-            if IsIgor(f): IgorCache.GenerateForFile(f)
         self.CheckBackgroundTasks("Caching...")
 
     def DialyzeApps(self, paths):
