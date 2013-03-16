@@ -193,8 +193,7 @@ class Project(ProgressTaskManagerDialog):
         self.showHiddenTool = self.explorerToolbar.AddToggleTool(wx.ID_ANY, GetImage('showHidden.png'), wx.NullBitmap, True, short_help_string = "Show hidden dirs/files")
         self.explorerToolbar.Bind(wx.EVT_TOOL, lambda e: self.explorer.OnMenuShowHide(None), self.showHiddenTool)
         self.refreshTool = None
-        if Config.RefreshInterval() == 0:
-            self.AddRefreshTool()
+        self.AddRefreshTool()
 
         self.explorerToolbar.Realize()
 

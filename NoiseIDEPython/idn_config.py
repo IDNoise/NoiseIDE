@@ -149,8 +149,7 @@ class ConfigEditForm(wx.Dialog):
         self.refreshIntervalTB = wx.TextCtrl(self, value = str(Config.RefreshInterval()), size = (180, 25))
         self.openLastFilesCb = wx.CheckBox(self, label = "Open last files")
         self.openLastFilesCb.SetValue(Config.GetProp(Config.OPEN_LAST_FILES, True))
-        self.refreshIntervalTB.SetToolTipString("Interval in seconds. 0 = No refresh -> " +
-                                                "Use Refresh on root element in project explorer")
+        self.refreshIntervalTB.SetToolTipString("Interval in seconds. 0 = No refresh")
         self.closeButton = CreateButton(self, "Close", self.OnClose)
         self.saveButton = CreateButton(self, "Save", self.OnSave)
 
