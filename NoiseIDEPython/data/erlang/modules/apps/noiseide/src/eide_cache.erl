@@ -955,10 +955,6 @@ merge_with_docs_file(Content, DocsFilePath) ->
     try
         {ok, Docs} = file:read_file(DocsFilePath),
         Functions = get_functions_data_from_html(Docs),
-        case Content#content.module_name == erlang of
-            true -> io:format("~p~n~p~n~p", [DocsFilePath, Content, Functions]);
-            _ -> ok
-        end,
         lists:foldl(fun add_data_from_html_fun/2, Content, Functions)
     catch E:R ->
         io:format("merge with docs file error:~p~n", [{E, R}]),
