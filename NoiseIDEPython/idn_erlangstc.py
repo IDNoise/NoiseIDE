@@ -199,11 +199,13 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                  fileExts = [".erl", ".hrl"],
                  resultsFilter = lambda r: self.CheckResult(r, [value], [ErlangHighlightType.MODULE]))
         elif style in [ErlangHighlightType.RECORD, ErlangHighlightType.RECORDDEF]:
+            if value.startswith("#"): value = value[1:]
             Find(r"-record\({0}\b|#{0}\b".format(value), "Find reference of record '{}'".format(value),
                  useRegexp = True,
                  fileExts = [".erl", ".hrl"],
                  resultsFilter = lambda r: self.CheckResult(r, [value, "#" + value], [ErlangHighlightType.RECORD, ErlangHighlightType.RECORDDEF]))
         elif style == ErlangHighlightType.MACROS:
+            if value.startswith("?"): value = value[1:]
             Find(r"-define\({0}\b|\?{0}\b".format(value), "Find reference of macros '{}'".format(value),
                  useRegexp = True,
                  fileExts = [".erl", ".hrl"],
