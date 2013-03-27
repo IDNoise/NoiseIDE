@@ -241,16 +241,16 @@ fun_to_json(ModuleName, CacheDir, Fun, FilePath) ->
                 FullPath = CacheDir ++ "/" ++ eide_compiler:app_name(FilePath) ++ "/" ++ FileName,
                 file:write_file(FullPath, iolist_to_binary(Text)),
                 FullPath
-        end, 
-    Data =  
-    [
+        end,
+    Data =    
+    [ 
      {name, iolist_to_binary(Name)},
      {arity, Arity},
      {line, Fun#function.line},
      {exported, Fun#function.exported},
-     {params, lists:map(fun iolist_to_binary/1, Fun#function.params)},
-     {types, lists:map(fun iolist_to_binary/1, Fun#function.types)},
-     {result, iolist_to_binary(Fun#function.result)}
+     {params, [lists:map(fun iolist_to_binary/1, P) || P <- Fun#function.params]},
+     {types, [lists:map(fun iolist_to_binary/1, P) || P <- Fun#function.types]},
+     {result, [iolist_to_binary(P) || P <- Fun#function.result]}
     ],
     Data1 = 
         case Fun#function.comment of 
@@ -538,37 +538,36 @@ parse_erlang_function(Node, Content, Comments) ->
     NameInfo = erl_syntax:function_name(Node),
     Name = erl_syntax:atom_literal(NameInfo),
     Line = erl_syntax:get_pos(NameInfo),
-    
+    Clauses = erl_syntax:function_clauses(Node),
     Arity = erl_syntax:function_arity(Node),
-    [Clause|_] = erl_syntax:function_clauses(Node),
     Params = 
-        [begin
+        [[begin
              Var = node_value(P, erl_syntax:type(P)),
              Var
-         end || P <- erl_syntax:clause_patterns(Clause)],
+         end || P <- erl_syntax:clause_patterns(Clause)] || Clause <- Clauses],
     Spec = case lists:keyfind({Name, Arity}, #spec.name, Content#content.specs) of 
                false -> undefined;
                S -> S#spec{name = element(1, S#spec.name)}
-           end,
+           end, 
     
     Params1 = case Spec of
                   undefined -> Params;
                   Spec -> 
-                      [begin
-                          V = lists:nth(I, Spec#spec.vars),
+                      [[begin
+                          V = lists:nth(I, lists:nth(J, Spec#spec.vars)),
                           case V of
-                              ?VAR -> lists:nth(I, Params);
+                              ?VAR -> lists:nth(I, lists:nth(J, Params));
                               _ -> V
                           end
-                      end|| I <- lists:seq(1, length(Spec#spec.vars))]
+                      end|| I <- lists:seq(1, length(lists:nth(J, Spec#spec.vars)))] || J <- lists:seq(1, length(Spec#spec.vars))]
               end,
-    Result = 
+    Result =  
         case Spec of
-            undefined -> "term()";
+            undefined -> lists:duplicate(length(Clauses), "term()");
             Spec -> Spec#spec.result
         end,
     Types = case Spec of
-                undefined -> [];
+                undefined -> lists:duplicate(length(Clauses), []);
                 _ -> Spec#spec.types
             end,
     Comment =
@@ -578,11 +577,12 @@ parse_erlang_function(Node, Content, Comments) ->
                 C = lists:last(Comments),
                 erl_prettypr:format(C)
         end,
+    %erlang:display({Params1, Result, Types}),
     #function{name = {Name, Arity},
               line = Line,
               params = Params1,
               types = Types,
-              result = Result,
+              result = Result, 
               comment = Comment}.
 
 node_value(Node, variable) ->
@@ -613,40 +613,50 @@ node_value(_Node, _) ->
 
 parse_spec(Node) ->
     try
-        parse_spec_internal(Node, 1)
+        {spec, {_, Clauses}} = erl_syntax_lib:analyze_wild_attribute(Node),
+        Specs = [parse_spec_internal(Node, C) || C <- lists:seq(1, length(Clauses))],
+        {V, R, T} = lists:unzip3(lists:map(fun(#spec{vars = V, result = R, types = T}) -> {V, R, T} end, Specs)),
+        Spec = (hd(Specs))#spec{vars = V, result = R, types = T},
+        %io:format("Spec: ~p~n", [Spec]),
+        Spec
     catch 
         _Error:_Reason -> none
     end.
 
 parse_spec_internal(Node, Clause) ->
+    
+    %io:format("~p ~p~n", [Node, Clause]),
     Spec = edoc_specs:spec(Node, Clause),
     {_, _, _, _, TSpec} = Spec,
     #t_spec{name = Name, type = Type, defs = Defs} = TSpec,
     #t_name{name = FunName} = Name,
     #t_fun{args = Args, range = Range} = Type, 
+    %io:format("~p~n", [Range]),
     {Vars, Types} = get_var_types(Args, Defs),
     Result = parse_t_type_res(Range, Defs),  
     #spec{name = {atom_to_list(FunName), length(Args)}, vars = Vars, result = Result, types = Types}.
 
 get_var_types(Args, Defs) ->
     {Vars, Types} = 
-        lists:foldl(fun(A, {Vars, Types}) ->
-                        Var = parse_t_type_var(A),
-                        case Var of
-                            {T, V} -> {[V| Vars], [T | Types]};
-                            _ -> 
-                                #t_var{name = Name} = A,
-                                Type = 
-                                    case lists:keyfind(#t_var{name = Name}, #t_def.name, Defs) of
-                                        #t_def{type = T} -> 
-                                            parse_t_type(T, Defs);
-                                        _ -> ?TERM 
-                                    end, 
-                                {[Var | Vars], [Type | Types]}
-                        end
-                    end, 
-                    {[], []}, 
-                    Args),  
+        lists:foldl(
+            fun(A, {Vars, Types}) ->
+                %io:format("A:~p~n", [A]),
+                Var = parse_t_type_var(A),
+                case Var of
+                    {T, V} -> {[V| Vars], [T | Types]};
+                    _ -> 
+                        #t_var{name = Name} = A,
+                        Type = 
+                            case lists:keyfind(#t_var{name = Name}, #t_def.name, Defs) of
+                                #t_def{type = T} -> 
+                                    parse_t_type(T, Defs);
+                                _ -> ?TERM 
+                            end, 
+                        {[Var | Vars], [Type | Types]}
+                end
+            end, 
+            {[], []}, 
+            Args),  
     {lists:reverse(Vars), lists:reverse(Types)}.  
 
 parse_t_type_var(#t_nil{}) -> 
@@ -657,11 +667,10 @@ parse_t_type_var(#t_integer{val = Val}) ->
     {"integer()", integer_to_list(Val)};
 parse_t_type_var(#t_float{val = Val}) ->
     {"float()", float_to_list(Val)};  
-parse_t_type_var(#t_name{name = Name}) ->
-    case Name of
-        Name when is_atom(Name) -> {?TERM, atom_to_list(Name)};
-        _ -> {?TERM, ?VAR}
-    end;
+parse_t_type_var(#t_name{module = Module, name = Name}) ->
+    Type = case Module of [] -> ""; _ -> atom_to_list(Module) ++ ":" end,
+    Type1 = Type ++ atom_to_list(Name) ++ "()",
+    {Type1, case is_atom(Name) of true -> atom_to_list(Name); _ -> ?VAR end};
 parse_t_type_var(#t_var{name = Names}) ->
     atom_to_list(case Names of
                       Names when is_list(Names) -> hd(Names);
@@ -670,8 +679,8 @@ parse_t_type_var(#t_var{name = Names}) ->
 parse_t_type_var(#t_type{name = Name, a = Args}) when is_atom(Name) ->
     {atom_to_list(Name) ++ "()", args_to_name(Args)}; 
 parse_t_type_var(#t_type{name = Name, a = Args}) when is_record(Name, t_name) ->
-    {_, Type} = parse_t_type_var(Name),
-    {Type ++ "()", args_to_name(Args)}; 
+    {Type, _} = parse_t_type_var(Name),
+    {Type, args_to_name(Args)}; 
 parse_t_type_var(_) -> 
     {?TERM, ?VAR}.
 
@@ -690,12 +699,14 @@ parse_t_type_res(#t_tuple{types = Types}, Defs) ->
 parse_t_type_res(#t_list{type = Type}, Defs) ->
     "[" ++ parse_t_type_res(Type, Defs) ++ "]";
 parse_t_type_res(#t_type{name = Name, args = Types}, Defs) ->
-    parse_t_type_res(Name, Defs) ++ "(" ++ string_join([parse_t_type_res(T, Defs) || T <- Types], ", ") ++ ")";
-parse_t_type_res(#t_name{name = Name}, _) ->
-    case Name of
-        Name when is_atom(Name) -> atom_to_list(Name);
-        _ -> ?TERM
-    end; 
+    case Types of 
+        [] -> parse_t_type_res(Name, Defs);
+        _ ->
+            parse_t_type_res(Name, Defs) ++ "(" ++ string_join([parse_t_type_res(T, Defs) || T <- Types], ", ") ++ ")"
+    end;
+parse_t_type_res(#t_name{name = Name, module = Module}, _) ->
+    Type = case Module of [] -> ""; _ -> atom_to_list(Module) ++ ":" end,
+    Type ++ atom_to_list(Name) ++ "()"; 
 parse_t_type_res(#t_var{name = Names}, Defs) ->
     Name = case Names of
                Names when is_list(Names) -> hd(Names);
@@ -703,16 +714,16 @@ parse_t_type_res(#t_var{name = Names}, Defs) ->
            end,
     Type = 
         case lists:keyfind(#t_var{name = Name}, #t_def.name, Defs) of
-            #t_def{type = T} -> 
+            #t_def{type = T} ->
                 parse_t_type(T, Defs);
             _ -> ?TERM  
         end,
     atom_to_list(Name) ++ " :: " ++ Type;
 parse_t_type_res(_, _) -> 
     ?TERM.
-parse_t_type(T, Deps) -> 
-    parse_t_type(T, Deps, 3).
 
+parse_t_type(T, Deps) -> 
+    parse_t_type(T, Deps, 6).
 parse_t_type(_, _, 0) -> ?TERM;
 parse_t_type(#t_type{name = Name}, _, _) when is_atom(Name) ->
     atom_to_list(Name) ++ "()"; 
@@ -986,7 +997,7 @@ add_data_from_html_fun({[FunName, Arity, SpecName, Params, _Result], Text}, Cont
         Fun when is_record(Fun, function) -> 
             NewFun = 
                 case SimpleParams of
-                    true -> Fun#function{params = [Params], result = ?TERM, doc = Text};
+                    true -> Fun#function{params = [[Params]], result = [?TERM], doc = Text};
                     _ -> Fun#function{doc = Text}
                 end, 
             IsBif = case SpecName of "erlang:" ++ _ -> false; _ -> true end,
@@ -994,7 +1005,7 @@ add_data_from_html_fun({[FunName, Arity, SpecName, Params, _Result], Text}, Cont
             Content#content{functions = lists:keyreplace({FunName, Arity1}, #function.name, Content#content.functions, NewFun1)};
         _ -> 
             IsBif = case SpecName of "erlang:" ++ _ -> false; _ -> true end,
-            NewFun = #function{name = {FunName, Arity1}, params = [Params], result = ?TERM, doc = Text, bif = IsBif, exported = true},
+            NewFun = #function{name = {FunName, Arity1}, params = [[Params]], result = [?TERM], doc = Text, bif = IsBif, exported = true},
             Content#content{functions = [NewFun|Content#content.functions]}
     end.
 

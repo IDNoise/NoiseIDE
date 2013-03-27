@@ -103,19 +103,6 @@ class ErlangCompleter(wx.Frame):
             fValue = fToken.value
             fIsAtom = fType == ErlangTokenType.ATOM
 
-            # if (len(tokens) > 3 and
-            #         ((fIsAtom and "::" in text[:fToken.start])
-            #          or (text.strip()[-2:] == "::"))):
-            #     self.prefix = fValue if fIsAtom else ""
-            #     if tokens[2].type == ErlangTokenType.ATOM and tokens[1].value == ":":
-            #         moduleName = tokens[2].value
-            #     else:
-            #         moduleName = self.module
-            #     data += ErlangCache.ModuleExportedTypes(moduleName)
-            #     data += ErlangCache.ERLANG_TYPES
-            #     if not self.prefix:
-            #         data += ErlangCache.AllModules()
-           # el
             if (fType == ErlangTokenType.SPACE or
                 (len(tokens) == 1 and fIsAtom) or
                 (fIsAtom and tokens[1].type == ErlangTokenType.SPACE) or
@@ -191,9 +178,13 @@ class ErlangCompleter(wx.Frame):
                 (_f, s, e, _l) = self.stc.lexer.GetAllExports()
                 if self.stc.CurrentPos >= s and self.stc.CurrentPos <= e:
                     text = "{}/{}".format(d.name, d.arity)
+                    helpText = self._FunctionHelp(d)
                 else:
-                    text = "{}({})".format(d.name, ", ".join(d.params))
-                helpText = self._FunctionHelp(d)
+                    text = []
+                    helpText = []
+                    for i in range(len(d.params)):
+                        text.append("{}({})".format(d.name, ", ".join(d.params[i])))
+                        helpText.append(self._FunctionHelp(d, i))
             elif isinstance(d, Record):
                 text = d.name
                 helpText = self._RecordHelp(d)
@@ -208,8 +199,13 @@ class ErlangCompleter(wx.Frame):
             else:
                 text = d
                 self.lastData = d
-            if text.startswith(self.prefix):
-                self.list.Append(text, helpText)
+            if not isinstance(text, list):
+                text = [text]
+            if not isinstance(helpText, list):
+                helpText = [helpText]
+            for i in range(len(text)):
+                if text[i].startswith(self.prefix):
+                    self.list.Append(text[i], helpText[i])
 
         self.ValidateCompleter()
 
@@ -225,21 +221,33 @@ class ErlangCompleter(wx.Frame):
     def _MacrosHelp(self, macros):
         return "?{} -> {}<br/><br/>{}:{}".format(macros.name, macros.value, macros.module, macros.line)
 
-    def _FunctionHelp(self, fun):
+    def _FunctionHelp(self, fun, clause = -1):
         if not fun.docref or not os.path.isfile(fun.docref):
             p = fun.params[:]
-            t = p[:]
-            if fun.types and not fun.docref:
-                for i in range(len(p)):
-                    t[i] = p[i] + " :: " + fun.types[i]
-            res = [fun.result, ""]
-            if " :: " in fun.result:
-                res = fun.result.split(" :: ")
-                t.append(fun.result)
+            t = [i[:] for i in p]
+            if fun.types:
+                 for i in range(len(p)):
+                     for j in range(len(fun.types[i])):
+                         t[i][j] = p[i][j] + " :: " + fun.types[i][j]
+            #print "t: ", t
+            res = fun.result[:]
+            for i in range(len(fun.result)):
+                if " :: " in fun.result[i]:
+                    res[i] = fun.result[i].split(" :: ")
+                    t[i].append(fun.result[i])
+            #print "res: ", res
             comment = fun.comment.replace("\n", "<br/>").replace("%", "")
-            help = "{}({}) -> {}. <br/>".format(fun.name, ", ".join(p), res[0])
-            if t:
-                help += "Types:<br/>&nbsp;&nbsp;{}".format(",<br/>&nbsp;&nbsp;".join(t))
+            if clause >= 0:
+                params = ", ".join(p[clause])
+                types = ",<br/>&nbsp;&nbsp;&nbsp;&nbsp;".join(t[clause])
+                help = "<br/>".join(["{}({}) -> {}. <br/>Types:<br/>&nbsp;&nbsp;&nbsp;&nbsp;{}<br/>".format(fun.name, params, res[clause], types)])
+            else:
+                help = "<br/>".join(["{}({}) -> {}. <br/>Types:<br/>&nbsp;&nbsp;&nbsp;&nbsp;{}<br/>"
+                                     .format(fun.name, ", ".join(p[i]), res[i], ",<br/>&nbsp;&nbsp;&nbsp;&nbsp;".join(t[i]))
+                                     for i in range(len(p))])
+            #if t:
+            #    types = ["(" + ",<br/>&nbsp;&nbsp;".join(i) + ")" for i in t]
+            #    help += "Types:<br/>&nbsp;&nbsp;{}".format(",<br/>&nbsp;&nbsp;".join(types))
             if comment:
                 help += "<br/>{}".format(comment)
         else:
@@ -542,7 +550,9 @@ class ErlangSimpleCompleter(wx.Frame):
         self.lastData = []
         for d in set(data):
             if isinstance(d, Function):
-                text = "{}({})".format(d.name, ", ".join(d.params))
+                text = []
+                for i in range(len(d.params)):
+                    text.append("{}({})".format(d.name, ", ".join(d.params[i])))
             elif isinstance(d, Record):
                 text = d.name
             elif isinstance(d, tuple):
@@ -550,8 +560,11 @@ class ErlangSimpleCompleter(wx.Frame):
             else:
                 text = d
                 self.lastData = d
-            if text.startswith(self.prefix):
-                self.list.Append(text)
+            if not isinstance(text, list):
+                text = [text]
+            for t in text:
+                if t.startswith(self.prefix):
+                    self.list.Append(t)
         self.ValidateCompleter()
 
     def OnItemDoubleClick(self, event):
