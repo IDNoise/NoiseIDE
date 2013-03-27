@@ -253,12 +253,12 @@ class ErlangCompleter(wx.Frame):
             t = [[tii for tii in ti  if  "::" in tii]for ti in t]
             if clause >= 0:
                 params = ", ".join(p[clause])
-                types = "Types:<br/>&nbsp;&nbsp;&nbsp;&nbsp;{}<br/>" + ",<br/>&nbsp;&nbsp;&nbsp;&nbsp;".join(t[clause]) if t[clause] else ""
+                types = "Types:<br/>&nbsp;&nbsp;&nbsp;&nbsp;{}<br/>".format(",<br/>&nbsp;&nbsp;&nbsp;&nbsp;".join(t[clause])) if t[clause] else ""
                 help = "{}({}) -> {}. <br/>".format(fun.name, params, res[clause], types)
             else:
                 help = "".join(["{}({}) -> {}. <br/>{}"
                              .format(fun.name, ", ".join(p[i]), res[i],
-                               "Types:<br/>&nbsp;&nbsp;&nbsp;&nbsp;{}<br/>" + ",<br/>&nbsp;&nbsp;&nbsp;&nbsp;".join(t[i]) if t[i]
+                               "Types:<br/>&nbsp;&nbsp;&nbsp;&nbsp;{}<br/>".format(",<br/>&nbsp;&nbsp;&nbsp;&nbsp;".join(t[i])) if t[i]
                                      else "")
                              for i in range(len(p))])
             #if t:
