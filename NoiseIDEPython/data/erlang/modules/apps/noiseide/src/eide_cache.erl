@@ -428,7 +428,7 @@ parse_tree(Node, Content) ->
                 _ ->
                     Content
             end;
-        
+         
         function ->
             Function = parse_erlang_function(Node, Content, erl_syntax:get_precomments(Node)),
             NameInfo = erl_syntax:function_name(Node),
@@ -549,14 +549,17 @@ parse_erlang_function(Node, Content, Comments) ->
                false -> undefined;
                S -> S#spec{name = element(1, S#spec.name)}
            end, 
-    
     Params1 = case Spec of
                   undefined -> Params;
                   Spec -> 
+                      Params0 = case length(Params) < length(Spec#spec.vars) of 
+                          true -> lists:duplicate(length(Spec#spec.vars), hd(Params));
+                          _ -> Params
+                      end,
                       [[begin
                           V = lists:nth(I, lists:nth(J, Spec#spec.vars)),
                           case V of
-                              ?VAR -> lists:nth(I, lists:nth(J, Params));
+                              ?VAR -> lists:nth(I, lists:nth(J, Params0));
                               _ -> V
                           end
                       end|| I <- lists:seq(1, length(lists:nth(J, Spec#spec.vars)))] || J <- lists:seq(1, length(Spec#spec.vars))]
@@ -587,10 +590,11 @@ parse_erlang_function(Node, Content, Comments) ->
 
 node_value(Node, variable) ->
     erl_syntax:variable_literal(Node);
-node_value(_Node, atom) ->
-    "Atom";
-node_value(_Node, string) ->
-    "String";
+node_value(Node, atom) ->
+    erl_syntax:atom_literal(Node);
+    %"Atom";
+node_value(Node, string) ->
+    erl_syntax:string_literal(Node);
 node_value(_Node, list) ->
     "List";
 node_value(_Node, nil) ->
@@ -599,10 +603,10 @@ node_value(_Node, tuple) ->
     "Tuple";
 node_value(Node, record_expr) ->
     try 
-        Record = atom_to_list(element(3, Node)),
+        Record = atom_to_list(element(4, element(3, element(4, Node)))),
         string:to_upper(string:substr(Record, 1, 1)) ++ string:substr(Record, 2)
     catch _:_ -> "Record"
-    end;
+    end; 
 node_value(Node, match_expr) ->
     try 
         erl_syntax:variable_literal(erl_syntax:match_expr_body(Node))

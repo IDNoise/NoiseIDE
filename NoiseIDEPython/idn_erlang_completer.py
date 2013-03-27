@@ -1,3 +1,5 @@
+from idn_config import Config
+
 __author__ = 'Yaroslav'
 
 import os
@@ -180,11 +182,22 @@ class ErlangCompleter(wx.Frame):
                     text = "{}/{}".format(d.name, d.arity)
                     helpText = self._FunctionHelp(d)
                 else:
-                    text = []
-                    helpText = []
-                    for i in range(len(d.params)):
-                        text.append("{}({})".format(d.name, ", ".join(d.params[i])))
-                        helpText.append(self._FunctionHelp(d, i))
+                    if Config.ShowMultiComplete():
+                        text = []
+                        helpText = []
+                        for i in range(len(d.params)):
+                            text.append("{}({})".format(d.name, ", ".join(d.params[i])))
+                            helpText.append(self._FunctionHelp(d, i))
+                    else:
+                        params = d.params[0][:]
+                        def prepare_param(p):
+                            if "\"" in p: return "String"
+                            if p[0].islower():
+                                return "Atom"
+                            return p
+                        params = [prepare_param(p) for p in params]
+                        text = "{}({})".format(d.name, ", ".join(params))
+                        helpText = self._FunctionHelp(d)
             elif isinstance(d, Record):
                 text = d.name
                 helpText = self._RecordHelp(d)
@@ -237,14 +250,17 @@ class ErlangCompleter(wx.Frame):
                     t[i].append(fun.result[i])
             #print "res: ", res
             comment = fun.comment.replace("\n", "<br/>").replace("%", "")
+            t = [[tii for tii in ti  if  "::" in tii]for ti in t]
             if clause >= 0:
                 params = ", ".join(p[clause])
-                types = ",<br/>&nbsp;&nbsp;&nbsp;&nbsp;".join(t[clause])
-                help = "<br/>".join(["{}({}) -> {}. <br/>Types:<br/>&nbsp;&nbsp;&nbsp;&nbsp;{}<br/>".format(fun.name, params, res[clause], types)])
+                types = "Types:<br/>&nbsp;&nbsp;&nbsp;&nbsp;{}<br/>" + ",<br/>&nbsp;&nbsp;&nbsp;&nbsp;".join(t[clause]) if t[clause] else ""
+                help = "{}({}) -> {}. <br/>".format(fun.name, params, res[clause], types)
             else:
-                help = "<br/>".join(["{}({}) -> {}. <br/>Types:<br/>&nbsp;&nbsp;&nbsp;&nbsp;{}<br/>"
-                                     .format(fun.name, ", ".join(p[i]), res[i], ",<br/>&nbsp;&nbsp;&nbsp;&nbsp;".join(t[i]))
-                                     for i in range(len(p))])
+                help = "".join(["{}({}) -> {}. <br/>{}"
+                             .format(fun.name, ", ".join(p[i]), res[i],
+                               "Types:<br/>&nbsp;&nbsp;&nbsp;&nbsp;{}<br/>" + ",<br/>&nbsp;&nbsp;&nbsp;&nbsp;".join(t[i]) if t[i]
+                                     else "")
+                             for i in range(len(p))])
             #if t:
             #    types = ["(" + ",<br/>&nbsp;&nbsp;".join(i) + ")" for i in t]
             #    help += "Types:<br/>&nbsp;&nbsp;{}".format(",<br/>&nbsp;&nbsp;".join(types))
@@ -550,9 +566,19 @@ class ErlangSimpleCompleter(wx.Frame):
         self.lastData = []
         for d in set(data):
             if isinstance(d, Function):
-                text = []
-                for i in range(len(d.params)):
-                    text.append("{}({})".format(d.name, ", ".join(d.params[i])))
+                if Config.ShowMultiComplete():
+                    text = []
+                    for i in range(len(d.params)):
+                        text.append("{}({})".format(d.name, ", ".join(d.params[i])))
+                else:
+                    params = d.params[0][:]
+                    def prepare_param(p):
+                        if "\"" in p: return "String"
+                        if p[0].islower():
+                            return "Atom"
+                        return p
+                    params = [prepare_param(p) for p in params]
+                    text = "{}({})".format(d.name, ", ".join(params))
             elif isinstance(d, Record):
                 text = d.name
             elif isinstance(d, tuple):

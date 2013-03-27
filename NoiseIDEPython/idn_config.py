@@ -18,6 +18,7 @@ class Config:
     RUNTIMES = "runtimes"
     TOOLTIP_DELAY = "tooltip_delay"
     REFRESH_INTERVAL = "refresh_interval"
+    SHOW_MULTI_COMPLETE = "show_multi_complete"
 
     DEFAULT_TOOLTIP_DELAY = 500
     DEFAULT_REFRESH_INTERVAL = 2
@@ -77,6 +78,10 @@ class Config:
     @classmethod
     def Runtimes(cls):
         return cls.data[cls.RUNTIMES] if cls.RUNTIMES in cls.data else {}
+
+    @classmethod
+    def ShowMultiComplete(cls):
+        return cls.data[cls.SHOW_MULTI_COMPLETE] if cls.SHOW_MULTI_COMPLETE in cls.data else False
 
     @classmethod
     def AvailableRuntimes(cls):
@@ -149,6 +154,8 @@ class ConfigEditForm(wx.Dialog):
         self.refreshIntervalTB = wx.TextCtrl(self, value = str(Config.RefreshInterval()), size = (180, 25))
         self.openLastFilesCb = wx.CheckBox(self, label = "Open last files")
         self.openLastFilesCb.SetValue(Config.GetProp(Config.OPEN_LAST_FILES, True))
+        self.showMultiCompleteCb = wx.CheckBox(self, label = "Show multi complete")
+        self.showMultiCompleteCb.SetValue(Config.ShowMultiComplete())
         self.refreshIntervalTB.SetToolTipString("Interval in seconds. 0 = No refresh")
         self.closeButton = CreateButton(self, "Close", self.OnClose)
         self.saveButton = CreateButton(self, "Save", self.OnSave)
@@ -167,6 +174,8 @@ class ConfigEditForm(wx.Dialog):
         i += 1
         sizer.Add(wx.StaticText(self, label = "Tree refresh interval(seconds):"), (i, 0), flag = wx.ALL | wx.ALIGN_CENTER_VERTICAL, border = 2)
         sizer.Add(self.refreshIntervalTB, (i, 1), flag = wx.ALL | wx.ALIGN_LEFT, border = 2)
+        i += 1
+        sizer.Add(self.showMultiCompleteCb, (i, 1), flag = wx.ALL | wx.ALIGN_LEFT, border = 2)
         i += 1
         sizer.Add(self.closeButton, (i, 0), flag = wx.ALL | wx.wx.ALIGN_LEFT, border = 2)
         sizer.Add(self.saveButton, (i, 1), flag = wx.ALL | wx.wx.ALIGN_RIGHT, border = 2)
@@ -188,4 +197,5 @@ class ConfigEditForm(wx.Dialog):
         if self.refreshIntervalTB.Value:
             Config.SetRefreshInterval(self.refreshIntervalTB.Value)
         Config.SetProp(Config.OPEN_LAST_FILES, self.openLastFilesCb.Value)
+        Config.SetProp(Config.SHOW_MULTI_COMPLETE, self.showMultiCompleteCb.Value)
         self.Close()
