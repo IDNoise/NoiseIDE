@@ -12,10 +12,11 @@
  
 -spec xxxxx(zzz:zzz()) -> atom();
        (yyy:yyy()) -> atom();
+       ([X]) -> atom() when X :: atom();
        ([term()]) -> atom().
 xxxxx(X) -> X.    
     
-x() ->       
+x() ->        
     xxxxx(1).   
 
    

@@ -241,7 +241,7 @@ fun_to_json(ModuleName, CacheDir, Fun, FilePath) ->
                 FullPath = CacheDir ++ "/" ++ eide_compiler:app_name(FilePath) ++ "/" ++ FileName,
                 file:write_file(FullPath, iolist_to_binary(Text)),
                 FullPath
-        end,
+        end, 
     Data =    
     [ 
      {name, iolist_to_binary(Name)},
@@ -644,7 +644,7 @@ get_var_types(Args, Defs) ->
     {Vars, Types} = 
         lists:foldl(
             fun(A, {Vars, Types}) ->
-                io:format("A:~p~n", [A]),
+                %io:format("A:~p~n", [A]),
                 T = get_type(A, Defs),
                 V = get_var_name(A),
                 {[V| Vars], [T | Types]}
@@ -659,12 +659,12 @@ get_var_name(#t_integer{val = Val}) -> integer_to_list(Val);
 get_var_name(#t_float{val = Val}) -> float_to_list(Val);
 get_var_name(#t_name{name = Name}) -> 
     case is_atom(Name) of 
-        true -> atom_to_list(Name); 
+        true -> atom_to_list(Name);  
         _ -> ?VAR 
     end;
 get_var_name(#t_type{a = Args})-> args_to_name(Args);
 get_var_name(#t_list{})-> "List";
-get_var_name(#t_var{name = Name})-> Name.
+get_var_name(#t_var{name = Name})-> atom_to_list(Name).
 
 get_type(T, Defs) -> parse_t_type(T, Defs).
 
