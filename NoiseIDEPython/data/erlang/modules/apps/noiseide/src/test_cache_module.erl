@@ -11,14 +11,15 @@
  
  
 -spec xxxxx(zzz:zzz()) -> atom();
-       (yyy:yyy()) -> atom().
+       (yyy:yyy()) -> atom();
+       ([term()]) -> atom().
 xxxxx(X) -> X.    
     
-x() ->    
+x() ->       
     xxxxx(1).   
 
    
-
+  
  
 zz() -> z.
 

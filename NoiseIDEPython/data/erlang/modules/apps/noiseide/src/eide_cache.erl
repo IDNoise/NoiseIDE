@@ -637,94 +637,36 @@ parse_spec_internal(Node, Clause) ->
     #t_fun{args = Args, range = Range} = Type, 
     %io:format("~p~n", [Range]),
     {Vars, Types} = get_var_types(Args, Defs),
-    Result = parse_t_type_res(Range, Defs),  
+    Result = parse_t_type(Range, Defs),  
     #spec{name = {atom_to_list(FunName), length(Args)}, vars = Vars, result = Result, types = Types}.
 
 get_var_types(Args, Defs) ->
     {Vars, Types} = 
         lists:foldl(
             fun(A, {Vars, Types}) ->
-                %io:format("A:~p~n", [A]),
-                Var = parse_t_type_var(A),
-                case Var of
-                    {T, V} -> {[V| Vars], [T | Types]};
-                    _ -> 
-                        #t_var{name = Name} = A,
-                        Type = 
-                            case lists:keyfind(#t_var{name = Name}, #t_def.name, Defs) of
-                                #t_def{type = T} -> 
-                                    parse_t_type(T, Defs);
-                                _ -> ?TERM 
-                            end, 
-                        {[Var | Vars], [Type | Types]}
-                end
+                io:format("A:~p~n", [A]),
+                T = get_type(A, Defs),
+                V = get_var_name(A),
+                {[V| Vars], [T | Types]}
             end, 
             {[], []}, 
             Args),  
     {lists:reverse(Vars), lists:reverse(Types)}.  
 
-parse_t_type_var(#t_nil{}) -> 
-    {"nil()", "[]"};
-parse_t_type_var(#t_atom{val = Val}) ->
-    {"atom()", atom_to_list(Val)};
-parse_t_type_var(#t_integer{val = Val}) -> 
-    {"integer()", integer_to_list(Val)};
-parse_t_type_var(#t_float{val = Val}) ->
-    {"float()", float_to_list(Val)};  
-parse_t_type_var(#t_name{module = Module, name = Name}) ->
-    Type = case Module of [] -> ""; _ -> atom_to_list(Module) ++ ":" end,
-    Type1 = Type ++ atom_to_list(Name) ++ "()",
-    {Type1, case is_atom(Name) of true -> atom_to_list(Name); _ -> ?VAR end};
-parse_t_type_var(#t_var{name = Names}) ->
-    atom_to_list(case Names of
-                      Names when is_list(Names) -> hd(Names);
-                      _ -> Names
-                 end);
-parse_t_type_var(#t_type{name = Name, a = Args}) when is_atom(Name) ->
-    {atom_to_list(Name) ++ "()", args_to_name(Args)}; 
-parse_t_type_var(#t_type{name = Name, a = Args}) when is_record(Name, t_name) ->
-    {Type, _} = parse_t_type_var(Name),
-    {Type, args_to_name(Args)}; 
-parse_t_type_var(_) -> 
-    {?TERM, ?VAR}.
-
-parse_t_type_res(#t_nil{}, _) ->
-    "[]";
-parse_t_type_res(#t_atom{val = Val}, _) ->
-    atom_to_list(Val);
-parse_t_type_res(#t_integer{val = Val}, _) ->
-    integer_to_list(Val);
-parse_t_type_res(#t_float{val = Val}, _) ->
-    float_to_list(Val);
-parse_t_type_res(#t_union{types = Types}, Defs) ->
-    "(" ++ string_join([parse_t_type_res(T, Defs) || T <- Types], " | ") ++ ")";
-parse_t_type_res(#t_tuple{types = Types}, Defs) ->
-    "{" ++ string_join([parse_t_type_res(T, Defs) || T <- Types], ", ") ++ "}";
-parse_t_type_res(#t_list{type = Type}, Defs) ->
-    "[" ++ parse_t_type_res(Type, Defs) ++ "]";
-parse_t_type_res(#t_type{name = Name, args = Types}, Defs) ->
-    case Types of 
-        [] -> parse_t_type_res(Name, Defs);
-        _ ->
-            parse_t_type_res(Name, Defs) ++ "(" ++ string_join([parse_t_type_res(T, Defs) || T <- Types], ", ") ++ ")"
+get_var_name(#t_nil{}) -> "[]";
+get_var_name(#t_atom{val = Val}) -> atom_to_list(Val);
+get_var_name(#t_integer{val = Val}) -> integer_to_list(Val);
+get_var_name(#t_float{val = Val}) -> float_to_list(Val);
+get_var_name(#t_name{name = Name}) -> 
+    case is_atom(Name) of 
+        true -> atom_to_list(Name); 
+        _ -> ?VAR 
     end;
-parse_t_type_res(#t_name{name = Name, module = Module}, _) ->
-    Type = case Module of [] -> ""; _ -> atom_to_list(Module) ++ ":" end,
-    Type ++ atom_to_list(Name) ++ "()"; 
-parse_t_type_res(#t_var{name = Names}, Defs) ->
-    Name = case Names of
-               Names when is_list(Names) -> hd(Names);
-               _ -> Names
-           end,
-    Type = 
-        case lists:keyfind(#t_var{name = Name}, #t_def.name, Defs) of
-            #t_def{type = T} ->
-                parse_t_type(T, Defs);
-            _ -> ?TERM  
-        end,
-    atom_to_list(Name) ++ " :: " ++ Type;
-parse_t_type_res(_, _) -> 
-    ?TERM.
+get_var_name(#t_type{a = Args})-> args_to_name(Args);
+get_var_name(#t_list{})-> "List";
+get_var_name(#t_var{name = Name})-> Name.
+
+get_type(T, Defs) -> parse_t_type(T, Defs).
 
 parse_t_type(T, Deps) -> 
     parse_t_type(T, Deps, 6).
@@ -741,7 +683,7 @@ parse_t_type(#t_atom{val = Val}, _, _)->
 parse_t_type(#t_record{name = #t_atom{val = Name}}, _, _)->
     "#" ++ atom_to_list(Name) ++ "{}"; 
 parse_t_type(#t_union{types = Types}, Defs, Depth) -> 
-    string_join([parse_t_type(T, Defs, Depth - 1) || T <- Types], " | ");
+    "(" ++ string_join([parse_t_type(T, Defs, Depth - 1) || T <- Types], " | ") ++ ")";
 parse_t_type(#t_tuple{types = Types}, Defs, Depth) ->
     "{" ++ string_join([parse_t_type(T, Defs, Depth - 1) || T <- Types], ", ") ++ "}";
 parse_t_type(#t_list{type = Type}, Defs, Depth) ->
