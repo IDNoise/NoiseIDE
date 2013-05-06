@@ -282,7 +282,7 @@ class ErlangProcessWithConnection(ErlangProcess, ErlangIDEConnectAPI):
         self.ClosedConnectionEvent = idn_events.Event()
 
     def GetSMPData(self):
-        return "-smp enable +sbt db +S3:3"
+        return "-smp enable +sbt db +S4:4"
 
     def GetAdditionalParams(self):
         return ["-noiseide port {}".format(self.port), "-run noiseide_app"]
