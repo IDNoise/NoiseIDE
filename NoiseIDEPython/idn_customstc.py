@@ -684,8 +684,10 @@ class STCContextToolTip:
         event.Skip()
 
     def OnEnter(self, event):
-        self.showtime = wx.PyTimer(self.ShowTimer)
-        self.showtime.Start(50)
+        if not self.showtime:
+            self.showtime = wx.PyTimer(self.ShowTimer)
+        if not self.showtime.IsRunning():
+            self.showtime.Start(50)
         event.Skip()
 
     def OnLeave(self, event):
