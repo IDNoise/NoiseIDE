@@ -223,10 +223,10 @@ class ErlangProcess(wx.EvtHandler):
     def __init__(self, cwd = os.getcwd(), params = []):
         wx.EvtHandler.__init__(self)
         self.cwd = cwd
-        self.SetParams(params)
         self.pid = None
         self.stopped = True
         self.proc = None
+        self.SetParams(params)
 
         self.timer = wx.Timer(self, wx.ID_ANY)
         self.Bind(wx.EVT_TIMER, self.OnTimer, self.timer)
@@ -258,6 +258,7 @@ class ErlangProcess(wx.EvtHandler):
             return
         self.proc.terminate(1)
         del self.proc
+        self.proc = None
         self.stopped = True
 
     def OnTimer(self, event):

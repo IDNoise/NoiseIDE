@@ -9,7 +9,10 @@ logFile = open("ide.log", 'w')
 
 def Log(*text):
     text = " ".join([str(t) for t in text])
-    print text
+    try:
+        print text
+    except Exception, e:
+        pass
     if not text.endswith("\n"):
         text += "\n"
     logFile.write(text)

@@ -108,6 +108,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.lastHighlightedWord = ""
         self.changed = False
         self.saved = True
+        self.closed = False
 
         self.SetCaretWidth(ColorSchema.codeEditor["caret_size"])
         self.SetCaretForeground(ColorSchema.codeEditor["caret_color"])
@@ -162,10 +163,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.Bind(stc.EVT_STC_CHARADDED, self.OnCharAdded)
         self.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
 
-        self.highlightTimer = wx.Timer(self, wx.ID_ANY)
-        self.Bind(wx.EVT_TIMER, self.OnHighlightTimer, self.highlightTimer)
-        self.highlightTimer.Start(400)
-
+        
 
         self.EnableLineNumbers()
 
@@ -175,7 +173,9 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
                              stc.STC_PERFORMED_REDO)
 
         self.UpdateOptions()
-
+        self.Bind(wx.EVT_WINDOW_DESTROY, self.OnDestroy)
+        
+        self.modifyCheckTimer = None
         if filePath:
             self.LoadFile(filePath)
             self.Bind(stc.EVT_STC_SAVEPOINTLEFT, self.OnSavePointLeft)
@@ -183,6 +183,10 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
             self.StartModifyCheck()
         self.OnInit()
 
+        self.highlightTimer = wx.Timer(self, wx.ID_ANY)
+        self.Bind(wx.EVT_TIMER, self.OnHighlightTimer, self.highlightTimer)
+        self.highlightTimer.Start(400)
+        
         self.editorMenu = core.MainFrame.editorMenu
         self.SetupEditorMenu()
 
@@ -190,6 +194,11 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
 
         self.customTooltip = STCContextToolTip(self, self.OnRequestTooltipText)
 
+    def OnDestroy(self, event):
+        if not self.closed:
+            self.OnClose()
+        event.Skip()
+        
     def StartModifyCheck(self):
         self.modifyCheckTimer = wx.Timer(self, wx.ID_ANY)
         self.Bind(wx.EVT_TIMER, self.OnModifyCheckTimer, self.modifyCheckTimer)
@@ -222,8 +231,11 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         return menu
 
     def OnClose(self):
-        self.highlightTimer.Stop()
-        self.modifyCheckTimer.Stop()
+        self.closed = True
+        if self.highlightTimer:
+            self.highlightTimer.Stop()
+        if self.modifyCheckTimer:
+            self.modifyCheckTimer.Stop()
         if self.saved == False and os.path.exists(self.filePath):
             dial = wx.MessageDialog(None,
                 'You have unsaved changes in this document. Do you want to save it?'.format(self.filePath),
