@@ -409,7 +409,7 @@ class ErlangCompleter(wx.Frame):
         lvl = 0
         if self.stc.GetCharAt(pos) == "/":
             pos += 1
-            arity = ""
+            arity = "0"
             while self.stc.GetCharAt(pos).isdigit():
                 arity += self.stc.GetCharAt(pos)
                 pos += 1

@@ -707,7 +707,8 @@ class STCContextToolTip:
     def OnDestroy(self, event):
         if self.showtime:
             self.showtime.Stop()
-        self.tooltipWin.Destroy()
+        if self.tooltipWin:
+            self.tooltipWin.Destroy()
         event.Skip()
 
     def OnMotion(self, event):
