@@ -57,6 +57,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
     MARKER_ERROR_CIRCLE, MARKER_WARNING_CIRCLE, MARKER_ERROR, MARKER_WARNING = (18, 19, 20, 21)
 
     def OnInit(self):
+        ErlangHighlightedSTCBase.OnInit(self)
         self.completer = ErlangCompleter(self)
 
         self.overlay = wx.Overlay()
@@ -607,12 +608,15 @@ class ErlangSTC(ErlangHighlightedSTCBase):
 class ErlangSTCReadOnly(ErlangSTC):
     def __init__(self, parent, panel, filePath, option, text):
         ErlangSTC.__init__(self, parent, panel)
-
         self.AppendText(text)
-        self.SetReadOnly(True)
-        self.SetToolTip(None)
         self.filePath = filePath
         self.option = option
+
+    def OnInit(self):
+        ErlangSTC.OnInit(self)
+
+        self.SetReadOnly(True)
+        self.SetToolTip(None)
 
         core.Project.explorer.ProjectFilesModifiedEvent += self.OnProjectFilesModified
 
@@ -627,9 +631,6 @@ class ErlangSTCReadOnly(ErlangSTC):
         self.Bind(wx.EVT_LEFT_DOWN, self.OnMouseClick)
         self.Bind(wx.EVT_MIDDLE_DOWN, self.OnMiddleMouseClick)
 
-    def OnInit(self):
-        pass
-
     def SetupEditorMenu(self):
         ErlangHighlightedSTCBase.SetupEditorMenu(self)
 
@@ -640,13 +641,14 @@ class ErlangSTCReadOnly(ErlangSTC):
         pass
 
     def OnClose(self):
-        ErlangSTC.OnClose(self)
         core.Project.explorer.ProjectFilesModifiedEvent -= self.OnProjectFilesModified
+        ErlangSTC.OnClose(self)
 
     def Save(self):
         pass
 
     def OnProjectFilesModified(self, files):
+        if not self: return
         for f in files:
             if f == self.filePath:
                 core.Project.CompileOption(self.filePath, self.option)
