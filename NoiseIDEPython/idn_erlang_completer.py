@@ -7,7 +7,7 @@ import wx
 from idn_cache import ErlangCache, Function, Record, ExportedType, Macros
 from idn_colorschema import ColorSchema
 from idn_customstc import HtmlWin
-from idn_erlang_constats import TYPE_MODULE
+from idn_erlang_constats import TYPE_MODULE, TYPE_HRL
 from idn_token import ErlangTokenizer, ErlangTokenType
 from idn_utils import readFile
 from cStringIO import StringIO
@@ -124,6 +124,15 @@ class ErlangCompleter(wx.Frame):
                         data += ErlangCache.ModuleFunctions(self.module, False)
                         data += ErlangCache.Bifs()
                         data += ErlangCache.AllModules()
+                else:
+                    if self.moduleType == TYPE_HRL:
+                        if self.stc.lexer.IsInTypeBlock():
+                            data += ErlangCache.ERLANG_TYPES
+                            if self.prefix:
+                                data += ErlangCache.AllModules()
+                        else:
+                            data += ErlangCache.Bifs()
+                            data += ErlangCache.AllModules()
             elif (len(tokens) > 1 and
                   ((fIsAtom and tokens[1].value == ":") or fValue == ":")):
                 i = 1 if fValue == ":" else 2
