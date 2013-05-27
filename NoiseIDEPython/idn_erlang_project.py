@@ -443,7 +443,9 @@ class ErlangProject(Project):
                 data = js["result"]
                 self.OnCompileOptionResult(path, option, data)
         except Exception, e:
+            import traceback
             core.Log("Error in socket: {}".format(e))
+            traceback.print_exc()
 
     def OnSocketConnected(self):
         self.SetCompilerOptions()

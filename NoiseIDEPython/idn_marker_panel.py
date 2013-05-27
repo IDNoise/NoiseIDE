@@ -39,6 +39,7 @@ class MarkerPanel(wx.Panel):
         dc.DrawRectangle(0, 0, width, height)
 
         for type, markers in self.markers.items():
+            if not type in self.markerColor: return
             color = self.markerColor[type]
             for marker in markers:
                 y = float(height) / float(self.Editor.GetScrollRange(wx.VERTICAL)) * float(marker.line)

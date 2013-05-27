@@ -614,22 +614,11 @@ class ErlangSTCReadOnly(ErlangSTC):
 
     def OnInit(self):
         ErlangSTC.OnInit(self)
-
+		
         self.SetReadOnly(True)
         self.SetToolTip(None)
 
         core.Project.explorer.ProjectFilesModifiedEvent += self.OnProjectFilesModified
-
-        self.completer = ErlangCompleter(self)
-
-        self.overlay = wx.Overlay()
-        self.lastErrors = []
-        self.errorsLines = []
-        self.navigateTo = None
-
-        self.Bind(wx.EVT_MOTION, self.OnMouseMove)
-        self.Bind(wx.EVT_LEFT_DOWN, self.OnMouseClick)
-        self.Bind(wx.EVT_MIDDLE_DOWN, self.OnMiddleMouseClick)
 
     def SetupEditorMenu(self):
         ErlangHighlightedSTCBase.SetupEditorMenu(self)

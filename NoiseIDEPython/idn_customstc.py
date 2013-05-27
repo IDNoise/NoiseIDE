@@ -181,8 +181,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
             self.Bind(stc.EVT_STC_SAVEPOINTLEFT, self.OnSavePointLeft)
             self.Bind(stc.EVT_STC_SAVEPOINTREACHED, self.OnSavePointReached)
             self.StartModifyCheck()
-        self.OnInit()
-
+			
         self.highlightTimer = wx.Timer(self, wx.ID_ANY)
         self.Bind(wx.EVT_TIMER, self.OnHighlightTimer, self.highlightTimer)
         self.highlightTimer.Start(400)
@@ -193,7 +192,10 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.Bind(wx.EVT_RIGHT_UP, self.ShowPopupMenu)
 
         self.customTooltip = STCContextToolTip(self, self.OnRequestTooltipText)
-
+			
+			
+        wx.CallAfter(self.OnInit)
+		
     def OnDestroy(self, event):
         if not self.closed:
             self.OnClose()

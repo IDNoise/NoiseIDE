@@ -51,7 +51,7 @@ class Notebook(aui.AuiNotebook):
 
     def DeletePage(self, page_idx, permanent = False):
         widget = self[page_idx]
-        if not permanent and hasattr(widget, "onlyHide"):
+        if widget and not permanent and hasattr(widget, "onlyHide"):
             self.RemovePage(page_idx)
             widget.Hide()
         else:
