@@ -160,11 +160,9 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         result = self.GetErlangWordAtPosition(self.popupPos)
         if not result: return
         (start, end, value) = result
-        print start, end, value
         style = self.GetStyleAt(self.popupPos)
         line = self.LineFromPosition(start)
         text = self.GetLineText(line)
-        print start - self.PositionFromLine(line)
         if asAtom:
             Find(value, "Find reference of atom '{}'".format(value),
                  wholeWords = True,
@@ -193,7 +191,6 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                             if macrosData:
                                 module = macrosData.value
             moduleFile = "{}.erl".format(module)
-            print prefix, moduleFile, value, module
             Find(r"\b{0}:{1}\(|\s{0}:{1}/|^{1}\(".format(module, value), "Find reference of function '{}'".format(value),
                  useRegexp = True,
                  fileExts = [".erl", ".hrl", moduleFile],
