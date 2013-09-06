@@ -2,6 +2,9 @@ import os
 import wx
 from TextCtrlAutoComplete import TextCtrlAutoComplete
 import core
+import idn_erlang_explorer
+from idn_utils import extension
+from idn_erlang_constats import *
 
 __author__ = 'Yaroslav'
 
@@ -29,7 +32,9 @@ class FastProjectFileOpenDialog(wx.Dialog):
         files = project.explorer.GetAllFiles()
         result = []
         for f in files:
-            result.append((os.path.basename(f), f))
+            if (f.startswith(project.AppsPath()) or f.startswith(project.DepsPath())
+             or f.startswith(os.path.join(project.projectDir, "protocol"))):
+                result.append((os.path.basename(f), f))
         return result
 
     def OnKeyDown(self, event):

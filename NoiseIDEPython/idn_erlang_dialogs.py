@@ -186,3 +186,40 @@ class ErlangDialyzerDialog(wx.Dialog):
         self.project.SetHomeDir(home)
         self.project.SetPltPath(plt)
         self.Close()
+
+class ErlangRenameDialog(wx.Dialog):
+    def __init__(self, parent, title, current):
+        wx.Dialog.__init__(self, parent, title = title,
+            style = wx.DEFAULT_DIALOG_STYLE | wx.WS_EX_VALIDATE_RECURSIVELY)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(CreateLabel(self, "New name:"))
+        self.tb = wx.TextCtrl(self, value = current, size = (250, 20), validator = NotEmptyTextValidator("New name"))
+        self.cb = wx.CheckBox(self, label = "Rename module names?")
+        sizer.Add(self.tb)
+        sizer.Add(self.cb)
+
+        s = wx.BoxSizer(wx.HORIZONTAL)
+        self.closeButton = CreateButton(self, "Close", self.OnCancel)
+        self.closeButton.SetId(wx.ID_CANCEL)
+        self.okButton = CreateButton(self, "Ok", self.OnOk)
+        self.okButton.SetId(wx.ID_OK)
+        s.Add(self.okButton)
+        s.Add(self.closeButton)
+        sizer.Add(s)
+        self.SetSizer(sizer)
+        self.Layout()
+        sizer.SetSizeHints(self)
+
+    def GetPath(self):
+        return self.tb.Value
+
+    def DoRenameModules(self):
+        return self.cb.Value
+
+    def OnCancel(self, event):
+        self.Close()
+        self.EndModal(wx.ID_CANCEL)
+
+    def OnOk(self, event):
+        self.Close()
+        self.EndModal(wx.ID_OK)

@@ -11,6 +11,7 @@ import core
 from idn_projectexplorer import ProjectExplorer
 from idn_utils import Menu, writeFile, readFile
 from idn_erlang_utils import IsModule
+from idn_erlang_dialogs import ErlangRenameDialog
 
 class ErlangProjectExplorer(ProjectExplorer):
     def __init__(self, parent, project):
@@ -152,11 +153,10 @@ class ErlangProjectExplorer(ProjectExplorer):
         else:
             what = "dir"
         title = 'New ' + what + ' name:'
-        dlg = wx.TextEntryDialog(self, title + ':', title,
-            style = wx.OK | wx.CANCEL)
-        dlg.SetValue(os.path.basename(path))
+        dlg = ErlangRenameDialog(self, title, os.path.basename(path))
         if dlg.ShowModal() == wx.ID_OK:
-            newPath = os.path.join(os.path.dirname(path), dlg.Value)
+            print("ok")
+            newPath = os.path.join(os.path.dirname(path), dlg.GetPath())
 
             def updateEditor(old, new):
                 page = core.TabMgr.FindPageIndexByPath(old)
@@ -166,7 +166,7 @@ class ErlangProjectExplorer(ProjectExplorer):
 
             if os.path.isfile(path):
                 if path in core.TabMgr.OpenedFiles():
-                    if IsModule(path):
+                    if IsModule(path) and dlg.DoRenameModules():
                         (oldModuleName, ext) = os.path.splitext(os.path.basename(path))
                         (newModuleName, ext) = os.path.splitext(os.path.basename(newPath))
                         self.ReplaceOccurencesInProject(path, oldModuleName, newModuleName)
