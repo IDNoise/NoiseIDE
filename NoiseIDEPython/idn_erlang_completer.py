@@ -96,7 +96,7 @@ class ErlangCompleter(wx.Frame):
         tokens.reverse()
         data = []
         self.prefix = ""
-
+        isReference = False
         if not tokens:
             data = self.GetVars()
         else:
@@ -104,7 +104,7 @@ class ErlangCompleter(wx.Frame):
             fType = fToken.type
             fValue = fToken.value
             fIsAtom = fType == ErlangTokenType.ATOM
-
+            isReference = ((len(tokens) > 3 and tokens[3].value == "fun") or (len(tokens) > 4 and tokens[4].value == "fun"))
             if (fType == ErlangTokenType.SPACE or
                 (len(tokens) == 1 and fIsAtom) or
                 (fIsAtom and tokens[1].type == ErlangTokenType.SPACE) or
@@ -178,16 +178,16 @@ class ErlangCompleter(wx.Frame):
                   tokens[2].type == ErlangTokenType.MODULEATTR):
                 self.prefix = fValue[1:]
                 data = ErlangCache.GlobalIncludes()
-        self._PrepareData(data)
+        self._PrepareData(data, isReference)
 
-    def _PrepareData(self, data):
+    def _PrepareData(self, data, isReference = False):
         self.list.Clear()
         self.lastData = []
         for d in set(data):
             helpText = None
             if isinstance(d, Function):
                 (_f, s, e, _l) = self.stc.lexer.GetAllExports()
-                if self.stc.CurrentPos >= s and self.stc.CurrentPos <= e:
+                if (isReference or (self.stc.CurrentPos >= s and self.stc.CurrentPos <= e)):
                     text = "{}/{}".format(d.name, d.arity)
                     helpText = self._FunctionHelp(d)
                 else:
@@ -438,12 +438,12 @@ class ErlangCompleter(wx.Frame):
         else:
             arity = 1
         text = self.stc.GetText()[pos:pos + 1000]
-        gentokens = generate_tokens(StringIO(text).readline)
+        gtokens = self.tokenizer.GetTokens(text)
         tokens = []
         try:
-            for token in gentokens:
-                if token[1]:
-                    tokens.append(token[1])
+            for token in gtokens:
+                if token.value == " ": continue
+                tokens.append(token.value)
         except:
             pass
         for token in tokens:
