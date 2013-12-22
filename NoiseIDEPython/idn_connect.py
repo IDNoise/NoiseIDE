@@ -240,7 +240,7 @@ class ErlangProcess(wx.EvtHandler):
         return []
 
     def Start(self):
-        self.proc = asyncproc.Process(self.cmd, cwd = self.cwd)
+        self.proc = asyncproc.Process(self.cmd, cwd = self.cwd, creationflags=0x08000000)
         self.timer.Start(100)
         self.stopped = False
 
