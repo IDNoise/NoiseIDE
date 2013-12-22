@@ -8,7 +8,7 @@ import re
 from wx import stc
 import wx.lib.agw.customtreectrl as CT
 import core
-from idn_utils import CreateButton, extension, writeFile, readFile, CreateBitmapButton
+from idn_utils import CreateButton, extension, writeFile, readFile, CreateBitmapButton, GetAllFilesInDir
 
 class FindInFilePanel(wx.Panel):
     def __init__(self, parent, editor):
@@ -331,15 +331,7 @@ def Find(textToFind = "", title = "Find results", wholeWords = False, matchCase 
     finally:
         core.MainFrame.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
 
-def GetAllFilesInDir(path, fileExts):
-    files = []
-    for root, _, fileNames in os.walk(path):
-        for fileName in fileNames:
-            fp = os.path.join(root, fileName)
-            if fileExts and not any([fp.endswith(fm) for fm in fileExts]):
-                continue
-            files.append(fp)
-    return files
+
 
 def SearchInFile(filePath, regexp):
     try:

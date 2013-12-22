@@ -283,12 +283,6 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         menu = Menu()
 
         if self.eventItem == self.GetRootItem():
-            # if Config.RefreshInterval() == 0:
-            #     menu.AppendMenuItem("Refresh", self, self.OnMenuRefresh)
-            menu.AppendMenuItem("Setup file extensions", self, self.OnMenuSetupMasks)
-            # menu.AppendCheckMenuItem("Show hidden", self, self.OnMenuShowHide, self.showHidden)
-            # menu.AppendCheckMenuItem("Show all files", self, self.OnMenuShowAllFiles, self.showAllFiles)
-            menu.AppendSeparator()
             newMenu = Menu()
             newMenu.AppendMenuItem("File", self, self.OnMenuNewFile)
             newMenu.AppendMenuItem("Dir", self, self.OnMenuNewDir)
@@ -350,13 +344,17 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         return []
 
     def OnMenuNewFile(self, event):
-        (_, filePath) = self.RequestName("New File", "Enter file name", "new_file.txt")
+        result = self.RequestName("New File", "Enter file name", "new_file.txt")
+        if not result: return
+        (_, filePath) = result
         if filePath and not os.path.isfile(filePath):
             writeFile(filePath, "")
             self.FileCreated(filePath)
 
     def OnMenuNewDir(self, event):
-        (_, dirPath) = self.RequestName("New Directory", "Enter dir name", "new_dir")
+        result = self.RequestName("New Directory", "Enter dir name", "new_dir")
+        if not result: return
+        (_, dirPath) = result
         if dirPath and not os.path.isdir(dirPath):
             os.mkdir(dirPath)
             self.DirCreated(dirPath)
@@ -522,7 +520,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
                         self.AppendFile(id, path)
                     self.SortChildren(id)
 
-    def OnMenuRefresh(self, event):
+    def OnMenuRefresh(self, event = None):
         self.UpdateRoot()
         self.dirChecker.CheckDirectoryChanges()
 

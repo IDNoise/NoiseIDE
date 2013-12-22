@@ -23,15 +23,35 @@ from idn_config import Config, ConfigEditForm
 import core
 from idn_project import Project
 import traceback
+import asyncore
+from threading import Thread, Event
 #lists:flatten(edoc:read("d:/projects/noiseide/noiseidepython/data/erlang/modules/noiseide/src/test_cache_module.erl")).
 
 installNewVersion = False
 
+class AsyncoreThread(Thread):
+    def __init__(self):
+        Thread.__init__(self)
+        self.active = Event()
+
+    def Start(self):
+        self.active.set()
+        self.start()
+
+    def Stop(self):
+        self.active.clear()
+
+    def run(self):
+        while self.active.is_set():
+            asyncore.poll(0.1)
+
 class NoiseIDE(wx.Frame):
-
-
     def __init__(self, *args, **kwargs):
         wx.Frame.__init__(self, None, wx.ID_ANY, 'Noise IDE', size = (1680, 900), pos = (10, 10))
+
+        self.asyncthread = AsyncoreThread()
+        self.asyncthread.Start()
+
         self.cwd = os.getcwd()
         core.MainFrame = self
         wx.ToolTip.SetMaxWidth(600)
@@ -88,7 +108,9 @@ class NoiseIDE(wx.Frame):
         args = sys.argv[1:]
         wx.CallAfter(self.OnAfterLoad, args)
 
-
+    def async(self):
+        while True:
+            asyncore.loop()
 
     def OnAfterLoad(self, args):
         newVersion = Config.GetCurrentVersion()
@@ -339,6 +361,7 @@ class NoiseIDE(wx.Frame):
         ErlangProjectFrom(None, dlg.GetStringSelection()).ShowModal()
 
     def OnClose(self, event):
+        self.asyncthread.Stop()
         if self.project:
             self.project.Close()
         Config.save()

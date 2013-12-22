@@ -192,6 +192,9 @@ class Project(ProgressTaskManagerDialog):
         self.explorerToolbar.Bind(wx.EVT_TOOL, lambda e: self.explorer.OnMenuShowAllFiles(None), self.showAllTool)
         self.showHiddenTool = self.explorerToolbar.AddToggleTool(wx.ID_ANY, GetImage('showHidden.png'), wx.NullBitmap, True, short_help_string = "Show hidden dirs/files")
         self.explorerToolbar.Bind(wx.EVT_TOOL, lambda e: self.explorer.OnMenuShowHide(None), self.showHiddenTool)
+        self.setupFileExtensionTool = self.explorerToolbar.AddTool(wx.ID_ANY, "Ext", GetImage('extensions_explorer.png'), wx.NullBitmap, True, short_help_string = "Setup file extensions")
+        self.explorerToolbar.Bind(wx.EVT_TOOL, lambda e: self.explorer.OnMenuSetupMasks(None), self.setupFileExtensionTool)
+
         self.refreshTool = None
         self.AddRefreshTool()
 
@@ -208,7 +211,6 @@ class Project(ProgressTaskManagerDialog):
     def AddRefreshTool(self):
         self.refreshTool = self.explorerToolbar.AddTool(wx.ID_ANY, "", GetImage('refresh.png'), wx.NullBitmap, ITEM_NORMAL, short_help_string = "Refresh")
         self.explorerToolbar.Bind(wx.EVT_TOOL, lambda e: self.explorer.OnMenuRefresh(None), self.refreshTool)
-
 
     def GetMask(self):
         if self.CONFIG_MASK in self.userData:

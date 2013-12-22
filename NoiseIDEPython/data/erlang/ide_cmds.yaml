@@ -1,0 +1,4 @@
+- title: Module info
+  cmd: $.module:module_info()
+  category: Utils
+  console: ide #ide\project

@@ -11,10 +11,9 @@ __author__ = 'Yaroslav Nikityshev aka IDNoise'
 import re
 import wx
 import os
-from idn_utils import CreateBitmapButton
+from idn_utils import CreateBitmapButton, extension, Menu
 from idn_customstc import ConsoleSTC
 import idn_connect as connect
-
 
 
 class ErlangConsole(wx.Panel):
@@ -25,16 +24,20 @@ class ErlangConsole(wx.Panel):
         self.startButton = CreateBitmapButton(self, 'start_console.png', lambda e: self.Start())
         self.stopButton = CreateBitmapButton(self, 'stop_console.png', lambda e: self.Stop())
         self.clearButton = CreateBitmapButton(self, 'clear_console.png', lambda e: self.Clear())
+        self.commandListButton = CreateBitmapButton(self, 'history_console.png', lambda e: self.ShowCommandHistory())
+
         self.stopButton.Enabled = False
         self.startButton.SetToolTip( wx.ToolTip("Start console") )
         self.stopButton.SetToolTip( wx.ToolTip("Stop console") )
         self.clearButton.SetToolTip( wx.ToolTip("Clear console output") )
+        self.commandListButton.SetToolTip( wx.ToolTip("Command list") )
 
         self.buttonSizer = wx.BoxSizer(wx.VERTICAL)
         self.buttonSizer.Add(self.startButton)
         self.buttonSizer.Add(self.stopButton)
         self.buttonSizer.Add(self.clearButton)
         self.buttonSizer.AddStretchSpacer()
+        self.buttonSizer.Add(self.commandListButton, 0, wx.ALIGN_BOTTOM)
 
         splitter = wx.SplitterWindow(self)
         self.consolePanel = ConsolePanel(splitter, ErlangConsoleSTC)
@@ -42,6 +45,7 @@ class ErlangConsole(wx.Panel):
         self.consoleOut = self.consolePanel.editor
 
         bottomPanel = wx.Panel(splitter)
+
         self.commandText = wx.TextCtrl(bottomPanel, wx.ID_ANY, size = (500, 25), style = wx.TE_MULTILINE | wx.TE_RICH)
         self.commandText.SetBackgroundColour(ColorSchema.codeEditor["background"])
         self.commandText.SetDoubleBuffered(True)
@@ -49,6 +53,7 @@ class ErlangConsole(wx.Panel):
         self.commandButton.SetToolTip( wx.ToolTip("Exec command") )
 
         commandSizer = wx.BoxSizer(wx.HORIZONTAL)
+
         commandSizer.Add(self.commandText, 1, wx.EXPAND)
         commandSizer.AddSpacer(5)
         commandSizer.Add(self.commandButton, 0, wx.ALIGN_CENTER)
@@ -60,19 +65,10 @@ class ErlangConsole(wx.Panel):
         splitter.SetSashGravity(1)
         splitter.SetMinimumPaneSize(25)
 
-        #sizer = wx.BoxSizer(wx.VERTICAL)
-        #sizer.Add(splitter, 1, wx.EXPAND)
-
-#        consoleSizer = wx.BoxSizer(wx.VERTICAL)
-#        consoleSizer.Add(self.consolePanel, 1, wx.EXPAND | wx.BOTTOM)
-#        consoleSizer.AddSpacer(5)
-#        consoleSizer.Add(commandSizer, 0, wx.EXPAND | wx.RIGHT)
-#        consoleSizer.AddSpacer(5)
-
         mainSizer = wx.BoxSizer(wx.HORIZONTAL)
-        mainSizer.Add(self.buttonSizer)
+        mainSizer.Add(self.buttonSizer, 1, wx.EXPAND)
         #mainSizer.Add(consoleSizer, 1, wx.EXPAND)
-        mainSizer.Add(splitter, 1, wx.EXPAND)
+        mainSizer.Add(splitter, 1000, wx.EXPAND)
         self.SetSizer(mainSizer)
         self.Layout()
 
@@ -138,6 +134,20 @@ class ErlangConsole(wx.Panel):
         except Exception, e:
             core.Log("OnEditorKeyDown", e)
 
+    def ShowCommandHistory(self):
+        menu = Menu()
+
+        def putcmd(cmd):
+            def onclick(e):
+                self.commandText.Clear()
+                self.commandText.WriteText(cmd)
+            return onclick
+
+        for cmd in self.lastCommands[:20]:
+            menu.AppendMenuItem(cmd, self, putcmd(cmd))
+        self.PopupMenu(menu)
+
+
     def Start(self):
         self.Clear()
         self.shell.Start()
@@ -160,8 +170,9 @@ class ErlangConsole(wx.Panel):
     def Clear(self):
         self.consoleOut.Clear()
 
-    def Exec(self):
-        cmd = self.commandText.GetValue()
+    def Exec(self, cmd = None):
+        if not cmd:
+            cmd = self.commandText.GetValue()
         if cmd:
             lastCommands = list(filter(lambda x: x != cmd, self.lastCommands))
             lastCommands.append(cmd)
@@ -249,7 +260,7 @@ class ErlangProjectConsole(ErlangConsole):
         ErlangConsole.__init__(self, parent, cwd, params)
 
     def CreateShell(self, cwd, params):
-        self.shell = connect.ErlangProcess(cwd, params)
+        self.shell = connect.ErlangProcessWithClientConnection(cwd, params)
         self.shell.DataReceivedEvent += self.WriteToConsoleOut
 
     def SetStartCommand(self, command):

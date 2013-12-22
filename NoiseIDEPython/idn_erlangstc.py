@@ -363,7 +363,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
             start -= 1
         while self.GetStyleAt(end + 1) == style:
             end += 1
-        if start == end:
+        if start == end and not self.GetTextRange(start, start+1).isalpha():
             return False
         end += 1
         return (start, end, self.GetTextRange(start, end))
@@ -407,7 +407,6 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                          ErlangHighlightType.MODULEATTR,
                          ErlangHighlightType.STRING]:
             return False
-
         result = self.GetErlangWordAtPosition(pos)
         if not result: return
         (start, end, value) = result

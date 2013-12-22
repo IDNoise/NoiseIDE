@@ -63,6 +63,7 @@ loop(State) ->
             loop(State);
         {tcp, Socket, Data} ->
             {Action, ActionData} = process(Data),
+            %io:format("TCP: ~p -> ~p~n", [Action, ActionData]),
             case Action of
                 compile_file_fly -> 
                     catch erlang:exit(State#state.fly_compiler, kill),
@@ -86,7 +87,7 @@ loop(State) ->
         {tcp_closed, Socket} ->
             io:format("Socket ~w closed [~w]~n",[Socket, self()]),
             ok
-    after 5 ->
+    after 1 ->
         loop(State)
     end.
 

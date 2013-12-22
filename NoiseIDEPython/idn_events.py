@@ -6,11 +6,13 @@ class Event:
         self.handlers = []
 
     def __add__(self, handler):
-        self.handlers.append(handler)
+        if not handler is self.handlers:
+            self.handlers.append(handler)
         return self
 
     def __sub__(self, handler):
-        self.handlers.remove(handler)
+        if handler is self.handlers:
+            self.handlers.remove(handler)
         return self
 
     def __call__(self, *args, **kwargs):

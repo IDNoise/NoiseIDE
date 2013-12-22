@@ -21,8 +21,15 @@ start() ->
             Result :: {ok, pid()} | {ok, pid(), State :: term()} | {error, Reason :: term()}.
 
 start(_StartType, _StartArgs) ->
-    {ok, Port} = application:get_env(noiseide, port),
-    {ok, eide_connect:start(Port)}.
+    Result = case application:get_env(noiseide, port) of
+        undefined -> ignore;
+        {ok, Port} -> {ok, eide_connect:start(Port)}
+    end,
+    case application:get_env(noiseide, client_port) of
+        undefined -> Result;
+        {ok, ClientPort} -> {ok, eide_client_connect:start(ClientPort)}
+    end.
+
 
 -spec stop(State :: term()) -> term().
 

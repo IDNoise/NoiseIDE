@@ -8,37 +8,17 @@ import socket
 import os
 import struct
 from Queue import Queue
-from threading import Thread, Event
-from wx import Process
 import asyncore
 import json
 import wx
 import core
 import asyncproc
 
-class AsyncoreThread(Thread):
-    def __init__(self):
-        Thread.__init__(self)
-        self.active = Event()
-
-    def Start(self):
-        self.active.set()
-        self.start()
-
-    def Stop(self):
-        self.active.clear()
-
-    def run(self):
-        while self.active.is_set():
-            asyncore.poll(0.1)
-
 class ErlangSocketConnection(asyncore.dispatcher):
     def __init__(self):
         asyncore.dispatcher.__init__(self)
-        self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socketQueue = Queue()
         self.socketHandler = None
-        self.asyncoreThread = None
         self.port = self.PickUnusedPort()
 
     def Host(self):
@@ -52,19 +32,16 @@ class ErlangSocketConnection(asyncore.dispatcher):
         return port
 
     def Start(self):
-        while True:
-            try:
-                self.connect((self.Host(), self.port))
-                break
-            except Exception ,e:
-                core.Log("connect",  e)
-        self.asyncoreThread = AsyncoreThread()
-        self.asyncoreThread.Start()
+        try:
+            #asyncore.dispatcher.__init__(self)
+            self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.connect((self.Host(), self.port))
+        except Exception ,e:
+            core.Log("connect",  e)
 
     def Stop(self):
-        if self.asyncoreThread:
-            self.asyncoreThread.Stop()
-        self.close()
+        if self.socket:
+            self.close()
 
     def handle_connect(self):
         self.OnConnect()
@@ -87,11 +64,11 @@ class ErlangSocketConnection(asyncore.dispatcher):
         if recv:
             msgLen = struct.unpack('>L', recv)[0]
             data = self.socket.recv(msgLen)
-            while len(data) != msgLen:
-                try:
+            try:
+                while len(data) != msgLen:
                     data += self.socket.recv(msgLen - len(data))
-                except Exception, e:
-                    core.Log("recv error", e)
+            except Exception, e:
+                core.Log("recv error", e)
             if self.socketHandler:
                 self.socketHandler(data)
 
@@ -212,20 +189,36 @@ class ErlangIDEConnectAPI(ErlangSocketConnection):
             js = json.loads(text)
             if not "response" in js: return
             res = js["response"]
+            wx.CallAfter(self.SocketDataReceivedEvent, res, js)
+
+        except Exception, e:
+            core.Log("===== connection exception ", text, e)
+
+class ErlangIDEClientAPI(ErlangSocketConnection):
+    def __init__(self):
+        ErlangSocketConnection.__init__(self)
+        self.SetSocketHandler(self._HandleSocketResponse)
+        self.SocketDataReceivedEvent = idn_events.Event()
+
+    def _HandleSocketResponse(self, text):
+        try:
+            js = json.loads(text)
+            if not "action" in js: return
+            res = js["action"]
 
             wx.CallAfter(self.SocketDataReceivedEvent, res, js)
 
         except Exception, e:
-
-            core.Log("===== connection exception ", text, e)
+            core.Log("===== connection exception(client api) ", text, e)
 
 class ErlangProcess(wx.EvtHandler):
-    def __init__(self, cwd = os.getcwd(), params = []):
+    def __init__(self, cwd = os.getcwd(), params = None):
         wx.EvtHandler.__init__(self)
         self.cwd = cwd
         self.pid = None
         self.stopped = True
         self.proc = None
+        params = [] if not params else params
         self.SetParams(params)
 
         self.timer = wx.Timer(self, wx.ID_ANY)
@@ -247,7 +240,7 @@ class ErlangProcess(wx.EvtHandler):
         return []
 
     def Start(self):
-        self.proc = asyncproc.Process(self.cmd, cwd = self.cwd, shell = True)
+        self.proc = asyncproc.Process(self.cmd, cwd = self.cwd)
         self.timer.Start(100)
         self.stopped = False
 
@@ -256,7 +249,7 @@ class ErlangProcess(wx.EvtHandler):
             self.timer.Stop()
         if not self.proc or self.stopped:
             return
-        self.proc.terminate(1)
+        self.proc.terminate()
         del self.proc
         self.proc = None
         self.stopped = True
@@ -289,7 +282,6 @@ class ErlangProcessWithConnection(ErlangProcess, ErlangIDEConnectAPI):
 
     def Start(self):
         ErlangProcess.Start(self)
-        #self.SendCommandToProcess("eide_connect:start({}).".format(self.port))
 
     def Stop(self):
         ErlangSocketConnection.Stop(self)
@@ -302,3 +294,38 @@ class ErlangProcessWithConnection(ErlangProcess, ErlangIDEConnectAPI):
         core.Log("connection closed")
         if not self.stopped:
             self.ClosedConnectionEvent()
+
+class ErlangProcessWithClientConnection(ErlangProcess, ErlangIDEClientAPI):
+    def __init__(self, cwd, params):
+        ErlangIDEClientAPI.__init__(self)
+        ErlangProcess.__init__(self, cwd, params)
+
+        self.ClosedConnectionEvent = idn_events.Event()
+        self.started = False
+
+    def GetAdditionalParams(self):
+        return ["-noiseide client_port {}".format(self.port), "-run noiseide_app"]
+
+    def Start(self):
+        self.started = False
+        self.DataReceivedEvent += self.OnShellDataReceived
+        ErlangProcess.Start(self)
+
+    def Stop(self):
+        self.DataReceivedEvent -= self.OnShellDataReceived
+        ErlangSocketConnection.Stop(self)
+        ErlangProcess.Stop(self)
+
+    def ConnectToSocket(self):
+        ErlangSocketConnection.Start(self)
+
+    def OnClosed(self):
+        core.Log("connection closed")
+        if not self.stopped:
+            self.ClosedConnectionEvent()
+
+    def OnShellDataReceived(self, text):
+        if "started on:" in text and not self.started:
+            self.started = True
+            self.DataReceivedEvent -= self.OnShellDataReceived
+            self.ConnectToSocket()

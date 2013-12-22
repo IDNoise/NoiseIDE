@@ -170,6 +170,7 @@ class Process(object):
         try:
             self.__process.terminate()
             self.__process.kill()
+            os.kill(self.__process.pid, signal.SIGILL)
         except Exception, e:
             core.Log("Kill process error:{}".format(e))
 

@@ -43,6 +43,16 @@ def pystr(erlstr):
     erlstr = os.path.normpath(erlstr)
     return erlstr.replace("/", os.sep)
 
+def GetAllFilesInDir(path, fileExts = None):
+    files = []
+    for root, _, fileNames in os.walk(path):
+        for fileName in fileNames:
+            fp = os.path.join(root, fileName)
+            if fileExts and not any([fp.endswith(fm) for fm in fileExts]):
+                continue
+            files.append(fp)
+    return files
+
 class Timer(Thread):
     def __init__(self, interval, function):
         Thread.__init__(self)

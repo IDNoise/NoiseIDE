@@ -4,12 +4,13 @@ import os
 import re
 import time
 import wx
+import yaml
 from idn_colorschema import ColorSchema
 from idn_config import Config
 from idn_findreplace import ReplaceInProject, ReplaceInFile
 import core
 from idn_projectexplorer import ProjectExplorer
-from idn_utils import Menu, writeFile, readFile
+from idn_utils import Menu, writeFile, readFile, GetAllFilesInDir, extension
 from idn_erlang_utils import IsModule
 from idn_erlang_dialogs import ErlangRenameDialog
 
@@ -23,8 +24,24 @@ class ErlangProjectExplorer(ProjectExplorer):
         self.highlightTimer.Start(250)
         self.Bind(wx.EVT_TIMER, self.OnHighlightTimer, self.highlightTimer)
 
+        path = os.path.join(core.MainFrame.cwd, "data", "erlang", "user_cmds.yaml")
+        self.userCmds = []
+        if (os.path.exists(path)):
+            stream = file(path, 'r')
+            self.userCmds = yaml.load(stream)
+
+        path = os.path.join(core.MainFrame.cwd, "data", "erlang", "ide_cmds.yaml")
+        self.ideCmds = []
+        if (os.path.exists(path)):
+            stream = file(path, 'r')
+            self.ideCmds = yaml.load(stream)
+
     def CreateMenu(self):
         menu = ProjectExplorer.CreateMenu(self)
+
+        def usertpl(file, title):
+            return lambda e: self.CreateFromUserTemplate(file, title, title + "_default")
+
         if hasattr(menu, "newMenu"):
             newMenu = menu.newMenu
             newMenu.AppendMenuItem("Module", self, lambda e:
@@ -44,7 +61,19 @@ class ErlangProjectExplorer(ProjectExplorer):
                 self.CreateFromTemplate("application.erl", "Application", "application_1"))
             tMenu.AppendMenuItem("App Src", self, lambda e:
                 self.CreateFromTemplate("app.src", "App Src", "application_1", ".app.src", "Enter application name:", "[app]"))
+
+            userTemplateMenu = Menu()
+
+            for templateFile in GetAllFilesInDir(os.path.join(core.MainFrame.cwd, "data", "erlang", "templates", "user")):
+                filename = os.path.basename(templateFile)
+                title = filename.split(".")[0]
+                userTemplateMenu.AppendMenuItem(title, self, usertpl(templateFile, title))
+
+
+            tMenu.AppendMenu(wx.ID_ANY, "User", userTemplateMenu)
+
             newMenu.AppendMenu(wx.ID_ANY, "Template", tMenu)
+
 
         dialyzerMenu = Menu()
         dialyzerMenu.AppendMenuItem("Project", self, lambda e: self.project.DialyzeProject())
@@ -70,14 +99,68 @@ class ErlangProjectExplorer(ProjectExplorer):
             menu.AppendSeparator()
             menu.AppendMenu(wx.ID_ANY, "Dialyzer", dialyzerMenu)
 
+        if (self.userCmds):
+            categories = {}
+            userCommandsMenu = Menu()
+
+            def exec_user_cmd(cmd, consoleType):
+                return lambda e: self.ExecUserCmd(cmd, consoleType)
+
+            for cmd in self.userCmds:
+                currentMenu = userCommandsMenu
+                if 'category' in cmd and cmd['category'] != "":
+                    cat = cmd['category']
+                    if not cat in categories:
+                        categories[cat] = Menu()
+                        userCommandsMenu.AppendMenu(wx.ID_ANY, cat, categories[cat])
+                    currentMenu = categories[cat]
+                currentMenu.AppendMenuItem(cmd['title'], self, exec_user_cmd(cmd['cmd'], cmd['console'] if 'console' in cmd else None))
+
+            menu.AppendMenu(wx.ID_ANY, "User Cmds", userCommandsMenu)
+
+        if (self.ideCmds):
+            categories = {}
+            ideCommandsMenu = Menu()
+
+            def exec_user_cmd(cmd, consoleType):
+                return lambda e: self.ExecUserCmd(cmd, consoleType)
+
+            for cmd in self.ideCmds:
+                currentMenu = ideCommandsMenu
+                if 'category' in cmd and cmd['category'] != "":
+                    cat = cmd['category']
+                    if not cat in categories:
+                        categories[cat] = Menu()
+                        ideCommandsMenu.AppendMenu(wx.ID_ANY, cat, categories[cat])
+                    currentMenu = categories[cat]
+                currentMenu.AppendMenuItem(cmd['title'], self, exec_user_cmd(cmd['cmd'], cmd['console'] if 'console' in cmd else None))
+
+            menu.AppendMenu(wx.ID_ANY, "Ide Cmds", ideCommandsMenu)
+
 
         return menu
+
+    def ExecUserCmd(self, cmd, consoleType = None):
+        path = self.GetPyData(self.eventItem)
+
+        console = self.project.shellConsole
+        if consoleType == 'project':
+            for title in self.project.consoleTabs:
+                console = self.project.consoleTabs[title]
+                if core.ToolMgr.CurrentPage() == console: break
+
+        if core.TabMgr.GetActiveEditor():
+            cmd = cmd.replace("$.module", self.project.ModuleName(path))
+            cmd = cmd.replace("$.application", self.project.GetApp(path))
+        console.Exec(cmd + ".")
 
     def DefaultMask(self):
         return [".erl", ".hrl", ".config", ".c", ".cpp", ".bat", ".igor", ".src", ".app", ".html", ".xml", ".xhtml", ".css", '.js']
 
     def OnMenuNewHeader(self, event):
-        (_, path) = self.RequestName("New Header", "Enter header name", "new_header")
+        result = self.RequestName("New Header", "Enter header name", "new_header")
+        if not result: return
+        (_, path) = result
         path = path + ".hrl"
         if path and not os.path.isfile(path):
             writeFile(path, "")
@@ -138,7 +221,9 @@ class ErlangProjectExplorer(ProjectExplorer):
         return data
 
     def CreateFromTemplate(self, template, title, defaultValue = "new_module_name", ext = ".erl", prompt = "Enter module name:", replaceWhat = "[module_name]"):
-        (module, path) = self.RequestName(title, prompt, defaultValue)
+        result = self.RequestName(title, prompt, defaultValue)
+        if not result: return
+        (module, path) = result
         path = path + ext
         if path and not os.path.isfile(path):
             data = self._GetTemplate(template)
@@ -146,6 +231,9 @@ class ErlangProjectExplorer(ProjectExplorer):
             writeFile(path, data)
             core.TabMgr.LoadFileLine(path)
             self.FileCreated(path)
+
+    def CreateFromUserTemplate(self, template, title, defaultValue = "new_module_name", ext = ".erl", prompt = "Enter module name:", replaceWhat = "[module_name]"):
+        self.CreateFromTemplate(os.path.join("user", template), title, defaultValue, ext, prompt, replaceWhat)
 
     def Rename(self, path):
         if os.path.isfile(path):

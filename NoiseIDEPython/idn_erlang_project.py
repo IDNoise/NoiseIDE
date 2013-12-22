@@ -156,6 +156,8 @@ class ErlangProject(Project):
 
         self.window.toolbar.Realize()
 
+
+
     def OnCheckErlangFlyCompilation(self, event):
         currentValue = Config.GetProp("erlang_fly_compilation")
         Config.SetProp("erlang_fly_compilation", not currentValue)
@@ -278,6 +280,8 @@ class ErlangProject(Project):
         self.xrefTable.Clear()
 
     def GetShell(self):
+        if not self.shellConsole:
+            return None
         return self.shellConsole.shell
 
     def Compile(self, path, ingoreExclusion = False):
@@ -314,7 +318,7 @@ class ErlangProject(Project):
                 hrls.remove(h)
 
         for erl in erls:
-            if ingoreExclusion or self.CanCompileModule(erl):
+            if ingoreExclusion or self.CanCompileModule(erl) and not self.GetShell() is None:
                 self.GetShell().Compile(erl)
 
         for igor in igors:
@@ -351,13 +355,28 @@ class ErlangProject(Project):
                 self.window.ToolMgr.ClosePage(index)
         self.SetupShellConsole()
 
+    def OnProjectClientApiConnectionClosed(self, console):
+        console.WriteToConsoleOut("API CONNECTION CLOSED :(/n")
+
+    def OnProjectClientApiDataRecieved(self, console, action, js):
+        #core.Log("api: " + action + ". data: " + str(js))
+        try:
+            if action == "go_to":
+                module = js["module"]
+                line = js["line"]
+                core.TabMgr.LoadFileLine(ErlangCache.modules[module].file, line, False)
+            else:
+                core.Log("Unknown data in client api: " + action)
+        except Exception, e:
+            import traceback
+            core.Log("Error in socket: {}".format(e))
+            traceback.print_exc()
+
     def SetupShellConsole(self):
         self.connected = False
         self.shellConsole = ErlangIDEConsole(self.window.ToolMgr, self.IDE_MODULES_DIR)
         self.shellConsole.shell.SetProp("cache_dir", ErlangCache.CacheDir())
         self.shellConsole.shell.SetProp("project_dir", self.projectDir)
-        #self.shellConsole.shell.SetProp("apps_dir", self.AppsPath())
-        #self.shellConsole.shell.SetProp("deps_dir", self.DepsPath())
         self.shellConsole.shell.SetProp("project_name", self.ProjectName())
         self.shellConsole.onlyHide = True
         self.ShowIDEConsole()
@@ -474,6 +493,12 @@ class ErlangProject(Project):
         for item in self.consoleMenu.MenuItems:
             self.consoleMenu.DeleteItem(item)
 
+        def project_console_conn_closed(console):
+            return lambda: self.OnProjectClientApiConnectionClosed(console)
+
+        def project_console_data_recv(console):
+            return lambda action, js: self.OnProjectClientApiDataRecieved(console, action, js)
+
         for title in consoles:
             data = consoles[title]
             params = []
@@ -484,15 +509,19 @@ class ErlangProject(Project):
             params.append("-pa " + self.dirs)
 
             if title in self.consoleTabs:
-                self.consoleTabs[title].SetParams(params)
-                self.consoleTabs[title].SetCWD(self.GetWorkDir())
-                self.consoleTabs[title].SetStartCommand(data[CONFIG_CONSOLE_COMMAND])
+                console = self.consoleTabs[title]
+                console.SetParams(params)
+                console.SetCWD(self.GetWorkDir())
+                console.SetStartCommand(data[CONFIG_CONSOLE_COMMAND])
             else:
-                self.consoles[title] = ErlangProjectConsole(self.window.ToolMgr, self.GetWorkDir(), params)
-                self.consoles[title].onlyHide = True
-                self.consoles[title].SetStartCommand(data[CONFIG_CONSOLE_COMMAND])
-                self.consoleTabs[title] = self.consoles[title]
-                self.ShowConsole(title, self.consoles[title])
+                console = ErlangProjectConsole(self.window.ToolMgr, self.GetWorkDir(), params)
+                console.shell.ClosedConnectionEvent += project_console_conn_closed(console)
+                console.shell.SocketDataReceivedEvent += project_console_data_recv(console)
+                console.onlyHide = True
+                console.SetStartCommand(data[CONFIG_CONSOLE_COMMAND])
+                self.consoleTabs[title] = console
+                self.consoles[title] = console
+                self.ShowConsole(title, console)
 
             def showConsole(title):
                 return lambda e: self.ShowConsole(title, self.consoleTabs[title])

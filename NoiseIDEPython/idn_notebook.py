@@ -168,9 +168,12 @@ class EditorNotebook(aui.AuiNotebook):
         aui.AuiNotebook.OnNavigationKeyNotebook(self, event)
 
     def OnPageChanged(self, event):
-        if self.GetActiveEditor():
-            self.GetActiveEditor().SetupEditorMenu()
-        oldEditor = None
+        editor = self.GetActiveEditor()
+        if editor:
+            if editor in self.pageOpenOrder:
+                self.pageOpenOrder.remove(editor)
+            self.pageOpenOrder.append(editor)
+            editor.SetupEditorMenu()
         if event.GetOldSelection() >= 0:
             oldEditor = self[event.GetOldSelection()]
             if hasattr(oldEditor, "completer"):
@@ -190,11 +193,16 @@ class EditorNotebook(aui.AuiNotebook):
             self.ClosePage(page)
 
         def closeOther(event):
+            iteration = 0
             i = 0
             while self.GetPageCount() > 1:
                 if self[i] == editor:
                     i += 1
                 self.ClosePage(i)
+                iteration += 1
+                if iteration > 10:
+                    return
+
 
         def renameFile(event):
             core.Project.explorer.Rename(editor.filePath)
@@ -243,7 +251,7 @@ class EditorNotebook(aui.AuiNotebook):
             editorPanel = EditorPanel(self, fileName)
             #bitmap = self.GetBitmapForFile(fileName)
             self.AddPage(editorPanel, editorPanel.editor.FileName(), True)#, bitmap = bitmap)
-            if len(self.Pages()) > Config.GetProp("max_tabs", 10):
+            if len(self.Pages()) > Config.GetProp("max_tabs", 15):
                 while self.FindPageIndexByEditor(self.pageOpenOrder[0]) == None:
                     self.pageOpenOrder.pop(0)
                 if len(self.pageOpenOrder) > 0:
