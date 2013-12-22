@@ -1,0 +1,11 @@
+- id: get_prop
+  desc: State prop getter
+  macros: |
+    $prop$(State) ->
+        state:prop(State, $prop$).
+
+- id: set_prop
+  desc: State prop setter
+  macros: |
+    set_$prop$(State, $var$) ->
+        state:set_prop(State, $prop$, $var$).

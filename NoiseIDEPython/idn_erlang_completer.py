@@ -1,101 +1,33 @@
-from idn_config import Config
-
 __author__ = 'Yaroslav'
 
 import os
 import wx
+from idn_config import Config
 from idn_cache import ErlangCache, Function, Record, ExportedType, Macros
 from idn_colorschema import ColorSchema
-from idn_customstc import HtmlWin
 from idn_erlang_constats import TYPE_MODULE, TYPE_HRL
 from idn_token import ErlangTokenizer, ErlangTokenType
 from idn_utils import readFile
-from cStringIO import StringIO
-from tokenize import generate_tokens
+from idn_completer import Completer
 
-
-class ErlangCompleter(wx.Frame):
-    SIZE = (760, 270)
-    LIST_SIZE = (340, 150)
-
+class ErlangCompleter(Completer):
     def __init__(self, stc):
-        style = wx.BORDER_NONE | wx.STAY_ON_TOP | wx.FRAME_NO_TASKBAR
-        pre = wx.PreFrame()
-        pre.SetBackgroundStyle(wx.BG_STYLE_TRANSPARENT)
-        pre.Create(stc, size = self.SIZE, style = style)
-        self.PostCreate(pre)
+        Completer.__init__(self, stc)
         self.tokenizer = ErlangTokenizer()
-
-        self.stc = stc
-        self.lineHeight = stc.TextHeight(0) + 2
         self.module = self.stc.ModuleName()
         self.moduleType = self.stc.ModuleType()
-        self.separators = ",;([{<-"
-        self.lastText = None
-        self.showingHelp = False
-
-        self.list = wx.ListBox(self, size = self.LIST_SIZE,
-            style = wx.LB_SORT | wx.LB_SINGLE | wx.WANTS_CHARS)
-        self.list.SetBackgroundColour(ColorSchema.codeEditor["completer_list_back"])
-        self.list.SetForegroundColour(ColorSchema.codeEditor["completer_list_fore"])
-
-        self.helpWindow = HtmlWin(self)
-
-        self.sizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.sizer.Add(self.list)
-        self.sizer.Add(self.helpWindow, 1, wx.EXPAND)
-        self.SetSizer(self.sizer)
-        self.Layout()
-        self.Hide()
-
-        self.list.Bind(wx.EVT_LISTBOX_DCLICK, self.OnItemDoubleClick)
-        self.list.Bind(wx.EVT_LISTBOX, self.OnMouseItemSelected)
-        self.list.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
-        self.stc.Bind(wx.EVT_MOUSE_EVENTS, self.OnSTCMouseDown)
-        wx.GetApp().Bind(wx.EVT_ACTIVATE_APP, self.OnAppFocusLost)
-
-    def OnAppFocusLost(self, event):
-        try:
-            self.HideCompleter()
-        except:
-            pass
-        event.Skip()
-
-    def OnSTCMouseDown(self, event):
-        event.Skip()
-        if event.ButtonDown(wx.MOUSE_BTN_LEFT) or event.ButtonDown(wx.MOUSE_BTN_RIGHT):
-            self.HideCompleter()
-
-    def UpdateCompleterPosition(self, pos):
-        if not self.showingHelp:
-            pos = self.stc.ClientToScreen((pos[0], pos[1] + self.lineHeight))
-            self.SetPosition(pos)
-        else:
-            pos = wx.GetMousePosition()
-            pos = (pos[0], pos[1] + self.lineHeight)
-            self.SetPosition(pos)
 
     def UpdateRecordField(self, record, prefix):
         self.prefix = prefix.strip()
         fields = ErlangCache.RecordFields(self.module, record)
         self._PrepareData(fields)
 
-    def ValidateCompleter(self):
-        if len(self.list.GetStrings()) == 0:
-            self.HideCompleter()
-            return
-        self.list.SetSelection(0)
-        self.OnItemSelected(0)
-
-    def Update(self, text, nextChar = None):
-        if self.lastText == text: return
+    def OnUpdate(self, text, nextChar = None):
         self.module = self.stc.ModuleName()
         self.moduleType = self.stc.ModuleType()
-        self.lastText = text
         tokens = self.tokenizer.GetTokens(text)
         tokens.reverse()
         data = []
-        self.prefix = ""
         isReference = False
         if not tokens:
             data = self.GetVars()
@@ -229,8 +161,6 @@ class ErlangCompleter(wx.Frame):
                 if text[i].startswith(self.prefix):
                     self.list.Append(text[i], helpText[i])
 
-        self.ValidateCompleter()
-
     def _RecordHelp(self, record):
         fields = record.FieldsData()
         fields = [f[0] + "&nbsp;&nbsp;::&nbsp;&nbsp;" + f[1]  for f in fields]
@@ -288,57 +218,6 @@ class ErlangCompleter(wx.Frame):
                          if token.type == ErlangTokenType.VAR and token.value != self.prefix})
         return []
 
-    def OnMouseItemSelected(self, event):
-        id = event.GetSelection()
-        self.OnItemSelected(id)
-
-    def OnItemSelected(self, id):
-        help = self.list.GetClientData(id)
-        if not help:
-            self.helpWindow.SetPage("")
-            self.SetSize(self.LIST_SIZE)
-            self.sizer.Hide(self.helpWindow)
-        else:
-            if isinstance(help, tuple):
-                path = os.path.join(ErlangCache.ERLANG_LIBS_CACHE_DIR, help[1])
-                text = readFile(path)
-            else:
-                text = help
-            self.helpWindow.SetPage(text)
-            self.sizer.Show(self.helpWindow)
-            self.SetSize(self.SIZE)
-        self.Layout()
-        self.stc.Refresh()
-
-    def OnItemDoubleClick(self, event):
-        id = event.GetSelection()
-        text = self.list.GetString(id)
-        self.AutoComplete(text)
-
-    def OnKeyDown(self, event):
-        keyCode = event.GetKeyCode()
-        if keyCode in [wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER]:
-            self.AutoComplete(self.list.GetString(self.list.GetSelection()))
-        elif keyCode == wx.WXK_UP:
-            current = self.list.GetSelection()
-            if current == 0:
-                current = self.list.Count - 1
-            else:
-                current -= 1
-            self.list.SetSelection(current)
-            self.OnItemSelected(current)
-        elif keyCode == wx.WXK_DOWN:
-            current = self.list.GetSelection()
-            if current == self.list.Count - 1:
-                current = 0
-            else:
-                current += 1
-            self.list.SetSelection(current)
-            self.OnItemSelected(current)
-        elif keyCode == wx.WXK_ESCAPE:
-            self.HideCompleter()
-
-
     def AutoComplete(self, text):
         toInsert = text[len(self.prefix):]
         nextChar = self.stc.GetCharAt(self.stc.CurrentPos)
@@ -346,21 +225,6 @@ class ErlangCompleter(wx.Frame):
             toInsert = toInsert[:toInsert.find(nextChar)]
         self.stc.AddText(toInsert)
         self.HideCompleter()
-
-    def HideCompleter(self):
-        wx.Frame.Hide(self)
-        self.helpWindow.SetPage("")
-
-    def Show(self, show = True):
-        if not self.helpWindow.ToText():
-            self.sizer.Hide(self.helpWindow)
-        else:
-            self.sizer.Show(self.helpWindow)
-        self.sizer.Show(self.list)
-        self.Layout()
-        if len(self.list.GetStrings()) > 0:
-            wx.Frame.Show(self, show)
-            self.stc.SetFocus()
 
     def GetFunctionNavAndHelp(self, fun, prefix, pos):
         arity = self.GetFunArity(pos)
@@ -400,7 +264,6 @@ class ErlangCompleter(wx.Frame):
             help = self._FunctionHelp(data)
         f = data.moduleData.file if data.moduleData else None
         return ((f, data.line), help)
-
 
     def GetFunArity(self, pos):
         open = ['[', '(', '{', 'fun', 'case', 'if', 'try', 'begin', 'receive']

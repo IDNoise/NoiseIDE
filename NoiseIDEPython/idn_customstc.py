@@ -1,19 +1,21 @@
-from stat import ST_MTIME
-
 __author__ = 'Yaroslav Nikityshev aka IDNoise'
-
 
 import os
 import wx
-from wx import stc, GetMousePosition
+from wx import stc
 from wx import html
 from wx.stc import STC_FOLDLEVELHEADERFLAG, StyledTextCtrl
 from idn_colorschema import ColorSchema
 import core
 from idn_utils import Menu
 from idn_config import Config
-from idn_findreplace import FindInProjectDialog
 from idn_marker_panel import Marker
+from idn_macros_completer import MacrosCompleter
+import re
+import collections
+from stat import ST_MTIME
+from idn_htmlwin import HtmlWin
+
 
 class EditorFoldMixin:
     def __init__(self):
@@ -162,8 +164,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.Bind(stc.EVT_STC_UPDATEUI, self.HighlightBrackets)
         self.Bind(stc.EVT_STC_CHARADDED, self.OnCharAdded)
         self.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
-
-        
+        self.Bind(stc.EVT_STC_UPDATEUI, self.OnUpdateMacrosCompleter)
 
         self.EnableLineNumbers()
 
@@ -193,7 +194,10 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
 
         self.customTooltip = STCContextToolTip(self, self.OnRequestTooltipText)
 			
-			
+        self.macrosCompleter = MacrosCompleter(self)
+        self.macroVarRegExp = re.compile(r"""\$[a-zA-Z0-9]*?\$""", re.VERBOSE | re.MULTILINE)
+        self.macroEditing = False
+
         wx.CallAfter(self.OnInit)
 		
     def OnDestroy(self, event):
@@ -359,7 +363,20 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
             bracketQuote = self.bracketQuoteKeyMap[brKey]
         else:
             bracketQuote = None
-        if keyCode in [wx.WXK_DOWN, wx.WXK_UP] and event.GetModifiers() == wx.MOD_CONTROL | wx.MOD_SHIFT:
+
+        if self.macroEditing:
+            if keyCode == wx.WXK_ESCAPE or keyCode == wx.WXK_RETURN:
+                self.StopMacroEditing()
+                return True
+            elif keyCode == wx.WXK_TAB:
+                self.MacroEditingCycleVar()
+                return True
+
+        if (self.macrosCompleter.IsShown() and
+            keyCode in [wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER,
+                        wx.WXK_DOWN, wx.WXK_UP, wx.WXK_ESCAPE]):
+            self.macrosCompleter.OnKeyDown(event)
+        elif keyCode in [wx.WXK_DOWN, wx.WXK_UP] and event.GetModifiers() == wx.MOD_CONTROL | wx.MOD_SHIFT:
             offset = -1 if keyCode == wx.WXK_UP else 1
             startLine = self.LineFromPosition(self.GetSelectionStart())
             endLine = self.LineFromPosition(self.GetSelectionEnd())
@@ -378,6 +395,8 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
             self.Save()
         elif keyCode == wx.WXK_SPACE and event.GetModifiers() == wx.MOD_CONTROL:
             self.OnAutoComplete()
+        elif keyCode == wx.WXK_SPACE and event.GetModifiers() == wx.MOD_CONTROL | wx.MOD_SHIFT:
+            self.OnMacrosRequest()
         elif keyCode == ord('G') and event.GetModifiers() == wx.MOD_CONTROL:
             self.ShowGoToLineDialog()
         elif (Config.GetProp("put_brackets_quotes_around", False) and self.SelectedText and
@@ -428,6 +447,25 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
 
     def OnAutoComplete(self):
         pass
+
+    def OnUpdateMacrosCompleter(self, event):
+        event.Skip()
+        if not self.macrosCompleter.IsShown(): return
+        self.UpdateMacrosCompleter()
+
+    def UpdateMacrosCompleter(self, event = None):
+        caretPos = self.GetCurrentPos()
+        line = self.GetCurrentLine()
+        prefix = self.GetTextRange(self.PositionFromLine(line), caretPos)
+        self.macrosCompleter.Update(prefix)
+        self.macrosCompleter.UpdateCompleterPosition(self.PointFromPosition(caretPos))
+
+    def OnMacrosRequest(self):
+        self.UpdateMacrosCompleter()
+        # if len(self.macrosCompleter.list.Items) == 1:
+        #     self.macrosCompleter.AutoComplete(self.macrosCompleter.list.Items[0])
+        # else:
+        self.macrosCompleter.Show()
 
     def OnFileSaved(self):
         pass
@@ -521,6 +559,84 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         if self.markerPanel:
             self.markerPanel.SetMarkers("selected_word", markers)
 
+    def StartMacroEditing(self, startPos, macros):
+        self.macroVars = self.GetVars(macros)
+        if len(self.macroVars) == 0: return
+        self.macroEditing = True
+        self.SetMultipleSelection(True)
+        self.SetAdditionalSelectionTyping(True)
+        self.SetAdditionalCaretsVisible(True)
+
+        self.currentMacroVarIndex = 0
+        self.macroStartPos = startPos
+        self.SelectMacroVars()
+
+    def SelectMacroVars(self):
+        self.currentMacroVar = self.macroVars[self.macroVars.keys()[self.currentMacroVarIndex]]
+        needMain = True
+        for (s, e) in self.currentMacroVar:
+            if needMain:
+                self.SetSelection(self.macroStartPos + s, self.macroStartPos + e)
+                self.SetSelectionNCaret(0, self.macroStartPos + s)
+                self.SetSelectionNAnchor(0, self.macroStartPos + e)
+                needMain = False
+            else:
+                self.AddSelection(self.macroStartPos + s, self.macroStartPos + e)
+
+    def StopMacroEditing(self):
+        self.macroEditing = False
+        self.SetMultipleSelection(False)
+        self.SetAdditionalSelectionTyping(False)
+        self.SetAdditionalCaretsVisible(False)
+        self.macroVars = None
+        self.currentMacroVar = None
+        self.ClearSelections()
+        self.SetCurrentPos(self.macroStartPos)
+        self.SetAnchor(self.macroStartPos)
+
+    def MacroEditingCycleVar(self):
+        selections = self.GetSelections()
+        (os, oe) = self.currentMacroVar[0]
+        for i in range(selections):
+            s = self.GetSelectionNCaret(i) - self.macroStartPos
+            e = self.GetSelectionNAnchor(i) - self.macroStartPos
+            self.currentMacroVar[i] = (s, e)
+        (s, e) = self.currentMacroVar[0]
+        self.UpdateOtherMacroVarPositions(s, e - oe)
+
+        self.ClearSelections()
+        nextIndex = self.currentMacroVarIndex + 1
+        if nextIndex == len(self.macroVars):
+            nextIndex = 0
+        self.currentMacroVarIndex = nextIndex
+        self.SelectMacroVars()
+
+    def UpdateOtherMacroVarPositions(self, s, diff):
+        for k in self.macroVars.keys():
+            if self.macroVars.keys()[self.currentMacroVarIndex] == k: continue
+            macroVarPositions = self.macroVars[k]
+            for i in range(len(macroVarPositions)):
+                (ps, pe) = macroVarPositions[i]
+                if s < ps:
+                    ps += diff
+                    pe += diff
+                    diff += diff
+                macroVarPositions[i] = (ps, pe)
+
+    def GetVars(self, macros):
+        macroVars = collections.OrderedDict()
+        pos = 0
+        while True:
+            m = self.macroVarRegExp.search(macros, pos)
+            if not m: break
+            pos = m.end()
+            var = m.group(0)
+            if var in macroVars:
+                macroVars[var].append((m.start(), m.end()))
+            else:
+                macroVars[var] = [(m.start(), m.end())]
+        return macroVars
+
 class PythonSTC(CustomSTC):
     def SetupLexer(self):
         self.SetLexer(stc.STC_LEX_PYTHON)
@@ -594,11 +710,6 @@ class CppSTC(CustomSTC):
         self.SetKeyWords(0, ' '.join(keywords))
         self.SetKeyWords(1, ' '.join(keywords))
         self.SetKeyWords(2, ' '.join(keywords))
-
-class HtmlWin(wx.html.HtmlWindow):
-    def SetPage(self, text):
-        wx.html.HtmlWindow.SetPage(self, '<body bgcolor="' + ColorSchema.codeEditor["completer_help_back"] +
-                                         '"><font color="' + ColorSchema.codeEditor["completer_help_fore"] + '">' + text + '</font></body>')
 
 class ConsoleSTC(CustomSTC):
     def __init__(self, parent, markerPanel = None):

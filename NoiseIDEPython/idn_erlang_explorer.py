@@ -146,8 +146,11 @@ class ErlangProjectExplorer(ProjectExplorer):
         console = self.project.shellConsole
         if consoleType == 'project':
             for title in self.project.consoleTabs:
-                console = self.project.consoleTabs[title]
-                if core.ToolMgr.CurrentPage() == console: break
+                con = self.project.consoleTabs[title]
+                if con.self.stopped: continue
+                console = con
+                if core.ToolMgr.CurrentPage() == con:
+                    break
 
         if core.TabMgr.GetActiveEditor():
             cmd = cmd.replace("$.module", self.project.ModuleName(path))
