@@ -365,6 +365,10 @@ class ErlangProject(Project):
                 module = js["module"]
                 line = js["line"]
                 core.TabMgr.LoadFileLine(ErlangCache.modules[module].file, line, False)
+            if action == "go_to_file":
+                filePath = pystr(js["file"])
+                line = js["line"]
+                core.TabMgr.LoadFileLine(filePath, line, False)
             else:
                 core.Log("Unknown data in client api: " + action)
         except Exception, e:
