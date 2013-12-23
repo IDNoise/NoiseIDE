@@ -1,5 +1,5 @@
 import shutil
-from idn_utils import writeFile
+from idn_utils import writeFile, readFile
 
 __author__ = 'Yaroslav'
 import zipfile
@@ -31,33 +31,31 @@ def zipdir(path, zipFile):
             filesToZip.append(os.path.join(root, fileToZip))
     [zipFile.write(filesToZip) for filesToZip in filesToZip]
 
-def GenerateUpdatePackages():
-    cwd = os.getcwd()
-    noiseide_dir = 'noiseide'
-    noiseide_last = zipfile.ZipFile('noiseide_last.zip', 'w', zipfile.ZIP_DEFLATED)
-    noiseide = zipfile.ZipFile('noiseide.zip', 'w', zipfile.ZIP_DEFLATED)
-
-    os.chdir(noiseide_dir)
-    zipdir('data', noiseide_last)
-    zipdir('data', noiseide)
-    for f in os.listdir(os.getcwd()):
-        noiseide_last.write(f)
-        if f not in ['NoiseIDE.exe', 'rev.cfg', 'python27.dll', 'noiseide_copy.bat']:
-            noiseide.write(f)
-    noiseide_last.close()
-    noiseide.close()
-
-    #zipdir('data', noiseide)
-    #for f in ["noiseide_copy.bat", "dark.color.yaml", "noiseide.template.yaml", "white.color.yaml", "library.zip"]:
-    #    noiseide.write(f)
+def current_version():
+    revCfg = os.path.join(os.getcwd(), "rev.cfg")
+    version = 0.1
+    if os.path.isfile(revCfg):
+        data = readFile(revCfg)
+        version = float(data.split("\n")[0].split(":")[1].strip())
+    return version  
     
-    os.chdir(cwd)
+def CopyPackages():
+    cwd = os.getcwd()
+    dist_dir = 'dist'
+    noiseide_dir = 'noiseide'
+
+    file = 'NoiseIDE-' + str(current_version()) + '-win32.msi'
+    new_file = 'NoiseIDE.msi'
+    
     shutil.rmtree(noiseide_dir, ignore_errors = True)
     if not os.path.isdir(noiseide_dir):
         os.mkdir(noiseide_dir)
-    shutil.move('noiseide_last.zip', '{}/noiseide_last.zip'.format(noiseide_dir))
-    shutil.move('noiseide.zip', '{}/noiseide.zip'.format(noiseide_dir))
-    shutil.copy('rev.cfg', '{}/rev.cfg'.format(noiseide_dir))
+    shutil.copy('{}/{}'.format(dist_dir, file), '{}/{}'.format(noiseide_dir, new_file) )
+    shutil.copy('rev.cfg', '{}/rev.cfg'.format(noiseide_dir) )
+    os.chdir(cwd)
+    shutil.rmtree('dist', ignore_errors = True)
+    shutil.rmtree('build', ignore_errors = True)
+    
 
 if __name__ == '__main__':
-    GenerateUpdatePackages()
+    CopyPackages()

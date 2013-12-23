@@ -231,13 +231,13 @@ class NoiseIDE(wx.Frame):
             if not auto:
                 self.SetCursor(wx.StockCursor(wx.CURSOR_WAIT))
             version = Config.GetCurrentVersion()
-            revfile = urllib2.urlopen("https://dl.dropbox.com/s/1a36pmlgmdy4rly/rev.cfg")
+            revfile = urllib2.urlopen("https://dl.dropbox.com/s/8hg4b53tugmgbe0/rev.cfg")
             newData = revfile.read()
             newVersion = float(newData.split("\n")[0].split(":")[1].strip())
             self.autoCheckTimer.Stop()
             if newVersion > version:
                 dial = MultiMessageDialog(self,
-                    'There is new version {} available. Current version is {}. Do you want to update after exit?'.format(newVersion, version),
+                    'There is new version {} available. Current version is {}. Do you want to install?'.format(newVersion, version),
                     msg2 = 'Changelog:\n\n' + newData,
                     caption = 'New version {} available'.format(newVersion),
                     style = wx.YES_NO | wx.ICON_QUESTION)
@@ -247,9 +247,9 @@ class NoiseIDE(wx.Frame):
                     installDir = os.path.join(self.cwd, "installer")
                     if not os.path.isdir(installDir):
                         os.mkdir(installDir)
-                    installerFileName = os.path.join(installDir, "installer.zip")
+                    installerFileName = os.path.join(installDir, "NoiseIDE.msi")
                     installerFile = open(installerFileName, 'wb')
-                    dataFile = urllib2.urlopen("https://dl.dropbox.com/s/a2qrs1zw20who93/noiseide.zip")
+                    dataFile = urllib2.urlopen("https://dl.dropbox.com/s/u1esqq4h68qufcz/NoiseIDE.msi")
                     meta = dataFile.info()
                     fileSize = int(meta.getheaders("Content-Length")[0])
 
@@ -266,11 +266,10 @@ class NoiseIDE(wx.Frame):
                         progressDialog.Update(newValue)
                     installerFile.close()
                     writeBinaryFile(os.path.join(installDir, "rev.cfg"), newData)
-                    idn_installer.Decompress(installerFileName)
+                    #idn_installer.Decompress(installerFileName)
                     global installNewVersion
                     installNewVersion = True
-                    self.Enable()
-                    self.SetFocus()
+                    self.Close()
             elif not auto:
                 wx.MessageBox("You have last version", "Check new version result")
         except Exception, e:
@@ -466,7 +465,23 @@ if __name__ == '__main__':
             shutil.rmtree(installerPath)
         main()
         if installNewVersion:
-            os.startfile("noiseide_copy.bat")
+            core.Log("start install")
+
+            #import subprocess
+            import pythoncom
+            import win32com
+            import win32com.client
+            command = os.path.join(os.path.curdir, "installer", "NoiseIDE.msi")
+            if sys.platform == "win32":
+                pythoncom.CoInitialize()
+                shell = win32com.client.Dispatch('WScript.Shell')
+                shell.Run(command, 1, False)
+                pythoncom.CoUninitialize()
+            #    DETACHED_PROCESS = 0x00000008
+            #    subprocess.Popen([sys.executable, command], creationflags=DETACHED_PROCESS)
+            #else:
+            #    subprocess.Popen([sys.executable, command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
+        #exit()
 
     except Exception, e:
         core.Log("app error" + str(e))
