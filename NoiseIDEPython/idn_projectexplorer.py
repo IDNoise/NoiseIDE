@@ -573,7 +573,6 @@ class ProjectExplorer(IDNCustomTreeCtrl):
 
         dlg.Destroy()
 
-
     def DeleteItemByPath(self, path):
         id = self.FindItemByPath(path)
         if id:

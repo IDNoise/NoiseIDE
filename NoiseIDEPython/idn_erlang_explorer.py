@@ -13,6 +13,15 @@ from idn_projectexplorer import ProjectExplorer
 from idn_utils import Menu, writeFile, readFile, GetAllFilesInDir, extension
 from idn_erlang_utils import IsModule
 from idn_erlang_dialogs import ErlangRenameDialog
+import codecs
+
+
+def loadCmds(filePath):
+    cmds = []
+    if (os.path.exists(filePath)):
+        stream = codecs.open(filePath, "r", "utf-8")
+        cmds = yaml.load(stream)
+    return cmds
 
 class ErlangProjectExplorer(ProjectExplorer):
     def __init__(self, parent, project):
@@ -24,23 +33,15 @@ class ErlangProjectExplorer(ProjectExplorer):
         self.highlightTimer.Start(250)
         self.Bind(wx.EVT_TIMER, self.OnHighlightTimer, self.highlightTimer)
 
-        path = os.path.join(core.MainFrame.cwd, "data", "erlang", "user_cmds.yaml")
-        self.userCmds = []
-        if (os.path.exists(path)):
-            stream = file(path, 'r')
-            self.userCmds = yaml.load(stream)
-
-        path = os.path.join(core.MainFrame.cwd, "data", "erlang", "ide_cmds.yaml")
-        self.ideCmds = []
-        if (os.path.exists(path)):
-            stream = file(path, 'r')
-            self.ideCmds = yaml.load(stream)
+        self.userCmds = loadCmds(os.path.join(core.MainFrame.cwd, "data", "erlang", "user_cmds.yaml"))
+        self.ideCmds = loadCmds(os.path.join(core.MainFrame.cwd, "data", "erlang", "ide_cmds.yaml"))
+        self.projectUserCmds = loadCmds(os.path.join(core.Project.projectDir, "project_cmds.yaml"))
 
     def CreateMenu(self):
         menu = ProjectExplorer.CreateMenu(self)
 
-        def usertpl(file, title):
-            return lambda e: self.CreateFromUserTemplate(file, title, title + "_default")
+        def usertpl(filePath, title):
+            return lambda e: self.CreateFromUserTemplate(filePath, title, title + "_default")
 
         if hasattr(menu, "newMenu"):
             newMenu = menu.newMenu
@@ -69,11 +70,8 @@ class ErlangProjectExplorer(ProjectExplorer):
                 title = filename.split(".")[0]
                 userTemplateMenu.AppendMenuItem(title, self, usertpl(templateFile, title))
 
-
             tMenu.AppendMenu(wx.ID_ANY, "User", userTemplateMenu)
-
             newMenu.AppendMenu(wx.ID_ANY, "Template", tMenu)
-
 
         dialyzerMenu = Menu()
         dialyzerMenu.AppendMenuItem("Project", self, lambda e: self.project.DialyzeProject())
@@ -99,45 +97,33 @@ class ErlangProjectExplorer(ProjectExplorer):
             menu.AppendSeparator()
             menu.AppendMenu(wx.ID_ANY, "Dialyzer", dialyzerMenu)
 
-        def exec_user_cmd(cmd, consoleType):
-            return lambda e: self.ExecUserCmd(cmd, consoleType)
 
-        if self.userCmds:
-            categories = {}
-            userCommandsMenu = Menu()
-
-            for cmd in self.userCmds:
-                currentMenu = userCommandsMenu
-                if 'category' in cmd and cmd['category'] != "":
-                    cat = cmd['category']
-                    if not cat in categories:
-                        categories[cat] = Menu()
-                        userCommandsMenu.AppendMenu(wx.ID_ANY, cat, categories[cat])
-                    currentMenu = categories[cat]
-                currentMenu.AppendMenuItem(cmd['title'], self, exec_user_cmd(cmd['cmd'], cmd['console'] if 'console' in cmd else None))
-
-            menu.AppendMenu(wx.ID_ANY, "User Cmds", userCommandsMenu)
-
-        if self.ideCmds:
-            categories = {}
-            ideCommandsMenu = Menu()
-
-            for cmd in self.ideCmds:
-                currentMenu = ideCommandsMenu
-                if 'category' in cmd and cmd['category'] != "":
-                    cat = cmd['category']
-                    if not cat in categories:
-                        categories[cat] = Menu()
-                        ideCommandsMenu.AppendMenu(wx.ID_ANY, cat, categories[cat])
-                    currentMenu = categories[cat]
-                currentMenu.AppendMenuItem(cmd['title'], self, exec_user_cmd(cmd['cmd'], cmd['console'] if 'console' in cmd else None))
-
-            menu.AppendMenu(wx.ID_ANY, "Ide Cmds", ideCommandsMenu)
-
+        self.FillCommandsMenu(menu, "User cmds", self.userCmds)
+        self.FillCommandsMenu(menu, "Ide cmds", self.ideCmds)
+        self.FillCommandsMenu(menu, "Project user cmds", self.projectUserCmds)
 
         return menu
 
-    def ExecUserCmd(self, cmd, consoleType = None):
+    def FillCommandsMenu(self, menu, title, commands):
+        if not commands: return
+        def exec_user_cmd(cmd, consoleType):
+            return lambda e: self.ExecErlangCmd(cmd, consoleType)
+        categories = {}
+        userCommandsMenu = Menu()
+
+        for cmd in commands:
+            currentMenu = userCommandsMenu
+            if 'category' in cmd and cmd['category'] != "":
+                cat = cmd['category']
+                if not cat in categories:
+                    categories[cat] = Menu()
+                    userCommandsMenu.AppendMenu(wx.ID_ANY, cat, categories[cat])
+                currentMenu = categories[cat]
+            currentMenu.AppendMenuItem(cmd['title'], self, exec_user_cmd(cmd['cmd'], cmd['console'] if 'console' in cmd else None))
+        menu.AppendMenu(wx.ID_ANY, title, userCommandsMenu)
+
+
+    def ExecErlangCmd(self, cmd, consoleType = None):
         path = self.GetPyData(self.eventItem)
 
         console = self.project.shellConsole
@@ -148,13 +134,11 @@ class ErlangProjectExplorer(ProjectExplorer):
                 console = con
                 if core.ToolMgr.CurrentPage() == con:
                     break
-        #core.Log(path + " " + str(IsModule(path)) + " " + self.project.ModuleName(path))
         if IsModule(path):
             cmd = cmd.replace("$module$", self.project.ModuleName(path))
         cmd = cmd.replace("$application$", self.project.GetApp(path))
         cmd = cmd.replace("$file$", path)
 
-        #core.Log(cmd + " " + str(console))
         console.Exec(cmd + ".")
 
     def DefaultMask(self):
