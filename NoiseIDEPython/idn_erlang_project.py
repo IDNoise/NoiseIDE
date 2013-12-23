@@ -360,14 +360,20 @@ class ErlangProject(Project):
     def OnProjectClientApiDataRecieved(self, console, action, js):
         #core.Log("api: " + action + ". data: " + str(js))
         try:
-            if action == "go_to":
+            if action == "goto_line":
                 module = js["module"]
                 line = js["line"]
-                core.TabMgr.LoadFileLine(ErlangCache.modules[module].file, line, False)
-            if action == "go_to_file":
+                core.TabMgr.LoadFileLine(ErlangCache.modules[module].file, line - 1, False)
+            elif action == "goto_file":
                 filePath = pystr(js["file"])
                 line = js["line"]
-                core.TabMgr.LoadFileLine(filePath, line, False)
+                core.TabMgr.LoadFileLine(filePath, line - 1, False)
+            elif action == "goto_mfa":
+                module = js["module"]
+                fun = js["fun"]
+                arity = js["arity"]
+                f = ErlangCache.ModuleFunction(module, fun, arity)
+                core.TabMgr.LoadFileLine(f.file, f.line - 1, False)
             else:
                 core.Log("Unknown data in client api: " + action)
         except Exception, e:
