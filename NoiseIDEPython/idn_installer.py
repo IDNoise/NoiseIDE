@@ -52,10 +52,11 @@ def CopyPackages():
         os.mkdir(noiseide_dir)
     shutil.copy('{}/{}'.format(dist_dir, file), '{}/{}'.format(noiseide_dir, new_file) )
     shutil.copy('rev.cfg', '{}/rev.cfg'.format(noiseide_dir) )
-    dropboxdir = 'd:/Downloads/Dropbox/NoiseIDEDist'
-    if os.path.exists(dropboxdir):
-        shutil.copy('{}/{}'.format(dist_dir, file), '{}/{}'.format(dropboxdir, new_file) )
-        shutil.copy('rev.cfg', '{}/rev.cfg'.format(dropboxdir) )
+    dropboxdirs = ['d:/Downloads/Dropbox/NoiseIDEDist', 'e:/Downloads/Dropbox/NoiseIDEDist']
+    for dropboxdir in dropboxdirs:
+        if os.path.exists(dropboxdir):
+            shutil.copy('{}/{}'.format(dist_dir, file), '{}/{}'.format(dropboxdir, new_file) )
+            shutil.copy('rev.cfg', '{}/rev.cfg'.format(dropboxdir) )
     os.chdir(cwd)
     shutil.rmtree('dist', ignore_errors = True)
     shutil.rmtree('build', ignore_errors = True)

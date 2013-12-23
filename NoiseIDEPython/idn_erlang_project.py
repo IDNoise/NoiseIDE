@@ -111,8 +111,7 @@ class ErlangProject(Project):
         self.window.projectMenu.AppendSeparator()
         self.SetCompileMenuItems()
         self.window.projectMenu.AppendSeparator()
-        self.window.projectMenu.AppendMenuItem("Rebuild tests", self.window,
-                                               lambda e: self.RebuildTests(), "F9")
+        self.window.projectMenu.AppendMenuItem("Rebuild tests", self.window, lambda e: self.RebuildTests(), "F9")
         self.window.projectMenu.AppendSeparator()
         self.window.projectMenu.AppendMenuItem("XRef check", self.window,
                                                lambda e: self.StartXRef())
@@ -723,6 +722,7 @@ class SingleAppErlangProject(ErlangProject):
 
     def Rebuild(self):
         self.GetShell().CompileApp(self.projectDir)
+        self.GetShell().CompileTests(self.projectDir)
         self.CheckBackgroundTasks()
 
     def Recache(self):

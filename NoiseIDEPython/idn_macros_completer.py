@@ -31,7 +31,7 @@ class MacrosCompleter(Completer):
         core.Log(self.prefix)
         for macros in self.macroses:
             if self.prefix == "" or macros['id'].startswith(self.prefix):
-                self.list.Append(macros['id'], macros['desc'] + "</br></br>" + macros['macros'])
+                self.list.Append(macros['id'], macros['desc'] + "<br/><br/>" + macros['macros'])
 
     def AutoComplete(self, text):
         macros = ""

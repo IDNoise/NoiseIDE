@@ -99,12 +99,12 @@ class ErlangProjectExplorer(ProjectExplorer):
             menu.AppendSeparator()
             menu.AppendMenu(wx.ID_ANY, "Dialyzer", dialyzerMenu)
 
-        if (self.userCmds):
+        def exec_user_cmd(cmd, consoleType):
+            return lambda e: self.ExecUserCmd(cmd, consoleType)
+
+        if self.userCmds:
             categories = {}
             userCommandsMenu = Menu()
-
-            def exec_user_cmd(cmd, consoleType):
-                return lambda e: self.ExecUserCmd(cmd, consoleType)
 
             for cmd in self.userCmds:
                 currentMenu = userCommandsMenu
@@ -118,12 +118,9 @@ class ErlangProjectExplorer(ProjectExplorer):
 
             menu.AppendMenu(wx.ID_ANY, "User Cmds", userCommandsMenu)
 
-        if (self.ideCmds):
+        if self.ideCmds:
             categories = {}
             ideCommandsMenu = Menu()
-
-            def exec_user_cmd(cmd, consoleType):
-                return lambda e: self.ExecUserCmd(cmd, consoleType)
 
             for cmd in self.ideCmds:
                 currentMenu = ideCommandsMenu
@@ -147,14 +144,17 @@ class ErlangProjectExplorer(ProjectExplorer):
         if consoleType == 'project':
             for title in self.project.consoleTabs:
                 con = self.project.consoleTabs[title]
-                if con.self.stopped: continue
+                if con.shell.stopped: continue
                 console = con
                 if core.ToolMgr.CurrentPage() == con:
                     break
+        #core.Log(path + " " + str(IsModule(path)) + " " + self.project.ModuleName(path))
+        if IsModule(path):
+            cmd = cmd.replace("$module$", self.project.ModuleName(path))
+        cmd = cmd.replace("$application$", self.project.GetApp(path))
+        cmd = cmd.replace("$file$", path)
 
-        if core.TabMgr.GetActiveEditor():
-            cmd = cmd.replace("$.module", self.project.ModuleName(path))
-            cmd = cmd.replace("$.application", self.project.GetApp(path))
+        #core.Log(cmd + " " + str(console))
         console.Exec(cmd + ".")
 
     def DefaultMask(self):
