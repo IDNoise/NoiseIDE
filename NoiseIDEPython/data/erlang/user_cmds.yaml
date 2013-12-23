@@ -1,4 +1,4 @@
 - title: EUnit Test
-  cmd: eunit:test({application, $module$})
+  cmd: eunit:test({application, $application$})
   category: Test
   console: project #ide\project

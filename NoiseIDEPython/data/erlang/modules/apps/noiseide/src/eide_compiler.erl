@@ -24,8 +24,13 @@ compile(FileName) ->
             compile_yecc(FileName),
             create_response(FileName, []);
         ".src" -> 
-            compile_appsrc(FileName),
-            create_response(FileName, [])
+            case filename:extension(filename:basename(FileName, ".src")) of
+                ".app" ->
+                    compile_appsrc(FileName),
+                    create_response(FileName, []);
+                _ ->
+                    noreply
+            end
     end.
     
 compile_app(AppPath) ->
@@ -33,7 +38,7 @@ compile_app(AppPath) ->
     catch file:make_dir(OutDir),
     SrcDir = AppPath ++ "/src",
     HrlDir = AppPath ++ "/include",
-    {Modules, LocalHrls, Yrls, AppSrcFile} = filelib:fold_files(SrcDir, ".*\.(erl|hrl|yrl|src)$", true, 
+    {Modules, LocalHrls, Yrls, AppSrcFile} = filelib:fold_files(SrcDir, ".*\.(erl|hrl|yrl|app\.src)$", true, 
         fun(File, {M, H, Y, ASF}) ->
            case filename:extension(File) of
                ".erl" -> {[File|M], H, Y, ASF};
@@ -88,18 +93,6 @@ compile_appsrc(AppSrcFile) ->
     OutDir = app_out_dir(AppSrcFile),
     catch file:make_dir(OutDir),
     AppFile = OutDir ++ "/" ++ filename:basename(AppSrcFile, ".app.src") ++ ".app",
-%    CurrentModules =
-%        case filelib:is_file(AppFile) of
-%            true ->
-%                try
-%                    {ok, [AppFileData]} = file:consult(AppFile),
-%                    proplists:get_value(modules, element(3, AppFileData), [])
-%                catch _:_ ->
-%                    []
-%                end;
-%            _ ->
-%                []
-%        end,
     {ok, SrcData} = file:read_file(AppSrcFile),
     Beams = filelib:fold_files(OutDir, ".*\.beam$", true, 
         fun(File, B) -> 
