@@ -10,7 +10,6 @@ __author__ = 'Yaroslav Nikityshev aka IDNoise'
 
 import wx
 from wx.lib.agw import aui
-from wx.aui import wxEVT_COMMAND_AUINOTEBOOK_TAB_MIDDLE_UP
 from idn_findreplace import FindInFilePanel
 import core
 from idn_utils import extension, Menu, GetImage
@@ -105,7 +104,7 @@ class Notebook(aui.AuiNotebook):
             if isinstance(tabControl, aui.AuiTabCtrl):
                 break
         if page:
-            event = wx.aui.AuiNotebookEvent(wx.aui.EVT_AUINOTEBOOK_PAGE_CLOSE.typeId, tabControl.Id)
+            event = aui.AuiNotebookEvent(aui.EVT_AUINOTEBOOK_PAGE_CLOSE.typeId, tabControl.Id)
             event.SetOldSelection(-1)
             event.SetSelection(page)
             event.SetEventObject(tabControl)
@@ -336,7 +335,7 @@ class EditorNotebook(aui.AuiNotebook):
             if isinstance(tabControl, aui.AuiTabCtrl):
                 break
 
-        event = wx.aui.AuiNotebookEvent(wx.aui.EVT_AUINOTEBOOK_PAGE_CLOSE.typeId, tabControl.Id)
+        event = aui.AuiNotebookEvent(aui.EVT_AUINOTEBOOK_PAGE_CLOSE.typeId, tabControl.Id)
         event.SetOldSelection(-1)
         event.SetSelection(page)
         event.SetEventObject(tabControl)

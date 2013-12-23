@@ -7,16 +7,17 @@ import core
 
 import os
 import wx
+import codecs
 
 def readFile(fileName):
-    f = open(fileName)
+    f = codecs.open(fileName, "r", "utf-8")
     data = f.read()
     f.close()
     return data
 
 def writeFile(fileName, data):
-    f = open(fileName, 'w')
-    f.write(data.encode('utf8'))
+    f = codecs.open(fileName,'w','utf-8')
+    f.write(data)
     f.flush()
     f.close()
 

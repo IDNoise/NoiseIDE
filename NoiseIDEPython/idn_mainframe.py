@@ -443,6 +443,7 @@ class HelloDialog(wx.Dialog):
 class App(wx.App):
     def __init__(self):
         wx.App.__init__(self, redirect=False)
+        wx.Log.SetLogLevel(0)
         frame = NoiseIDE()
         frame.Show()
 

@@ -7,7 +7,7 @@ from wx import html
 from wx.stc import STC_FOLDLEVELHEADERFLAG, StyledTextCtrl
 from idn_colorschema import ColorSchema
 import core
-from idn_utils import Menu
+from idn_utils import Menu, readFile, writeFile
 from idn_config import Config
 from idn_marker_panel import Marker
 from idn_macros_completer import MacrosCompleter
@@ -98,6 +98,12 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         EditorFoldMixin.__init__(self)
         EditorLineMarginMixin.__init__(self)
 
+        self.SetCodePage(65001)
+
+        self.macrosCompleter = MacrosCompleter(self)
+        self.macroVarRegExp = re.compile(r"""\$[a-zA-Z0-9]*?\$""", re.VERBOSE | re.MULTILINE)
+        self.macroEditing = False
+
         self.findPanel = None
         self.markerPanel = markerPanel
         if self.markerPanel:
@@ -182,7 +188,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
             self.Bind(stc.EVT_STC_SAVEPOINTLEFT, self.OnSavePointLeft)
             self.Bind(stc.EVT_STC_SAVEPOINTREACHED, self.OnSavePointReached)
             self.StartModifyCheck()
-			
+
         self.highlightTimer = wx.Timer(self, wx.ID_ANY)
         self.Bind(wx.EVT_TIMER, self.OnHighlightTimer, self.highlightTimer)
         self.highlightTimer.Start(400)
@@ -193,13 +199,9 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.Bind(wx.EVT_RIGHT_UP, self.ShowPopupMenu)
 
         self.customTooltip = STCContextToolTip(self, self.OnRequestTooltipText)
-			
-        self.macrosCompleter = MacrosCompleter(self)
-        self.macroVarRegExp = re.compile(r"""\$[a-zA-Z0-9]*?\$""", re.VERBOSE | re.MULTILINE)
-        self.macroEditing = False
 
         wx.CallAfter(self.OnInit)
-		
+
     def OnDestroy(self, event):
         if not self.closed:
             self.OnClose()
@@ -301,9 +303,13 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
             filePath = filePath[0].upper() + filePath[1:]
         self.filePath = os.path.normpath(filePath)
         self.ClearAll()
-        StyledTextCtrl.LoadFile(self, self.filePath)
+        text = readFile(self.filePath)
+        #self.SetText(text)
+        self.SetValue(text)
+        #self.SetTextUTF8(text)
+        #StyledTextCtrl.LoadFile(self, self.filePath)
         self.modifyTime = os.stat(self.filePath)[ST_MTIME]
-        self.savedText = self.GetText()
+        self.savedText = text#self.GetText()
         self.changed = False
         self.saved = True
         self.lastHighlightedWord = ""
@@ -439,10 +445,13 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
     def Save(self):
         if not self.changed:
             return
-        self.savedText = self.GetText()
-        self.SaveFile(self.filePath)
+        text = self.GetValue()
+        self.savedText = text
+        writeFile(self.filePath, text)
+        #self.SaveFile(self.filePath)
         self.modifyTime = os.stat(self.filePath)[ST_MTIME]
         self.Changed(False)
+        self.SetSavePoint()
         self.OnFileSaved()
 
     def OnAutoComplete(self):

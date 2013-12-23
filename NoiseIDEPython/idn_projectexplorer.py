@@ -55,7 +55,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         self.imageList = wx.ImageList(ICON_SIZE, ICON_SIZE)
         self.iconIndex = {}
         self.AddIconFromArt(self.FILE, wx.ART_NORMAL_FILE)
-        self.AddIconFromArt(self.DIRECTORY_OPEN, wx.ART_FILE_OPEN)
+        self.AddIconFromArt(self.DIRECTORY_OPEN, wx.ART_FOLDER_OPEN)
         self.AddIconFromArt(self.DIRECTORY_CLOSED, wx.ART_FOLDER)
         self.SetImageList(self.imageList)
 
