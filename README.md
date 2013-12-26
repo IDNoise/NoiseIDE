@@ -132,4 +132,4 @@ You can contact me by mail (in profile) or by skype: *idnoise*
 
 
 ###Licence
-Noise IDE is licensed under GPL-2
+Noise IDE is licensed under GPL-2 ( Problem for you? Contact me :) )
