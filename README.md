@@ -4,7 +4,7 @@ IDE for Erlang written from scratch using wxPython.
 I'm a server programmer in ArtPlant. We are making games using Erlang as server and Unity\C# as client. All work is done on windows. 
 
 ##Windows MSI Installer
-Last windows msi installer can be found in my [dropbox folder](https://www.dropbox.com/s/u1esqq4h68qufcz/NoiseIDE.msi)
+Latest windows installer you can download from my [dropbox folder](https://www.dropbox.com/s/u1esqq4h68qufcz/NoiseIDE.msi) or from [latest](https://github.com/IDNoise/NoiseIDE/releases/latest) github release
 
 ##Linux\MacOs
 Never tried to run it on these platforms. But wxPython is crossplatform and pywin32api calls placed in if\else blocks. 
