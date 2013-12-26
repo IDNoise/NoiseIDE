@@ -1,8 +1,6 @@
 NoiseIDE
 ========
-
 IDE for Erlang written from scratch using wxPython.
-
 I'm a server programmer in ArtPlant. We are making games using Erlang as server and Unity\C# as client. All work is done on windows. 
 
 ##Windows MSI Installer
@@ -123,3 +121,15 @@ You can contact me by mail (in profile) or by skype: *idnoise*
 * Rebar project type
 * Debugger
 * Have something useful in mind? Contact me :D
+
+
+## Used libs\apps
+* Python 2.7
+* wxPython 2.9.5
+* PyYaml-3.*
+* PyWin32-217
+* cx_Freeze-4.3 for building exe\msi
+
+
+###Licence
+Noise IDE is licensed under GPL-2
