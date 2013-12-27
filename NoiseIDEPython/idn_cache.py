@@ -188,7 +188,7 @@ class ErlangCache:
     erlangDir = ""
 
     @classmethod
-    def CacheDir(cls): return os.path.join(core.MainFrame.cwd, "cache", "erlang")
+    def CacheDir(cls): return os.path.join(core.DataDir(), "cache", "erlang")
 
     @classmethod
     def Init(cls, project):

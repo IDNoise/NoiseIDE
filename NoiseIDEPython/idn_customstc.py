@@ -10,7 +10,7 @@ import core
 from idn_utils import Menu, readFile, writeFile
 from idn_config import Config
 from idn_marker_panel import Marker
-from idn_macros_completer import MacrosCompleter
+from idn_snippet_completer import SnippetCompleter
 import re
 import collections
 from stat import ST_MTIME
@@ -100,9 +100,9 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
 
         self.SetCodePage(65001)
 
-        self.macrosCompleter = MacrosCompleter(self)
-        self.macroVarRegExp = re.compile(r"""\$[a-zA-Z0-9]*?\$""", re.VERBOSE | re.MULTILINE)
-        self.macroEditing = False
+        self.snippetCompleter = SnippetCompleter(self)
+        self.snippetVarRegExp = re.compile(r"""\$[a-zA-Z0-9]*?\$""", re.VERBOSE | re.MULTILINE)
+        self.snippetEditing = False
 
         self.findPanel = None
         self.markerPanel = markerPanel
@@ -170,7 +170,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.Bind(stc.EVT_STC_UPDATEUI, self.HighlightBrackets)
         self.Bind(stc.EVT_STC_CHARADDED, self.OnCharAdded)
         self.Bind(wx.EVT_KEY_DOWN, self.OnKeyDown)
-        self.Bind(stc.EVT_STC_UPDATEUI, self.OnUpdateMacrosCompleter)
+        self.Bind(stc.EVT_STC_UPDATEUI, self.OnUpdateSnippetCompleter)
 
         self.EnableLineNumbers()
 
@@ -371,18 +371,18 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         else:
             bracketQuote = None
 
-        if self.macroEditing:
+        if self.snippetEditing:
             if keyCode == wx.WXK_ESCAPE or keyCode == wx.WXK_RETURN:
                 self.StopMacroEditing()
                 return True
             elif keyCode == wx.WXK_TAB:
-                self.MacroEditingCycleVar()
+                self.SnippetEditingCycleVar()
                 return True
 
-        if (self.macrosCompleter.IsShown() and
+        if (self.snippetCompleter.IsShown() and
             keyCode in [wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER,
                         wx.WXK_DOWN, wx.WXK_UP, wx.WXK_ESCAPE]):
-            self.macrosCompleter.OnKeyDown(event)
+            self.snippetCompleter.OnKeyDown(event)
         elif keyCode in [wx.WXK_DOWN, wx.WXK_UP] and event.GetModifiers() == wx.MOD_CONTROL | wx.MOD_SHIFT:
             offset = -1 if keyCode == wx.WXK_UP else 1
             startLine = self.LineFromPosition(self.GetSelectionStart())
@@ -403,7 +403,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         elif keyCode == wx.WXK_SPACE and event.GetModifiers() == wx.MOD_CONTROL:
             self.OnAutoComplete()
         elif keyCode == wx.WXK_SPACE and event.GetModifiers() == wx.MOD_CONTROL | wx.MOD_SHIFT:
-            self.OnMacrosRequest()
+            self.OnSnippetRequest()
         elif keyCode == ord('G') and event.GetModifiers() == wx.MOD_CONTROL:
             self.ShowGoToLineDialog()
         elif (Config.GetProp("put_brackets_quotes_around", False) and self.SelectedText and
@@ -458,24 +458,24 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
     def OnAutoComplete(self):
         pass
 
-    def OnUpdateMacrosCompleter(self, event):
+    def OnUpdateSnippetCompleter(self, event):
         event.Skip()
-        if not self.macrosCompleter.IsShown(): return
-        self.UpdateMacrosCompleter()
+        if not self.snippetCompleter.IsShown(): return
+        self.UpdateSnippetCompleter()
 
-    def UpdateMacrosCompleter(self, event = None):
+    def UpdateSnippetCompleter(self, event = None):
         caretPos = self.GetCurrentPos()
         line = self.GetCurrentLine()
         prefix = self.GetTextRange(self.PositionFromLine(line), caretPos)
-        self.macrosCompleter.Update(prefix)
-        self.macrosCompleter.UpdateCompleterPosition(self.PointFromPosition(caretPos))
+        self.snippetCompleter.Update(prefix)
+        self.snippetCompleter.UpdateCompleterPosition(self.PointFromPosition(caretPos))
 
-    def OnMacrosRequest(self):
-        self.UpdateMacrosCompleter()
+    def OnSnippetRequest(self):
+        self.UpdateSnippetCompleter()
         # if len(self.macrosCompleter.list.Items) == 1:
         #     self.macrosCompleter.AutoComplete(self.macrosCompleter.list.Items[0])
         # else:
-        self.macrosCompleter.Show()
+        self.snippetCompleter.Show()
 
     def OnFileSaved(self):
         pass
@@ -569,83 +569,83 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         if self.markerPanel:
             self.markerPanel.SetMarkers("selected_word", markers)
 
-    def StartMacroEditing(self, startPos, macros):
-        self.macroVars = self.GetVars(macros)
-        if len(self.macroVars) == 0: return
-        self.macroEditing = True
+    def StartSnippetEditing(self, startPos, snippet):
+        self.snippetVars = self.GetVars(snippet)
+        if len(self.snippetVars) == 0: return
+        self.snippetEditing = True
         self.SetMultipleSelection(True)
         self.SetAdditionalSelectionTyping(True)
         self.SetAdditionalCaretsVisible(True)
 
-        self.currentMacroVarIndex = 0
-        self.macroStartPos = startPos
-        self.SelectMacroVars()
+        self.currentSnippetVarIndex = 0
+        self.snippetStartPos = startPos
+        self.SelectSnippetVars()
 
-    def SelectMacroVars(self):
-        self.currentMacroVar = self.macroVars[self.macroVars.keys()[self.currentMacroVarIndex]]
+    def SelectSnippetVars(self):
+        self.currentSnippetVar = self.snippetVars[self.snippetVars.keys()[self.currentSnippetVarIndex]]
         needMain = True
-        for (s, e) in self.currentMacroVar:
+        for (s, e) in self.currentSnippetVar:
             if needMain:
-                self.SetSelection(self.macroStartPos + s, self.macroStartPos + e)
-                self.SetSelectionNCaret(0, self.macroStartPos + s)
-                self.SetSelectionNAnchor(0, self.macroStartPos + e)
+                self.SetSelection(self.snippetStartPos + s, self.snippetStartPos + e)
+                self.SetSelectionNCaret(0, self.snippetStartPos + s)
+                self.SetSelectionNAnchor(0, self.snippetStartPos + e)
                 needMain = False
             else:
-                self.AddSelection(self.macroStartPos + s, self.macroStartPos + e)
+                self.AddSelection(self.snippetStartPos + s, self.snippetStartPos + e)
 
     def StopMacroEditing(self):
-        self.macroEditing = False
+        self.snippetEditing = False
         self.SetMultipleSelection(False)
         self.SetAdditionalSelectionTyping(False)
         self.SetAdditionalCaretsVisible(False)
-        self.macroVars = None
-        self.currentMacroVar = None
+        self.snippetVars = None
+        self.currentSnippetVar = None
         self.ClearSelections()
-        self.SetCurrentPos(self.macroStartPos)
-        self.SetAnchor(self.macroStartPos)
+        self.SetCurrentPos(self.snippetStartPos)
+        self.SetAnchor(self.snippetStartPos)
 
-    def MacroEditingCycleVar(self):
+    def SnippetEditingCycleVar(self):
         selections = self.GetSelections()
-        (os, oe) = self.currentMacroVar[0]
+        (os, oe) = self.currentSnippetVar[0]
         for i in range(selections):
-            s = self.GetSelectionNCaret(i) - self.macroStartPos
-            e = self.GetSelectionNAnchor(i) - self.macroStartPos
-            self.currentMacroVar[i] = (s, e)
-        (s, e) = self.currentMacroVar[0]
-        self.UpdateOtherMacroVarPositions(s, e - oe)
+            s = self.GetSelectionNCaret(i) - self.snippetStartPos
+            e = self.GetSelectionNAnchor(i) - self.snippetStartPos
+            self.currentSnippetVar[i] = (s, e)
+        (s, e) = self.currentSnippetVar[0]
+        self.UpdateOtherSnippetVarPositions(s, e - oe)
 
         self.ClearSelections()
-        nextIndex = self.currentMacroVarIndex + 1
-        if nextIndex == len(self.macroVars):
+        nextIndex = self.currentSnippetVarIndex + 1
+        if nextIndex == len(self.snippetVars):
             nextIndex = 0
-        self.currentMacroVarIndex = nextIndex
-        self.SelectMacroVars()
+        self.currentSnippetVarIndex = nextIndex
+        self.SelectSnippetVars()
 
-    def UpdateOtherMacroVarPositions(self, s, diff):
-        for k in self.macroVars.keys():
-            if self.macroVars.keys()[self.currentMacroVarIndex] == k: continue
-            macroVarPositions = self.macroVars[k]
-            for i in range(len(macroVarPositions)):
-                (ps, pe) = macroVarPositions[i]
+    def UpdateOtherSnippetVarPositions(self, s, diff):
+        for k in self.snippetVars.keys():
+            if self.snippetVars.keys()[self.currentSnippetVarIndex] == k: continue
+            snippetVarPositions = self.snippetVars[k]
+            for i in range(len(snippetVarPositions)):
+                (ps, pe) = snippetVarPositions[i]
                 if s < ps:
                     ps += diff
                     pe += diff
                     diff += diff
-                macroVarPositions[i] = (ps, pe)
+                snippetVarPositions[i] = (ps, pe)
 
-    def GetVars(self, macros):
-        macroVars = collections.OrderedDict()
+    def GetVars(self, snippet):
+        snippetVars = collections.OrderedDict()
         pos = 0
         while True:
-            m = self.macroVarRegExp.search(macros, pos)
+            m = self.snippetVarRegExp.search(snippet, pos)
             if not m: break
             pos = m.end()
             var = m.group(0)
-            if var in macroVars:
-                macroVars[var].append((m.start(), m.end()))
+            if var in snippetVars:
+                snippetVars[var].append((m.start(), m.end()))
             else:
-                macroVars[var] = [(m.start(), m.end())]
-        return macroVars
+                snippetVars[var] = [(m.start(), m.end())]
+        return snippetVars
 
 class PythonSTC(CustomSTC):
     def SetupLexer(self):

@@ -244,7 +244,7 @@ class NoiseIDE(wx.Frame):
                 if dial.ShowModal() == wx.ID_YES:
                     progressDialog = wx.ProgressDialog("Autoupdater", "Downloading installer...", parent = self, style = wx.PD_APP_MODAL | wx.PD_ELAPSED_TIME | wx.PD_AUTO_HIDE)
                     progressDialog.Show()
-                    installDir = os.path.join(self.cwd, "installer")
+                    installDir = os.path.join(core.TempDir(), "installer")
                     if not os.path.isdir(installDir):
                         os.mkdir(installDir)
                     installerFileName = os.path.join(installDir, "NoiseIDE.msi")
@@ -443,6 +443,9 @@ class HelloDialog(wx.Dialog):
 class App(wx.App):
     def __init__(self):
         wx.App.__init__(self, redirect=False)
+        self.SetAppName("NoiseIDE")
+        core.App = self
+        core.Init()
         wx.Log.SetLogLevel(0)
         frame = NoiseIDE()
         frame.Show()
@@ -460,10 +463,10 @@ if __name__ == '__main__':
         app.MainLoop()
 
     try:
-        import shutil
-        installerPath = os.path.join(os.path.curdir, "installer")
-        if os.path.isdir(installerPath):
-            shutil.rmtree(installerPath)
+        # import shutil
+        # installerPath = os.path.join(core.TempDir(), "installer")
+        # if os.path.isdir(installerPath):
+        #     shutil.rmtree(installerPath)
         main()
         if installNewVersion:
             core.Log("start install")
@@ -472,7 +475,7 @@ if __name__ == '__main__':
             import pythoncom
             import win32com
             import win32com.client
-            command = os.path.join(os.path.curdir, "installer", "NoiseIDE.msi")
+            command = os.path.join(core.TempDir(), "installer", "NoiseIDE.msi")
             if sys.platform == "win32":
                 pythoncom.CoInitialize()
                 shell = win32com.client.Dispatch('WScript.Shell')

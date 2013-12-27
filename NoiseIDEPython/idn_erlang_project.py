@@ -255,7 +255,7 @@ class ErlangProject(Project):
         projectCacheDir = os.path.join(ErlangCache.CacheDir(), self.ProjectName())
         if not os.path.isdir(projectCacheDir):
             os.makedirs(projectCacheDir)
-        self.flyDir = os.path.join(self.window.cwd, "data", "erlang", "fly", self.ProjectName())
+        self.flyDir = os.path.join(core.TempDir(), "fly", self.ProjectName())
         if not os.path.isdir(self.flyDir):
             os.makedirs(self.flyDir)
         for f in os.listdir(self.flyDir):

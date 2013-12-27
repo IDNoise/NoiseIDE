@@ -265,7 +265,7 @@ class ErlangProjectFrom(wx.Dialog):
         stream = file(pFile, 'w')
         yaml.dump(data, stream)
 
-        yaml.dump(userData, file(os.path.join(Project.USER_DATA_FOLDER, "{}.project.user".format(title)), 'w'))
+        yaml.dump(userData, file(os.path.join(core.UserDataDir(), "{}.project.user".format(title)), 'w'))
 
         if self.project:
             if self.project.GetErlangRuntime() != erlang:

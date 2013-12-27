@@ -75,7 +75,6 @@ class Project(ProgressTaskManagerDialog):
     }
 
     EXPLORER_TYPE = exp.ProjectExplorer
-    USER_DATA_FOLDER = os.path.join(os.getcwd(), 'userdata')
 
     CONFIG_LAST_OPENED_FILES = "last_opened_files"
     CONFIG_EXPANDED_PATHS = "expanded_paths"
@@ -98,10 +97,10 @@ class Project(ProgressTaskManagerDialog):
         self.oldProjectData = None
         self.openedFilesChecker = None
 
-        if not os.path.isdir(self.USER_DATA_FOLDER):
-            os.makedirs(self.USER_DATA_FOLDER)
+        if not os.path.isdir(core.UserDataDir()):
+            os.makedirs(core.UserDataDir())
 
-        self.userDataFile = os.path.join(self.USER_DATA_FOLDER, "{}.project.user".format(self.ProjectName()))
+        self.userDataFile = os.path.join(core.UserDataDir(), "{}.project.user".format(self.ProjectName()))
         if os.path.isfile(self.userDataFile):
             self.userData = yaml.load(open(self.userDataFile))
         else:

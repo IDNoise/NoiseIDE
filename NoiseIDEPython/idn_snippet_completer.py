@@ -3,19 +3,19 @@ from idn_completer import Completer
 import core
 import yaml
 
-class MacrosCompleter(Completer):
+class SnippetCompleter(Completer):
     def __init__(self, stc):
         Completer.__init__(self, stc)
 
-        self.macroses = []
+        self.snippets = []
 
-        for path in [os.path.join(core.MainFrame.cwd, "data", "erlang", "ide_macros.yaml"),
-                     os.path.join(core.MainFrame.cwd, "data", "erlang", "user_macros.yaml")]:
+        for path in [os.path.join(core.MainFrame.cwd, "data", "erlang", "ide_snippets.yaml"),
+                     os.path.join(core.MainFrame.cwd, "data", "erlang", "user_snippets.yaml")]:
             if (os.path.exists(path)):
                 stream = file(path, 'r')
                 data = yaml.load(stream)
                 if data:
-                    self.macroses += data
+                    self.snippets += data
 
 
 
@@ -29,21 +29,21 @@ class MacrosCompleter(Completer):
             i -= 1
         self.prefix = self.prefix[::-1]
         core.Log(self.prefix)
-        for macros in self.macroses:
-            if self.prefix == "" or macros['id'].startswith(self.prefix):
-                self.list.Append(macros['id'], macros['desc'] + "<br/><br/>" + macros['macros'])
+        for snippet in self.snippets:
+            if self.prefix == "" or snippet['id'].startswith(self.prefix):
+                self.list.Append(snippet['id'], snippet['desc'] + "<br/><br/>" + snippet['snippet'])
 
     def AutoComplete(self, text):
-        macros = ""
-        for m in self.macroses:
+        snippet = ""
+        for m in self.snippets:
             if m['id'] == text:
-                macros = m['macros']
-        if not macros: return
+                snippet = m['snippet']
+        if not snippet: return
 
         startPos = self.stc.GetCurrentPos() - len(self.prefix)
         self.stc.SetSelectionStart(startPos)
         self.stc.SetSelectionEnd(self.stc.GetCurrentPos())
 
-        self.stc.ReplaceSelection(macros)
+        self.stc.ReplaceSelection(snippet)
         self.HideCompleter()
-        self.stc.StartMacroEditing(startPos, macros)
+        self.stc.StartSnippetEditing(startPos, snippet)
