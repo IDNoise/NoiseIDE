@@ -6,8 +6,6 @@ I'm a server programmer in ArtPlant. We are making games using Erlang as server 
 ##Windows MSI Installer
 Latest windows installer you can download from my [dropbox folder](https://www.dropbox.com/s/u1esqq4h68qufcz/NoiseIDE.msi) or from [latest](https://github.com/IDNoise/NoiseIDE/releases/latest) github release
 
-**NOTE**: Please, do NOT install v <= 0.733 to Program Files. I'm going to move all temp\cache files to AppData in next version.
-
 ##Linux\MacOs
 Never tried to run it on these platforms. But wxPython is crossplatform and pywin32api calls placed in if\else blocks. 
 Everyone interested in running it on these platforms are welcome.
