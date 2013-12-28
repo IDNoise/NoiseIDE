@@ -445,7 +445,6 @@ class App(wx.App):
         wx.App.__init__(self, redirect=False)
         self.SetAppName("NoiseIDE")
         core.App = self
-        core.Init()
         wx.Log.SetLogLevel(0)
         frame = NoiseIDE()
         frame.Show()
@@ -463,15 +462,10 @@ if __name__ == '__main__':
         app.MainLoop()
 
     try:
-        # import shutil
-        # installerPath = os.path.join(core.TempDir(), "installer")
-        # if os.path.isdir(installerPath):
-        #     shutil.rmtree(installerPath)
         main()
         if installNewVersion:
             core.Log("start install")
 
-            #import subprocess
             import pythoncom
             import win32com
             import win32com.client
@@ -481,11 +475,6 @@ if __name__ == '__main__':
                 shell = win32com.client.Dispatch('WScript.Shell')
                 shell.Run(command, 1, False)
                 pythoncom.CoUninitialize()
-            #    DETACHED_PROCESS = 0x00000008
-            #    subprocess.Popen([sys.executable, command], creationflags=DETACHED_PROCESS)
-            #else:
-            #    subprocess.Popen([sys.executable, command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE)
-        #exit()
 
     except Exception, e:
         core.Log("app error" + str(e))
