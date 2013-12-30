@@ -10,6 +10,9 @@ Latest windows installer you can download from my [dropbox folder](https://www.d
 Never tried to run it on these platforms. But wxPython is crossplatform and pywin32api calls placed in if\else blocks. 
 Everyone interested in running it on these platforms are welcome.
 
+## Tutorials
+Simple tutorials for first setup, basic project and common controls elements are in [wiki](https://github.com/IDNoise/NoiseIDE/wiki).
+
 ##Features
 * Single app\multiple app erlang projects
 
