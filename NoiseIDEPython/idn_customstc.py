@@ -308,13 +308,13 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.SetValue(text)
         #self.SetTextUTF8(text)
         #StyledTextCtrl.LoadFile(self, self.filePath)
-        self.SetSavePoint()
         self.modifyTime = os.stat(self.filePath)[ST_MTIME]
         self.savedText = text#self.GetText()
         self.changed = False
         self.saved = True
         self.lastHighlightedWord = ""
         self.SetSelection(0, 0)
+        self.EmptyUndoBuffer()
 
     def OnInit(self):
         pass

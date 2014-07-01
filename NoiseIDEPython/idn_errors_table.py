@@ -44,6 +44,8 @@ class ErrorsTableGrid(wx.grid.Grid):
     def OnLeftDClick(self, event):
         row = event.GetRow()
         rowData = self.table.data[row]
+        if not rowData[0]:
+            return
         fileName = os.path.join(self.project.projectDir, rowData[0])
         line = rowData[1] - 1
         core.TabMgr.LoadFileLine(fileName, line)
@@ -224,11 +226,13 @@ class DialyzerTableGrid(ErrorsTableGrid):
             module = warningData[0]
             line = int(warningData[1])
             msg = ':'.join(warningData[2:])
-
-            path = ErlangCache.modules[os.path.splitext(module)[0]].file
-            newPath = path.replace(self.project.projectDir + os.sep, "")
-            self.pathDict[newPath] = path
-            data.append((newPath, line, msg))
+            if not module:
+                data.append(('', line, msg))
+            else:
+                path = ErlangCache.modules[os.path.splitext(module)[0]].file
+                newPath = path.replace(self.project.projectDir + os.sep, "")
+                self.pathDict[newPath] = path
+                data.append((newPath, line, msg))
 
         data = sorted(data, key = operator.itemgetter(0))
         self.table.data = data

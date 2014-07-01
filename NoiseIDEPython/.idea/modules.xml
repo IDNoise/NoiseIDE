@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/NoiseIDE.iml" filepath="$PROJECT_DIR$/.idea/NoiseIDE.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/NoiseIDEPython.iml" filepath="$PROJECT_DIR$/.idea/NoiseIDEPython.iml" />
     </modules>
   </component>
 </project>
