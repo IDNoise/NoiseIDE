@@ -315,6 +315,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         self.lastHighlightedWord = ""
         self.SetSelection(0, 0)
         self.EmptyUndoBuffer()
+        self.UpdateTabTitle()
 
     def OnInit(self):
         pass
