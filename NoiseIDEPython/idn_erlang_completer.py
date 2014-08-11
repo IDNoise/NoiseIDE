@@ -9,6 +9,7 @@ from idn_erlang_constats import TYPE_MODULE, TYPE_HRL
 from idn_token import ErlangTokenizer, ErlangTokenType
 from idn_utils import readFile
 from idn_completer import Completer
+import core
 
 class ErlangCompleter(Completer):
     def __init__(self, stc):
@@ -266,7 +267,7 @@ class ErlangCompleter(Completer):
         return ((f, data.line), help)
 
     def GetFunArity(self, pos):
-        open = ['[', '(', '{', 'fun', 'case', 'if', 'try', 'begin', 'receive']
+        open = ['[', '(', '{', 'fun', 'case', 'if', 'try', 'begin', 'receive', '<<']
         close = {
             '[' : ']',
             '(' : ')',
@@ -276,7 +277,8 @@ class ErlangCompleter(Completer):
             'if' : 'end',
             'try' : 'end',
             'begin' : 'end',
-            'receive' : 'end'
+            'receive' : 'end',
+            '<<' : '>>'
         }
         lvl = 0
         if self.stc.GetCharAt(pos) == "/":
@@ -306,7 +308,8 @@ class ErlangCompleter(Completer):
         try:
             for token in gtokens:
                 if token.value == " ": continue
-                tokens.append(token.value)
+                if (token == "<" or token == ">") and len(tokens) > 0 and tokens[-1] == token:
+                    tokens[-1] = token + token
         except:
             pass
         for token in tokens:

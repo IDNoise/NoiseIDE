@@ -1,9 +1,11 @@
 apps_dir: !!python/unicode 'apps'
 compiler_options: !!python/unicode ''
-consoles: {}
+consoles:
+  !!python/unicode 'TEST': {command: !!python/unicode '', cookie: !!python/unicode '123',
+    params: !!python/unicode '', sname: !!python/unicode 'sname'}
 deps_dir: !!python/unicode 'deps'
 erlang_project_type: Multiple apps
-excluded_dirs: [!!python/unicode 'test_app']
+excluded_dirs: []
 project_name: !!python/unicode 'NoiseIDE'
 project_type: erlang
 work_dir: !!python/unicode ''

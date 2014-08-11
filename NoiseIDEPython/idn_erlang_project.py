@@ -420,7 +420,7 @@ class ErlangProject(Project):
                 errors = []
                 for error in errorsData:
                     if error["line"] == "none":
-                        continue
+                        errors.append(CompileErrorInfo(path, error["type"], 0, error["msg"]))
                     errors.append(CompileErrorInfo(path, error["type"], error["line"], error["msg"]))
                 self.AddErrors(path, errors)
 
@@ -436,7 +436,7 @@ class ErlangProject(Project):
                     errors = []
                     for error in eRec["errors"]:
                         if error["line"] == "none":
-                            continue
+                            errors.append(CompileErrorInfo(p, error["type"], 0, error["msg"]))
                         errors.append(CompileErrorInfo(p, error["type"], error["line"], error["msg"]))
                     self.AddErrors(p, errors)
 

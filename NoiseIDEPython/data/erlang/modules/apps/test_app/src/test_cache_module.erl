@@ -1,17 +1,18 @@
 %% @author: Yaroslav 'IDNoise' Nikityshev
 %% @date: 09.09.2012
 
--module(test_cache_module).
+-module(test_cache_module). 
 
 %% Include files
--include_lib("sample.hrl").
+%-include_lib("sample.hrl").
 %% Exported Functions
 
 -export([
     x/0,
     xxx/0,
-    round/2
-]).    
+    round/2,
+    function/1
+]).     
 -define(XssssX, ololasdasdado).  
 -type beam_instr() :: 'bs_init_writable' | 'fclearerror' | 'if_end'
                     | 'remove_message' | 'return' | 'send' | 'timeout'
@@ -38,10 +39,10 @@
 %%%===================================================================
 %%% Internal f unction s
 %%%====================================== =============================
-
+function(<<A,B,C,D>>) -> x.
 %% @doc Prints the value X.
-xxx() ->
-    ?XX + ?XssssX.  
+xxx() -> x.
+    %?XX + ?XssssX.  
 
 -ifdef(debug).
 -define(X, xx).
@@ -50,7 +51,7 @@ xxx() ->
 -endif.  
   
 x() -> 
-    xxx(),
+    xxx(), 
     SortedQueueDiffs = 
         lists:sort(fun({{_, IR1}, D1}, {{_, IR2}, D2}) -> 
             Add1 = case IR1 of true -> 1; _ -> 0 end, 

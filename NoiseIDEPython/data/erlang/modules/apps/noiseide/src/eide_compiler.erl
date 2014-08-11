@@ -12,8 +12,8 @@
     compile_tests/1,
     app_name/1,
     app_path/1
-]).  
-  
+]).   
+
 compile(FileName) -> 
     case filename:extension(FileName) of
         ".erl" -> 
@@ -61,7 +61,7 @@ compile_app(AppPath) ->
                 true -> ok;
                 false -> file:delete(File) 
             end
-        end, undefined),
+        end, undefined),        
     [eide_cache:gen_file_cache(H) || H <- IncludeHrls ++ LocalHrls],
     Modules1 = Modules ++ [filename:rootname(Y) ++ ".erl" || Y <- Yrls, compile_yecc(Y) == ok],
     SrcResult = [compile_result(M, OutDir) || M <- Modules1],
@@ -104,13 +104,13 @@ compile_appsrc(AppSrcFile) ->
 compile_with_option(FileName, Option) ->
     OutDir = app_out_dir(FileName),
     catch file:make_dir(OutDir),
-    Options = [{outdir, OutDir}, Option, {i, filename:join(app_path(FileName), "include")}, {i, filename:join(app_path(FileName), "src")}],
-    Options1 = case eide_connect:prop(compiler_options) of
-            undefined -> Options;
-            Str -> Options ++ parse_term("[" ++ Str ++ "].")
-        end, 
-    compile:file(FileName, Options1),
-    File = OutDir ++ "/" ++ filename:rootname(filename:basename(FileName)) ++ "." ++ atom_to_list(Option),
+    Options = [{outdir, OutDir}, Option, {i, filename:join(app_path(FileName), "include")}, {i, filename:join(app_path(FileName), "src")}] ++ compiler_options(),
+    compile:file(FileName, Options),
+    OptionExt = case Option of 
+        to_core -> core;
+        _ -> Option
+    end,
+    File = OutDir ++ "/" ++ filename:rootname(filename:basename(FileName)) ++ "." ++ atom_to_list(OptionExt),
     {ok, Data} = file:read_file(File),
     file:delete(File),
     mochijson2:encode({struct, [{response, compile_option},
@@ -185,8 +185,7 @@ default_options() ->
      warn_shadow_vars, 
      warn_export_vars, 
      debug_info,
-     return_errors, 
-     return_warnings,   
+     return,   
      strong_validation
     ].
 
@@ -212,21 +211,24 @@ parse_term(String) when is_list(String) ->
     {ok, Term} = erl_parse:parse_term(Tokens),
     Term.
 
+compiler_options() ->
+    case eide_connect:prop(compiler_options) of
+            undefined -> [];
+            Str -> parse_term("[" ++ Str ++ "].")
+    end.
+
 compile_internal(FileName, Options) ->
     compile_internal(FileName, Options, true, FileName).
 compile_internal(FileName, Options, ToBinary, RealPath) ->
-    Options0 = default_options() ++ Options ++ [{i, filename:join(app_path(RealPath), "include")}, {i, filename:join(app_path(RealPath), "src")}],
-    Options1 = 
-        case eide_connect:prop(compiler_options) of
-            undefined -> Options0;
-            Str -> Options0 ++ parse_term("[" ++ Str ++ "].")
-        end, 
-    Options2 = case ToBinary of 
+    Options0 = default_options() ++ Options 
+        ++ [{i, filename:join(app_path(RealPath), "include")}, {i, filename:join(app_path(RealPath), "src")}] 
+        ++ compiler_options(),
+    Options1 = case ToBinary of 
                    true -> 
-                       [debug_info | Options1] -- [strong_validation];
-                   _ -> Options1
+                       [debug_info | Options0] -- [strong_validation];
+                   _ -> Options0
                end, 
-    Result = compile:file(FileName, Options2),
+    Result = compile:file(FileName, Options1),
     {E, W} = case Result of 
                  {ok, _Module, Warnings} ->
                      {[], Warnings};
@@ -242,16 +244,16 @@ compile_internal(FileName, Options, ToBinary, RealPath) ->
             case Er of
                 {compile, write_error} ->
                     [{type, error}, {line, 0}, {msg, iolist_to_binary("Error with writing file.")}];
-                {compile,{module_name, MName, FName}} ->
+                {none, compile,{module_name, MName, FName}} ->
                     [{type, error}, {line, 2}, {msg, iolist_to_binary("Module in file '" ++ FName ++ 
                         "' has wrong name: '" ++ atom_to_list(MName) ++ "'.")}];
-                {Line, M, Error}  ->
+                {Line, M, Error} when is_integer(Line)  ->
                   Msg = iolist_to_binary(M:format_error(Error)),
                   [{type, error}, {line, Line}, {msg, Msg}];
                 _ ->
                     []
             end 
-          end || Er <- Err, element(1, Er) =/= none] 
+          end || Er <- Err] 
          || {_File, Err} <- E],  
     Warns = 
         [[begin

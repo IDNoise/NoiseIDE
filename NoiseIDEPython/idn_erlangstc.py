@@ -86,9 +86,10 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         ErlangHighlightedSTCBase.SetupEditorMenu(self)
         self.editorMenu.AppendSeparator()
         self.editorMenu.AppendMenuItem('Outline', core.MainFrame, lambda e: self.ShowOutline(), "Ctrl-H")
-        self.editorMenu.AppendMenuItem('Comment lines', core.MainFrame, lambda e: self.CommentLines(), "Ctrl-/")
         if self.ModuleType() == TYPE_MODULE:
             self.editorMenu.AppendMenuItem('Add to export', core.MainFrame, lambda e: self.AddToExport(), "Ctrl-E")
+        if self.ModuleType() == TYPE_MODULE or self.ModuleType() == TYPE_HRL:
+            self.editorMenu.AppendMenuItem('Comment lines', core.MainFrame, lambda e: self.CommentLines(), "Ctrl-/")
 
     def SetupLanguageStyles(self):
         ErlangHighlightedSTCBase.SetupLanguageStyles(self)
@@ -118,6 +119,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
             menu.AppendMenu(wx.ID_ANY, "Compile Option", compileOptionMenu)
             compileOptionMenu.AppendMenuItem("With 'P' flag", self, lambda e: core.Project.CompileOption(self.filePath, "P"))
             compileOptionMenu.AppendMenuItem("With 'E' flag", self, lambda e: core.Project.CompileOption(self.filePath, "E"))
+            compileOptionMenu.AppendMenuItem("With 'core' flag", self, lambda e: core.Project.CompileOption(self.filePath, "to_core"))
             compileOptionMenu.AppendMenuItem("With 'S' flag", self, lambda e: core.Project.CompileOption(self.filePath, "S"))
 
         result = self.GetErlangWordAtPosition(self.popupPos)
@@ -296,6 +298,9 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         dlg.ShowModal()
 
     def CommentLines(self):
+        if core.TabMgr.GetActiveEditor() != self:
+            return
+
         start = self.GetSelectionStart()
         end = self.GetSelectionEnd()
         startLine = self.LineFromPosition(start)
@@ -668,8 +673,10 @@ class ErlangConsoleSTC(ConsoleSTC):
         (?P<custom_log>%Log:.*?$)|
         (?P<error_report>Error|error|ERROR)|
         (?P<crash_report>CRASH\sREPORT)|
-        (?P<module_fun_line>\{(?P<module>[a-zA-Z_]*)\,(?P<fun>[a-zA-Z_]*)\,(?P<arity>\d+)\,)|
-        (?P<file_line>\{file\,\s*"(?P<file>.*?)"\}\,\s*?\{line\,\s*(?P<fline>\d+)\})
+        (?P<module_fun_line>\{(?P<module>[a-zA-Z_][a-zA-Z_\d]*),(?P<fun>[a-zA-Z_][a-zA-Z_\d]*),(?P<arity>\d+),)|
+        (?P<mfa>(?P<module1>[a-zA-Z_][a-zA-Z_\d]*):(?P<fun1>[a-zA-Z_][a-zA-Z_\d]*)\/(?P<arity1>\d+))|
+        (?P<file_line>\{file,\s*"(?P<file>.*?)"\},\s*?\{line,\s*(?P<fline>\d+)\})|
+        (?P<f>\((?P<file1>.*?),\s+line\s+(?P<fline1>\d+)\))
         """,
         re.VERBOSE | re.MULTILINE)
 
@@ -692,10 +699,13 @@ class ErlangConsoleSTC(ConsoleSTC):
             d = m.groupdict()
             startPos = m.start()
             endPos = m.end()
-            if last == "module_fun_line":
-                module = d["module"]
-                fun = d["fun"]
-                arity = int(d["arity"])
+            if last == "module_fun_line" or last == "mfa":
+                postfix = ""
+                if last == "mfa":
+                    postfix = "1"
+                module = d["module" + postfix]
+                fun = d["fun" + postfix]
+                arity = int(d["arity" + postfix])
                 line = self.LineFromPosition(lastPosition + startPos)
                 navTo = ErlangCache.ModuleFunction(module, fun, arity)
                 if navTo:
@@ -703,9 +713,12 @@ class ErlangConsoleSTC(ConsoleSTC):
                     self.SetIndicatorCurrent(1)
                     self.IndicatorFillRange(lastPosition + startPos, endPos - startPos)
 
-            elif last == "file_line":
-                filePath = d["file"]
-                fline = int(d["fline"])
+            elif last == "file_line" or last == "f":
+                postfix = ""
+                if last == "f":
+                    postfix = "1"
+                filePath = d["file" + postfix]
+                fline = int(d["fline" + postfix])
                 if not os.path.isfile(filePath):
                     (module, _) = os.path.splitext(filePath)
                     if module in ErlangCache.modules:
