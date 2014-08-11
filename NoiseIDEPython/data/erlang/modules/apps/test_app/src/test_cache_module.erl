@@ -10,8 +10,7 @@
 -export([
     x/0,
     xxx/0,
-    round/2,
-    function/1
+    round/2
 ]).     
 -define(XssssX, ololasdasdado).  
 -type beam_instr() :: 'bs_init_writable' | 'fclearerror' | 'if_end'

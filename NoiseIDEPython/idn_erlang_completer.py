@@ -308,10 +308,14 @@ class ErlangCompleter(Completer):
         try:
             for token in gtokens:
                 if token.value == " ": continue
-                if (token == "<" or token == ">") and len(tokens) > 0 and tokens[-1] == token:
-                    tokens[-1] = token + token
+                core.Log(token)
+                if len(tokens) > 0 and tokens[-1] == token.value and (tokens[-1] == "<" or tokens[-1] == ">"):
+                    tokens[-1] = token.value + token.value
+                else:
+                    tokens.append(token.value)
         except:
             pass
+
         for token in tokens:
             if token in open:
                 lvl += 1

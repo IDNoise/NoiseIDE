@@ -5,7 +5,7 @@ consoles:
     params: !!python/unicode '', sname: !!python/unicode 'sname'}
 deps_dir: !!python/unicode 'deps'
 erlang_project_type: Multiple apps
-excluded_dirs: []
+excluded_dirs: [!!python/unicode 'test_app']
 project_name: !!python/unicode 'NoiseIDE'
 project_type: erlang
 work_dir: !!python/unicode ''
