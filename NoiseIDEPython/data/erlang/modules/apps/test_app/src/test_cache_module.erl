@@ -4,14 +4,20 @@
 -module(test_cache_module). 
 
 %% Include files
+-include_lib("noiseide/include/props.hrl").
 %-include_lib("sample.hrl").
 %% Exported Functions
 
 -export([
     x/0,
-    xxx/0,
-    round/2
-]).     
+    function/1
+]).
+
+
+-export([
+
+]).    
+     
 -define(XssssX, ololasdasdado).  
 -type beam_instr() :: 'bs_init_writable' | 'fclearerror' | 'if_end'
                     | 'remove_message' | 'return' | 'send' | 'timeout'

@@ -119,7 +119,7 @@ class ErlangCompleter(Completer):
         for d in set(data):
             helpText = None
             if isinstance(d, Function):
-                (_f, s, e, _l) = self.stc.lexer.GetAllExports()
+                (_f, s, e, _l, _r) = self.stc.lexer.GetAllExports()
                 if (isReference or (self.stc.CurrentPos >= s and self.stc.CurrentPos <= e)):
                     text = "{}/{}".format(d.name, d.arity)
                     helpText = self._FunctionHelp(d)
@@ -224,7 +224,14 @@ class ErlangCompleter(Completer):
         nextChar = self.stc.GetCharAt(self.stc.CurrentPos)
         if nextChar == "(" and "(" in toInsert:
             toInsert = toInsert[:toInsert.find(nextChar)]
-        self.stc.AddText(toInsert)
+
+        line = self.stc.LineFromPosition(self.stc.CurrentPos)
+        if self.stc.GetLineText(line).startswith("-include"):
+            self.stc.SetTargetStart(self.stc.CurrentPos)
+            self.stc.SetTargetEnd(self.stc.GetLineEndPosition(line))
+            self.stc.ReplaceTarget(toInsert)
+        else:
+            self.stc.AddText(toInsert)
         self.HideCompleter()
 
     def GetFunctionNavAndHelp(self, fun, prefix, pos):
@@ -308,7 +315,6 @@ class ErlangCompleter(Completer):
         try:
             for token in gtokens:
                 if token.value == " ": continue
-                core.Log(token)
                 if len(tokens) > 0 and tokens[-1] == token.value and (tokens[-1] == "<" or tokens[-1] == ">"):
                     tokens[-1] = token.value + token.value
                 else:

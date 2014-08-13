@@ -236,6 +236,7 @@ class ErlangLexer(BaseLexer):
         result = None
         lastInsertPosition = None
         start = None
+        ranges = []
         while True:
             match = r.search(text, pos)
             if not match:
@@ -253,14 +254,39 @@ class ErlangLexer(BaseLexer):
             if not start:
                 start = match.start(1)
             pos = match.end(0)
+            ranges.append((match.start(1), match.end(1)))
             lastInsertPosition = match.end(1)
             if result is None:
                 result = ""
             result += match.group(1)
         if result is None:
             result = ""
-        return (result.strip(), start, pos, lastInsertPosition)
+        return result.strip(), start, pos, lastInsertPosition, ranges
 
+    def GetExportInsertPosition(self):
+        r = re.compile("^-include.*?\)\.", re.MULTILINE | re.DOTALL)
+        text = self.stc.GetText()
+        pos = 0
+        start = None
+        while True:
+            match = r.search(text, pos)
+            if not match:
+                if start is None:
+                    mre = re.compile("^-module\(.*?\)\.", re.MULTILINE | re.DOTALL)
+                    match = mre.search(text, 0)
+                    if match:
+                        end = match.end()
+                    else:
+                        end = 0
+                    self.stc.InsertText(end, "\n")
+                    return end + 1
+                else:
+                    break
+            if not start:
+                start = match.start(0)
+            pos = match.end(0)
+        self.stc.InsertText(pos, "\n")
+        return pos + 1
 
 class LineData:
     def __init__(self):

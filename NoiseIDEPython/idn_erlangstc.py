@@ -132,7 +132,31 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                 menu.AppendMenu(wx.ID_ANY, "Find references as", submenu)
                 submenu.AppendMenuItem(self.StringStyleType(style), self, lambda e: self.FindReferences())
                 submenu.AppendMenuItem("Atom", self, lambda e: self.FindReferences(True))
+            if style == ErlangHighlightType.RECORD:
+                recordName = result[2]
+                if recordName[0] == "#":
+                    recordName = recordName[1:]
+                recordData = self.completer.GetRecordNavAndHelp(recordName)
+                if recordData is None:
+                    records = ErlangCache.AllRecords()
+                    records = [r for r in records if r.name == recordName]
+                    if len(records) > 0:
+                        submenu = Menu()
+                        menu.AppendMenu(wx.ID_ANY, "Resolve as", submenu)
+                        for r in records:
+                            app = core.Project.GetApp(r.file)
+                            includeStr = app + "/include/" + os.path.basename(r.file)
+                            def insertInclude(a, i):
+                                return lambda e: self.InsertInclude(a, i)
+                            submenu.AppendMenuItem(includeStr, self, insertInclude(app, os.path.basename(r.file)))
         return menu
+
+    def InsertInclude(self, app, include):
+        includeStr = "-include_lib(\"" + app + "/include/" + os.path.basename(include) + "\")."
+        if app == core.Project.GetApp(self.filePath):
+            includeStr = "-include(\"" + os.path.basename(include) + "\")."
+        pos = self.lexer.GetExportInsertPosition()
+        self.InsertText(pos, includeStr)
 
     def StringStyleType(self, style):
         if style in [ErlangHighlightType.FUNCTION, ErlangHighlightType.FUNDEC]:
@@ -424,7 +448,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         postfix = self.GetTextRange(end, lineEnd)
         data = None
         if style == ErlangHighlightType.FUNDEC:
-            (exports, _s, _end, _last) = self.lexer.GetAllExports()
+            (exports, _s, _end, _last, _r) = self.lexer.GetAllExports()
             if value + "/" in exports:
                 self.navigateTo = (self.filePath, 1 + self.LineFromPosition(self.Text.find(value + "/")))
         elif style == ErlangHighlightType.FUNCTION:
@@ -559,19 +583,19 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         arity = self.completer.GetFunArity(funData[1] + len(fun))
 
         funStr = "{}/{}".format(fun, arity)
-        (exports, startPos, _endPos, insertPos) = self.lexer.GetAllExports()
-
-        if funStr in map(lambda e: e[0:e.find("/")], exports.split(",")):
+        (exports, _startPos, _endPos, _insertPos, ranges) = self.lexer.GetAllExports()
+        if funStr in str(exports.replace(" ", "").split(",")):
             return
 
-        if insertPos:
+        if len(ranges) > 0:
+            (start, end) = ranges[0]
             funStr = "    {}/{}".format(fun, arity)
-            if self.Text[startPos:insertPos].strip() != "":
+            if self.Text[start:end].strip() != "":
                 funStr = ",\n" + funStr
             else:
-                insertPos = startPos
+                end = start
                 funStr += "\n"
-            self.InsertText(insertPos, funStr)
+            self.InsertText(end, funStr)
 
     def GoToExport(self):
         funData = self.lexer.GetCurrentFunction()
@@ -580,7 +604,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         fun = funData[0]
         arity = self.completer.GetFunArity(funData[1] + len(fun))
         funStr = "{}/{}".format(fun, arity)
-        (exports, startPos, _endPos, insertPos) = self.lexer.GetAllExports()
+        (exports, startPos, _endPos, insertPos, _r) = self.lexer.GetAllExports()
         if funStr not in exports: return
         self.SetTargetStart(startPos)
         self.SetTargetEnd(insertPos)
