@@ -194,12 +194,13 @@ class EditorNotebook(aui.AuiNotebook):
         def closeOther(event):
             iteration = 0
             i = 0
-            while self.GetPageCount() > 1:
+            totalTabs = self.GetPageCount()
+            while totalTabs > 1:
                 if self[i] == editor:
                     i += 1
                 self.ClosePage(i)
                 iteration += 1
-                if iteration > 10:
+                if iteration > totalTabs:
                     return
 
 
