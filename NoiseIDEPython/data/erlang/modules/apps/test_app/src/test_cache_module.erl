@@ -2,22 +2,29 @@
 %% @date: 09.09.2012
 
 -module(test_cache_module). 
-
-%% Include files
+   
+%% Include files  
 -include_lib("noiseide/include/props.hrl").
 %-include_lib("sample.hrl").
-%% Exported Functions
+%% Exported Functions 
+
+-export([ 
+    x/0, 
+    function/1 
+]). 
+-callback init(Args :: term()) ->
+    {ok, State :: term()} | {ok, State :: term(), timeout() | hibernate} |
+    {stop, Reason :: term()} | ignore. 
+
+-callback handle_cast(Request :: term(), State :: term()) ->
+    {noreply, NewState :: term()} |
+    {noreply, NewState :: term(), timeout() | hibernate} |
+    {stop, Reason :: term(), NewState :: term()}.
 
 -export([
-    x/0,
-    function/1
-]).
 
-
--export([
-
-]).    
-     
+]).     
+      
 -define(XssssX, ololasdasdado).  
 -type beam_instr() :: 'bs_init_writable' | 'fclearerror' | 'if_end'
                     | 'remove_message' | 'return' | 'send' | 'timeout'
@@ -53,10 +60,10 @@ xxx() -> x.
 -define(X, xx).
 -else.
 -define(X, yy).
--endif.  
-  
-x() -> 
-    xxx(), 
+-endif.   
+   
+x() ->  
+    xxx(),  
     SortedQueueDiffs = 
         lists:sort(fun({{_, IR1}, D1}, {{_, IR2}, D2}) -> 
             Add1 = case IR1 of true -> 1; _ -> 0 end, 

@@ -29,6 +29,7 @@ VALUE = "value"
 MACROS = "macros"
 COMMENT = "comment"
 EXPORTED_TYPES = "exported_types"
+CALLBACKS = "callbacks"
 
 
 class Function:
@@ -83,6 +84,15 @@ class ExportedType:
         if moduleData:
             self.file = moduleData.file
 
+class Callback:
+    def __init__(self, moduleData, module, name, params):
+        self.moduleData = moduleData
+        self.module = module
+        self.name = name
+        self.arity = len(params)
+        self.params = params
+        self.file = moduleData.file
+
 class ModuleData:
     def __init__(self, module, data, srcFile, app):
         self.srcFile = srcFile
@@ -119,6 +129,12 @@ class ModuleData:
         for expDype in data[EXPORTED_TYPES]:
             expData = data[EXPORTED_TYPES][expDype]
             self.exportedTypes.append(ExportedType(self, module, expDype, expData[TYPES], expData[LINE]))
+
+        self.callbacks = []
+        if CALLBACKS in data:
+            for cb in data[CALLBACKS]:
+                cdData = data[CALLBACKS][cb]
+                self.callbacks.append(Callback(self, module, cb, cdData[PARAMS]))
 
     def Key(self):
         return (self.app, self.module)
@@ -419,6 +435,11 @@ class ErlangCache:
             if typeData.name == type:
                 return typeData
         return None
+
+    @classmethod
+    def ModuleCallbacks(cls, module):
+        if not cls.TryLoad(module): return []
+        return cls.modules[module].callbacks;
 
     @classmethod
     def ModuleExportedTypes(cls, module):

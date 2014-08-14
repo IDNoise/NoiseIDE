@@ -1,17 +1,17 @@
 %% @author: Yaroslav 'IDNoise' Nikityshev
 %% @date: 09.09.2012
 
--module(test_cache_module1).
-
-%% Include files
--include("sample.hrl").  
+-module(test_cache_module1). 
+-behavior(test_cache_module).   
+%% Include files 
+-include("sample.hrl").    
 -include_lib("noiseide/include/props.hrl").
-%% Exported Functions
+%% Exported Functions 
 
--export([  
-    x/0, 
+-export([   
+    x/0,
     xxx/0,  
-    round/2     
+    round/2  
 ]).    
 -define(XssssX, ololasdasdado).  
 -type beam_instr() :: 'bs_init_writable' | 'fclearerror' | 'if_end'
@@ -67,6 +67,10 @@ x() ->
             D1 * 1000 + Add1 < D2 * 1000 + Add2 
         end, []),
     io:format("~p~n", [?X]).
-    
 
+-spec init(Args :: term()) ->
+    {ok, State :: term()} | {ok, State :: term(), timeout() | hibernate} |
+    {stop, Reason :: term()} | ignore.
 
+init(Args) ->
+    erlang:error({not_implemented, init}).

@@ -18,7 +18,7 @@ import core
 from idn_highlight import ErlangHighlightType, IgorHighlightType
 from idn_marker_panel import Marker
 from idn_outline import ErlangOutline
-from idn_utils import Menu, camelToLowerUnderscore
+from idn_utils import Menu, camelToLowerUnderscore, readFile
 from idn_config import Config
 from idn_erlang_utils import IsModule
 
@@ -125,6 +125,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         result = self.GetErlangWordAtPosition(self.popupPos)
         if result:
             style = self.GetStyleAt(self.popupPos)
+
             if style in self.SimpleFindRefTypes():
                 menu.AppendMenuItem("Find references as {}".format(self.StringStyleType(style)), self, lambda e: self.FindReferences())
             elif style in self.CompoundFindRefTypes():
@@ -132,6 +133,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                 menu.AppendMenu(wx.ID_ANY, "Find references as", submenu)
                 submenu.AppendMenuItem(self.StringStyleType(style), self, lambda e: self.FindReferences())
                 submenu.AppendMenuItem("Atom", self, lambda e: self.FindReferences(True))
+
             if style == ErlangHighlightType.RECORD:
                 recordName = result[2]
                 if recordName[0] == "#":
@@ -149,7 +151,36 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                             def insertInclude(a, i):
                                 return lambda e: self.InsertInclude(a, i)
                             submenu.AppendMenuItem(includeStr, self, insertInclude(app, os.path.basename(r.file)))
+
+            tokens = self.completer.tokenizer.GetTokens(self.GetLineText(self.LineFromPosition(self.popupPos)))
+            if tokens and tokens[0].value.startswith("-behavi"):
+                module = tokens[2].value
+                menu.AppendMenuItem("Implement behavior {}".format(module), self, lambda e: self.ImplementBehavior(module))
+
         return menu
+
+    def ImplementBehavior(self, module):
+        callbacks = ErlangCache.ModuleCallbacks(module)
+        if not callbacks:
+            return
+        behaviorText = readFile(callbacks[0].file)
+        self.BeginUndoAction()
+        for cb in callbacks:
+            if not ErlangCache.ModuleFunction(self.ModuleName(), cb.name, cb.arity):
+                exp = "^-callback " + cb.name + "\(" + ",".join([".*?"] * cb.arity) + "\."
+                r = re.compile(exp, re.MULTILINE | re.DOTALL)
+                match = r.search(behaviorText, 0)
+                if not match:
+                    continue
+                specText = match.group(0).replace("-callback", "-spec")
+                callbackImplementation = "\n" + specText + "\n\n" + "{}({}) ->\n    erlang:error({{not_implemented, {}}}).\n".format(
+                    cb.name, ", ".join(["_" + p for p in cb.params]), cb.name
+                )
+                #core.Log(specText)
+                #core.Log(callbackImplementation)
+                self.InsertText(self.LastPosition, callbackImplementation)
+                self.AddToExportFunArity(cb.name, cb.arity)
+        self.EndUndoAction()
 
     def InsertInclude(self, app, include):
         includeStr = "-include_lib(\"" + app + "/include/" + os.path.basename(include) + "\")."
@@ -575,13 +606,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         pos = self.PositionFromLine(self.CurrentLine)
         self.GotoPos(pos + indent)
 
-    def AddToExport(self):
-        funData = self.lexer.GetCurrentFunction()
-        if not funData: return
-
-        fun = funData[0]
-        arity = self.completer.GetFunArity(funData[1] + len(fun))
-
+    def AddToExportFunArity(self, fun, arity):
         funStr = "{}/{}".format(fun, arity)
         (exports, _startPos, _endPos, _insertPos, ranges) = self.lexer.GetAllExports()
         if funStr in str(exports.replace(" ", "").split(",")):
@@ -596,6 +621,14 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                 end = start
                 funStr += "\n"
             self.InsertText(end, funStr)
+
+    def AddToExport(self):
+        funData = self.lexer.GetCurrentFunction()
+        if not funData: return
+
+        fun = funData[0]
+        arity = self.completer.GetFunArity(funData[1] + len(fun))
+        self.AddToExportFunArity(fun, arity)
 
     def GoToExport(self):
         funData = self.lexer.GetCurrentFunction()

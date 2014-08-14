@@ -37,11 +37,13 @@
     beam = false,
     functions = [],  
     specs = [],
+    callbacks = [],
     records = [], 
     macros = [],          
     includes = [],
     exports = [],
-    exported_types = []
+    exported_types = [],
+    behaviors = []
 }).  
 
 -record(spec, {
@@ -50,6 +52,13 @@
     types = [], 
     result
 }).
+
+-record(callback, {
+    function, 
+    params = [], 
+    line
+}).
+
 
 -record(record, {
     name, 
@@ -201,15 +210,19 @@ dump_data_to_file(ModuleName, CacheDir, FilePath, CFile, Content, FlyFileName) -
              records = Recs, 
              macros = Macs, 
              includes = Incs,
-             exported_types = ExpTypes} = Content, 
+             callbacks = Callbacks,
+             exported_types = ExpTypes,
+             behaviors = Behaviors} = Content, 
     Props = [ 
         {name, list_to_binary(ModuleName)},
         {file, list_to_binary(FilePath)},
         {funs, funs_to_json(MN, CacheDir, Funs, FilePath)},
         {macros, {struct, macros_to_json(Macs, FlyFileName)}},
+        {callbacks, {struct, callbacks_to_json(Callbacks)}},
         {includes, includes_to_json(sets:to_list(sets:from_list(Incs)), FlyFileName)},
         {records_data, {struct, recs_data_to_json(Recs, FlyFileName)}},
-        {exported_types, {struct, exp_types_to_json(ExpTypes)}}
+        {exported_types, {struct, exp_types_to_json(ExpTypes)}},
+        {behaviors, [atom_to_binary(B, latin1) || B <- Behaviors]}
     ], 
     Dirname = filename:basename(filename:dirname(FilePath)),
     Extension = filename:extension(FilePath),
@@ -286,6 +299,12 @@ macros_data_to_json(Mac) ->
     {Mac#macro.name, {struct, [{value, iolist_to_binary(Mac#macro.value)}, 
                                 {line, Mac#macro.line}]}
     }.
+
+callbacks_to_json(Callbacks) ->
+    [{atom_to_binary(Fun, latin1), {struct, [
+        {params, [atom_to_binary(P, latin1) || P <- Params]}%,
+        %{line, Line}
+    ]}} || #callback{function = Fun, line = _Line, params = Params} <- Callbacks].
 
 rec_fields_to_json(Fields) -> 
     [list_to_binary(F) || #field{name = F} <- Fields].
@@ -479,6 +498,10 @@ parse_atom(Node, "module", Content) ->
         _ ->
             Content#content{module_name = ModuleName}
     end;
+parse_atom(Node, Atom, Content) when Atom == "behavior" orelse Atom == "behaviour" -> 
+    [Attribute|_] = erl_syntax:attribute_arguments(Node),
+    ModuleName = erl_syntax:atom_value(Attribute),
+    Content#content{behaviors = [ModuleName | Content#content.behaviors]};
 parse_atom(Node, "compile", Content) -> 
     [Attribute] = erl_syntax:attribute_arguments(Node),
     case erl_syntax:atom_value(Attribute) of
@@ -496,6 +519,12 @@ parse_atom(Node, "spec", Content) ->
     case Spec of 
         none -> Content;
         _ -> Content#content{specs = [Spec | Content#content.specs]}
+    end; 
+parse_atom(Node, "callback", Content) -> 
+    Callback = parse_callback(Node),
+    case Callback of 
+        none -> Content;
+        _ -> Content#content{callbacks = [Callback | Content#content.callbacks]}
     end; 
 parse_atom(Node, "type", Content) -> 
     parse_types(Node, Content);
@@ -628,7 +657,6 @@ parse_spec(Node) ->
     end.
 
 parse_spec_internal(Node, Clause) ->
-    
     %io:format("~p ~p~n", [Node, Clause]),
     Spec = edoc_specs:spec(Node, Clause),
     {_, _, _, _, TSpec} = Spec,
@@ -639,6 +667,15 @@ parse_spec_internal(Node, Clause) ->
     {Vars, Types} = get_var_types(Args, Defs),
     Result = parse_t_type(Range, Defs),  
     #spec{name = {atom_to_list(FunName), length(Args)}, vars = Vars, result = Result, types = Types}.
+
+parse_callback(Node) ->
+    try
+        {callback, {{Fun, _Arity}, [{type, _, 'fun', [{type, _, product, Vars} | _]}]}} = erl_syntax_lib:analyze_wild_attribute(Node),
+        VarNames = [Var || {ann_type, _, [{var, _, Var}, {type, _, term, []}]} <- Vars],
+        #callback{function = Fun, params = VarNames, line = erl_syntax:get_pos(Node)}
+    catch 
+        Error:Reason -> io:format("parse callback error: ~p~n", [{Error, Reason}])
+    end.
 
 get_var_types(Args, Defs) ->
     {Vars, Types} = 
