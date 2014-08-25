@@ -670,8 +670,15 @@ parse_spec_internal(Node, Clause) ->
 
 parse_callback(Node) ->
     try
-        {callback, {{Fun, _Arity}, [{type, _, 'fun', [{type, _, product, Vars} | _]}]}} = erl_syntax_lib:analyze_wild_attribute(Node),
-        VarNames = [Var || {ann_type, _, [{var, _, Var}, {type, _, term, []}]} <- Vars],
+        {Fun, VarNames} = case erl_syntax_lib:analyze_wild_attribute(Node) of
+            {callback, {{F, _Arity}, [{type, _, bounded_fun, [{type, _, 'fun', [{type, _, product, V} | _]} | _]}]}} -> 
+                VN = [Var || {var, _, Var} <- V],
+                {F, VN};
+            {callback, {{F, _Arity}, [{type, _, 'fun', [{type, _, product, V} | _]} | _]}} -> 
+                VN = [Var || {ann_type, _, [{var, _, Var}, {type, _, term, []}]} <- V],
+                {F, VN}
+        end,
+        
         #callback{function = Fun, params = VarNames, line = erl_syntax:get_pos(Node)}
     catch 
         Error:Reason -> io:format("parse callback error: ~p~n", [{Error, Reason}])

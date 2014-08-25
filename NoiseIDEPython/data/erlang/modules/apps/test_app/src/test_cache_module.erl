@@ -11,7 +11,7 @@
 -export([ 
     x/0, 
     function/1 
-]). 
+]).  
 -callback init(Args :: term()) ->
     {ok, State :: term()} | {ok, State :: term(), timeout() | hibernate} |
     {stop, Reason :: term()} | ignore. 
@@ -20,6 +20,10 @@
     {noreply, NewState :: term()} |
     {noreply, NewState :: term(), timeout() | hibernate} |
     {stop, Reason :: term(), NewState :: term()}.
+
+-callback on_execute(State, Command, Args) -> State when
+      Command :: atom(),
+      Args :: [binary()].
 
 -export([
 
