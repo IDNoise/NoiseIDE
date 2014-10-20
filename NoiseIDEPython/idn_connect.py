@@ -64,11 +64,15 @@ class ErlangSocketConnection(asyncore.dispatcher):
         if recv:
             msgLen = struct.unpack('>L', recv)[0]
             data = self.socket.recv(msgLen)
-            try:
-                while len(data) != msgLen:
+            errorCount = 0
+            while len(data) != msgLen:
+                try:
                     data += self.socket.recv(msgLen - len(data))
-            except Exception, e:
-                core.Log("recv error", e)
+                except Exception, e:
+                    core.Log("recv error", e)
+                    errorCount += 1
+                    if errorCount > 10:
+                        return
             if self.socketHandler:
                 self.socketHandler(data)
 
