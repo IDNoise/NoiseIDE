@@ -5,6 +5,7 @@ __author__ = 'Yaroslav'
 import os
 import operator
 import wx
+
 from idn_cache import ErlangCache, IgorCache
 from idn_config import Config
 from idn_connect import CompileErrorInfo
@@ -17,7 +18,7 @@ from idn_erlangstc import ErlangHighlightedSTCBase, ErlangSTCReadOnly
 from idn_errors_table import ErrorsTableGrid, XrefTableGrid, DialyzerTableGrid
 from idn_notebook import ErlangCompileOptionPanel
 from idn_project import Project
-from idn_utils import readFile, writeFile, pystr, Menu, GetImage
+from idn_utils import readFile, writeFile, pystr, Menu, GetImage, decode
 from idn_erlang_utils import IsBeam, IsInclude, IsYrl, IsModule, IsIgor, IsAppSrc
 import core
 
@@ -245,7 +246,7 @@ class ErlangProject(Project):
         return os.path.join(self.projectDir, self.projectData[CONFIG_DEPS_DIR])
 
     def GetErlangRuntime(self):
-        return None if not CONFIG_ERLANG_RUNTIME in self.userData else self.userData[CONFIG_ERLANG_RUNTIME]
+        return None if not CONFIG_ERLANG_RUNTIME in self.userData else decode(self.userData[CONFIG_ERLANG_RUNTIME])
 
     def GetErlangPath(self):
         runtime = self.GetErlangRuntime()

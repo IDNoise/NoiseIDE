@@ -8,6 +8,10 @@ import core
 import os
 import wx
 import codecs
+import sys
+
+def decode(name):
+    return name.decode(sys.getfilesystemencoding());
 
 def readFile(fileName):
     f = codecs.open(fileName, "r", "utf-8")

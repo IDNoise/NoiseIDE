@@ -3,10 +3,11 @@ import os
 import json
 import re
 import shutil
+import sys
 from idn_config import Config
 from idn_directoryinfo import DirectoryChecker
 import core
-from idn_utils import readFile
+from idn_utils import readFile, decode
 import wx
 from idn_erlang_utils import IsInclude, IsModule
 
@@ -204,7 +205,7 @@ class ErlangCache:
     erlangDir = ""
 
     @classmethod
-    def CacheDir(cls): return os.path.join(core.DataDir(), "cache", "erlang")
+    def CacheDir(cls): return os.path.join(decode(core.DataDir()), "cache", "erlang")
 
     @classmethod
     def Init(cls, project):

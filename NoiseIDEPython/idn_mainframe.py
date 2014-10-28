@@ -29,6 +29,10 @@ from threading import Thread, Event
 
 installNewVersion = False
 
+import sys
+reload(sys)
+sys.setdefaultencoding("utf-8")
+
 class AsyncoreThread(Thread):
     def __init__(self):
         Thread.__init__(self)
