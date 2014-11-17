@@ -7,11 +7,11 @@
 -include_lib("noiseide/include/props.hrl").
 %-include_lib("sample.hrl").
 %% Exported Functions 
-
+ 
 -export([ 
     x/0, 
     function/1 
-]).  
+]).    
 -callback init(Args :: term()) ->
     {ok, State :: term()} | {ok, State :: term(), timeout() | hibernate} |
     {stop, Reason :: term()} | ignore. 
@@ -25,9 +25,13 @@
       Command :: atom(),
       Args :: [binary()].
 
+-callback on_clear_lobby(State) -> State. 
+
 -export([
 
-]).     
+]).    
+
+
       
 -define(XssssX, ololasdasdado).  
 -type beam_instr() :: 'bs_init_writable' | 'fclearerror' | 'if_end'

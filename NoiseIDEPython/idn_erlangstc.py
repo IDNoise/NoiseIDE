@@ -151,6 +151,9 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                             def insertInclude(a, i):
                                 return lambda e: self.InsertInclude(a, i)
                             submenu.AppendMenuItem(includeStr, self, insertInclude(app, os.path.basename(r.file)))
+            if style == ErlangHighlightType.FUNDEC:
+                menu.AppendMenuItem("Add to export", self, lambda e: self.AddToExport())
+                menu.AppendMenuItem("Gen spec", self, lambda e: self.GenSpec())
 
             tokens = self.completer.tokenizer.GetTokens(self.GetLineText(self.LineFromPosition(self.popupPos)))
             if tokens and tokens[0].value.startswith("-behavi"):
@@ -629,6 +632,15 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         fun = funData[0]
         arity = self.completer.GetFunArity(funData[1] + len(fun))
         self.AddToExportFunArity(fun, arity)
+
+    def GenSpec(self):
+        funData = self.lexer.GetCurrentFunction()
+        if not funData: return
+        fun = funData[0]
+        arity = self.completer.GetFunArity(funData[1] + len(fun))
+        data = ErlangCache.ModuleFunction(self.ModuleName(), fun, arity)
+        spec = "-spec {} -> FunResult.\n\n".format(self.completer.FunctionText(data))
+        self.InsertText(funData[1], spec)
 
     def GoToExport(self):
         funData = self.lexer.GetCurrentFunction()

@@ -113,6 +113,17 @@ class ErlangCompleter(Completer):
                 data = ErlangCache.GlobalIncludes()
         self._PrepareData(data, isReference)
 
+    def FunctionText(self, funData):
+        params = funData.params[0][:]
+        def prepare_param(p):
+            if "\"" in p: return "String"
+            if p[0].islower():
+                return "Atom"
+            return p
+        params = [prepare_param(p) for p in params]
+        text = "{}({})".format(funData.name, ", ".join(params))
+        return text
+
     def _PrepareData(self, data, isReference = False):
         self.list.Clear()
         self.lastData = []
