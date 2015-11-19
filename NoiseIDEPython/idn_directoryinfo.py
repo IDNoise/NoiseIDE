@@ -40,6 +40,8 @@ def GatherInfo(root, recursive = True, fileMask = None, excludeDirs = None, excl
     for f in os.listdir(root):
         try:
             f = os.path.normpath(os.path.join(root, f))
+            #core.Log("File path on gather info: ", f)
+            core.Log(f, " ", excludePaths )
             if excludePaths and f in excludePaths:
                 continue
             mtime = os.stat(f)[ST_MTIME]

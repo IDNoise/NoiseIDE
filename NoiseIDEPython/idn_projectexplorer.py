@@ -29,6 +29,8 @@ class ProjectExplorer(IDNCustomTreeCtrl):
             self.mask = self.DefaultMask()
         self.excludeDirs = self.DefaultExcludeDirs()
         self.excludePaths = self.DefaultExcludePaths()
+        for p in project.GetExcludedPaths():
+            self.excludePaths.append(os.path.join(core.Project.projectDir, p))
         self.hiddenPaths = set()
         self.showHidden = False
         self.dirChecker = None
@@ -197,14 +199,16 @@ class ProjectExplorer(IDNCustomTreeCtrl):
     def Load(self, node, dir):
         if not os.path.isdir(dir):
             raise Exception("{} is not a valid directory".format(dir))
-
-        files = os.listdir(dir)
-        for f in files:
-            path = os.path.normpath(os.path.join(dir, f))
-            if os.path.isdir(path):
-                self.AppendDir(node, path)
-            else:
-                self.AppendFile(node, path)
+        try:
+            files = os.listdir(dir)
+            for f in files:
+                path = os.path.normpath(os.path.join(dir, f))
+                if os.path.isdir(path):
+                    self.AppendDir(node, path)
+                else:
+                    self.AppendFile(node, path)
+        except:
+            pass
 
     def GetIconIndex(self, fileName):
         ext = extension(fileName)

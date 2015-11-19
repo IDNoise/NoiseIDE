@@ -45,7 +45,7 @@ class ErlangHighlighter:
            "port_control", "pre_loaded", "process_flag", "process_info", "processes", "purge_module", "put", "register",
            "registered", "round", "self", "setelement", "size", "spawn", "spawn_link", "spawn_monitor", "spawn_opt",
            "split_binary", "statistics", "term_to_binary", "throw", "time", "tl", "trunc", "tuple_size", "tuple_to_list",
-          "unlink", "unregister", "whereis"}
+          "unlink", "unregister", "whereis", "record_info"}
 
     DOCS = {"@author", "@clear", "@copyright", "@deprecated", "@doc", "@docfile", "@end", "@equiv", "@headerfile",
             "@hidden", "@private", "@reference", "@see", "@since", "@spec", "@throws", "@title", "@todo", "@TODO",
