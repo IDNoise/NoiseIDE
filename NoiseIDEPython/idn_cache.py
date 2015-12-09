@@ -221,7 +221,7 @@ class ErlangCache:
         cls.checkers = {}
 
         cls.loadTimer = wx.Timer(core.MainFrame, wx.ID_ANY)
-        cls.loadTimer.Start(100)
+        cls.loadTimer.Start(10)
         core.MainFrame.Bind(wx.EVT_TIMER, cls.OnProgressTimer, cls.loadTimer)
 
         cls.fileCheckTimer = wx.Timer(core.MainFrame, wx.ID_ANY)

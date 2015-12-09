@@ -768,7 +768,7 @@ class SingleAppErlangProject(ErlangProject):
 
     def OnSocketConnected(self):
         ErlangProject.OnSocketConnected(self)
-        self.Rebuild()
+        #self.Rebuild()
 
     def UpdatePaths(self):
         ebinDir = self.EbinDir()
@@ -934,7 +934,7 @@ class MultipleAppErlangProject(ErlangProject):
 
     def OnSocketConnected(self):
         ErlangProject.OnSocketConnected(self)
-        self.Rebuild()
+        #self.Rebuild()
 
     def UpdatePaths(self):
         dirs = ""
