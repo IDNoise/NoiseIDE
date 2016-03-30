@@ -5,7 +5,7 @@ from idn_token import Token, ErlangTokenType, ErlangTokenizer, IgorTokenizer, Ig
 class ErlangHighlightType:
     STRING, COMMENT, ARROW, VAR, MACROS, ATOM, MODULE, \
     FUNCTION, KEYWORD, MODULEATTR, RECORD, RECORDDEF, NUMBER, \
-    FUNDEC, BRACKET, BIF, FULLSTOP, DEFAULT = range(1, 19)
+    FUNDEC, BRACKET, BIF, FULLSTOP, DEFAULT, SPECIAL = range(1, 20)
 
 class ErlangHighlighter:
     FUN = "fun"
@@ -26,6 +26,8 @@ class ErlangHighlighter:
     KEYWORDS = {"after", "and", "andalso", "band", "begin", "bnot", "bor", "bsl", "bsr", "bxor", "case", "catch", "cond",
                 "div", "end", "fun", "if", "let", "not", "of", "or", "orelse", "query", "receive", "rem", "try", "when",
                 "xor"}
+
+    SPECIAL_ATOMS = {"undefined", "'undefined'", "true", "'true'", "false", "'false'"}
 
     MODULEATTR = {"-behavior", "-behaviour", "-compile", "-created", "-created_by", "-export", "-file", "-import",
                   "-module", "-modified", "-modified_by", "-record", "-revision", "-spec", "-type", "-vsn", "-extends",
@@ -81,6 +83,9 @@ class ErlangHighlighter:
                 if token.value in self.KEYWORDS:
                     tokenType = ErlangHighlightType.KEYWORD
 
+                elif token.value in self.SPECIAL_ATOMS:
+                    tokenType = ErlangHighlightType.SPECIAL
+
                 elif i == 2 and firstToken.value in  ["-module", "-extends"]:
                     tokenType = ErlangHighlightType.MODULE
                 elif i == 2 and firstToken.value == "-record":
@@ -117,7 +122,7 @@ class IgorHighlightType:
     FIELD, ENUM_FIELD, FUNCTION = range(1, 15)
 
 class IgorHighlighter:
-    keywords = ["import", "module", "record", "interface",
+    keywords = ["using", "import", "module", "record", "interface",
                 "enum", "variant", "exception", "define",
                 "service", "returns", "throws", "s->c",
                 "c->s", "schema", "ethereal", "tag", "true", "false"]
@@ -163,7 +168,7 @@ class IgorHighlighter:
                     tokenType = IgorHighlightType.ENUM_FIELD
                 elif firstToken.value == "record" and tokens[i - 1].value == "[":
                     tokenType = IgorHighlightType.ENUM_FIELD
-                elif token.value in ["bool", "sbyte", "byte", "short", "ushort", "int", "uint", "long", "ulong", "float", "double", "string", "binary", "atom", "dict", "list"]:
+                elif token.value in ["bool", "sbyte", "byte", "short", "ushort", "int", "uint", "long", "ulong", "float", "double", "string", "binary", "atom", "dict", "list", "map"]:
                     tokenType = IgorHighlightType.BASE_TYPE
                 elif len(tokens) > i + 1 and tokens[i + 1].value in ["=", ";", ",", ")"]:
                     tokenType = IgorHighlightType.FIELD

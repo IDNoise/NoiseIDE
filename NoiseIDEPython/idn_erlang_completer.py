@@ -345,10 +345,13 @@ class ErlangCompleter(Completer):
         return arity
 
     def GetRecordNavAndHelp(self, record):
-        if record[0] == "#": record = record[1:]
-        recordData = ErlangCache.RecordData(self.module, record)
+        recordData = self.GetRecord(record)
         if not recordData: return
-        return ((recordData.moduleData.file, recordData.line), self._RecordHelp(recordData))
+        return (recordData.moduleData.file, recordData.line), self._RecordHelp(recordData)
+
+    def GetRecord(self, recordName):
+        if recordName[0] == "#": recordName = recordName[1:]
+        return ErlangCache.RecordData(self.module, recordName)
 
     def GetMacrosNavAndHelp(self, macros):
         if macros[0] == "?": macros = macros[1:]

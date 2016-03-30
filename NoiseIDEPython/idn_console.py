@@ -2,6 +2,7 @@ from idn_colorschema import ColorSchema
 from idn_erlang_completer import ErlangSimpleCompleter
 from idn_erlangstc import ErlangConsoleSTC
 from idn_events import Event
+from idn_cache import ErlangCache
 import core
 from idn_highlight import ErlangHighlighter, ErlangHighlightType
 from idn_notebook import ConsolePanel
@@ -81,7 +82,8 @@ class ErlangConsole(wx.Panel):
 
         self.CreateShell(cwd, params)
         self.promptRegexp = re.compile(r"(^|\(.*?\))\d*>\s*")
-
+        self.recordRegexp = re.compile(r"#([a-z][a-z0-9A-Z_]*)\{")
+        self.importedRecorModules = []
         self.lastCommands = []
 
         self.highlighter = ErlangHighlighter()
@@ -99,6 +101,7 @@ class ErlangConsole(wx.Panel):
             ErlangHighlightType.MODULE: formats["module"],
             ErlangHighlightType.FUNCTION: formats["function"],
             ErlangHighlightType.KEYWORD: formats["keyword"],
+            ErlangHighlightType.SPECIAL: formats["special"],
             ErlangHighlightType.MODULEATTR: formats["moduleattr"],
             ErlangHighlightType.RECORD: formats["record"],
             ErlangHighlightType.RECORDDEF: formats["record"],
@@ -153,6 +156,7 @@ class ErlangConsole(wx.Panel):
         self.shell.Start()
         self.startButton.Enabled = False
         self.stopButton.Enabled = True
+        self.importedRecorModules = []
 
     def Stop(self, kill = False):
         noLog = wx.LogNull()
@@ -177,9 +181,23 @@ class ErlangConsole(wx.Panel):
             lastCommands = list(filter(lambda x: x != cmd, self.lastCommands))
             lastCommands.append(cmd)
             self.lastCommands = lastCommands
+            self.ImportRecords(cmd)
             self.shell.SendCommandToProcess(cmd)
+
         self.commandText.Clear()
         self.WriteToConsoleOut(cmd + '\n')
+
+    def ImportRecords(self, cmd):
+        recordNames = re.findall(self.recordRegexp, cmd)
+        for recordName in recordNames:
+            for record in ErlangCache.AllRecords():
+                if record.name == recordName:
+                    app = core.Project.GetApp(record.file)
+                    includeStr = app + "/include/" + os.path.basename(record.file)
+                    if includeStr in self.importedRecorModules:
+                        continue
+                    self.shell.SendCommandToProcess("rr(\"" + includeStr +"\").")
+                    self.importedRecorModules.append(includeStr)
 
     def OnCommandTextKeyDown(self, event):
         if self.completer.IsShown():

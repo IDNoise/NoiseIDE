@@ -35,6 +35,7 @@ code_editor:
       string:     fore:#bb7777
       arrow:      fore:#000000
       keyword:    fore:#a611bb,bold
+      special:    fore:#a611bb
       atom:       fore:#000000
       variable:   fore:#B8860B
       comment:    fore:#999999

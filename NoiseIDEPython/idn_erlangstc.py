@@ -18,7 +18,7 @@ import core
 from idn_highlight import ErlangHighlightType, IgorHighlightType
 from idn_marker_panel import Marker
 from idn_outline import ErlangOutline
-from idn_utils import Menu, camelToLowerUnderscore, readFile
+from idn_utils import Menu, camelToLowerUnderscore, readFile, underscoreToCamelcase
 from idn_config import Config
 from idn_erlang_utils import IsModule
 
@@ -40,6 +40,7 @@ class ErlangHighlightedSTCBase(CustomSTC):
         self.StyleSetSpec(ErlangHighlightType.MODULE, formats["module"])
         self.StyleSetSpec(ErlangHighlightType.FUNCTION, formats["function"])
         self.StyleSetSpec(ErlangHighlightType.KEYWORD, formats["keyword"])
+        self.StyleSetSpec(ErlangHighlightType.SPECIAL, formats["special"])
         self.StyleSetSpec(ErlangHighlightType.MODULEATTR, formats["moduleattr"])
         self.StyleSetSpec(ErlangHighlightType.RECORD, formats["record"])
         self.StyleSetSpec(ErlangHighlightType.RECORDDEF, formats["record"])
@@ -138,19 +139,30 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                 recordName = result[2]
                 if recordName[0] == "#":
                     recordName = recordName[1:]
-                recordData = self.completer.GetRecordNavAndHelp(recordName)
-                if recordData is None:
+                record = self.completer.GetRecord(recordName)
+                if record is None:
                     records = ErlangCache.AllRecords()
                     records = [r for r in records if r.name == recordName]
                     if len(records) > 0:
-                        submenu = Menu()
-                        menu.AppendMenu(wx.ID_ANY, "Resolve as", submenu)
-                        for r in records:
-                            app = core.Project.GetApp(r.file)
-                            includeStr = app + "/include/" + os.path.basename(r.file)
-                            def insertInclude(a, i):
-                                return lambda e: self.InsertInclude(a, i)
-                            submenu.AppendMenuItem(includeStr, self, insertInclude(app, os.path.basename(r.file)))
+                        def insertInclude(rec):
+                            app = core.Project.GetApp(rec.file)
+                            incl = app + "/include/" + os.path.basename(rec.file)
+                            return incl, lambda e: self.InsertInclude(app, incl)
+                        if len(records) == 1:
+                            includeStr, action = insertInclude(records[0])
+                            menu.AppendMenuItem("Resolve as " + includeStr, self, action)
+                        else:
+                            submenu = Menu()
+                            menu.AppendMenu(wx.ID_ANY, "Resolve as", submenu)
+                            for r in records:
+                                includeStr, action = insertInclude(r)
+                                submenu.AppendMenuItem(includeStr, self, action)
+
+                else:
+                    def unfold(rec, start, end):
+                        return lambda e: self.UnfoldRecord(rec, start, end)
+                    menu.AppendMenuItem("Unfold fields", self, unfold(record, result[0], result[1]))
+
             if style == ErlangHighlightType.FUNDEC:
                 menu.AppendMenuItem("Add to export", self, lambda e: self.AddToExport())
                 menu.AppendMenuItem("Gen spec", self, lambda e: self.GenSpec())
@@ -191,6 +203,19 @@ class ErlangSTC(ErlangHighlightedSTCBase):
             includeStr = "-include(\"" + os.path.basename(include) + "\")."
         pos = self.lexer.GetExportInsertPosition()
         self.InsertText(pos, includeStr)
+
+    def UnfoldRecord(self, record, start, end):
+        self.SetTargetStart(start)
+        core.Log(self.GetCharAt(end))
+        while not self.GetCharAt(end).isspace():
+            end += 1
+        self.SetTargetEnd(end)
+        recordFields = ", ".join([field + " = " + underscoreToCamelcase(field) for field in record.fields])
+        unfoldedRecord = "#" + record.name + "{" + recordFields + "}"
+        core.Log(unfoldedRecord)
+        self.ReplaceTarget(unfoldedRecord)
+        self.GotoPos(start + len(unfoldedRecord))
+
 
     def StringStyleType(self, style):
         if style in [ErlangHighlightType.FUNCTION, ErlangHighlightType.FUNDEC]:
