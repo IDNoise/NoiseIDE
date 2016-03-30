@@ -101,11 +101,11 @@ class ErlangProjectFrom(wx.Dialog):
 
         self.projectPathTB.Bind(wx.EVT_TEXT, self.OnPathChanged)
 
-        self.appsDirTB = wx.TextCtrl(self, value = "apps", size = (300, 20), validator = NotEmptyTextValidator("Apps dir"))
+        self.appsDirTB = wx.TextCtrl(self, value = "apps", size = (300, 20))
         self.appsDirTB.SetToolTipString("Apps folder name")
         self.appsDirTB.Bind(wx.EVT_TEXT, self.OnPathChanged)
 
-        self.depsDirTB = wx.TextCtrl(self, value = "deps", size = (300, 20), validator = NotEmptyTextValidator("Deps dir"))
+        self.depsDirTB = wx.TextCtrl(self, value = "deps", size = (300, 20))
         self.depsDirTB.SetToolTipString("Deps folder name")
         self.depsDirTB.Bind(wx.EVT_TEXT, self.OnPathChanged)
 

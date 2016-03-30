@@ -240,9 +240,13 @@ class ErlangProject(Project):
         self.GetShell().DialyzeModules(list(beams))
 
     def AppsPath(self):
+        if self.projectData[CONFIG_APPS_DIR] == "":
+            return self.projectDir;
         return os.path.join(self.projectDir, self.projectData[CONFIG_APPS_DIR])
 
     def DepsPath(self):
+        if self.projectData[CONFIG_DEPS_DIR] == "":
+            return self.projectDir;
         return os.path.join(self.projectDir, self.projectData[CONFIG_DEPS_DIR])
 
     def GetErlangRuntime(self):
