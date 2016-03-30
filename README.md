@@ -1,13 +1,17 @@
-NoiseIDE
+Artplant NoiseIDE ([http://artplant.no](http://artplant.no), [https://github.com/artplant](https://github.com/artplant))
 ========
 IDE for Erlang written from scratch using wxPython.
-I'm a server programmer in ArtPlant. We are making games using Erlang as server and Unity\C# as client. All work is done on windows. 
+
+In Artplant we are using Erlang on server and Unity\C# on client. All work is done on windows, servers hosted on linux.
+
+Most of the features we use are already in place, project is not in active development. From time to time i add something new :)
+Codebase requires a lot of refactorings i can't find time to do (i think it requires total rewrite and don't start it :D)
 
 ##Windows MSI Installer
-Latest windows installer you can download from my [dropbox folder](https://www.dropbox.com/s/u1esqq4h68qufcz/NoiseIDE.msi) or from [latest](https://github.com/IDNoise/NoiseIDE/releases/latest) github release
+Latest windows installer you can download from my [dropbox folder](https://www.dropbox.com/s/u1esqq4h68qufcz/NoiseIDE.msi) or from [latest](https://github.com/IDNoise/NoiseIDE/releases/latest) github release (don't update it as often as dropbox)
 
 ##Linux\MacOs
-Never tried to run it on these platforms. But wxPython is crossplatform and pywin32api calls placed in if\else blocks. 
+Never tried to run it on these platforms. Required calls to pywin32api are placed in special platform blocks. 
 Everyone interested in running it on these platforms are welcome.
 
 ## Tutorials
@@ -16,8 +20,14 @@ Simple tutorials for first setup, basic project and common controls elements are
 ##Features
 * Single app\multiple app erlang projects
 
- * SIngle app. 1 erlang application. Project folder contains default src\include\ebin folders. 
- * Multiple app. Project contains 2 main folders: apps and deps. Apps folder contains erlang applications you are working on and deps folder contains all dependencies, like mochiweb, gproc, etc. Deps apps are compiled only by request. ( For example we have 20+ deps in our projects and compile it only on first project initialization and later on dependency update).
+  * Single app. 1 erlang application. Project folder contains default src\include\ebin folders. 
+  * Multiple app. Can contain 2 separate forlders: apps and deps.
+     * Apps folder contains erlang applications you are working on and deps 
+     * Deps folder contains all dependencies, like mochiweb, gproc, etc. 
+     * They are compliled separately. ( For example we have 20+ deps in our projects and compile it only on first project initialization and later on dependency update).
+
+  * Apps and deps path can be empty, all apps will be in project root.
+ 
 
 * Project tree explorer with customization:
 
@@ -67,7 +77,8 @@ Simple tutorials for first setup, basic project and common controls elements are
  * Toggle: show eol
  * Multiline comment\uncomment
  * 2 color schemes (dark\white) for syntax highlighting. Now without user configuration
- * User defined snippets
+ * Resolve record (import)
+ * Unfold record fields
 
 * Error\Warings list with navigation to source
 
@@ -114,18 +125,6 @@ Simple tutorials for first setup, basic project and common controls elements are
 
 * Dunno, may be forgot something :D
 
-## Help and contacts.
-I don't get payed for this project and work on it in my free time so if you'd like to thank me you can make a donation using [PayPal](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=2TM8DYTDCBHWJ&lc=RU&item_name=Noise%20IDE%20%28ide%20for%20erlang%29&item_number=1&currency_code=USD&bn=PP%2dDonationsBF%3abtn_donateCC_LG%2egif%3aNonHosted). This way i can drink rum and spend more time working on it.
-
-You can contact me by mail (in profile) or by skype: *idnoise* 
-
-
-## Planned features
-* Rebar project type
-* Debugger
-* Have something useful in mind? Contact me :D
-
-
 ## Used libs\apps
 * Python 2.7
 * wxPython 2.9.5
@@ -133,6 +132,9 @@ You can contact me by mail (in profile) or by skype: *idnoise*
 * PyWin32-217
 * cx_Freeze-4.3 for building exe\msi
 
-
 ###Licence
-Noise IDE is licensed under GPL-2 ( Problem for you? Contact me :) )
+Artplant Noise IDE is licensed under GPL-2
+
+## About
+Developed as hobby project in free time to learn Python and get proper IDE for daily use.
+You can contact me by mail (in profile) or by skype: *idnoise* 
