@@ -4,8 +4,8 @@ IDE for Erlang written from scratch using wxPython.
 
 In Artplant we are using Erlang on server and Unity\C# on client. All work is done on windows, servers hosted on linux.
 
-Most of the features we use are already in place, project is not in active development. From time to time i add something new :)
-Codebase requires a lot of refactorings i can't find time to do (i think it requires total rewrite and don't start it :D)
+Most of the features we use are already in place, project is not in active development. From time to time i add something new.
+Codebase requires a lot of refactorings i can't find time to do. I think it requires total rewrite :)
 
 ##Windows MSI Installer
 Latest windows installer you can download from my [dropbox folder](https://www.dropbox.com/s/u1esqq4h68qufcz/NoiseIDE.msi) or from [latest](https://github.com/IDNoise/NoiseIDE/releases/latest) github release (don't update it as often as dropbox)
