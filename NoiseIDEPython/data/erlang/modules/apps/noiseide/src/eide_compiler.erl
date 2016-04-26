@@ -55,7 +55,7 @@ compile_app(AppPath) ->
            end
         end, []), 
     ModuleNames = [filename:rootname(filename:basename(M)) || M <- Modules],
-    filelib:fold_files(OutDir, ".*\.(beam|app)$", true, 
+    filelib:fold_files(OutDir, ".*\.(beam)$", true, 
         fun(File, _) -> 
             case lists:member(filename:rootname(filename:basename(File)), ModuleNames) of
                 true -> ok;
