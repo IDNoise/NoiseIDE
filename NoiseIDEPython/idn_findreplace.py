@@ -170,10 +170,15 @@ class FindInFilePanel(wx.Panel):
     def OnReplaceAll(self, event):
         if not self.findText.Value:
             return
-        self.OnFind(None)
-        while self.findSuccessful:
-            self.OnReplace(None)
-            self.OnFind(None)
+
+        regexp = PrepareRegexp(self.findText.Value,
+                               self.wholeWordsCb.Value,
+                               self.matchCaseCb.Value,
+                               self.useRegextCb.Value)
+        text = self.editor.GetText()
+        if regexp.search(text):
+            text = regexp.sub(self.replaceText.Value, text)
+            self.editor.SetText(text)
 
     def OnClose(self, event):
         self.Parent.HideFind()

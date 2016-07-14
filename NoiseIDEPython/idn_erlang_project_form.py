@@ -231,6 +231,7 @@ class ErlangProjectFrom(wx.Dialog):
         data[CONFIG_COMPILER_OPTIONS] = compilerOptions
         data[CONFIG_CONSOLES] = self.consoles
         data[CONFIG_PROJECT_TYPE] = self.projectType
+        data[Project.CONFIG_EXCLUDED_PATHS] = self.project.GetExcludedPaths()
 
         if self.projectType == MULTIPLE_APP_PROJECT:
             apps = self.appsDirTB.Value
