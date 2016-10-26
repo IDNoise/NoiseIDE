@@ -9,6 +9,7 @@ from idn_directoryinfo import DirectoryChecker
 import core
 from idn_utils import readFile, decode
 import wx
+from collections import OrderedDict
 from idn_erlang_utils import IsInclude, IsModule
 
 FILE = "file"
@@ -59,7 +60,7 @@ class Record:
         self.line = line
         self.file = moduleData.file
 
-        self.fieldTypes = {}
+        self.fieldTypes = OrderedDict()
         for i in range(len(self.fields)):
             self.fieldTypes[self.fields[i]] = self.types[i]
 

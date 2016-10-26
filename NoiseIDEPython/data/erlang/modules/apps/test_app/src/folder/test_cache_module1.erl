@@ -42,7 +42,7 @@ round(Price, sell) ->
 %asdasdasd  \
 %asdasdasd
 %asdasdasd
-      
+       
 -opaque ololo() :: #ololo{}.
 %%%===================================================================
 %%% Internal f unction s

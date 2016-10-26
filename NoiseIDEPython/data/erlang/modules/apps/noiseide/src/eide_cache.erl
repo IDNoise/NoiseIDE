@@ -287,10 +287,12 @@ exp_types_to_json(Recs) ->
     [{list_to_binary(TypeName), {struct, [{types, list_to_binary(Types)}, {line, Line}]}}|| {TypeName, Types, Line} <- Recs].
  
 rec_data_to_json(Rec) ->
-    {Rec#record.name, {struct, [{fields, rec_fields_to_json(Rec#record.fields)}, 
+    Result = {Rec#record.name, {struct, [{fields, rec_fields_to_json(Rec#record.fields)}, 
                                 {types, rec_field_types_to_json(Rec#record.fields)},
                                 {line, Rec#record.line}]}
-    }.
+    },
+%    erlang:display(Result),
+    Result.
 
 macros_to_json(Macs, File) ->
     [macros_data_to_json(M) || M <- Macs, string:to_lower(M#macro.file) == string:to_lower(File)].
@@ -302,9 +304,20 @@ macros_data_to_json(Mac) ->
 
 callbacks_to_json(Callbacks) ->
     [{atom_to_binary(Fun, latin1), {struct, [
-        {params, [atom_to_binary(P, latin1) || P <- Params]}%,
+        {params, [to_binary(P) || P <- Params]}%,
         %{line, Line}
     ]}} || #callback{function = Fun, line = _Line, params = Params} <- Callbacks].
+
+to_binary(Atom) when is_atom(Atom) ->
+    atom_to_binary(Atom, latin1);
+to_binary(List) when is_list(List) ->
+    list_to_binary(lists:flatten([to_binary(E) || E <- List]));
+to_binary(Bin) when is_binary(Bin) ->
+    Bin;
+to_binary(Int) when is_integer(Int) ->
+    integer_to_binary(Int);
+to_binary(Float) when is_float(Float) ->
+    float_to_binary(Float).
 
 rec_fields_to_json(Fields) -> 
     [list_to_binary(F) || #field{name = F} <- Fields].
@@ -334,6 +347,7 @@ generate(ModuleName, FilePath, RealFile, DocsFilePath, RealModuleName) ->
         end,
     Comments = erl_comment_scan:file(FilePath),
     {SyntaxTree1, _} = erl_recomment:recomment_tree(SyntaxTree, Comments),
+   % io:format("Syntax tree: ~p", [SyntaxTree1]),
     Content = parse_tree(SyntaxTree1, StartContent),  
     Incls = sets:to_list(sets:from_list(Content#content.includes)),
     BeamTree = get_tree_from_beam(RealModuleName), 
@@ -678,15 +692,10 @@ parse_callback(Node) ->
         end,
         #callback{function = Fun, params = VarNames, line = erl_syntax:get_pos(Node)}
     catch 
-        Error:Reason -> io:format("parse callback error: ~p~n", [{Error, Reason}])
+        Error:Reason -> io:format("parse callback error: ~p~n", [{Error, Reason, erlang:get_stacktrace()}])
     end.
 
-vars([]) ->
-    [];
-vars([{ann_type, _, [{var, _, Var}, {type, _, term, []}]} | Vars]) ->
-    [Var | vars(Vars)];
-vars([{var, _, Var} | Vars]) ->
-    [Var | vars(Vars)].
+vars(Vars) -> [var(V) || V <- Vars].
 
 get_var_types(Args, Defs) ->
     {Vars, Types} = 
@@ -760,46 +769,99 @@ string_join1([Head | Tail], Sep, Acc) ->
 args_to_name([]) -> ?VAR;
 args_to_name(Args) -> atom_to_list(hd(Args)).
 
-parse_erlang_record(Node, Content) ->
-    Record = lists:foldl(
-                         fun(Arg, InnerRecord) ->
-                             case erl_syntax:type(Arg) of
-                                 atom ->
-                                     InnerRecord#record{name = erl_syntax:atom_name(Arg)};
-                                 tuple -> 
-                                     parse_erlang_record_fields(erl_syntax:tuple_elements(Arg), InnerRecord);
-                                 macro ->
-                                     MacroName = erl_syntax:variable_literal(erl_syntax:macro_name(Arg)), 
-                                     Result = lists:filter(fun(Macro) -> 
-                                                               Macro#macro.name == MacroName
-                                                           end,
-                                                           Content#content.macros),
-                                     Name = 
-                                         case Result of 
-                                             [] -> "name_cannot_be_resolved"; 
-                                             [Macro] -> Macro#macro.value 
-                                         end,
-                                     InnerRecord#record{name = Name}
-                             end
-                         end,
-                         #record{},
-                         erl_syntax:attribute_arguments(Node)),
-    
-    Record#record{line = erl_syntax:get_pos(Node)}.
+parse_erlang_record(Node, _Content) ->
+%    io:format("rec: ~p~n", [erl_syntax_lib:analyze_record_attribute(Node)]),
+    {RecordName, Fields} = erl_syntax_lib:analyze_record_attribute(Node),
+     %= [_, {F, {_, TA}}, {F2, {_, TA2}}, _]}
+%     erlang:display([parse_erlang_record_field(F) || F <- Fields]),
+    #record{
+        line = erl_syntax:get_pos(Node),
+        name = atom_to_list(RecordName),
+        fields = [parse_erlang_record_field(F) || F <- Fields]
+    }.
 
-parse_erlang_record_fields(Fields, Record) -> 
-    lists:foldl(
-                fun(Field, InnerRecord) ->  
-                    FieldName = erl_syntax:record_field_name(Field),
-                    Name = case erl_syntax:type(FieldName) of
-                               atom ->
-                                   erl_syntax:atom_name(FieldName);
-                               _ -> throw(unknown_record_field_name)
-                           end,
-                    InnerRecord#record{fields = [#field{name = Name} | InnerRecord#record.fields]}
-                end,
-                Record, 
-                Fields).
+parse_erlang_record_field(Field) ->
+    case Field of
+        {FieldName, {_Default, Type}} ->
+            #field{name = atom_to_list(FieldName), type = parse_erlang_record_field_type(Type)};
+        {FieldName, _Default} -> 
+            #field{name = atom_to_list(FieldName), type = "undefined"}
+    end.
+
+parse_erlang_record_field_type(none) -> "undefined";
+parse_erlang_record_field_type({type, _, 'fun', []}) -> atom_to_list('fun') ++ "()";
+parse_erlang_record_field_type({type, _, map, _}) -> "#{}";
+parse_erlang_record_field_type({type, _, tuple, _}) -> "{}";
+parse_erlang_record_field_type({tree, integer_range_type, _, {integer_range_type, I1, I2}}) -> parse_erlang_record_field_type(I1) ++ ".." ++ parse_erlang_record_field_type(I2);
+parse_erlang_record_field_type({integer, _, Int}) -> integer_to_list(Int);
+parse_erlang_record_field_type({tree, prefix_expr, _, {prefix_expr, {tree, operator, _, Op}, T}}) -> atom_to_list(Op) ++ parse_erlang_record_field_type(T);
+%parse_erlang_record_field_type({type, record_type, _, RT}) -> parse_erlang_record_field_type(RT);
+parse_erlang_record_field_type({tree, map_type, _, MapAssocs}) -> "#{" ++ string_join([parse_map_assoc(MapAssoc) || MapAssoc <- MapAssocs], ", ") ++ "}"; 
+parse_erlang_record_field_type({tree, record_type, _, RT}) -> parse_erlang_record_field_type(RT);
+parse_erlang_record_field_type({record_type, {atom, _, Atom}, _}) -> "#" ++ atom_to_list(Atom) ++ "{}";
+parse_erlang_record_field_type({wrapper, _, _, Atom}) -> parse_erlang_record_field_type(Atom);
+parse_erlang_record_field_type({atom, _, Atom}) -> atom_to_list(Atom);
+parse_erlang_record_field_type({tree, annotated_type, _, {annotated_type, Var, T}}) -> var(Var) ++ " :: " ++ parse_erlang_record_field_type(T);
+parse_erlang_record_field_type({tree, function_type, _, FT}) -> parse_erlang_record_field_type(FT);
+parse_erlang_record_field_type({function_type, Vars, RType}) -> 
+    "fun(" ++ string_join([var(V) || V <- Vars], ", ") ++ ") -> " ++ parse_erlang_record_field_type(RType);
+parse_erlang_record_field_type({tree, type_union, _, TypeList}) ->
+    Types = lists:foldl(fun(T, Acc) -> [parse_erlang_record_field_type(T) | Acc] end, [], TypeList),
+    string_join(lists:reverse(Types), " | "); 
+parse_erlang_record_field_type({tree, tuple_type, _, TypeList}) ->
+    Types = lists:foldl(fun(T, Acc) -> [parse_erlang_record_field_type(T) | Acc] end, [], TypeList),
+    string_join(lists:reverse(Types), " | ");
+parse_erlang_record_field_type(Type) ->
+    try
+        case erl_syntax_lib:analyze_type_application(Type) of
+            {M, {F, _A}} -> atom_to_list(M) ++ "/" ++ atom_to_list(F) ++ "()";
+            {T, _} -> atom_to_list(T) ++ "()";
+            Unknown ->
+                io:format("Unknown field application type: ~p~n", [Unknown]),
+                "FIX IT"
+        end
+    catch E:R ->
+        io:format("Unknown field type: ~p~n", [Type]),
+        "FIX IT"
+    end.
+
+var({var, _, Var}) -> atom_to_list(Var);
+var({ann_type, _, [{var, _, Var}, _]}) ->
+    Var;
+var({atom, _, Atom}) ->
+    atom_to_list(Atom) ++ "()";
+var({user_type, _, Atom, _}) ->
+    atom_to_list(Atom) ++ "()";
+var({type, _, 'fun', _}) -> "fun()";
+var({type, _, term, _}) -> "term()";
+var({type, _, binary, _}) -> "binary()";
+var({type, _, string, _}) -> "string()";
+var({type, _, record, [{atom, _, Var}]}) ->
+    Var;
+var({tree, integer_range_type, _, {integer_range_type, I1, I2}}) ->
+    var(I1) ++ ".." ++ var(I2);
+var({remote_type, _, record, [{atom, _, M}, {atom, _, F}, _]}) ->
+    atom_to_list(M) ++ ":" ++ atom_to_list(F) ++ "()";
+var({remote_type, _, [{atom, _, M}, {atom, _, F}, _]}) ->
+    atom_to_list(M) ++ ":" ++ atom_to_list(F) ++ "()";
+var({type, _, tuple, Vars}) ->
+    "{" ++ string_join(vars(Vars), ", ") ++ "}";
+var({type, _, union, Vars}) ->
+    string_join(vars(Vars), " | ");
+var({type, _, list, Vars}) ->
+    string_join(vars(Vars), " | ");
+var({tree, type_application, _, _} = T) ->
+    parse_erlang_record_field_type(T);
+var(V) ->
+    io:format("Unknown var: ~p~n", [V]),
+    "term()".
+
+
+parse_map_assoc({tree,map_type_assoc, _, {map_type_assoc, T1, T2}}) -> 
+    parse_erlang_record_field_type(T1) ++ " => " ++ parse_erlang_record_field_type(T2);
+parse_map_assoc(MA) -> 
+    io:format("Unknown map assoc record type: ~p~n", [MA]),
+    "FIX IT".
 
 parse_opaque(Node, Content) -> 
     [Args|_] = erl_syntax:attribute_arguments(Node), 
@@ -824,7 +886,7 @@ parse_types(Node, Content) ->
                 Fields = Record#record.fields,
                 NewFields = lists:map(
                     fun(Field) ->
-                        #field{name = Field#field.name, type = proplists:get_value(Field#field.name, FieldTypes, "undefined")}
+                        #field{name = Field#field.name, type = proplists:get_value(Field#field.name, FieldTypes, Field#field.type)}
                     end, Fields),
                 Record1 = Record#record{fields = NewFields},
                 Content1 = Content#content{records = lists:keystore(RecordName, #record.name, Records, Record1)},

@@ -5,6 +5,7 @@
    
 %% Include files  
 -include_lib("noiseide/include/props.hrl").
+-include_lib("kernel/include/file.hrl").
 %-include_lib("sample.hrl").
 %% Exported Functions 
  
@@ -22,16 +23,16 @@
     {stop, Reason :: term(), NewState :: term()}.
 
 -callback on_execute(State, Command, Args) -> State when
-      Command :: atom(),
+      Command :: atom(), 
       Args :: [binary()].
 
 -callback on_clear_lobby(State) -> State. 
 
 -export([
 
-]).    
+]).      
 
-
+ 
       
 -define(XssssX, ololasdasdado).  
 -type beam_instr() :: 'bs_init_writable' | 'fclearerror' | 'if_end'
@@ -43,17 +44,18 @@
 %%% API  
 
 %-include("sample.hrl
-%%%============================  ======= ================================
+%%%================ ============  ======= ================================
       
--record(ololo, {       
-    field_1 :: beam_instr(),  
+-record(ololo, {         
+    field_0,  
+    field_1 = 1 :: beam_instr(),  
     field_2 :: atom() | boolean() | ololoxxx,
     field_3 :: dialyzer_plt:plt_info()
 }).       
       
-%asdasdasd  \
-%asdasdasd
-%asdasdasd
+%asdasdasd  \ 
+%asdasdasd 
+%asdasdasd  
       
 -opaque ololo() :: #ololo{}.
 %%%===================================================================
@@ -61,7 +63,7 @@
 %%%====================================== =============================
 function(<<A,B,C,D>>) -> x.
 %% @doc Prints the value X.
-xxx() -> x.
+xxx() -> x. 
     %?XX + ?XssssX.  
 
 -ifdef(debug).
@@ -71,7 +73,7 @@ xxx() -> x.
 -endif.   
    
 x() ->  
-    xxx(),  
+    xxx(),    
     SortedQueueDiffs = 
         lists:sort(fun({{_, IR1}, D1}, {{_, IR2}, D2}) -> 
             Add1 = case IR1 of true -> 1; _ -> 0 end, 
@@ -79,12 +81,13 @@ x() ->
             D1 * 1000 + Add1 < D2 * 1000 + Add2 
         end, []),
     io:format("~p~n", [?X]).
-    
--spec round(XX, integer()) -> integer()
+     
+-spec round(XX, integer()) -> integer()  
   when XX :: atom().
-%% @doc Prints the value X.
+%% @doc Prints the value X. 
 %round(Price, buy) ->
 %    [ {Key, apmath:ceil(Count)} || {Key, Count} <- Price ];
 round(Price, sell) ->
     [ {Key, trunc(Count)} || {Key, Count} <- Price ].
 
+ 
