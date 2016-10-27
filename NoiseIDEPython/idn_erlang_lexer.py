@@ -33,7 +33,7 @@ class ErlangLexer(BaseLexer):
             lineData = LineData()
             self.linesData[startLine] = lineData
             lineStart = self.stc.PositionFromLine(startLine)
-            text = self.stc.GetLine(startLine)
+            text = self.stc.GetLineUTF8(startLine)
             tokens = self.highlighter.GetHighlightingTokens(text)
             for token in tokens:
                 start = lineStart + token.start
@@ -84,7 +84,7 @@ class ErlangLexer(BaseLexer):
             nextLineFoldLevel = 0
         while startLine <= endLine:
             currentLineFoldLevel = nextLineFoldLevel
-            text = self.stc.GetLine(startLine)
+            text = self.stc.GetLineUTF8(startLine)
             tokens = self.highlighter.GetHighlightingTokens(text)
             for token in tokens:
                 if (token.type in {ErlangHighlightType.FUNDEC, ErlangHighlightType.RECORDDEF}
@@ -167,7 +167,7 @@ class ErlangLexer(BaseLexer):
             text = text[:caretPos - funData[1]]
         else:
             line = self.stc.GetCurrentLine()
-            text = self.stc.GetTextRange(self.stc.PositionFromLine(line - 10), caretPos)
+            text = self.stc.GetTextRangeUTF8(self.stc.PositionFromLine(line - 10), caretPos)
         tokens = self.highlighter.GetHighlightingTokens(text)
         tokens.reverse()
         tokens  = [token for token in tokens if token.type not in [ErlangHighlightType.COMMENT]]
@@ -218,7 +218,7 @@ class ErlangLexer(BaseLexer):
 
     def IsInTypeBlock(self):
         r = re.compile(r"(?:^-spec|^-callback|^-type|^-record)(.*?)(?:^[a-z].*?|^-[a-z]+|\.)", re.MULTILINE | re.DOTALL)
-        text = self.stc.GetText()
+        text = self.stc.GetTextUTF8()
         caretPos = self.stc.GetCurrentPos()
         pos = 0
         while True:
@@ -231,7 +231,7 @@ class ErlangLexer(BaseLexer):
 
     def GetAllExports(self):
         r = re.compile("^-export\(\[\s*(.*?)\s*\]\)\.", re.MULTILINE | re.DOTALL)
-        text = self.stc.GetText()
+        text = self.stc.GetTextUTF8()
         pos = 0
         result = None
         lastInsertPosition = None
@@ -247,7 +247,7 @@ class ErlangLexer(BaseLexer):
                         end = match.end()
                     else:
                         end = 0
-                    self.stc.InsertText(end, "\n-export([\n]).")
+                    self.stc.InsertTextUTF8(end, "\n-export([\n]).")
                     return self.GetAllExports()
                 else:
                     break
@@ -265,7 +265,7 @@ class ErlangLexer(BaseLexer):
 
     def GetExportInsertPosition(self):
         r = re.compile("^-include.*?\)\.", re.MULTILINE | re.DOTALL)
-        text = self.stc.GetText()
+        text = self.stc.GetTextUTF8()
         pos = 0
         start = None
         while True:
@@ -278,14 +278,14 @@ class ErlangLexer(BaseLexer):
                         end = match.end()
                     else:
                         end = 0
-                    self.stc.InsertText(end, "\n")
+                    self.stc.InsertTextUTF8(end, "\n")
                     return end + 1
                 else:
                     break
             if not start:
                 start = match.start(0)
             pos = match.end(0)
-        self.stc.InsertText(pos, "\n")
+        self.stc.InsertTextUTF8(pos, "\n")
         return pos + 1
 
 class LineData:
@@ -321,7 +321,7 @@ class IgorLexer(BaseLexer):
         defaultStyle = IgorHighlightType.DEFAULT
         while startLine <= endLine:
             lineStart = self.stc.PositionFromLine(startLine)
-            text = self.stc.GetLine(startLine)
+            text = self.stc.GetLineUTF8(startLine)
             tokens = self.highlighter.GetHighlightingTokens(text)
             for token in tokens:
                 start = lineStart + token.start
@@ -346,7 +346,7 @@ class IgorLexer(BaseLexer):
             nextLineFoldLevel = 0
         while startLine <= endLine:
             currentLineFoldLevel = nextLineFoldLevel
-            text = self.stc.GetLine(startLine)
+            text = self.stc.GetLineUTF8(startLine)
             tokens = self.highlighter.GetHighlightingTokens(text)
             for token in tokens:
                 if (token.value in ["record", "enum", "service", "variant"]):

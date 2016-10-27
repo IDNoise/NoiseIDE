@@ -11,7 +11,7 @@
  
 -export([ 
     x/0, 
-    function/1 
+    function/1
 ]).    
 -callback init(Args :: term()) ->
     {ok, State :: term()} | {ok, State :: term(), timeout() | hibernate} |
@@ -32,8 +32,7 @@
 
 ]).      
 
- 
-      
+
 -define(XssssX, ololasdasdado).  
 -type beam_instr() :: 'bs_init_writable' | 'fclearerror' | 'if_end'
                     | 'remove_message' | 'return' | 'send' | 'timeout'

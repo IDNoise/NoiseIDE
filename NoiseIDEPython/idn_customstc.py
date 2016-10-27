@@ -98,7 +98,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         EditorFoldMixin.__init__(self)
         EditorLineMarginMixin.__init__(self)
 
-        self.SetCodePage(65001)
+        self.SetCodePage(wx.stc.STC_CP_UTF8)
 
         self.snippetCompleter = SnippetCompleter(self)
         self.snippetVarRegExp = re.compile(r"""\$[a-zA-Z0-9]*?\$""", re.VERBOSE | re.MULTILINE)
@@ -342,7 +342,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         if char == '\n':
             self.DoIndent()
         elif Config.GetProp("close_brackets_quotes", False) and char in self.brackets:
-            self.AddText(self.brackets[char])
+            self.AddTextUTF8(self.brackets[char])
         event.Skip()
 
     def OnKeyDown(self, event):
@@ -396,7 +396,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
                 self.LineDelete()
             targetLine = startLine + offset
             self.GotoPos(self.PositionFromLine(targetLine))
-            self.InsertText(-1, text)
+            self.InsertTextUTF8(-1, text)
             self.SetSelectionStart(self.PositionFromLine(startLine + offset))
             self.SetSelectionEnd(self.GetLineEndPosition(endLine + offset))
         elif keyCode == ord('S') and event.GetModifiers() == wx.MOD_CONTROL:
@@ -435,7 +435,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         end = self.WordEndPosition(self.CurrentPos, True)
         if start == end:
             return None
-        return self.GetTextRange(start, end)
+        return self.GetTextRangeUTF8(start, end)
 
     def ShowGoToLineDialog(self):
         dlg = wx.TextEntryDialog(self, 'Line:', 'Goto Line', style = wx.OK | wx.CANCEL)
@@ -467,7 +467,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
     def UpdateSnippetCompleter(self, event = None):
         caretPos = self.GetCurrentPos()
         line = self.GetCurrentLine()
-        prefix = self.GetTextRange(self.PositionFromLine(line), caretPos)
+        prefix = self.GetTextRangeUTF8(self.PositionFromLine(line), caretPos)
         self.snippetCompleter.Update(prefix)
         self.snippetCompleter.UpdateCompleterPosition(self.PointFromPosition(caretPos))
 
@@ -494,7 +494,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
 
     def DoIndent(self):
         indent = self.GetLineIndentation(self.CurrentLine - 1)
-        self.InsertText(self.CurrentPos, " " * indent)
+        self.InsertTextUTF8(self.CurrentPos, " " * indent)
         pos = self.PositionFromLine(self.CurrentLine)
         self.GotoPos(pos + indent)
 
@@ -767,7 +767,7 @@ class ConsoleSTC(CustomSTC):
         try:
             linesCount = self.GetLineCount()
             self.SetReadOnly(False)
-            self.AppendText(text)
+            self.AppendTextUTF8(text)
             self.SetReadOnly(True)
             if self.GetLastVisibleLine() >= linesCount:
                 self.ScrollToLine(self.GetLineCount())

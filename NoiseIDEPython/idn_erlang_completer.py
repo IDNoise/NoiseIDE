@@ -315,12 +315,12 @@ class ErlangCompleter(Completer):
                 return arity
         sF = pos + 1 if pos + 1 < self.stc.GetLength() else self.stc.GetLength() - 1
         sT = pos + 6 if pos + 6 < self.stc.GetLength() else self.stc.GetLength() - 1
-        postfix = self.stc.GetText()[sF : sT].strip()
+        postfix = self.stc.GetTextUTF8()[sF : sT].strip()
         if self.stc.GetCharAt(pos) == "(" and postfix and postfix[0] == ")":
             return 0
         else:
             arity = 1
-        text = self.stc.GetText()[pos:pos + 1000]
+        text = self.stc.GetTextUTF8()[pos:pos + 1000]
         gtokens = self.tokenizer.GetTokens(text)
         tokens = []
         try:
