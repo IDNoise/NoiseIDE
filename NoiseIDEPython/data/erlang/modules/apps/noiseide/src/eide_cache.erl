@@ -303,15 +303,14 @@ macros_data_to_json(Mac) ->
     }.
 
 callbacks_to_json(Callbacks) ->
-    [{atom_to_binary(Fun, latin1), {struct, [
-        {params, [to_binary(P) || P <- Params]}%,
-        %{line, Line}
-    ]}} || #callback{function = Fun, line = _Line, params = Params} <- Callbacks].
+    [begin
+        {atom_to_binary(Fun, latin1), {struct, [{params, [to_binary(P) || P <- Params]}]}} 
+    end|| #callback{function = Fun, line = _Line, params = Params} <- Callbacks].
 
 to_binary(Atom) when is_atom(Atom) ->
     atom_to_binary(Atom, latin1);
 to_binary(List) when is_list(List) ->
-    list_to_binary(lists:flatten([to_binary(E) || E <- List]));
+    iolist_to_binary(List);
 to_binary(Bin) when is_binary(Bin) ->
     Bin;
 to_binary(Int) when is_integer(Int) ->
@@ -827,7 +826,7 @@ parse_erlang_record_field_type(Type) ->
 
 var({var, _, Var}) -> atom_to_list(Var);
 var({ann_type, _, [{var, _, Var}, _]}) ->
-    Var;
+    atom_to_list(Var);
 var({atom, _, Atom}) ->
     atom_to_list(Atom) ++ "()";
 var({user_type, _, Atom, _}) ->
@@ -837,7 +836,7 @@ var({type, _, term, _}) -> "term()";
 var({type, _, binary, _}) -> "binary()";
 var({type, _, string, _}) -> "string()";
 var({type, _, record, [{atom, _, Var}]}) ->
-    Var;
+    atom_to_list(Var);
 var({tree, integer_range_type, _, {integer_range_type, I1, I2}}) ->
     var(I1) ++ ".." ++ var(I2);
 var({remote_type, _, record, [{atom, _, M}, {atom, _, F}, _]}) ->

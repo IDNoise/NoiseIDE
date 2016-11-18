@@ -767,7 +767,7 @@ class ConsoleSTC(CustomSTC):
         try:
             linesCount = self.GetLineCount()
             self.SetReadOnly(False)
-            self.AppendTextUTF8(text)
+            self.AppendText(text)
             self.SetReadOnly(True)
             if self.GetLastVisibleLine() >= linesCount:
                 self.ScrollToLine(self.GetLineCount())
