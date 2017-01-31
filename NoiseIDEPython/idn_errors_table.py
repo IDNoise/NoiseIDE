@@ -168,9 +168,9 @@ class XrefTableGrid(ErrorsTableGrid):
         for ((wm, wf, wa), (m, f, a)) in errors:
             funData = ErlangCache.ModuleFunction(wm, wf, wa)
             if not funData:
-                core.Log("Not found", wm, wf, wa)
-                continue
-            data.append((newPath, funData.line, "{}:{}/{}".format(wm, wf, wa), "{}:{}/{}".format(m, f, a)))
+                data.append((newPath, 0, "{}:{}/{}".format(wm, wf, wa), "{}:{}/{}".format(m, f, a)))
+            else:
+                data.append((newPath, funData.line, "{}:{}/{}".format(wm, wf, wa), "{}:{}/{}".format(m, f, a)))
         data = sorted(data, key = operator.itemgetter(0))
         self.table.data = data
         self.table.ResetView(self, currentRows)
