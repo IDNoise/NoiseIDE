@@ -25,13 +25,11 @@ import core
 def LoadProject(filePath):
     projectData = yaml.load(file(filePath, 'r'))
     project = None
-    if not CONFIG_PROJECT_TYPE in projectData:
+    if not CONFIG_PROJECT_TYPE in projectData or projectData[CONFIG_PROJECT_TYPE] == MULTIPLE_APP_PROJECT:
         projectData[CONFIG_PROJECT_TYPE] = MULTIPLE_APP_PROJECT
         project = MultipleAppErlangProject
     elif projectData[CONFIG_PROJECT_TYPE] == SINGLE_APP_PROJECT:
         project = SingleAppErlangProject
-    elif projectData[CONFIG_PROJECT_TYPE] == MULTIPLE_APP_PROJECT:
-        project = MultipleAppErlangProject
     return project(core.MainFrame, filePath, projectData)
 
 class ErlangProject(Project):
@@ -722,33 +720,78 @@ class ErlangProject(Project):
 
 class SingleAppErlangProject(ErlangProject):
     def OnLoadProject(self):
-        for d in [self.SrcDir(), self.IncludeDir()]:
+        for d in [self.SrcDir(), self.IncludeDir(), self.DepsDir()]:
             if not os.path.isdir(d):
                 os.mkdir(d)
 
         ErlangProject.OnLoadProject(self)
+        self.explorer.ProjectDirsCreatedEvent += self.OnProjectDirsCreated
 
     def FullRebuild(self):
         self.Rebuild()
+        self.RebuildDeps()
 
-    def Rebuild(self):
-        self.GetShell().CompileApp(self.projectDir)
-        self.GetShell().CompileTests(self.projectDir)
-        self.CheckBackgroundTasks()
+    def GetAppPath(self, app):
+        if app == os.path.basename(self.projectDir):
+            return self.projectDir
+        dpath = os.path.join(self.DepsPath(), app)
+        if os.path.isdir(dpath):
+            return dpath
+        return ""
 
-    def Recache(self):
-        self.GetShell().CacheApp(self.projectDir)
-        self.CheckBackgroundTasks("Caching...")
+    def EbinDirForApp(self, app):
+        return os.path.join(self.GetAppPath(app), "ebin")
 
-    def RebuildTests(self):
-        self.GetShell().CompileTests(self.projectDir)
+    def CompileTestSubset(self, apps):
+        [self.GetShell().CompileTests(self.GetAppPath(app)) for app in apps]
         self.CheckBackgroundTasks("Compiling tests...")
 
-    def RemoveUnusedBeams(self):
-        srcPath = os.path.join(self.projectDir, "src")
-        modules = self.GetModulesInPath(srcPath)
+    def CompileSubset(self, apps):
+        [self.GetShell().CompileApp(self.GetAppPath(app)) for app in apps]
+        self.CheckBackgroundTasks()
 
-        beamPath = self.EbinDir()
+    def CacheSubset(self, apps):
+        [self.GetShell().CacheApp(self.GetAppPath(app)) for app in apps]
+        self.CheckBackgroundTasks("Caching...")
+
+    def DialyzeApps(self, paths):
+        if not self.CheckPlt(): return
+        apps = set()
+        for path in paths:
+            app = self.GetApp(path)
+            if not app: continue
+            apps.add(self.EbinDirForApp(app))
+        if len(apps) == 0:
+            wx.MessageBox("No app to dialyze.", "Dialyzer")
+            return
+        self.GetShell().DialyzeApps(list(apps))
+
+    def DialyzeProject(self):
+        if not self.CheckPlt(): return
+        apps = set()
+        for app in self.GetApps():
+            apps.add(self.EbinDirForApp(app))
+        self.GetShell().DialyzeApps(list(apps))
+
+    def RebuildTests(self):
+        self.CompileTestSubset(self.GetAppsAndDeps())
+
+    def Rebuild(self):
+        self.CompileSubset(self.GetApps())
+
+    def RebuildDeps(self):
+        self.CompileSubset(self.GetDeps())
+
+    def Recache(self):
+        self.CacheSubset(self.GetApps(True))
+
+    def RecacheDeps(self):
+        self.CompileSubset(self.GetDeps(True))
+
+    def RemoveUnusedBeams(self):
+        modules = self.GetModulesInPath(self.SrcDir())
+
+        beamPath = os.path.join(self.EbinDir())
         beams = self.GetBeamsInPath(beamPath)
         for beam in beams:
             (f, ext) = os.path.splitext(beam)
@@ -757,41 +800,97 @@ class SingleAppErlangProject(ErlangProject):
                 os.remove(path)
 
     def IsSrcPath(self, path):
-        return any([path.startswith(d) for d in [self.SrcDir(), self.IncludeDir(), self.TestDir()]])
+        app = self.GetApp(path)
+        if app and self.GetAppPath(app):
+            appPath = self.GetAppPath(app)
+            return any([path.startswith(os.path.join(appPath, d)) for d in ["src", "include", "test"]])
+        else:
+            return False
+
+    def DepsPath(self):
+        return self.DepsDir()
+
+    def OnProjectDirsCreated(self, dirs):
+        for d in dirs:
+            appPath = d
+            (root, app) = os.path.split(appPath)
+            if root == self.DepsPath():
+                self.UpdatePaths()
+                self.UpdateProjectConsoles()
 
     def GetXRefModules(self):
-        path = os.path.join(self.projectDir, "src")
-        return self.GetModulesInPath(path)
+        modules = []
+        for app in self.GetApps():
+            path = os.path.join(self.GetAppPath(app), "src")
+            modules += self.GetModulesInPath(path)
+        return modules
+
+    def GetApps(self, ignoreExcluded = False):
+        return [os.path.basename(self.projectDir)]
+
+    def GetDeps(self, ignoreExcluded = False):
+        apps = []
+        for app in os.listdir(self.DepsDir()):
+            appPath = os.path.join(self.DepsPath(), app)
+            if not os.path.isdir(appPath):
+                continue
+            apps.append(app)
+        return apps
+
+    def GetAppsAndDeps(self, ignoreExcluded = False):
+        return list(set(self.GetApps(ignoreExcluded) + self.GetDeps(ignoreExcluded)))
+
+    def GetBeamPathFromSrcPath(self, path):
+        app = self.GetApp(path)
+        if not app:
+            return None
+        return os.path.join(self.EbinDirForApp(app), os.path.splitext(os.path.basename(path))[0] + ".beam")
 
     def SetCompileMenuItems(self):
         self.window.projectMenu.AppendMenuItem("Rebuild", self.window, lambda e: self.Rebuild(), "F7")
         self.window.projectMenu.AppendMenuItem("Recache", self.window, lambda e: self.Recache(), "Shift+F7")
 
-    def GetBeamPathFromSrcPath(self, path):
-        return os.path.join(self.EbinDir(), os.path.splitext(os.path.basename(path))[0] + ".beam")
+        self.window.projectMenu.AppendSeparator()
+        self.window.projectMenu.AppendMenuItem("Rebuild deps", self.window, lambda e: self.RebuildDeps(), "F8")
+        self.window.projectMenu.AppendMenuItem("Recache deps", self.window, lambda e: self.RecacheDeps(), "Shift+F8")
+
+    def EbinDir(self): return os.path.join(self.projectDir, "ebin")
+    def SrcDir(self): return os.path.join(self.projectDir, "src")
+    def IncludeDir(self): return os.path.join(self.projectDir, "include")
+    def TestDir(self): return os.path.join(self.projectDir, "test")
+    def DepsDir(self): return os.path.join(self.projectDir, "deps")
 
     def OnSocketConnected(self):
         ErlangProject.OnSocketConnected(self)
         #self.Rebuild()
 
     def UpdatePaths(self):
-        ebinDir = self.EbinDir()
-        self.shellConsole.shell.AddPath(ebinDir)
-        dirs = ' "{}"'.format(ebinDir)
+        dirs = ""
+        for app in self.GetAppsAndDeps(True):
+            ebinDir = os.path.join(self.GetAppPath(app), "ebin")
+            self.shellConsole.shell.AddPath(ebinDir)
+            dirs += ' "{}"'.format(ebinDir)
         dirs += ' "{}"'.format(self.IDE_MODULES_DIR)
         self.dirs = dirs
 
     def GetApp(self, path):
-        return os.path.basename(self.projectDir)
+        if os.path.isfile(path):
+            path = os.path.dirname(path)
+        if path.startswith(self.DepsPath()):
+            app = path.replace(self.DepsPath() + os.sep, "")
+        elif path.startswith(self.projectDir):
+            return os.path.basename(self.projectDir)
+        else:
+            pos = path.find(os.sep + "lib" + os.sep)
+            if pos > 0:
+                path = path[pos + 5:]
+                appFolder = path.split(os.sep)[0]
+                return appFolder.split("-")[0]
+            return None
+        if os.sep in app:
+            return app[:app.index(os.sep)]
+        return app
 
-    def EbinDir(self): return os.path.join(self.projectDir, "ebin")
-    def SrcDir(self): return os.path.join(self.projectDir, "src")
-    def IncludeDir(self): return os.path.join(self.projectDir, "include")
-    def TestDir(self): return os.path.join(self.projectDir, "test")
-
-    def DialyzeProject(self):
-        if not self.CheckPlt(): return
-        self.GetShell().DialyzeApps([self.EbinDir()])
 
 class MultipleAppErlangProject(ErlangProject):
     def OnLoadProject(self):
