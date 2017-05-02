@@ -950,6 +950,7 @@ class MultipleAppErlangProject(ErlangProject):
 
     def Rebuild(self):
         self.CompileSubset(self.GetApps())
+        self.CompileTestSubset(self.GetApps())
 
     def RebuildDeps(self):
         self.CompileSubset(self.GetDeps())
