@@ -2,6 +2,7 @@ import re
 from wx.stc import STC_FOLDLEVELHEADERFLAG, STC_FOLDLEVELBASE
 from idn_highlight import ErlangHighlighter, ErlangHighlightType, IgorHighlighter, IgorHighlightType
 from idn_lexer import BaseLexer
+from idn_erlang_utils import IsModule
 
 __author__ = 'Yaroslav'
 
@@ -247,8 +248,11 @@ class ErlangLexer(BaseLexer):
                         end = match.end()
                     else:
                         end = 0
-                    self.stc.InsertTextUTF8(end, "\n-export([\n]).")
-                    return self.GetAllExports()
+                    if IsModule(self.stc.filePath):
+                        self.stc.InsertTextUTF8(end, "\n-export([\n]).")
+                        return self.GetAllExports()
+                    else:
+                        break
                 else:
                     break
             if not start:

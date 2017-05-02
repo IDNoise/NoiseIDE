@@ -44,7 +44,7 @@ def GatherInfo(root, recursive = True, fileMask = None, excludeDirs = None, excl
                 continue
             mtime = os.stat(f)[ST_MTIME]
             if os.path.isdir(f):
-                if excludeDirs and os.path.basename(f) in excludeDirs:
+                if os.path.basename(f) in excludeDirs or f in excludeDirs:
                     continue
                 dirs[f] = mtime
                 if recursive:

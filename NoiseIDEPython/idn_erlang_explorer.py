@@ -33,9 +33,12 @@ class ErlangProjectExplorer(ProjectExplorer):
         self.highlightTimer.Start(250)
         self.Bind(wx.EVT_TIMER, self.OnHighlightTimer, self.highlightTimer)
 
-        self.userCmds = loadCmds(os.path.join(core.MainFrame.cwd, "data", "erlang", "user_cmds.yaml"))
+        self.userCmds = []
+        for path in [os.path.join(core.MainFrame.cwd, "data", "erlang", "user_cmds.yaml"),
+                     os.path.join(core.Project.projectDir, "cmds.yaml")]:
+            if os.path.exists(path):
+                self.userCmds += loadCmds(path)
         self.ideCmds = loadCmds(os.path.join(core.MainFrame.cwd, "data", "erlang", "ide_cmds.yaml"))
-        self.projectUserCmds = loadCmds(os.path.join(core.Project.projectDir, "project_cmds.yaml"))
 
     def CreateMenu(self):
         menu = ProjectExplorer.CreateMenu(self)
@@ -65,10 +68,12 @@ class ErlangProjectExplorer(ProjectExplorer):
 
             userTemplateMenu = Menu()
 
-            for templateFile in GetAllFilesInDir(os.path.join(core.MainFrame.cwd, "data", "erlang", "templates", "user")):
-                filename = os.path.basename(templateFile)
-                title = filename.split(".")[0]
-                userTemplateMenu.AppendMenuItem(title, self, usertpl(templateFile, title))
+            for path in [os.path.join(core.MainFrame.cwd, "data", "erlang", "templates", "user"),
+                         os.path.join(core.Project.projectDir, "templates.yaml")]:
+                for templateFile in GetAllFilesInDir(path):
+                    filename = os.path.basename(templateFile)
+                    title = filename.split(".")[0]
+                    userTemplateMenu.AppendMenuItem(title, self, usertpl(templateFile, title))
 
             tMenu.AppendMenu(wx.ID_ANY, "User", userTemplateMenu)
             newMenu.AppendMenu(wx.ID_ANY, "Template", tMenu)
@@ -100,7 +105,6 @@ class ErlangProjectExplorer(ProjectExplorer):
 
         self.FillCommandsMenu(menu, "User cmds", self.userCmds)
         self.FillCommandsMenu(menu, "Ide cmds", self.ideCmds)
-        self.FillCommandsMenu(menu, "Project user cmds", self.projectUserCmds)
 
         return menu
 

@@ -390,7 +390,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
             endLine = self.LineFromPosition(self.GetSelectionEnd())
             self.SetSelectionStart(self.PositionFromLine(startLine))
             self.SetSelectionEnd(self.GetLineEndPosition(endLine))
-            text = self.GetSelectedText()  + '\n'
+            text = self.GetSelectedTextUTF8()  + '\n'
             self.GotoLine(startLine)
             for i in range(endLine - startLine + 1):
                 self.LineDelete()

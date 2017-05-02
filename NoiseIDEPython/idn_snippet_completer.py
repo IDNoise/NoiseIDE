@@ -10,8 +10,9 @@ class SnippetCompleter(Completer):
         self.snippets = []
 
         for path in [os.path.join(core.MainFrame.cwd, "data", "erlang", "ide_snippets.yaml"),
-                     os.path.join(core.MainFrame.cwd, "data", "erlang", "user_snippets.yaml")]:
-            if (os.path.exists(path)):
+                     os.path.join(core.MainFrame.cwd, "data", "erlang", "user_snippets.yaml"),
+                     os.path.join(core.Project.projectDir, "snippets.yaml")]:
+            if os.path.exists(path):
                 stream = file(path, 'r')
                 data = yaml.load(stream)
                 if data:
