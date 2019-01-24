@@ -97,19 +97,19 @@ class ErlangSTC(ErlangHighlightedSTCBase):
 
         self.IndicatorSetStyle(1, stc.STC_INDIC_PLAIN)
         self.MarkerDefine(self.MARKER_ERROR, stc.STC_MARK_BACKGROUND,
-            foreground = ColorSchema.codeEditor["error_line_color"],
-            background = ColorSchema.codeEditor["error_line_color"])
+                          foreground=ColorSchema.codeEditor["error_line_color"],
+                          background=ColorSchema.codeEditor["error_line_color"])
         self.MarkerDefine(self.MARKER_WARNING, stc.STC_MARK_BACKGROUND,
-            foreground = ColorSchema.codeEditor["warning_line_color"],
-            background = ColorSchema.codeEditor["warning_line_color"])
+                          foreground=ColorSchema.codeEditor["warning_line_color"],
+                          background=ColorSchema.codeEditor["warning_line_color"])
 
         self.MarkerDefine(self.MARKER_ERROR_CIRCLE, stc.STC_MARK_CIRCLE,
-            foreground = ColorSchema.codeEditor["error_marker_color"],
-            background = ColorSchema.codeEditor["error_marker_color"])
+                          foreground=ColorSchema.codeEditor["error_marker_color"],
+                          background=ColorSchema.codeEditor["error_marker_color"])
 
         self.MarkerDefine(self.MARKER_WARNING_CIRCLE, stc.STC_MARK_CIRCLE,
-            foreground = ColorSchema.codeEditor["warning_marker_color"],
-            background = ColorSchema.codeEditor["warning_marker_color"])
+                          foreground=ColorSchema.codeEditor["warning_marker_color"],
+                          background=ColorSchema.codeEditor["warning_marker_color"])
 
         self.SetMarginMask(2, ~stc.STC_MASK_FOLDERS)
 
@@ -118,17 +118,22 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         if self.ModuleType() == TYPE_MODULE:
             compileOptionMenu = Menu()
             menu.AppendMenu(wx.ID_ANY, "Compile Option", compileOptionMenu)
-            compileOptionMenu.AppendMenuItem("With 'P' flag", self, lambda e: core.Project.CompileOption(self.filePath, "P"))
-            compileOptionMenu.AppendMenuItem("With 'E' flag", self, lambda e: core.Project.CompileOption(self.filePath, "E"))
-            compileOptionMenu.AppendMenuItem("With 'core' flag", self, lambda e: core.Project.CompileOption(self.filePath, "to_core"))
-            compileOptionMenu.AppendMenuItem("With 'S' flag", self, lambda e: core.Project.CompileOption(self.filePath, "S"))
+            compileOptionMenu.AppendMenuItem("With 'P' flag", self,
+                                             lambda e: core.Project.CompileOption(self.filePath, "P"))
+            compileOptionMenu.AppendMenuItem("With 'E' flag", self,
+                                             lambda e: core.Project.CompileOption(self.filePath, "E"))
+            compileOptionMenu.AppendMenuItem("With 'core' flag", self,
+                                             lambda e: core.Project.CompileOption(self.filePath, "to_core"))
+            compileOptionMenu.AppendMenuItem("With 'S' flag", self,
+                                             lambda e: core.Project.CompileOption(self.filePath, "S"))
 
         result = self.GetErlangWordAtPosition(self.popupPos)
         if result:
             style = self.GetStyleAt(self.popupPos)
 
             if style in self.SimpleFindRefTypes():
-                menu.AppendMenuItem("Find references as {}".format(self.StringStyleType(style)), self, lambda e: self.FindReferences())
+                menu.AppendMenuItem("Find references as {}".format(self.StringStyleType(style)), self,
+                                    lambda e: self.FindReferences())
             elif style in self.CompoundFindRefTypes():
                 submenu = Menu()
                 menu.AppendMenu(wx.ID_ANY, "Find references as", submenu)
@@ -148,6 +153,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                             app = core.Project.GetApp(rec.file)
                             incl = app + "/include/" + os.path.basename(rec.file)
                             return incl, lambda e: self.InsertInclude(app, incl)
+
                         if len(records) == 1:
                             includeStr, action = insertInclude(records[0])
                             menu.AppendMenuItem("Resolve as " + includeStr, self, action)
@@ -161,6 +167,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                 else:
                     def unfold(rec, start, end):
                         return lambda e: self.UnfoldRecord(rec, start, end)
+
                     menu.AppendMenuItem("Unfold fields", self, unfold(record, result[0], result[1]))
 
             if style == ErlangHighlightType.FUNDEC:
@@ -170,7 +177,8 @@ class ErlangSTC(ErlangHighlightedSTCBase):
             tokens = self.completer.tokenizer.GetTokens(self.GetLineText(self.LineFromPosition(self.popupPos)))
             if tokens and tokens[0].value.startswith("-behavi"):
                 module = tokens[2].value
-                menu.AppendMenuItem("Implement behavior {}".format(module), self, lambda e: self.ImplementBehavior(module))
+                menu.AppendMenuItem("Implement behavior {}".format(module), self,
+                                    lambda e: self.ImplementBehavior(module))
 
         return menu
 
@@ -191,8 +199,8 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                 callbackImplementation = "\n" + specText + "\n\n" + "{}({}) ->\n    erlang:error({{not_implemented, {}}}).\n".format(
                     cb.name, ", ".join(["_" + p for p in cb.params]), cb.name
                 )
-                #core.Log(specText)
-                #core.Log(callbackImplementation)
+                # core.Log(specText)
+                # core.Log(callbackImplementation)
                 self.InsertText(self.LastPosition, callbackImplementation)
                 self.AddToExportFunArity(cb.name, cb.arity)
         self.EndUndoAction()
@@ -215,7 +223,6 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         core.Log(unfoldedRecord)
         self.ReplaceTarget(unfoldedRecord)
         self.GotoPos(start + len(unfoldedRecord))
-
 
     def StringStyleType(self, style):
         if style in [ErlangHighlightType.FUNCTION, ErlangHighlightType.FUNDEC]:
@@ -241,7 +248,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                 ErlangHighlightType.RECORD, ErlangHighlightType.RECORDDEF,
                 ErlangHighlightType.MODULE]
 
-    def FindReferences(self, asAtom = False):
+    def FindReferences(self, asAtom=False):
         result = self.GetErlangWordAtPosition(self.popupPos)
         if not result: return
         (start, end, value) = result
@@ -250,16 +257,16 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         text = self.GetLineText(line)
         if asAtom:
             Find(value, "Find reference of atom '{}'".format(value),
-                 wholeWords = True,
-                 matchCase = True,
-                 fileExts = [".erl", ".hrl", ".src"],
-                 resultsFilter = lambda r: self.CheckResult(r, [value], self.CompoundFindRefTypes()))
+                 wholeWords=True,
+                 matchCase=True,
+                 fileExts=[".erl", ".hrl", ".src"],
+                 resultsFilter=lambda r: self.CheckResult(r, [value], self.CompoundFindRefTypes()))
         elif style == ErlangHighlightType.ATOM:
             Find(value, "Find reference of atom '{}'".format(value),
-                 wholeWords = True,
-                 matchCase = True,
-                 fileExts = [".erl", ".hrl", ".src"],
-                 resultsFilter = lambda r: self.CheckResult(r, [value], [ErlangHighlightType.ATOM]))
+                 wholeWords=True,
+                 matchCase=True,
+                 fileExts=[".erl", ".hrl", ".src"],
+                 resultsFilter=lambda r: self.CheckResult(r, [value], [ErlangHighlightType.ATOM]))
         elif style in [ErlangHighlightType.FUNCTION, ErlangHighlightType.FUNDEC]:
             module = self.ModuleName()
             if style == ErlangHighlightType.FUNCTION:
@@ -276,38 +283,41 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                             if macrosData:
                                 module = macrosData.value
             moduleFile = "{}.erl".format(module)
-            Find(r"\b{0}:{1}\(|\s{0}:{1}/|^{1}\(".format(module, value), "Find reference of function '{}'".format(value),
-                 useRegexp = True,
-                 fileExts = [".erl", ".hrl", moduleFile],
-                 resultsFilter = lambda r: self.FunctionCheckResult(r, value, moduleFile))
+            Find(r"\b{0}:{1}\(|\s{0}:{1}/|^{1}\(".format(module, value),
+                 "Find reference of function '{}'".format(value),
+                 useRegexp=True,
+                 fileExts=[".erl", ".hrl", moduleFile],
+                 resultsFilter=lambda r: self.FunctionCheckResult(r, value, moduleFile))
         elif style == ErlangHighlightType.MODULE:
             Find(r"-module\({0}\)|-extends\({0}\)|\b{0}:".format(value), "Find reference of module '{}'".format(value),
-                 useRegexp = True,
-                 fileExts = [".erl", ".hrl"],
-                 resultsFilter = lambda r: self.CheckResult(r, [value], [ErlangHighlightType.MODULE]))
+                 useRegexp=True,
+                 fileExts=[".erl", ".hrl"],
+                 resultsFilter=lambda r: self.CheckResult(r, [value], [ErlangHighlightType.MODULE]))
         elif style in [ErlangHighlightType.RECORD, ErlangHighlightType.RECORDDEF]:
             if value.startswith("#"): value = value[1:]
             Find(r"-record\({0}\b|#{0}\b".format(value), "Find reference of record '{}'".format(value),
-                 useRegexp = True,
-                 fileExts = [".erl", ".hrl"],
-                 resultsFilter = lambda r: self.CheckResult(r, [value, "#" + value], [ErlangHighlightType.RECORD, ErlangHighlightType.RECORDDEF]))
+                 useRegexp=True,
+                 fileExts=[".erl", ".hrl"],
+                 resultsFilter=lambda r: self.CheckResult(r, [value, "#" + value],
+                                                          [ErlangHighlightType.RECORD, ErlangHighlightType.RECORDDEF]))
         elif style == ErlangHighlightType.MACROS:
             if value.startswith("?"): value = value[1:]
             Find(r"-define\({0}\b|\?{0}\b".format(value), "Find reference of macros '{}'".format(value),
-                 useRegexp = True,
-                 fileExts = [".erl", ".hrl"],
-                 resultsFilter = lambda r: self.CheckResult(r, [value, "?" + value], [ErlangHighlightType.MACROS]))
+                 useRegexp=True,
+                 fileExts=[".erl", ".hrl"],
+                 resultsFilter=lambda r: self.CheckResult(r, [value, "?" + value], [ErlangHighlightType.MACROS]))
 
     def FunctionCheckResult(self, result, value, module):
         tokens = self.lexer.highlighter.GetHighlightingTokens(result.lineText)
         return any([token.value == value and
                     (token.type == ErlangHighlightType.FUNCTION or
-                     (token.type == ErlangHighlightType.FUNDEC and os.path.basename(result.file) == module)) for token in tokens])
+                     (token.type == ErlangHighlightType.FUNDEC and os.path.basename(result.file) == module)) for token
+                    in tokens])
 
     def CheckResult(self, result, values, styles):
         tokens = self.lexer.highlighter.GetHighlightingTokens(result.lineText)
-        #print values, "tokens:{}".format([token.value for token in tokens])
-        #print "result ", any([token.value in values and token.type in styles for token in tokens])
+        # print values, "tokens:{}".format([token.value for token in tokens])
+        # print "result ", any([token.value in values and token.type in styles for token in tokens])
         return any([token.value in values and token.type in styles for token in tokens])
 
     def ModuleName(self):
@@ -319,13 +329,16 @@ class ErlangSTC(ErlangHighlightedSTCBase):
 
     def ModuleType(self):
         name = self.ModuleName()
-        if name.endswith('.hrl'): return TYPE_HRL
-        elif name.find('.') < 0: return TYPE_MODULE
+        if name.endswith('.hrl'):
+            return TYPE_HRL
+        elif name.find('.') < 0:
+            return TYPE_MODULE
         return TYPE_UNKNOWN
 
     def OnAutoComplete(self):
         self.UpdateCompleter()
-        if len(self.completer.list.Items) == 1 and self.completer.lastData and isinstance(self.completer.lastData, unicode):
+        if len(self.completer.list.Items) == 1 and self.completer.lastData and isinstance(self.completer.lastData,
+                                                                                          unicode):
             self.completer.AutoComplete(self.completer.list.Items[0])
         else:
             self.completer.Show()
@@ -335,7 +348,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         if not self.completer.IsShown(): return
         self.UpdateCompleter()
 
-    def UpdateCompleter(self, event = None):
+    def UpdateCompleter(self, event=None):
         caretPos = self.GetCurrentPos()
         (isRecField, record, prefix) = self.lexer.RecordFieldUnderCursor()
         if isRecField:
@@ -353,8 +366,8 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         if result: return result
 
         if (self.completer.IsShown() and
-            keyCode in [wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER,
-                        wx.WXK_DOWN, wx.WXK_UP, wx.WXK_ESCAPE]):
+                keyCode in [wx.WXK_RETURN, wx.WXK_NUMPAD_ENTER,
+                            wx.WXK_DOWN, wx.WXK_UP, wx.WXK_ESCAPE]):
             self.completer.OnKeyDown(event)
             return True
 
@@ -388,7 +401,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         end = self.GetSelectionEnd()
         startLine = self.LineFromPosition(start)
         endLine = self.LineFromPosition(end)
-        if not(abs(endLine - startLine) > 1 and end == self.PositionFromLine(endLine)):
+        if not (abs(endLine - startLine) > 1 and end == self.PositionFromLine(endLine)):
             endLine += 1
         lines = range(startLine, endLine)
         allComments = True
@@ -451,11 +464,10 @@ class ErlangSTC(ErlangHighlightedSTCBase):
             start -= 1
         while self.GetStyleAt(end + 1) == style:
             end += 1
-        if start == end and not self.GetTextRange(start, start+1).isalpha():
+        if start == end and not self.GetTextRange(start, start + 1).isalpha():
             return False
         end += 1
         return (start, end, self.GetTextRange(start, end))
-
 
     def GetContextData(self):
         pos = self.PositionFromPoint(self.ScreenToClient(wx.GetMousePosition()))
@@ -525,11 +537,11 @@ class ErlangSTC(ErlangHighlightedSTCBase):
             isIncludeLib = False
             if (style == ErlangHighlightType.MODULEATTR and value in ["include", "include_lib"]):
                 isIncludeLib = value == "include_lib"
-                path = postfix[2:len(postfix)-3]
+                path = postfix[2:len(postfix) - 3]
             elif style == ErlangHighlightType.STRING and lineText.startswith("-include"):
                 s = 14 if lineText.startswith("-include_lib") else 10
                 isIncludeLib = lineText.startswith("-include_lib")
-                path = lineText[s:len(lineText)-3]
+                path = lineText[s:len(lineText) - 3]
             if path:
                 if isIncludeLib:
                     app = path.split("/")[0]
@@ -547,7 +559,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                 return False
         if self.navigateTo:
             line = self.LineFromPosition(pos)
-            self.navigateTo += (line, )
+            self.navigateTo += (line,)
             if self.navigateTo[0]:
                 self.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
                 self.SetIndicatorCurrent(1)
@@ -584,7 +596,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         self.errorsLines = map(lambda x: x.line, errors)
         wMarkers = []
         eMarkers = []
-        errors = sorted(errors, key = lambda e: e.type)
+        errors = sorted(errors, key=lambda e: e.type)
         highlightLine = Config.GetProp("highlight_error_background", False)
         for e in errors:
             if e.type == CompileErrorInfo.WARNING:
@@ -608,17 +620,17 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         text = self.GetLine(self.CurrentLine - 1).strip()
         indent = self.GetLineIndentation(self.CurrentLine - 1)
         if (text.endswith("{") or
-            text.endswith("[") or
-            text.endswith("[") or
-            text.endswith("||") or
-            text.endswith("=") or
-            text.endswith("begin") or
-            text.endswith("try") or
-            text.endswith("catch") or
-            text.endswith("when") or
-            text.endswith("of") or
-            text.endswith("->") or
-            text.endswith("(")):
+                text.endswith("[") or
+                text.endswith("[") or
+                text.endswith("||") or
+                text.endswith("=") or
+                text.endswith("begin") or
+                text.endswith("try") or
+                text.endswith("catch") or
+                text.endswith("when") or
+                text.endswith("of") or
+                text.endswith("->") or
+                text.endswith("(")):
             indent += 4
         elif text.endswith("."):
             indent = 0
@@ -704,6 +716,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         if self.flyTimer:
             self.flyTimer.Stop()
 
+
 class ErlangSTCReadOnly(ErlangSTC):
     def __init__(self, parent, panel, filePath, option, text):
         ErlangSTC.__init__(self, parent, panel)
@@ -713,7 +726,7 @@ class ErlangSTCReadOnly(ErlangSTC):
 
     def OnInit(self):
         ErlangSTC.OnInit(self)
-		
+
         self.SetReadOnly(True)
         self.SetToolTip(None)
 
@@ -725,7 +738,7 @@ class ErlangSTCReadOnly(ErlangSTC):
     def CreatePopupMenu(self, event):
         return None
 
-    def Changed(self, changed = True):
+    def Changed(self, changed=True):
         pass
 
     def OnClose(self):
@@ -759,16 +772,17 @@ class ErlangSTCReadOnly(ErlangSTC):
         else:
             return False
 
+
 class ErlangConsoleSTC(ConsoleSTC):
     erlangConsoleRe = re.compile(
         r"""
         (?P<reload>Module:.*?Reload\ssucceeded\.)|
         (?P<check_cache>Checking\scache\sfor\serlang\slibs.*?$)|
         (?P<custom_log>%Log:.*?$)|
-        (?P<error_report>Error|error|ERROR)|
+        (?P<error_report>\b(level=error)|(ERROR\sREPORT)\b)|
         (?P<crash_report>CRASH\sREPORT)|
         (?P<module_fun_line>\{(?P<module>[a-zA-Z_][a-zA-Z_\d]*),(?P<fun>[a-zA-Z_][a-zA-Z_\d]*),(?P<arity>\d+),)|
-        (?P<mfa>(?P<module1>[a-zA-Z_][a-zA-Z_\d]*):(?P<fun1>[a-zA-Z_][a-zA-Z_\d]*)\/(?P<arity1>\d+))|
+        (?P<mfa>(?P<module1>[a-zA-Z_][a-zA-Z_\d]*):(?P<fun1>[a-zA-Z_][a-zA-Z_\d]*)\/(?P<arity1>\d+)(:(?P<line1>\d+))?)|
         (?P<file_line>\{file,\s*"(?P<file>.*?)"\},\s*?\{line,\s*(?P<fline>\d+)\})|
         (?P<f>\((?P<file1>.*?),\s+line\s+(?P<fline1>\d+)\))
         """,
@@ -802,8 +816,12 @@ class ErlangConsoleSTC(ConsoleSTC):
                 arity = int(d["arity" + postfix])
                 line = self.LineFromPosition(lastPosition + startPos)
                 navTo = ErlangCache.ModuleFunction(module, fun, arity)
+
                 if navTo:
-                    self.navigationData[line] = (navTo.file, navTo.line)
+                    targetLine = navTo.line
+                    if navTo and last == "mfa" and d["line" + postfix]:
+                        targetLine = int(d["line" + postfix])
+                    self.navigationData[line] = (navTo.file, targetLine)
                     self.SetIndicatorCurrent(1)
                     self.IndicatorFillRange(lastPosition + startPos, endPos - startPos)
 
@@ -822,7 +840,7 @@ class ErlangConsoleSTC(ConsoleSTC):
                 filePath = os.path.normpath(filePath)
                 startLine = self.LineFromPosition(lastPosition + startPos)
                 endLine = self.LineFromPosition(lastPosition + endPos)
-                for line in range (startLine, endLine + 1):
+                for line in range(startLine, endLine + 1):
                     self.navigationData[line] = (filePath, fline)
                     self.SetIndicatorCurrent(1)
                     self.IndicatorFillRange(lastPosition + startPos, endPos - startPos)
@@ -955,7 +973,7 @@ class IgorSTC(CustomSTC):
                     self.navigateTo = (navTo.file, navTo.line)
 
         if self.navigateTo:
-            self.navigateTo += (line, )
+            self.navigateTo += (line,)
             if self.navigateTo[0]:
                 self.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
                 self.SetIndicatorCurrent(1)

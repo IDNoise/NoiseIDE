@@ -7,3 +7,7 @@
 /NoiseIDEPython/noiseide
 /NoiseIDEPython/.idea/NoiseIDE.iml
 /NoiseIDEPython/.idea/misc.xml
+/NoiseIDEPython/venv/Include
+/NoiseIDEPython/venv/Lib
+/NoiseIDEPython/venv/Scripts
+/NoiseIDEPython/venv
