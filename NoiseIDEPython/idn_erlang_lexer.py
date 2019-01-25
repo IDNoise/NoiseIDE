@@ -53,8 +53,8 @@ class ErlangLexer(BaseLexer):
                         line -= 1
                 elif token.type == ErlangHighlightType.FUNCTION:
                     if tokens[0].value == "-spec":
-                        lineData.specName = token.value
-                        lineData.specStart = tokens[0].start + lineStart
+                        lineData.specName = tokens[1].value
+                        lineData.specStart = tokens[1].start + lineStart
                 elif token.type == ErlangHighlightType.FULLSTOP:
                     lineData.functionEnd = token.end + lineStart
                     line = startLine
@@ -119,9 +119,11 @@ class ErlangLexer(BaseLexer):
             line -= 1
         return False
 
-    def GetCurrentFunction(self):
-        line = self.stc.GetCurrentLine()
-        caretPos = self.stc.GetCurrentPos()
+    def GetCurrentFunction(self, line = None, caretPos = None):
+        if line is None:
+            line = self.stc.GetCurrentLine()
+        if caretPos is None:
+            caretPos = self.stc.GetCurrentPos()
         while line > 0:
             data = self.linesData[line]
             if data.functionEnd and caretPos > data.functionEnd:
@@ -134,11 +136,21 @@ class ErlangLexer(BaseLexer):
                     return (data.functionName,
                             data.functionStart,
                             end,
-                            self.stc.GetTextRange(data.functionStart, end))
+                            self.stc.GetTextRangeUTF8(data.functionStart, end))
                 else:
                     break
             line -= 1
         return None
+
+    def GetFunctionSpec(self, line, functionName):
+        startLine = line;
+        while line > 0:
+            data = self.linesData[line]
+            if data.functionName:
+                return None
+            if data.specName == functionName:
+                return self.stc.PositionFromLine(line), self.stc.GetTextRangeUTF8(self.stc.PositionFromLine(line), self.stc.GetLineEndPosition(startLine))
+            line -= 1
 
     def IsInSpec(self):
         line = self.stc.GetCurrentLine()

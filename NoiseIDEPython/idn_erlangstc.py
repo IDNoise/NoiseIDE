@@ -180,6 +180,9 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                 menu.AppendMenuItem("Implement behavior {}".format(module), self,
                                     lambda e: self.ImplementBehavior(module))
 
+            if style == ErlangHighlightType.FUNCTION or style == ErlangHighlightType.FUNDEC or style == ErlangHighlightType.VAR:
+                menu.AppendMenuItem("Rename", self, lambda e: self.RefactorRename())
+
         return menu
 
     def ImplementBehavior(self, module):
@@ -247,6 +250,41 @@ class ErlangSTC(ErlangHighlightedSTCBase):
         return [ErlangHighlightType.FUNCTION, ErlangHighlightType.FUNDEC,
                 ErlangHighlightType.RECORD, ErlangHighlightType.RECORDDEF,
                 ErlangHighlightType.MODULE]
+
+    def RefactorRename(self):
+        result = self.GetErlangWordAtPosition(self.popupPos)
+        if not result: return
+        (start, end, value) = result
+        style = self.GetStyleAt(self.popupPos)
+        line = self.LineFromPosition(start)
+        text = self.GetLineText(line)
+
+        if style == ErlangHighlightType.VAR:
+            funData = self.lexer.GetCurrentFunction(line, self.popupPos)
+            if not funData: return
+            (funName, funStart, funEnd, funText) = funData
+            specData = self.lexer.GetFunctionSpec(line - 1, funName)
+            if specData:
+                (specStart, specText) = specData
+                funStart = specStart
+                funText = specText + "\n" + funText
+
+
+            flags = re.MULTILINE | re.DOTALL
+            pattern = r"\b" + value + r"\b"
+            replaceRegexp = re.compile(pattern, flags)
+
+            if replaceRegexp.search(text):
+                dialog = wx.TextEntryDialog(None, "New name:", "Rename variable", value, style=wx.OK | wx.CANCEL)
+                if dialog.ShowModal() == wx.ID_OK:
+                    name = dialog.GetValue()
+                    funText = replaceRegexp.sub(name, funText)
+                    self.SetTargetStart(funStart)
+                    self.SetTargetEnd(funEnd)
+                    self.ReplaceTarget(funText)
+                    dialog.Destroy()
+        elif style in [ErlangHighlightType.FUNCTION, ErlangHighlightType.FUNDEC]:
+            return
 
     def FindReferences(self, asAtom=False):
         result = self.GetErlangWordAtPosition(self.popupPos)

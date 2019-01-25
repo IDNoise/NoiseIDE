@@ -309,7 +309,7 @@ class FindInProjectDialog(wx.Dialog):
         else:
             event.Skip()
 
-def Find(textToFind = "", title = "Find results", wholeWords = False, matchCase = False, useRegexp = False, openNewTab = True, fileExts = None, searchDir = None, resultsFilter = None):
+def Find(textToFind = "", title = "Find results", wholeWords = False, matchCase = False, useRegexp = False, openNewTab = True, fileExts = None, searchDir = None, resultsFilter = None, showResult = True):
     if not textToFind:
         return
 
@@ -332,10 +332,11 @@ def Find(textToFind = "", title = "Find results", wholeWords = False, matchCase 
                             result.remove(res)
                 if result:
                     results[filePath] = result
-        FillFindResultsTable(results, len(filePaths), regexp, openNewTab, title, searchDir, fileExts, resultsFilter)
+        if showResult:
+            FillFindResultsTable(results, len(filePaths), regexp, openNewTab, title, searchDir, fileExts, resultsFilter)
     finally:
         core.MainFrame.SetCursor(wx.StockCursor(wx.CURSOR_DEFAULT))
-
+    return results;
 
 
 def SearchInFile(filePath, regexp):
