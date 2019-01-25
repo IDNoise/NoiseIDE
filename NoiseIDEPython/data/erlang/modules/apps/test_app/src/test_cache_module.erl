@@ -52,6 +52,34 @@
     field_3 :: dialyzer_plt:plt_info()
 }).       
       
+-record(state,
+        {state %% of RFC 3588 Peer State Machine
+              :: {'Wait-Conn-Ack', atom()}
+               | recv_CER
+               | {'Wait-CEA', atom(), atom()}
+               | 'Open',
+         mode :: accept | connect | {connect, reference()},
+         parent       :: pid(),     %% watchdog process
+         transport    :: pid(),     %% transport process
+         dictionary   :: module(),  %% common dictionary
+         service      :: atom() | undefined,
+         dpr = false  :: false
+                       | true  %% DPR received, DPA sent
+                       | {boolean(), atom(), atom()},
+                       %% hop by hop and end to end identifiers in
+                       %% outgoing DPR; boolean says whether or not
+                       %% the request was sent explicitly with
+                       %% diameter:call/4.
+         codec :: #{decode_format := diameter:decode_format(),
+                    string_decode := boolean(),
+                    strict_mbit := boolean(),
+                    rfc := 3588 | 6733,
+                    ordered_encode := false},
+         strict :: boolean(),
+         ack = false :: boolean(),
+         length_errors :: exit | handle | discard,
+         incoming_maxlen :: integer() | infinity}).
+      
 %asdasdasd  \ 
 %asdasdasd 
 %asdasdasd  
@@ -89,4 +117,9 @@ x() ->
 round(Price, sell) ->
     [ {Key, trunc(Count)} || {Key, Count} <- Price ].
 
+
+-spec replace_labels(#{type := atom(),
+                        id :=  atom(),
+                        counters :=  atom()}) -> [atom()].
+replace_labels(Is) -> x.
  

@@ -98,6 +98,7 @@ class DirectoryChecker:
         self.excludePaths = excludePaths
         self.interval = interval
         self.timer = wx.Timer(core.MainFrame, wx.ID_ANY)
+        self.files = []
         core.MainFrame.Bind(wx.EVT_TIMER, self.CheckDirectoryChanges, self.timer)
 
         self.FilesCreatedEvent = Event()
@@ -147,6 +148,7 @@ class DirectoryChecker:
         dirSnapshot = GatherInfo(self.root, self.recursive, self.fileMask, self.excludeDirs, self.excludePaths)
         diff = DirectoryInfoDiff(dirSnapshot, self.dirSnapshot)
         self.dirSnapshot = dirSnapshot
+        self.files = self.dirSnapshot[1].keys()
         #print diff.createdDirs
         if diff.createdDirs: self.DirsCreatedEvent(diff.createdDirs)
         if diff.deletedDirs: self.DirsDeletedEvent(diff.deletedDirs)

@@ -858,6 +858,8 @@ var(V) ->
 
 parse_map_assoc({tree,map_type_assoc, _, {map_type_assoc, T1, T2}}) -> 
     parse_erlang_record_field_type(T1) ++ " => " ++ parse_erlang_record_field_type(T2);
+parse_map_assoc({tree,map_type_exact, _, {map_type_exact, T1, T2}}) -> 
+    parse_erlang_record_field_type(T1) ++ " => " ++ parse_erlang_record_field_type(T2);
 parse_map_assoc(MA) -> 
     io:format("Unknown map assoc record type: ~p~n", [MA]),
     "FIX IT".
