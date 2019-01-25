@@ -821,7 +821,7 @@ class ErlangConsoleSTC(ConsoleSTC):
                     targetLine = navTo.line
                     if navTo and last == "mfa" and d["line" + postfix]:
                         targetLine = int(d["line" + postfix])
-                    self.navigationData[line] = (navTo.file, targetLine)
+                    self.navigationData[self.GetTextRangeUTF8(lastPosition + startPos, lastPosition + endPos)] = (navTo.file, targetLine)
                     self.SetIndicatorCurrent(1)
                     self.IndicatorFillRange(lastPosition + startPos, endPos - startPos)
 
@@ -841,7 +841,7 @@ class ErlangConsoleSTC(ConsoleSTC):
                 startLine = self.LineFromPosition(lastPosition + startPos)
                 endLine = self.LineFromPosition(lastPosition + endPos)
                 for line in range(startLine, endLine + 1):
-                    self.navigationData[line] = (filePath, fline)
+                    self.navigationData[self.GetTextRangeUTF8(lastPosition + startPos, lastPosition + endPos)] = (filePath, fline)
                     self.SetIndicatorCurrent(1)
                     self.IndicatorFillRange(lastPosition + startPos, endPos - startPos)
             elif last == "custom_log":
@@ -870,17 +870,18 @@ class ErlangConsoleSTC(ConsoleSTC):
     def OnMouseMove(self, event):
         self.SetCursor(wx.StockCursor(wx.CURSOR_IBEAM))
         pos = self.PositionFromPoint(event.GetPosition())
-        line = self.LineFromPosition(pos)
-        if line in self.navigationData and event.GetModifiers() == wx.MOD_CONTROL:
+        if (self.IndicatorAllOnFor(pos) & (1 << 1) == (1 << 1)) and event.GetModifiers() == wx.MOD_CONTROL:
             self.SetCursor(wx.StockCursor(wx.CURSOR_HAND))
         event.Skip()
 
     def OnMouseClick(self, event):
-        pos = self.PositionFromPoint(event.GetPosition())
-        line = self.LineFromPosition(pos)
-        if line in self.navigationData:
-            (f, line) = self.navigationData[line]
-            if event.GetModifiers() == wx.MOD_CONTROL:
+        if event.GetModifiers() == wx.MOD_CONTROL:
+            pos = self.PositionFromPoint(event.GetPosition())
+            start = self.IndicatorStart(1, pos)
+            end = self.IndicatorEnd(1, pos)
+            text = self.GetTextRangeUTF8(start, end)
+            if text in self.navigationData:
+                (f, line) = self.navigationData[text]
                 core.TabMgr.LoadFileLine(f, line - 1, False)
                 return
         event.Skip()
