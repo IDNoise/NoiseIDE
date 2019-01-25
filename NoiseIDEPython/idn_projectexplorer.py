@@ -169,11 +169,13 @@ class ProjectExplorer(IDNCustomTreeCtrl):
     def AddMask(self, mask):
         if not mask in self.mask:
             self.mask.append(mask)
+            self.project.SaveUserData()
             self.UpdateRoot()
 
     def RemoveMask(self, mask):
         if mask in self.mask:
             self.mask.remove(mask)
+            self.project.SaveUserData()
             self.UpdateRoot()
 
     def GetCustomMask(self):
