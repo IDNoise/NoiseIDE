@@ -114,6 +114,8 @@ class ErlangProject(Project):
         self.window.projectMenu.AppendSeparator()
         self.window.projectMenu.AppendMenuItem("XRef check", self.window,
                                                lambda e: self.StartXRef())
+        self.window.projectMenu.AppendMenuItem("XRef check (with deps)", self.window,
+                                               lambda e: self.StartXRef(True))
 
         self.dialyzerMenu = Menu()
         self.dialyzerMenu.AppendMenuItem("Edit Options", self.window, self.OnEditDialyzerOptions)
@@ -272,9 +274,9 @@ class ErlangProject(Project):
     def GenerateErlangCache(self):
         self.GetShell().GenerateErlangCache(self.GetErlangRuntime())
 
-    def StartXRef(self):
+    def StartXRef(self, withDeps = False):
         self.xrefProblemsCount = 0
-        modules = self.GetXRefModules()
+        modules = self.GetXRefModules(withDeps)
         self.xrefModules = set()
         for module in modules:
             self.GetShell().XRef(module)
@@ -705,13 +707,23 @@ class ErlangProject(Project):
         for f in self.explorer.GetAllFiles():
             if IsIgor(f): IgorCache.GenerateForFile(f)
 
+    def GetXRefModules(self, withDeps=False):
+        modules = []
+        for app in self.GetApps():
+            path = os.path.join(self.GetAppPath(app), "src")
+            modules += self.GetModulesInPath(path)
+        if withDeps:
+            for dep in self.GetDeps():
+                path = os.path.join(self.GetAppPath(dep), "src")
+                modules += self.GetModulesInPath(path)
+        return modules
+
     def IsSrcPath(self, path): raise Exception("override in child class")
     def GetBeamPathFromSrcPath(self, path): raise Exception("override in child class")
     def GetApp(self, path): raise Exception("override in child class")
     def FullRebuild(self): raise Exception("override in child class")
     def UpdatePaths(self): raise Exception("override in child class")
     def RemoveUnusedBeams(self): raise Exception("override in child class")
-    def GetXRefModules(self): raise Exception("override in child class")
     def SetCompileMenuItems(self): raise Exception("override in child class")
     def RebuildTests(self): raise Exception("override in child class")
     def DialyzeProject(self): raise Exception("override in child class")
@@ -819,11 +831,15 @@ class SingleAppErlangProject(ErlangProject):
                 self.UpdatePaths()
                 self.UpdateProjectConsoles()
 
-    def GetXRefModules(self):
+    def GetXRefModules(self, withDeps = False):
         modules = []
         for app in self.GetApps():
             path = os.path.join(self.GetAppPath(app), "src")
             modules += self.GetModulesInPath(path)
+        if withDeps:
+            for dep in self.GetDeps():
+                path = os.path.join(self.GetAppPath(dep), "src")
+                modules += self.GetModulesInPath(path)
         return modules
 
     def GetApps(self, ignoreExcluded = False):
@@ -990,13 +1006,6 @@ class MultipleAppErlangProject(ErlangProject):
             if root == self.AppsPath() or root == self.DepsPath():
                 self.UpdatePaths()
                 self.UpdateProjectConsoles()
-
-    def GetXRefModules(self):
-        modules = []
-        for app in self.GetApps():
-            path = os.path.join(self.GetAppPath(app), "src")
-            modules += self.GetModulesInPath(path)
-        return modules
 
     def GetApps(self, ignoreExcluded = False):
         apps = []
