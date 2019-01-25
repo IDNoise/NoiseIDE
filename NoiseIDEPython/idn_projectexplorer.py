@@ -353,7 +353,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         (_, filePath) = result
         if filePath and not os.path.isfile(filePath):
             writeFile(filePath, "")
-            self.FileCreated(filePath)
+            self.dirChecker.CheckDirectoryChanges()
 
     def OnMenuNewDir(self, event):
         result = self.RequestName("New Directory", "Enter dir name", "new_dir")
@@ -361,7 +361,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
         (_, dirPath) = result
         if dirPath and not os.path.isdir(dirPath):
             os.mkdir(dirPath)
-            self.DirCreated(dirPath)
+            self.dirChecker.CheckDirectoryChanges()
         else:
             wx.MessageBox("Dir {} already exists.".format(dirPath), "Error")
 
@@ -395,23 +395,14 @@ class ProjectExplorer(IDNCustomTreeCtrl):
             name = os.path.join(toPath, os.path.basename(what))
             newName = self.GetNewIfExists(name)
             if self.cut:
-                if os.path.isdir(what):
-                    self.DirDeleted(what)
-                else:
-                    self.FileDeleted(what)
                 shutil.move(what, newName)
-                if os.path.isdir(newName):
-                    self.DirCreated(newName)
-                else:
-                    self.FileCreated(newName)
             else:
                 if os.path.isdir(what):
                     shutil.copytree(what, newName)
-                    self.DirCreated(newName)
                 else:
                     shutil.copy(what, newName)
-                    self.FileCreated(newName)
             self.AfterPasteMove(what, newName)
+            self.dirChecker.CheckDirectoryChanges()
 
         self.tempData = []
 
@@ -426,12 +417,13 @@ class ProjectExplorer(IDNCustomTreeCtrl):
     def OnMenuDelete(self, event):
         for id in self.selectedItems:
             path = self.GetPyData(id)
-            if os.path.isdir(path):
-                shutil.rmtree(path, True)
-                self.DirDeleted(path)
-            else:
-                os.remove(path)
-                self.FileDeleted(path)
+            if os.path.exists(path):
+                if os.path.isdir(path):
+                    shutil.rmtree(path, True)
+                else:
+                    os.remove(path)
+        self.dirChecker.CheckDirectoryChanges()
+
 
     def GetNewIfExists(self, name):
         base, ext = os.path.splitext(name)
@@ -525,7 +517,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
                     self.SortChildren(id)
 
     def OnMenuRefresh(self, event = None):
-        self.UpdateRoot()
+        #self.UpdateRoot()
         self.dirChecker.CheckDirectoryChanges()
 
     def OnMenuSetupMasks(self, event):
@@ -565,15 +557,8 @@ class ProjectExplorer(IDNCustomTreeCtrl):
                         oNewPath = oPath.replace(path, newPath)
                         updateEditor(oPath, oNewPath)
 
-            if os.path.isdir(path):
-                self.DirDeleted(path)
-            else:
-                self.FileDeleted(path)
             os.rename(path, newPath)
-            if os.path.isdir(newPath):
-                self.DirCreated(newPath)
-            else:
-                self.FileCreated(newPath)
+            self.dirChecker.CheckDirectoryChanges()
 
         dlg.Destroy()
 

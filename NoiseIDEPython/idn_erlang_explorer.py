@@ -156,7 +156,7 @@ class ErlangProjectExplorer(ProjectExplorer):
         if path and not os.path.isfile(path):
             writeFile(path, "")
             core.TabMgr.LoadFileLine(path)
-            self.FileCreated(path)
+            self.dirChecker.CheckDirectoryChanges()
 
     def OnMenuNewApplication(self, event):
         result = self.RequestName("New Application", "Enter application name", "new_application")
@@ -195,10 +195,7 @@ class ErlangProjectExplorer(ProjectExplorer):
         core.TabMgr.LoadFileLine(appModulePath)
         core.TabMgr.LoadFileLine(supModulePath)
         core.TabMgr.LoadFileLine(appSrcPath)
-        self.DirCreated(srcPath)
-        self.FileCreated(appModulePath)
-        self.FileCreated(supModulePath)
-        self.FileCreated(appSrcPath)
+        self.dirChecker.CheckDirectoryChanges()
 
 
     def DefaultExcludeDirs(self):
@@ -221,7 +218,7 @@ class ErlangProjectExplorer(ProjectExplorer):
             data = data.replace(replaceWhat, module)
             writeFile(path, data)
             core.TabMgr.LoadFileLine(path)
-            self.FileCreated(path)
+            self.dirChecker.CheckDirectoryChanges()
 
     def CreateFromUserTemplate(self, template, title, defaultValue = "new_module_name", ext = ".erl", prompt = "Enter module name:", replaceWhat = "[module_name]"):
         self.CreateFromTemplate(os.path.join("user", template), title, defaultValue, ext, prompt, replaceWhat)

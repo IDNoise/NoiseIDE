@@ -99,8 +99,6 @@ class DirectoryChecker:
         self.interval = interval
         self.timer = wx.Timer(core.MainFrame, wx.ID_ANY)
         core.MainFrame.Bind(wx.EVT_TIMER, self.CheckDirectoryChanges, self.timer)
-        if root:
-            self.dirSnapshot = self.GetDirectoryInfo()
 
         self.FilesCreatedEvent = Event()
         self.FilesModifiedEvent = Event()
@@ -109,10 +107,8 @@ class DirectoryChecker:
         self.DirsCreatedEvent = Event()
         self.DirsDeletedEvent = Event()
 
-    def GetDirectoryInfo(self):
-        info = GatherInfo(self.root, self.recursive, self.fileMask, self.excludeDirs, self.excludePaths)
-        self.files = info[1].keys()
-        return info
+        self.dirSnapshot = ({}, {})
+        self.CheckDirectoryChanges()
 
     def SetInterval(self, interval):
         self.Stop()
@@ -140,8 +136,8 @@ class DirectoryChecker:
         self.Start()
 
     def Start(self):
+        #self.dirSnapshot = self.GetDirectoryInfo()
         if self.interval > 0:
-            self.dirSnapshot = self.GetDirectoryInfo()
             self.timer.Start(self.interval * 1000, True)
 
     def Stop(self):
@@ -151,7 +147,6 @@ class DirectoryChecker:
         dirSnapshot = GatherInfo(self.root, self.recursive, self.fileMask, self.excludeDirs, self.excludePaths)
         diff = DirectoryInfoDiff(dirSnapshot, self.dirSnapshot)
         self.dirSnapshot = dirSnapshot
-        self.files = self.dirSnapshot[1].keys()
         #print diff.createdDirs
         if diff.createdDirs: self.DirsCreatedEvent(diff.createdDirs)
         if diff.deletedDirs: self.DirsDeletedEvent(diff.deletedDirs)

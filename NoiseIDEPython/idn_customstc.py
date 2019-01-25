@@ -215,7 +215,7 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
 
     def OnModifyCheckTimer(self, event):
         if Config.RefreshInterval() != 0: return
-        modifyTime = os.stat(self.filePath)[ST_MTIME]
+        modifyTime = os.stat(self.filePath)[ST_MTIME] if os.path.exists(self.filePath) else self.modifyTime
         if modifyTime != self.modifyTime:
             self.modifyTime = modifyTime
             core.Project.OnProjectFilesModified([self.filePath])
