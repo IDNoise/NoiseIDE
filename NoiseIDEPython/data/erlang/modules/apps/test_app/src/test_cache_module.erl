@@ -63,7 +63,7 @@
          transport    :: pid(),     %% transport process
          dictionary   :: module(),  %% common dictionary
          service      :: atom() | undefined,
-         dpr = false  :: false
+         dpr = false  :: false 
                        | true  %% DPR received, DPA sent
                        | {boolean(), atom(), atom()},
                        %% hop by hop and end to end identifiers in
@@ -73,16 +73,16 @@
          codec :: #{decode_format := diameter:decode_format(),
                     string_decode := boolean(),
                     strict_mbit := boolean(),
-                    rfc := 3588 | 6733,
+                    rfc := 3588 | 6733, 
                     ordered_encode := false},
          strict :: boolean(),
-         ack = false :: boolean(),
+         ack = false :: boolean(), 
          length_errors :: exit | handle | discard,
          incoming_maxlen :: integer() | infinity}).
       
 %asdasdasd  \ 
 %asdasdasd 
-%asdasdasd  
+%asdasdasd   
       
 -opaque ololo() :: #ololo{}.
 %%%===================================================================
@@ -96,30 +96,36 @@ xxx() -> x.
 -ifdef(debug).
 -define(X, xx).
 -else.
--define(X, yy).
+-define(X, yy). 
 -endif.   
    
 x() ->  
     xxx(),    
+    
+    Z = #state{
+        ack = 1
+        },
     SortedQueueDiffs = 
         lists:sort(fun({{_, IR1}, D1}, {{_, IR2}, D2}) -> 
             Add1 = case IR1 of true -> 1; _ -> 0 end, 
             Add2 = case IR2 of true -> 1; _ -> 0 end, 
             D1 * 1000 + Add1 < D2 * 1000 + Add2 
         end, []),
+        replace_labels(x),
     io:format("~p~n", [?X]).
      
 -spec round(XX, integer()) -> integer()  
-  when XX :: atom().
+  when XX :: atom(). 
 %% @doc Prints the value X. 
-%round(Price, buy) ->
+%round(Price, buy) -> 
 %    [ {Key, apmath:ceil(Count)} || {Key, Count} <- Price ];
-round(Price, sell) ->
+round(Price, sell) -> 
     [ {Key, trunc(Count)} || {Key, Count} <- Price ].
-
+ 
 
 -spec replace_labels(#{type := atom(),
                         id :=  atom(),
                         counters :=  atom()}) -> [atom()].
-replace_labels(Is) -> x.
+replace_labels(Is) -> x. 
+ 
  

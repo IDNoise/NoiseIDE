@@ -700,13 +700,15 @@ get_var_types(Args, Defs) ->
     {Vars, Types} = 
         lists:foldl(
             fun(A, {Vars, Types}) ->
-                %io:format("A:~p~n", [A]),
+%                io:format("A:~p~n", [A]),
                 T = get_type(A, Defs),
                 V = get_var_name(A),
+%                io:format("T:~p, V:~p~n", [T, V]),
                 {[V| Vars], [T | Types]}
             end, 
             {[], []}, 
             Args),  
+%    io:format("Args:~p~nVars: ~p~nTypes:~p~n", [Args, Vars, Types]),
     {lists:reverse(Vars), lists:reverse(Types)}.  
 
 get_var_name(#t_nil{}) -> "[]";
@@ -720,13 +722,22 @@ get_var_name(#t_name{name = Name}) ->
     end;
 get_var_name(#t_type{a = Args})-> args_to_name(Args);
 get_var_name(#t_list{})-> "List";
-get_var_name(#t_var{name = Name})-> atom_to_list(Name).
+get_var_name(#t_map{})-> "Map";
+get_var_name(#t_record{}) -> "Record";
+get_var_name(#t_union{}) -> "Union";
+get_var_name(#t_tuple{}) -> "Tuple";
+get_var_name(#t_nonempty_list{}) -> "NonEmptyList";
+get_var_name(#t_integer_range{}) -> "IntegerInRange";
+get_var_name(#t_var{name = Name})-> atom_to_list(Name);
+get_var_name(T)-> 
+    io:format("Unknown var name: ~p~n", [T]).
 
 get_type(T, Defs) -> parse_t_type(T, Defs).
 
 parse_t_type(T, Deps) -> 
     parse_t_type(T, Deps, 6).
 parse_t_type(_, _, 0) -> ?TERM;
+parse_t_type(#t_nil{}, _, _) -> ?TERM;
 parse_t_type(#t_type{name = Name}, _, _) when is_atom(Name) ->
     atom_to_list(Name) ++ "()"; 
 parse_t_type(#t_type{name = Name}, Defs, Depth) when is_record(Name, t_name) ->
@@ -744,6 +755,10 @@ parse_t_type(#t_tuple{types = Types}, Defs, Depth) ->
     "{" ++ string_join([parse_t_type(T, Defs, Depth - 1) || T <- Types], ", ") ++ "}";
 parse_t_type(#t_list{type = Type}, Defs, Depth) ->
     "[" ++ parse_t_type(Type, Defs, Depth - 1) ++ "]";
+parse_t_type(#t_nonempty_list{type = Type}, Defs, Depth) ->
+    "[" ++ parse_t_type(Type, Defs, Depth - 1) ++ "] (Non empty)";
+parse_t_type(#t_integer_range{from = From, to = To}, _Defs, _Depth) ->
+    "integer(" ++ integer_to_list(From) ++ ".." ++ integer_to_list(To) ++ ")";
 parse_t_type(#t_var{name = Names}, Defs, Depth) ->
     Name = case Names of
                Names when is_list(Names) -> hd(Names);
@@ -754,7 +769,20 @@ parse_t_type(#t_var{name = Names}, Defs, Depth) ->
             parse_t_type(T, Defs, Depth - 1);
         _ -> ?TERM 
     end;
-parse_t_type(_, _, _) -> ?TERM.
+parse_t_type(#t_map{types = Types}, Defs, Depth) ->
+    "#{" ++ string_join([parse_t_type(T, Defs, Depth - 1) || T <- Types], ", ") ++ "}";
+parse_t_type(#t_fun{args = Args, range = Range}, Defs, Depth) ->
+    "fun(" ++ string_join([parse_t_type(A, Defs, Depth - 1) || A <- Args], ", ") ++ ") -> " + parse_t_type(Range, Defs, Depth - 1);
+parse_t_type(#t_map_field{k_type = KType, v_type = VType}, Defs, Depth) ->
+    parse_t_type(KType, Defs, Depth - 1) ++ " => " ++ parse_t_type(VType, Defs, Depth - 1);
+parse_t_type(#t_paren{type = Type}, Defs, Depth) -> 
+    "(" + parse_t_type(Type, Defs, Depth - 1) ++ ")";
+parse_t_type(#t_binary{base_size = BaseSize, unit_size = UnitSize}, _Defs, _Depth) -> "binary(Base size: " ++ integer_to_list(BaseSize) ++", Unit size: " ++ integer_to_list(UnitSize) ++ ")"; 
+parse_t_type(#t_integer{val = Val}, _Defs, _Depth) -> "integer(" ++ integer_to_list(Val) ++ ")"; 
+parse_t_type(TType, _, _) -> 
+    catch throw(error),
+    io:format("Unknown field type: ~p~n~p", [TType, erlang:get_stacktrace()]),
+    ?TERM.
 
 string_join(Items, Sep) ->
     lists:flatten(lists:reverse(string_join1(Items, Sep, []))).
@@ -788,6 +816,11 @@ parse_erlang_record_field(Field) ->
     end.
 
 parse_erlang_record_field_type(none) -> "undefined";
+parse_erlang_record_field_type({var, _, V}) -> 
+    case is_atom(V) of
+        true -> atom_to_list(V);
+        _ -> term_to_binary(V)
+    end;
 parse_erlang_record_field_type({type, _, 'fun', []}) -> atom_to_list('fun') ++ "()";
 parse_erlang_record_field_type({type, _, map, _}) -> "#{}";
 parse_erlang_record_field_type({type, _, tuple, _}) -> "{}";
@@ -819,8 +852,8 @@ parse_erlang_record_field_type(Type) ->
                 io:format("Unknown field application type: ~p~n", [Unknown]),
                 "FIX IT"
         end
-    catch E:R ->
-        io:format("Unknown field type: ~p~n", [Type]),
+    catch E:R:Stacktrace ->
+        io:format("Unknown field type: ~p~n~p~n", [Type, Stacktrace]),
         "FIX IT"
     end.
 
@@ -852,7 +885,8 @@ var({type, _, list, Vars}) ->
 var({tree, type_application, _, _} = T) ->
     parse_erlang_record_field_type(T);
 var(V) ->
-    io:format("Unknown var: ~p~n", [V]),
+    catch throw(error),
+    io:format("Unknown var: ~p~n~p", [V, erlang:get_stacktrace()]),
     "term()".
 
 
@@ -861,7 +895,8 @@ parse_map_assoc({tree,map_type_assoc, _, {map_type_assoc, T1, T2}}) ->
 parse_map_assoc({tree,map_type_exact, _, {map_type_exact, T1, T2}}) -> 
     parse_erlang_record_field_type(T1) ++ " => " ++ parse_erlang_record_field_type(T2);
 parse_map_assoc(MA) -> 
-    io:format("Unknown map assoc record type: ~p~n", [MA]),
+    catch throw(error),
+    io:format("Unknown map assoc record type: ~p~n~p", [MA, erlang:get_stacktrace()]),
     "FIX IT".
 
 parse_opaque(Node, Content) -> 
