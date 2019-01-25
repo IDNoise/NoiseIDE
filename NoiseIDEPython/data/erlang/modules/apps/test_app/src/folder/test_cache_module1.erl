@@ -10,8 +10,8 @@
 
 -export([   
     x/0,
-    xxx/0,  
-    round/2  
+    xxxyyy/0,  
+    xxroundxx/2  
 ]).    
 -define(XssssX, ololasdasdado).  
 -type beam_instr() :: 'bs_init_writable' | 'fclearerror' | 'if_end'
@@ -19,12 +19,12 @@
                     | tuple().  %% XXX: Very underspecified - FIX THIS 
    
  
--spec round(XX, integer()) -> integer()
+-spec xxroundxx(XX, integer()) -> integer()
   when XX :: atom().
 %% @doc Prints the value X.
-%round(Price, buy) ->
+%xxroundxx(Price, buy) ->
 %    [ {Key, apmath:ceil(Count)} || {Key, Count} <- Price ];
-round(Price, sell) ->
+xxroundxx(Price, sell) ->
     [ {Key, trunc(Count)} || {Key, Count} <- Price ].
  
 %%%========================== ==== ======= ==============================
@@ -49,7 +49,7 @@ round(Price, sell) ->
 %%%====================================== =============================
 
 %% @doc Prints the value X.
-xxx() ->
+xxxyyy() ->
     ?XX + ?XssssX.  
 
 -ifdef(debug).
@@ -59,7 +59,9 @@ xxx() ->
 -endif.  
   
 x() -> 
-    xxx(),
+    xxxyyy(),
+    ?MODULE:xxxyyy(),
+    fun ?MODULE:xxxyyy/0,
     SortedQueueDiffs = 
         lists:sort(fun({{_, IR1}, D1}, {{_, IR2}, D2}) -> 
             Add1 = case IR1 of true -> 1; _ -> 0 end, 

@@ -11,7 +11,8 @@
  
 -export([ 
     x/0, 
-    function/1
+    function/1,
+    xxx/0
 ]).    
 -callback init(Args :: term()) ->
     {ok, State :: term()} | {ok, State :: term(), timeout() | hibernate} |
@@ -114,8 +115,8 @@ x() ->
         replace_labels(x),
     io:format("~p~n", [?X]).
      
--spec round(XX, integer()) -> integer()  
-  when XX :: atom(). 
+-spec round(Price, integer()) -> integer()  
+  when Price :: atom(). 
 %% @doc Prints the value X. 
 %round(Price, buy) -> 
 %    [ {Key, apmath:ceil(Count)} || {Key, Count} <- Price ];
@@ -126,6 +127,6 @@ round(Price, sell) ->
 -spec replace_labels(#{type := atom(),
                         id :=  atom(),
                         counters :=  atom()}) -> [atom()].
-replace_labels(Is) -> x. 
+replace_labels(Is) -> test_cache_module1:xxroundxx(x, x). 
  
  

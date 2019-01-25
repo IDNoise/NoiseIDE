@@ -21,6 +21,7 @@ from idn_outline import ErlangOutline
 from idn_utils import Menu, camelToLowerUnderscore, readFile, underscoreToCamelcase
 from idn_config import Config
 from idn_erlang_utils import IsModule
+from idn_findreplace import ReplaceInProject, ReplaceInFile
 
 
 class ErlangHighlightedSTCBase(CustomSTC):
@@ -284,7 +285,47 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                     self.ReplaceTarget(funText)
                     dialog.Destroy()
         elif style in [ErlangHighlightType.FUNCTION, ErlangHighlightType.FUNDEC]:
-            return
+            module = self.ModuleName()
+            if style == ErlangHighlightType.FUNCTION:
+                prefix = text[:start - self.PositionFromLine(line)]
+                if prefix and prefix[-1] == ":":
+                    tokens = self.completer.tokenizer.GetTokens(prefix[:-1])
+                    lastToken = tokens[-1]
+                    if tokens:
+                        if lastToken.type == ErlangTokenType.ATOM:
+                            module = lastToken.value
+                        elif lastToken.type == ErlangTokenType.MACROS:
+                            macros = lastToken.value
+                            macrosData = ErlangCache.MacrosData(self.ModuleName(), macros)
+                            if macrosData:
+                                module = macrosData.value
+
+            dialog = wx.TextEntryDialog(None, "New name:", "Rename variable", value, style=wx.OK | wx.CANCEL)
+            if dialog.ShowModal() == wx.ID_OK:
+                newName = dialog.GetValue()
+
+                for p in [
+                            r"(?<=\b{0}:){1}(?=\()",
+                            r"(?<=\s{0}:){1}(?=/[0-9])"
+                          ]:
+                    p = p.format(module, value)
+                    ReplaceInProject(re.compile(p, re.MULTILINE | re.DOTALL), newName, [".erl", ".hrl"])
+
+                for p in [
+                            r"\b{0}(?=\()",
+                            r"(?<=\?MODULE:){0}(?=\()",
+                            r"(?<=\?MODULE:){0}(?=/[0-9])",
+                            r"\b{0}(?=/[0-9])",
+                            r"(?<=-spec ){0}(?=\()"
+                      ]:
+                    p = p.format(value)
+                    regexp = re.compile(p, re.MULTILINE | re.DOTALL)
+                    text = self.GetText()
+                    if regexp.search(text):
+                        text = regexp.sub(newName, text)
+                        self.SetText(text)
+                        self.Save()
+
 
     def FindReferences(self, asAtom=False):
         result = self.GetErlangWordAtPosition(self.popupPos)
@@ -321,7 +362,7 @@ class ErlangSTC(ErlangHighlightedSTCBase):
                             if macrosData:
                                 module = macrosData.value
             moduleFile = "{}.erl".format(module)
-            Find(r"\b{0}:{1}\(|\s{0}:{1}/|^{1}\(".format(module, value),
+            Find(r"\b{0}:{1}\(|\s{0}:{1}/|^\s*{1}\(|\?MODULE:{1}\(|\?MODULE:{1}/|{1}/|[^:]\b{1}(?=/[0-9])".format(module, value),
                  "Find reference of function '{}'".format(value),
                  useRegexp=True,
                  fileExts=[".erl", ".hrl", moduleFile],
