@@ -29,7 +29,7 @@ class ProjectExplorer(IDNCustomTreeCtrl):
             self.mask = self.DefaultMask()
         self.excludeDirs = self.DefaultExcludeDirs()
         self.excludePaths = self.DefaultExcludePaths()
-        for p in project.GetExcludedPaths():
+        for p in self.project.GetExcludedPaths():
             self.excludePaths.append(os.path.join(core.Project.projectDir, p))
         self.hiddenPaths = set()
         self.showHidden = False

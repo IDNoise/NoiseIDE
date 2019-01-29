@@ -113,7 +113,13 @@ class ErlangProjectFrom(wx.Dialog):
         self.workDirTB.SetToolTipString("Work dir. Empty if root.")
 
         self.excludedDirList = wx.CheckListBox(self, choices = [], size = (220, 150))
-        self.excludedDirList.SetToolTipString("Directories to exclude from compilation")
+        self.excludedDirList.SetToolTipString("Apps to exclude from compilation")
+
+        self.excludedPathList = wx.ListBox(self, choices=[], size=(220, 150))
+        self.excludedPathList.SetToolTipString("Directories to exclude from project (requires restart)")
+
+        self.excludedPathAddButton = CreateButton(self, "Add", self.OnAddExcludedPath)
+        self.excludedPathRemoveButton = CreateButton(self, "Remove", self.OnRemoveExcludedPath)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         gSizer = wx.GridBagSizer(2, 2)
@@ -142,16 +148,36 @@ class ErlangProjectFrom(wx.Dialog):
 
         sizer.AddSizer(gSizer)
 
-        excludedAppsSizer = wx.StaticBoxSizer(wx.StaticBox(self, label = "Excluded dirs"), wx.HORIZONTAL)
+        excludedAppsSizer = wx.StaticBoxSizer(wx.StaticBox(self, label = "Excluded apps"), wx.HORIZONTAL)
         excludedAppsSizer.Add(self.excludedDirList, 1, flag = wx.ALL | wx.ALIGN_LEFT | wx.EXPAND, border = 4)
-
         sizer.AddSizer(excludedAppsSizer, flag = wx.EXPAND)
+
+        excludedPathsSizer = wx.StaticBoxSizer(wx.StaticBox(self, label="Excluded paths"), wx.HORIZONTAL)
+        excludedPathsSizer.Add(self.excludedPathList, 1, flag=wx.ALL | wx.ALIGN_LEFT | wx.EXPAND, border=4)
+        excludedPathButtonSizer = wx.BoxSizer(wx.VERTICAL)
+        excludedPathButtonSizer.Add(self.excludedPathAddButton)
+        excludedPathButtonSizer.Add(self.excludedPathRemoveButton)
+        excludedPathsSizer.AddSizer(excludedPathButtonSizer, flag=wx.ALL | wx.ALIGN_RIGHT, border=4)
+        sizer.AddSizer(excludedPathsSizer, flag=wx.EXPAND)
+        sizer.AddSizer(excludedPathButtonSizer)
+
         sizer.AddSizer(self.consoleSizer, flag =  wx.EXPAND)
         sizer.AddSizer(self.saveCloseButtonSizer, 1, flag = wx.EXPAND)
 
         self.SetSizer(sizer)
         self.Layout()
         sizer.SetSizeHints(self)
+
+    def OnAddExcludedPath(self, event):
+        selector = wx.DirSelector("Choose a folder", defaultPath = self.project.projectDir)
+        path = selector.strip().replace(self.project.projectDir + os.sep, "")
+        if path and not path in self.excludedPathList.GetItems():
+            self.excludedPathList.Append(path)
+
+    def OnRemoveExcludedPath(self, event):
+        selectedIndexes = self.excludedPathList.GetSelections()
+        for i in reversed(selectedIndexes):
+            self.excludedPathList.Delete(i)
 
     def SetCurrentValues(self):
         self.projectNameTB.Value = self.project.ProjectName()
@@ -177,6 +203,7 @@ class ErlangProjectFrom(wx.Dialog):
             self.excludedDirList.SetItems(self.project.projectData[CONFIG_EXCLUDED_DIRS] + self.project.GetAppsAndDeps())
             self.excludedDirList.SetCheckedStrings(self.project.projectData[CONFIG_EXCLUDED_DIRS])
 
+        self.excludedPathList.SetItems(self.project.projectData[CONFIG_EXCLUDED_PATHS])
 
     def OnPathChanged(self, event):
         dirs = set()
@@ -231,19 +258,17 @@ class ErlangProjectFrom(wx.Dialog):
         data[CONFIG_COMPILER_OPTIONS] = compilerOptions
         data[CONFIG_CONSOLES] = self.consoles
         data[CONFIG_PROJECT_TYPE] = self.projectType
-        if self.project:
-            data[Project.CONFIG_EXCLUDED_PATHS] = self.project.GetExcludedPaths()
+        data[CONFIG_EXCLUDED_PATHS] = list(self.excludedPathList.GetItems())
 
         if self.projectType == MULTIPLE_APP_PROJECT:
             apps = self.appsDirTB.Value
             deps = self.depsDirTB.Value
             workDir = self.workDirTB.Value
-            excludedDirs = list(self.excludedDirList.GetCheckedStrings())
 
             data[CONFIG_APPS_DIR] = apps
             data[CONFIG_DEPS_DIR] = deps
             data[CONFIG_WORK_DIR] = workDir
-            data[CONFIG_EXCLUDED_DIRS] = excludedDirs
+            data[CONFIG_EXCLUDED_DIRS] =  list(self.excludedDirList.GetCheckedStrings())
 
             appsPath = os.path.join(path, apps)
             depsPath = os.path.join(path, deps)

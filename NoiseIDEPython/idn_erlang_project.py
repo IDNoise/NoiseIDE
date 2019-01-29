@@ -718,6 +718,8 @@ class ErlangProject(Project):
                 modules += self.GetModulesInPath(path)
         return modules
 
+    def GetExcludedPaths(self): return [] if not CONFIG_EXCLUDED_PATHS in self.projectData else self.projectData[CONFIG_EXCLUDED_PATHS]
+
     def IsSrcPath(self, path): raise Exception("override in child class")
     def GetBeamPathFromSrcPath(self, path): raise Exception("override in child class")
     def GetApp(self, path): raise Exception("override in child class")

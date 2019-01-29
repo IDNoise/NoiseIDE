@@ -85,7 +85,6 @@ class Project(ProgressTaskManagerDialog):
     CONFIG_TAB_PERSP = "tab_perspective"
     CONFIG_TOOL_PERSP = "tool_perspective"
     CONFIG_GLOBAL_PERSP = "global_perspective"
-    CONFIG_EXCLUDED_PATHS = "excluded_paths"
 
 
     def __init__(self, window, filePath, projectData):
@@ -243,8 +242,8 @@ class Project(ProgressTaskManagerDialog):
     def SetupPerspective(self):
         pass
 
-    def GetExcludedPaths(self):
-        return [] if not self.CONFIG_EXCLUDED_PATHS in self.projectData else self.projectData[self.CONFIG_EXCLUDED_PATHS]
+    #def GetExcludedPaths(self):
+    #    return [] if not CONFIG_EXCLUDED_PATHS in self.projectData else self.projectData[CONFIG_EXCLUDED_PATHS]
 
     def SaveData(self):
         stream = file(self.projectFilePath, 'w')
