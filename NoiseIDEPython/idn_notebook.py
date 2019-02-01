@@ -143,9 +143,15 @@ class EditorNotebook(aui.AuiNotebook):
 
     def OnPageClose(self, event):
         page = event.GetSelection()
-        self[page].OnClose()
-        if self[page] in self.pageOpenOrder:
-            self.pageOpenOrder.remove(self[page])
+        editor = self[page]
+        if hasattr(editor, "HasUnsavedChanged") and hasattr(editor, "CanCloseWithUnsavedChanges") \
+                and editor.HasUnsavedChanged() and not editor.CanCloseWithUnsavedChanges():
+            event.Veto()
+            return
+
+        editor.OnClose()
+        if editor in self.pageOpenOrder:
+            self.pageOpenOrder.remove(editor)
         if self.GetSelection() == page:
             self.NavigateBack(True)
 
@@ -189,19 +195,19 @@ class EditorNotebook(aui.AuiNotebook):
         page = event.GetSelection()
         editor = self[page]
         def closeCurrent(event):
+            if hasattr(editor, "HasUnsavedChanged") and hasattr(editor, "CanCloseWithUnsavedChanges") \
+                and editor.HasUnsavedChanged() and not editor.CanCloseWithUnsavedChanges():
+                return
             self.ClosePage(page)
 
         def closeOther(event):
-            iteration = 0
-            i = 0
-            totalTabs = self.GetPageCount()
-            while totalTabs > 1:
-                if self[i] == editor:
-                    i += 1
-                self.ClosePage(i)
-                iteration += 1
-                if iteration > totalTabs:
-                    return
+            for pageId in reversed(range(self.GetPageCount())):
+                if self[pageId] == editor:
+                    continue
+                if hasattr(self[pageId], "HasUnsavedChanged") and hasattr(self[pageId], "CanCloseWithUnsavedChanges") \
+                        and self[pageId].HasUnsavedChanged() and not self[pageId].CanCloseWithUnsavedChanges():
+                    continue;
+                self.ClosePage(pageId)
 
 
         def renameFile(event):
@@ -227,8 +233,10 @@ class EditorNotebook(aui.AuiNotebook):
             raise IndexError
 
     def CloseAll(self, event = None):
-        while self.GetPageCount() > 0:
-            self.ClosePage(0)
+        for pageId in reversed(range(self.GetPageCount())):
+            if self[pageId].HasUnsavedChanged() and not self[pageId].CanCloseWithUnsavedChanges():
+                continue;
+            self.ClosePage(pageId)
 
     def Pages(self):
         return [self[index] for index in range(self.GetPageCount())]

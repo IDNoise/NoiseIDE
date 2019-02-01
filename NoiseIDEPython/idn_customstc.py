@@ -238,19 +238,32 @@ class CustomSTC(StyledTextCtrl, EditorFoldMixin, EditorLineMarginMixin):
         editMenu.AppendMenuItem("Paste", self, lambda e: self.Paste())
         return menu
 
+    def HasUnsavedChanged(self):
+        return self.saved == False and os.path.exists(self.filePath)
+
+    def CanCloseWithUnsavedChanges(self):
+        dial = wx.MessageDialog(None, 'You have unsaved changes in ' + self.filePath + '. Do you want to save it?'.format(
+                                    self.filePath),
+                                'File has unsaved changed',
+                                wx.YES_NO | wx.CANCEL | wx.NO_DEFAULT | wx.ICON_QUESTION)
+        result = dial.ShowModal()
+        if result == wx.ID_CANCEL:
+            return False
+        elif result == wx.ID_YES:
+            self.Save()
+            return True
+        elif result == wx.ID_NO:
+            self.SetValue(self.savedText)
+            self.Changed(False)
+            self.saved = True
+            return True
+
     def OnClose(self):
         self.closed = True
         if self.highlightTimer:
             self.highlightTimer.Stop()
         if self.modifyCheckTimer:
             self.modifyCheckTimer.Stop()
-        if self.saved == False and os.path.exists(self.filePath):
-            dial = wx.MessageDialog(None,
-                'You have unsaved changes in this document. Do you want to save it?'.format(self.filePath),
-                'File has unsaved changed',
-                wx.YES_NO | wx.NO_DEFAULT | wx.ICON_QUESTION)
-            if dial.ShowModal() == wx.ID_YES:
-                self.Save()
 
     def SetupEditorMenu(self):
         for item in self.editorMenu.GetMenuItems():

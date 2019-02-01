@@ -792,8 +792,10 @@ class ErlangSTC(ErlangHighlightedSTCBase):
 
     def OnClose(self):
         ErlangHighlightedSTCBase.OnClose(self)
+        self.CompileFly()
         if self.flyTimer:
             self.flyTimer.Stop()
+
 
 
 class ErlangSTCReadOnly(ErlangSTC):

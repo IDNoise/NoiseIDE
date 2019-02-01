@@ -18,7 +18,7 @@
                     | 'remove_message' | 'return' | 'send' | 'timeout'
                     | tuple().  %% XXX: Very underspecified - FIX THIS 
    
- 
+
 -spec xxroundxx(XX, integer()) -> integer()
   when XX :: atom().
 %% @doc Prints the value X.
