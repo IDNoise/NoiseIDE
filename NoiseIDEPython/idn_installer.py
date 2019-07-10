@@ -52,7 +52,7 @@ def CopyPackages():
         os.mkdir(noiseide_dir)
     shutil.copy('{}/{}'.format(dist_dir, file), '{}/{}'.format(noiseide_dir, new_file) )
     shutil.copy('rev.cfg', '{}/rev.cfg'.format(noiseide_dir) )
-    dropboxdirs = ['d:/Downloads/Dropbox/NoiseIDEDist', 'e:/Downloads/Dropbox/NoiseIDEDist']
+    dropboxdirs = ['d:/Downloads/Dropbox/NoiseIDEDist', 'e:/Downloads/Dropbox/NoiseIDEDist', 'c:/Users/IDNoise/Dropbox/NoiseIDEDist']
     for dropboxdir in dropboxdirs:
         if os.path.exists(dropboxdir):
             shutil.copy('{}/{}'.format(dist_dir, file), '{}/{}'.format(dropboxdir, new_file) )
