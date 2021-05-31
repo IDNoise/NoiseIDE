@@ -189,8 +189,8 @@ generate_file(CacheDir, ModuleName, FilePath, DocsFilePath) ->
     catch 
         exit:{ucs, {bad_utf8_character_code}} ->
             ok;
-        Error:Reason ->
-            io:format("File:~p Error:~p, ~p~n~p~n", [FilePath, Error, Reason, erlang:get_stacktrace()])
+        Error:Reason:Stacktrace ->
+            io:format("File:~p Error:~p, ~p~n~p~n", [FilePath, Error, Reason, Stacktrace])
     end.
 
 send_answer(CacheFile, File) -> 
@@ -255,11 +255,12 @@ fun_to_json(ModuleName, CacheDir, Fun, FilePath) ->
                 file:write_file(FullPath, iolist_to_binary(Text)),
                 FullPath
         end, 
+    Line = case Fun#function.line of {L, _} -> L; L -> L end,
     Data =    
     [ 
      {name, iolist_to_binary(Name)},
      {arity, Arity},
-     {line, Fun#function.line},
+     {line, Line},
      {exported, Fun#function.exported},
      {params, [lists:map(fun iolist_to_binary/1, P) || P <- Fun#function.params]},
      {types, [lists:map(fun iolist_to_binary/1, P) || P <- Fun#function.types]},
@@ -275,10 +276,7 @@ fun_to_json(ModuleName, CacheDir, Fun, FilePath) ->
             [] -> Data1;
             _ ->Data1 ++ [{docref, iolist_to_binary(DocRef)}]
         end,
-    case ModuleName == "erlang" of
-        true -> Data2 ++ [{bif, Fun#function.bif}];
-        _ -> Data2
-    end.
+    Data2 ++ [{bif, ModuleName == "erlang" orelse Fun#function.bif}].
 
 recs_data_to_json(Recs, File) ->
     [rec_data_to_json(R) || R <- Recs, string:to_lower(R#record.file) == string:to_lower(File)].
@@ -587,10 +585,11 @@ parse_erlang_function(Node, Content, Comments) ->
              Var = node_value(P, erl_syntax:type(P)),
              Var
          end || P <- erl_syntax:clause_patterns(Clause)] || Clause <- Clauses],
+
     Spec = case lists:keyfind({Name, Arity}, #spec.name, Content#content.specs) of 
                false -> undefined;
                S -> S#spec{name = element(1, S#spec.name)}
-           end, 
+           end,  
     Params1 = case Spec of
                   undefined -> Params;
                   Spec -> 
@@ -622,7 +621,7 @@ parse_erlang_function(Node, Content, Comments) ->
                 C = lists:last(Comments),
                 erl_prettypr:format(C)
         end,
-    %erlang:display({Params1, Result, Types}),
+
     #function{name = {Name, Arity},
               line = Line,
               params = Params1,
@@ -666,14 +665,17 @@ parse_spec(Node) ->
         %io:format("Spec: ~p~n", [Spec]),
         Spec
     catch 
-        _Error:_Reason -> none
+        Error:Reason:ST -> 
+            io:format("~p", [{cant_parse_spec, Error, Reason, ST}]),
+            none
     end.
 
 parse_spec_internal(Node, Clause) ->
     %io:format("~p ~p~n", [Node, Clause]),
-    Spec = edoc_specs:spec(Node, Clause),
-    {_, _, _, _, TSpec} = Spec,
-    #t_spec{name = Name, type = Type, defs = Defs} = TSpec,
+    Spec = edoc_specs:spec(Node),
+    %io:format("~n SPEC: ~n~p~n~n~n", [Spec]),
+    {_, _, _, _, TSpecs, _} = Spec,
+    #t_spec{name = Name, type = Type, defs = Defs} = lists:nth(Clause, TSpecs),
     #t_name{name = FunName} = Name,
     #t_fun{args = Args, range = Range} = Type, 
     %io:format("~p~n", [Range]),
@@ -691,7 +693,7 @@ parse_callback(Node) ->
         end,
         #callback{function = Fun, params = VarNames, line = erl_syntax:get_pos(Node)}
     catch 
-        Error:Reason -> io:format("parse callback error: ~p~n", [{Error, Reason, erlang:get_stacktrace()}])
+        Error:Reason:Stacktrace -> io:format("parse callback error: ~p~n", [{Error, Reason, Stacktrace}])
     end.
 
 vars(Vars) -> [var(V) || V <- Vars].
@@ -700,15 +702,15 @@ get_var_types(Args, Defs) ->
     {Vars, Types} = 
         lists:foldl(
             fun(A, {Vars, Types}) ->
-%                io:format("A:~p~n", [A]),
+                %io:format("A:~p~n", [A]),
                 T = get_type(A, Defs),
                 V = get_var_name(A),
-%                io:format("T:~p, V:~p~n", [T, V]),
+                %io:format("T:~p, V:~p~n", [T, V]),
                 {[V| Vars], [T | Types]}
             end, 
             {[], []}, 
             Args),  
-%    io:format("Args:~p~nVars: ~p~nTypes:~p~n", [Args, Vars, Types]),
+    %io:format("Args:~p~nVars: ~p~nTypes:~p~n", [Args, Vars, Types]),
     {lists:reverse(Vars), lists:reverse(Types)}.  
 
 get_var_name(#t_nil{}) -> "[]";
@@ -729,6 +731,7 @@ get_var_name(#t_tuple{}) -> "Tuple";
 get_var_name(#t_nonempty_list{}) -> "NonEmptyList";
 get_var_name(#t_integer_range{}) -> "IntegerInRange";
 get_var_name(#t_var{name = Name})-> atom_to_list(Name);
+get_var_name(#t_fun{})-> "Function";
 get_var_name(T)-> 
     io:format("Unknown var name: ~p~n", [T]).
 
@@ -772,16 +775,15 @@ parse_t_type(#t_var{name = Names}, Defs, Depth) ->
 parse_t_type(#t_map{types = Types}, Defs, Depth) ->
     "#{" ++ string_join([parse_t_type(T, Defs, Depth - 1) || T <- Types], ", ") ++ "}";
 parse_t_type(#t_fun{args = Args, range = Range}, Defs, Depth) ->
-    "fun(" ++ string_join([parse_t_type(A, Defs, Depth - 1) || A <- Args], ", ") ++ ") -> " + parse_t_type(Range, Defs, Depth - 1);
+    "fun(" ++ string_join([parse_t_type(A, Defs, Depth - 1) || A <- Args], ", ") ++ ") -> " ++ parse_t_type(Range, Defs, Depth - 1);
 parse_t_type(#t_map_field{k_type = KType, v_type = VType}, Defs, Depth) ->
     parse_t_type(KType, Defs, Depth - 1) ++ " => " ++ parse_t_type(VType, Defs, Depth - 1);
 parse_t_type(#t_paren{type = Type}, Defs, Depth) -> 
-    "(" + parse_t_type(Type, Defs, Depth - 1) ++ ")";
+    "(" ++ parse_t_type(Type, Defs, Depth - 1) ++ ")";
 parse_t_type(#t_binary{base_size = BaseSize, unit_size = UnitSize}, _Defs, _Depth) -> "binary(Base size: " ++ integer_to_list(BaseSize) ++", Unit size: " ++ integer_to_list(UnitSize) ++ ")"; 
 parse_t_type(#t_integer{val = Val}, _Defs, _Depth) -> "integer(" ++ integer_to_list(Val) ++ ")"; 
 parse_t_type(TType, _, _) -> 
-    catch throw(error),
-    io:format("Unknown field type: ~p~n~p", [TType, erlang:get_stacktrace()]),
+    io:format("Unknown field type: ~p~n~p", [TType, erlang:process_info(self(), current_stacktrace)]),
     ?TERM.
 
 string_join(Items, Sep) ->
@@ -794,6 +796,7 @@ string_join1([Head | Tail], Sep, Acc) ->
     string_join1(Tail, Sep, [Sep, Head | Acc]).
 
 args_to_name([]) -> ?VAR;
+args_to_name([{type_variables, [V]}]) -> atom_to_list(V);
 args_to_name(Args) -> atom_to_list(hd(Args)).
 
 parse_erlang_record(Node, _Content) ->
@@ -885,8 +888,7 @@ var({type, _, list, Vars}) ->
 var({tree, type_application, _, _} = T) ->
     parse_erlang_record_field_type(T);
 var(V) ->
-    catch throw(error),
-    io:format("Unknown var: ~p~n~p", [V, erlang:get_stacktrace()]),
+    io:format("Unknown var: ~p~n~p", [V, erlang:process_info(self(), current_stacktrace)]),
     "term()".
 
 
@@ -895,8 +897,7 @@ parse_map_assoc({tree,map_type_assoc, _, {map_type_assoc, T1, T2}}) ->
 parse_map_assoc({tree,map_type_exact, _, {map_type_exact, T1, T2}}) -> 
     parse_erlang_record_field_type(T1) ++ " => " ++ parse_erlang_record_field_type(T2);
 parse_map_assoc(MA) -> 
-    catch throw(error),
-    io:format("Unknown map assoc record type: ~p~n~p", [MA, erlang:get_stacktrace()]),
+    io:format("Unknown map assoc record type: ~p~n~p", [MA, erlang:process_info(self(), current_stacktrace)]),
     "FIX IT".
 
 parse_opaque(Node, Content) -> 
@@ -1092,10 +1093,18 @@ add_data_from_html_fun({[FunName, Arity, SpecName, Params, _Result], Text}, Cont
                     true -> Fun#function{params = [[Params]], result = [?TERM], doc = Text};
                     _ -> Fun#function{doc = Text}
                 end, 
+            case FunName of
+                "atom_to_list" -> erlang:display({add_data_from_html_fun, SpecName});
+                _ -> ignore
+            end,
             IsBif = case SpecName of "erlang:" ++ _ -> false; _ -> true end,
             NewFun1 = NewFun#function{bif = IsBif},
             Content#content{functions = lists:keyreplace({FunName, Arity1}, #function.name, Content#content.functions, NewFun1)};
         _ -> 
+            case FunName of
+                "atom_to_list" -> erlang:display({add_data_from_html_fun_2, SpecName});
+                _ -> ignore
+            end,
             IsBif = case SpecName of "erlang:" ++ _ -> false; _ -> true end,
             NewFun = #function{name = {FunName, Arity1}, params = [[Params]], result = [?TERM], doc = Text, bif = IsBif, exported = true},
             Content#content{functions = [NewFun|Content#content.functions]}

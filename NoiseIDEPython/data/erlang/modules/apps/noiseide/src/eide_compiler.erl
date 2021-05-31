@@ -247,9 +247,10 @@ compile_internal(FileName, Options, ToBinary, RealPath) ->
                 {none, compile,{module_name, MName, FName}} ->
                     [{type, error}, {line, 2}, {msg, iolist_to_binary("Module in file '" ++ FName ++ 
                         "' has wrong name: '" ++ atom_to_list(MName) ++ "'.")}];
-                {Line, M, Error} when is_integer(Line)  ->
-                  Msg = iolist_to_binary(M:format_error(Error)),
-                  [{type, error}, {line, Line}, {msg, Msg}];
+                {LineX, M, Error} when is_integer(LineX) orelse is_tuple(LineX)  ->
+                    {Line, _Column} = case LineX of {L, C} -> {L, C}; L -> {L, 0} end,
+                    Msg = iolist_to_binary(M:format_error(Error)),
+                    [{type, error}, {line, Line}, {msg, Msg}];
                 _ ->
                     []
             end 
@@ -257,7 +258,8 @@ compile_internal(FileName, Options, ToBinary, RealPath) ->
          || {_File, Err} <- E],  
     Warns = 
         [[begin
-              {Line, M, Error} = Wa,
+              {LineX, M, Error} = Wa,
+              {Line, _Column} = case LineX of {L, C} -> {L, C}; L -> {L, 0} end,
               Msg = iolist_to_binary(M:format_error(Error)),
               [{type, warning}, {line, Line}, {msg, Msg}]
           end || Wa <- War] 

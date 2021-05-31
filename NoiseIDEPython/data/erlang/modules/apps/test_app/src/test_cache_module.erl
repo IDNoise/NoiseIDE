@@ -12,7 +12,9 @@
 -export([ 
     x/0, 
     function/1,
-    xxx/0
+    xxx/0,
+    foldl/3,
+    member/2
 ]).    
 -callback init(Args :: term()) ->
     {ok, State :: term()} | {ok, State :: term(), timeout() | hibernate} |
@@ -129,4 +131,23 @@ round(Price, sell) ->
                         counters :=  atom()}) -> [atom()].
 replace_labels(Is) -> test_cache_module1:xxroundxx(x, x). 
  
- 
+-spec foldl(Fun, Acc0, List) -> Acc1 when
+      Fun :: fun((Elem :: T, AccIn) -> AccOut),
+      Acc0 :: term(),
+      Acc1 :: term(),
+      AccIn :: term(),
+      AccOut :: term(),
+      List :: [T],
+      T :: term().
+
+foldl(F, Accu, [Hd|Tail]) ->
+    foldl(F, F(Hd, Accu), Tail);
+foldl(F, Accu, []) when is_function(F, 2) -> Accu.
+
+-spec member(Elem, List) -> boolean() when
+      Elem :: T,
+      List :: [T],
+      T :: term().
+
+member(_, _) ->
+    erlang:nif_error(undef).

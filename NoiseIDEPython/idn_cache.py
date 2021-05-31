@@ -278,7 +278,6 @@ class ErlangCache:
     def LoadFile_(cls, f):
         try:
             if not f.endswith(".cache") or not os.path.isfile(f): return
-
             data = json.loads(readFile(f))
             if not os.path.isfile(data[FILE]):
                 os.remove(f)
@@ -303,7 +302,7 @@ class ErlangCache:
                 cls.modules[name] = mdata
             return mdata
         except  Exception, e:
-            core.Log("load cache file error", e)
+            core.Log("load cache file error: ", f, e)
         return None
 
     @classmethod

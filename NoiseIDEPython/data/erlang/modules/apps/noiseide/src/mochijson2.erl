@@ -95,6 +95,7 @@ encoder(Options) ->
 %% @spec encode(json_term()) -> iolist()
 %% @doc Encode the given as JSON to an iolist.
 encode(Any) ->
+    %erlang:display(Any),
     json_encode(Any, #encoder{}).
 
 %% @spec decoder([decoder_option()]) -> function()

@@ -105,9 +105,9 @@ worker() ->
             catch 
                 exit:{ucs, {bad_utf8_character_code}} ->
                     ok;
-                Error:Reason -> 
+                Error:Reason:Stacktrace -> 
                     %ok
-                    io:format("Error:~p, Reason:~p, Trace:~n~p~n", [Error, Reason, erlang:get_stacktrace()])
+                    io:format("Error:~p, Reason:~p, Data: ~p~nTrace:~n~p~n", [Error, Reason, {Action, ActionData}, Stacktrace])
             end;
         Msg ->
             io:format("Unknown message in worker:~p~n", [Msg])
